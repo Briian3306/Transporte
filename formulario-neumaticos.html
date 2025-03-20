@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Cambio de Neumáticos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl">
+        <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">Registro de Cambio de Neumáticos</h1>
+        
+        <form id="neumaticosForm" method="POST" action="https://hook.us2.make.com/pvu4mxyfte7vfdngyk6ad664tjwcjz84" class="space-y-6">
+            <!-- Información del vehículo -->
+            <div class="bg-gray-50 p-4 rounded-md">
+                <h2 class="text-lg font-semibold text-gray-700 mb-3">Información del Vehículo</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Fecha y Hora -->
+                    <div>
+                        <label for="fecha" class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                        <input type="date" id="fecha" name="fecha" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="hora" class="block text-sm font-medium text-gray-700 mb-1">Hora</label>
+                        <input type="time" id="hora" name="hora" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <!-- Tipo de Vehículo -->
+                    <div>
+                        <label for="tipoVehiculo" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Vehículo</label>
+                        <select id="tipoVehiculo" name="tipoVehiculo" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Seleccionar...</option>
+                            <option value="camion">Camión</option>
+                            <option value="semi">Semi</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Patentes -->
+                    <div>
+                        <label for="patenteCamion" class="block text-sm font-medium text-gray-700 mb-1">Patente del Camión</label>
+                        <input type="text" id="patenteCamion" name="patenteCamion" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="patenteSemi" class="block text-sm font-medium text-gray-700 mb-1">Patente del Semi</label>
+                        <input type="text" id="patenteSemi" name="patenteSemi" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <!-- Odómetro -->
+                    <div>
+                        <label for="odometro" class="block text-sm font-medium text-gray-700 mb-1">Odómetro (km)</label>
+                        <input type="number" id="odometro" name="odometro" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Información de los neumáticos -->
+            <div class="bg-gray-50 p-4 rounded-md">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-semibold text-gray-700">Neumáticos a Cambiar</h2>
+                    <button type="button" id="agregarNeumatico" class="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        Agregar Neumático
+                    </button>
+                </div>
+                
+                <div id="neumaticosList">
+                    <!-- Plantilla de entrada de neumático -->
+                    <div class="neumatico-item border border-gray-300 rounded-md p-3 mb-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-medium text-gray-700">Neumático #<span class="indice-neumatico">1</span></h3>
+                            <button type="button" class="eliminar-neumatico text-red-500 hover:text-red-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <!-- Eje del Camión -->
+                            <div>
+                                <label for="ejeCamion_0" class="block text-sm font-medium text-gray-700 mb-1">Eje del Camión</label>
+                                <select id="ejeCamion_0" name="neumaticos[0][ejeCamion]" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="1">Eje 1</option>
+                                    <option value="2">Eje 2</option>
+                                    <option value="3">Eje 3</option>
+                                    <option value="4">Eje 4</option>
+                                    <option value="5">Eje 5</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Lado del Eje -->
+                            <div>
+                                <label for="ladoEje_0" class="block text-sm font-medium text-gray-700 mb-1">Lado del Eje</label>
+                                <select id="ladoEje_0" name="neumaticos[0][ladoEje]" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="izquierdo">Izquierdo</option>
+                                    <option value="derecho">Derecho</option>
+                                </select>
+                            </div>
+                            
+                            <!-- ID del Neumático -->
+                            <div>
+                                <label for="idNeumatico_0" class="block text-sm font-medium text-gray-700 mb-1">ID del Neumático</label>
+                                <input type="text" id="idNeumatico_0" name="neumaticos[0][idNeumatico]" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pt-4">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                    Enviar Registro
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Variable para llevar el conteo de neumáticos
+        let contadorNeumaticos = 1;
+        
+        // Función para actualizar los índices en los neumáticos
+        function actualizarIndices() {
+            document.querySelectorAll('.neumatico-item').forEach((item, index) => {
+                item.querySelector('.indice-neumatico').textContent = index + 1;
+                
+                // Actualizar los IDs y names de los campos
+                const ejeCamion = item.querySelector('[id^="ejeCamion_"]');
+                const ladoEje = item.querySelector('[id^="ladoEje_"]');
+                const idNeumatico = item.querySelector('[id^="idNeumatico_"]');
+                
+                ejeCamion.id = `ejeCamion_${index}`;
+                ladoEje.id = `ladoEje_${index}`;
+                idNeumatico.id = `idNeumatico_${index}`;
+                
+                ejeCamion.name = `neumaticos[${index}][ejeCamion]`;
+                ladoEje.name = `neumaticos[${index}][ladoEje]`;
+                idNeumatico.name = `neumaticos[${index}][idNeumatico]`;
+            });
+        }
+        
+        // Función para eliminar un neumático
+        function eliminarNeumatico(event) {
+            const botonEliminar = event.target.closest('.eliminar-neumatico');
+            if (!botonEliminar) return;
+            
+            const item = botonEliminar.closest('.neumatico-item');
+            
+            // Verificar que no sea el último neumático
+            if (document.querySelectorAll('.neumatico-item').length > 1) {
+                item.remove();
+                actualizarIndices();
+            } else {
+                alert('Debe haber al menos un neumático.');
+            }
+        }
+        
+        // Función para agregar un nuevo neumático
+        function agregarNeumatico() {
+            const neumaticosList = document.getElementById('neumaticosList');
+            const nuevoItem = neumaticosList.querySelector('.neumatico-item').cloneNode(true);
+            
+            // Limpiar valores
+            nuevoItem.querySelectorAll('select, input').forEach(campo => {
+                campo.value = '';
+            });
+            
+            contadorNeumaticos++;
+            nuevoItem.querySelector('.indice-neumatico').textContent = contadorNeumaticos;
+            
+            // Agregar el nuevo ítem
+            neumaticosList.appendChild(nuevoItem);
+            
+            // Actualizar índices
+            actualizarIndices();
+            
+            // Agregar evento de eliminación al nuevo botón
+            nuevoItem.querySelector('.eliminar-neumatico').addEventListener('click', eliminarNeumatico);
+        }
+        
+        // Agregar eventos
+        document.getElementById('agregarNeumatico').addEventListener('click', agregarNeumatico);
+        document.getElementById('neumaticosList').addEventListener('click', eliminarNeumatico);
+        
+        // Script para manejar la validación y envío del formulario
+        document.getElementById('neumaticosForm').addEventListener('submit', function(event) {
+            // Prevenir el comportamiento predeterminado del formulario
+            event.preventDefault();
+            
+            // Validaciones personalizadas
+            const tipoVehiculo = document.getElementById('tipoVehiculo').value;
+            const patenteCamion = document.getElementById('patenteCamion').value;
+            const patenteSemi = document.getElementById('patenteSemi').value;
+            
+            if (tipoVehiculo === 'camion' && !patenteCamion) {
+                alert('Por favor, ingrese la patente del camión');
+                return false;
+            }
+            
+            if (tipoVehiculo === 'semi' && !patenteSemi) {
+                alert('Por favor, ingrese la patente del semi');
+                return false;
+            }
+            
+            // Recolectar los datos del formulario
+            const datosVehiculo = {
+                fecha: document.getElementById('fecha').value,
+                hora: document.getElementById('hora').value,
+                tipoVehiculo: tipoVehiculo,
+                patenteCamion: patenteCamion,
+                patenteSemi: patenteSemi,
+                odometro: document.getElementById('odometro').value,
+            };
+            
+            // Recolectar los datos de neumáticos como un array
+            const neumaticos = [];
+            document.querySelectorAll('.neumatico-item').forEach((item, index) => {
+                const ejeCamion = item.querySelector('[id^="ejeCamion_"]').value;
+                const ladoEje = item.querySelector('[id^="ladoEje_"]').value;
+                const idNeumatico = item.querySelector('[id^="idNeumatico_"]').value;
+                
+                neumaticos.push({
+                    ejeCamion: ejeCamion,
+                    ladoEje: ladoEje,
+                    idNeumatico: idNeumatico
+                });
+            });
+            
+            // Construir el objeto final para enviar
+            const datosCompletos = {
+                ...datosVehiculo,
+                neumaticos: neumaticos
+            };
+            
+            console.log('Datos a enviar:', datosCompletos);
+            
+            // Enviar los datos como JSON mediante fetch
+            fetch('https://hook.us2.make.com/pvu4mxyfte7vfdngyk6ad664tjwcjz84', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(datosCompletos)
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Mostrar mensaje de éxito
+                    alert('Formulario enviado correctamente');
+                    // Reiniciar el formulario
+                    document.getElementById('neumaticosForm').reset();
+                    
+                    // Reiniciar a un solo neumático
+                    const neumaticosList = document.getElementById('neumaticosList');
+                    const primerNeumatico = neumaticosList.querySelector('.neumatico-item');
+                    neumaticosList.innerHTML = '';
+                    neumaticosList.appendChild(primerNeumatico);
+                    contadorNeumaticos = 1;
+                    actualizarIndices();
+                } else {
+                    // Mostrar mensaje de error
+                    alert('Error al enviar el formulario. Por favor, inténtelo de nuevo.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al enviar el formulario. Por favor, inténtelo de nuevo.');
+            });
+        });
+    </script>
+</body>
+</html> 

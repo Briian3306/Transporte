@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario de Neumáticos - Sistema de Gestión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="../index.html" class="text-xl font-bold text-gray-800">Sistema de Gestión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Inventario de Neumáticos</h1>
+                    <a href="../index.html" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Volver
+                    </a>
+                </div>
+                
+                <form id="inventarioForm" method="POST" action="https://hook.us2.make.com/URL_DE_MAKE_AQUI" class="space-y-6">
+                    <!-- Información del Neumático -->
+                    <div class="bg-gray-50 p-4 rounded-md">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Información del Neumático</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- ID del Neumático -->
+                            <div>
+                                <label for="idNeumatico" class="block text-sm font-medium text-gray-700 mb-1">ID del Neumático</label>
+                                <input type="text" id="idNeumatico" name="idNeumatico" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Marca -->
+                            <div>
+                                <label for="marca" class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+                                <input type="text" id="marca" name="marca" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Modelo -->
+                            <div>
+                                <label for="modelo" class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
+                                <input type="text" id="modelo" name="modelo" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Medida -->
+                            <div>
+                                <label for="medida" class="block text-sm font-medium text-gray-700 mb-1">Medida</label>
+                                <input type="text" id="medida" name="medida" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Fecha de Fabricación -->
+                            <div>
+                                <label for="fechaFabricacion" class="block text-sm font-medium text-gray-700 mb-1">Fecha de Fabricación</label>
+                                <input type="date" id="fechaFabricacion" name="fechaFabricacion" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Estado -->
+                            <div>
+                                <label for="estado" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                                <select id="estado" name="estado" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="nuevo">Nuevo</option>
+                                    <option value="usado">Usado</option>
+                                    <option value="reparado">Reparado</option>
+                                    <option value="desgastado">Desgastado</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Ubicación -->
+                            <div>
+                                <label for="ubicacion" class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+                                <input type="text" id="ubicacion" name="ubicacion" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Cantidad -->
+                            <div>
+                                <label for="cantidad" class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                                <input type="number" id="cantidad" name="cantidad" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Observaciones -->
+                    <div class="bg-gray-50 p-4 rounded-md">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Observaciones</h2>
+                        <div>
+                            <textarea id="observaciones" name="observaciones" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                            Guardar en Inventario
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Script para manejar la validación y envío del formulario
+        document.getElementById('inventarioForm').addEventListener('submit', function(event) {
+            // Prevenir el comportamiento predeterminado del formulario
+            event.preventDefault();
+            
+            // Recolectar los datos del formulario
+            const formData = new FormData(this);
+            const datos = Object.fromEntries(formData.entries());
+            
+            // Enviar los datos como JSON mediante fetch
+            fetch('https://hook.us2.make.com/URL_DE_MAKE_AQUI', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(datos)
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Mostrar mensaje de éxito
+                    alert('Neumático guardado correctamente en el inventario');
+                    // Reiniciar el formulario
+                    document.getElementById('inventarioForm').reset();
+                } else {
+                    // Mostrar mensaje de error
+                    alert('Error al guardar el neumático. Por favor, inténtelo de nuevo.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al guardar el neumático. Por favor, inténtelo de nuevo.');
+            });
+        });
+    </script>
+</body>
+</html> 

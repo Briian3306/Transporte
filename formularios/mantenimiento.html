@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mantenimiento de Neumáticos - Sistema de Gestión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="../index.html" class="text-xl font-bold text-gray-800">Sistema de Gestión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Registro de Mantenimiento</h1>
+                    <a href="../index.html" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Volver
+                    </a>
+                </div>
+                
+                <form id="mantenimientoForm" method="POST" action="https://hook.us2.make.com/URL_DE_MAKE_AQUI" class="space-y-6">
+                    <!-- Información del Neumático -->
+                    <div class="bg-gray-50 p-4 rounded-md">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Información del Neumático</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- ID del Neumático -->
+                            <div>
+                                <label for="idNeumatico" class="block text-sm font-medium text-gray-700 mb-1">ID del Neumático</label>
+                                <input type="text" id="idNeumatico" name="idNeumatico" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Fecha de Mantenimiento -->
+                            <div>
+                                <label for="fechaMantenimiento" class="block text-sm font-medium text-gray-700 mb-1">Fecha de Mantenimiento</label>
+                                <input type="date" id="fechaMantenimiento" name="fechaMantenimiento" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Tipo de Mantenimiento -->
+                            <div>
+                                <label for="tipoMantenimiento" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Mantenimiento</label>
+                                <select id="tipoMantenimiento" name="tipoMantenimiento" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="reparacion">Reparación</option>
+                                    <option value="balanceo">Balanceo</option>
+                                    <option value="alineacion">Alineación</option>
+                                    <option value="rotacion">Rotación</option>
+                                    <option value="inspeccion">Inspección</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Estado del Neumático -->
+                            <div>
+                                <label for="estadoNeumatico" class="block text-sm font-medium text-gray-700 mb-1">Estado del Neumático</label>
+                                <select id="estadoNeumatico" name="estadoNeumatico" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="bueno">Bueno</option>
+                                    <option value="regular">Regular</option>
+                                    <option value="malo">Malo</option>
+                                    <option value="critico">Crítico</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Kilometraje -->
+                            <div>
+                                <label for="kilometraje" class="block text-sm font-medium text-gray-700 mb-1">Kilometraje Actual</label>
+                                <input type="number" id="kilometraje" name="kilometraje" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Técnico -->
+                            <div>
+                                <label for="tecnico" class="block text-sm font-medium text-gray-700 mb-1">Técnico Responsable</label>
+                                <input type="text" id="tecnico" name="tecnico" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detalles del Mantenimiento -->
+                    <div class="bg-gray-50 p-4 rounded-md">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Detalles del Mantenimiento</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Problemas Encontrados -->
+                            <div class="md:col-span-2">
+                                <label for="problemas" class="block text-sm font-medium text-gray-700 mb-1">Problemas Encontrados</label>
+                                <textarea id="problemas" name="problemas" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                            
+                            <!-- Acciones Realizadas -->
+                            <div class="md:col-span-2">
+                                <label for="acciones" class="block text-sm font-medium text-gray-700 mb-1">Acciones Realizadas</label>
+                                <textarea id="acciones" name="acciones" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                            
+                            <!-- Recomendaciones -->
+                            <div class="md:col-span-2">
+                                <label for="recomendaciones" class="block text-sm font-medium text-gray-700 mb-1">Recomendaciones</label>
+                                <textarea id="recomendaciones" name="recomendaciones" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Costos -->
+                    <div class="bg-gray-50 p-4 rounded-md">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Costos</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Costo de Mano de Obra -->
+                            <div>
+                                <label for="costoManoObra" class="block text-sm font-medium text-gray-700 mb-1">Costo de Mano de Obra</label>
+                                <input type="number" id="costoManoObra" name="costoManoObra" min="0" step="0.01" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Costo de Materiales -->
+                            <div>
+                                <label for="costoMateriales" class="block text-sm font-medium text-gray-700 mb-1">Costo de Materiales</label>
+                                <input type="number" id="costoMateriales" name="costoMateriales" min="0" step="0.01" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Costo Total -->
+                            <div>
+                                <label for="costoTotal" class="block text-sm font-medium text-gray-700 mb-1">Costo Total</label>
+                                <input type="number" id="costoTotal" name="costoTotal" min="0" step="0.01" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                            Registrar Mantenimiento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Script para manejar la validación y envío del formulario
+        document.getElementById('mantenimientoForm').addEventListener('submit', function(event) {
+            // Prevenir el comportamiento predeterminado del formulario
+            event.preventDefault();
+            
+            // Recolectar los datos del formulario
+            const formData = new FormData(this);
+            const datos = Object.fromEntries(formData.entries());
+            
+            // Enviar los datos como JSON mediante fetch
+            fetch('https://hook.us2.make.com/URL_DE_MAKE_AQUI', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(datos)
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Mostrar mensaje de éxito
+                    alert('Mantenimiento registrado correctamente');
+                    // Reiniciar el formulario
+                    document.getElementById('mantenimientoForm').reset();
+                } else {
+                    // Mostrar mensaje de error
+                    alert('Error al registrar el mantenimiento. Por favor, inténtelo de nuevo.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al registrar el mantenimiento. Por favor, inténtelo de nuevo.');
+            });
+        });
+    </script>
+</body>
+</html> 
