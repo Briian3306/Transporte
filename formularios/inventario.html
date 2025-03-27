@@ -40,25 +40,25 @@
                             <!-- ID del Neumático -->
                             <div>
                                 <label for="idNeumatico" class="block text-sm font-medium text-gray-700 mb-1">ID del Neumático</label>
-                                <input type="text" id="idNeumatico" name="idNeumatico" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="text" id="idNeumatico" name="idNeumatico" required class="uppercase w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                             
                             <!-- Marca -->
                             <div>
                                 <label for="marca" class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
-                                <input type="text" id="marca" name="marca" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="text" id="marca" name="marca" required class="uppercase w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                             
                             <!-- Modelo -->
                             <div>
                                 <label for="modelo" class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
-                                <input type="text" id="modelo" name="modelo" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="text" id="modelo" name="modelo" required class="uppercase w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                             
                             <!-- Medida -->
                             <div>
                                 <label for="medida" class="block text-sm font-medium text-gray-700 mb-1">Medida</label>
-                                <input type="text" id="medida" name="medida" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="text" id="medida" name="medida" required class="uppercase w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                             
                             <!-- Fecha de Fabricación -->
@@ -82,7 +82,7 @@
                             <!-- Ubicación -->
                             <div>
                                 <label for="ubicacion" class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
-                                <input type="text" id="ubicacion" name="ubicacion" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="text" id="ubicacion" name="ubicacion" required class="uppercase w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                             
                             <!-- Cantidad -->
@@ -97,7 +97,7 @@
                     <div class="bg-gray-50 p-4 rounded-md">
                         <h2 class="text-lg font-semibold text-gray-700 mb-3">Observaciones</h2>
                         <div>
-                            <textarea id="observaciones" name="observaciones" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            <textarea id="observaciones" name="observaciones" rows="3" class="uppercase w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                         </div>
                     </div>
                     
@@ -112,6 +112,21 @@
     </div>
 
     <script>
+        // Función para convertir todos los textos a mayúsculas
+        function convertirAMayusculas() {
+            const inputsTexto = document.querySelectorAll('input[type="text"], textarea');
+            inputsTexto.forEach(input => {
+                input.addEventListener('input', function() {
+                    this.value = this.value.toUpperCase();
+                });
+            });
+        }
+        
+        // Inicializar conversión a mayúsculas cuando el DOM esté cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            convertirAMayusculas();
+        });
+        
         // Script para manejar la validación y envío del formulario
         document.getElementById('inventarioForm').addEventListener('submit', function(event) {
             // Prevenir el comportamiento predeterminado del formulario
@@ -120,6 +135,16 @@
             // Recolectar los datos del formulario
             const formData = new FormData(this);
             const datos = Object.fromEntries(formData.entries());
+            
+            // Agregar el tipo de formulario
+            datos.type = "inventario";
+            
+            // Asegurarse de que los campos de texto estén en mayúsculas
+            for (const key in datos) {
+                if (typeof datos[key] === 'string') {
+                    datos[key] = datos[key].toUpperCase();
+                }
+            }
             
             // Enviar los datos como JSON mediante fetch
             fetch('https://hook.us2.make.com/URL_DE_MAKE_AQUI', {

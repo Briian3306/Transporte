@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Facturas - Sistema de Gestión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="../index.html" class="text-xl font-bold text-gray-800">Sistema de Gestión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Registro de Facturas</h1>
+                    <a href="../index.html" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Volver
+                    </a>
+                </div>
+                
+                <form id="facturasForm" method="POST" action="https://hook.us2.make.com/URL_DE_MAKE_AQUI" class="space-y-6">
+                    <!-- Información de la Factura -->
+                    <div class="bg-gray-50 p-4 rounded-md">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Información de la Factura</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Tipo de Factura -->
+                            <div>
+                                <label for="tipoFactura" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Factura</label>
+                                <select id="tipoFactura" name="tipoFactura" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Seleccione un tipo</option>
+                                    <option value="recapado">Recapado</option>
+                                    <option value="nuevo">Neumático Nuevo</option>
+                                    <option value="alineacion">Alineación</option>
+                                </select>
+                            </div>
+
+                            <!-- Número de Factura -->
+                            <div>
+                                <label for="numeroFactura" class="block text-sm font-medium text-gray-700 mb-1">Número de Factura</label>
+                                <input type="text" id="numeroFactura" name="numeroFactura" placeholder="0000A00000000" required pattern="[0-9]{4}[A-Z][0-9]{8}" title="Formato: 0000A00000000" class="uppercase w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <p class="text-xs text-gray-500 mt-1">Formato: 0000A00000000</p>
+                            </div>
+                            
+                            <!-- Fecha de Factura -->
+                            <div>
+                                <label for="fechaFactura" class="block text-sm font-medium text-gray-700 mb-1">Fecha de Factura</label>
+                                <input type="date" id="fechaFactura" name="fechaFactura" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Proveedor -->
+                            <div>
+                                <label for="proveedor" class="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
+                                <input type="text" id="proveedor" name="proveedor" required class="uppercase w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+
+                            <!-- Campos específicos para Recapados -->
+                            <div id="camposRecapado" class="hidden">
+                                <div>
+                                    <label for="totalEnviadas" class="block text-sm font-medium text-gray-700 mb-1">Total de Neumáticos Enviados</label>
+                                    <input type="number" id="totalEnviadas" name="totalEnviadas" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label for="totalRechazadas" class="block text-sm font-medium text-gray-700 mb-1">Total de Neumáticos Rechazados</label>
+                                    <input type="number" id="totalRechazadas" name="totalRechazadas" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            
+                            <!-- Detalle -->
+                            <div class="md:col-span-2">
+                                <label for="detalle" class="block text-sm font-medium text-gray-700 mb-1">Detalle</label>
+                                <textarea id="detalle" name="detalle" rows="2" class="uppercase w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detalles Específicos por Tipo -->
+                    <div id="detallesRecapado" class="bg-gray-50 p-4 rounded-md hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold text-gray-700">Detalles de Recapados</h2>
+                            <button type="button" id="agregarRecapado" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Agregar Recapado
+                            </button>
+                        </div>
+                        <div id="itemsRecapado" class="space-y-4">
+                            <div class="relative">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white rounded-lg shadow-sm">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Número de Neumático</label>
+                                        <input type="text" name="recapado_numero[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Número de Serie/DOT</label>
+                                        <input type="text" name="recapado_serie[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Banda Utilizada</label>
+                                        <input type="text" name="recapado_banda[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Importe Neto</label>
+                                        <div class="relative rounded-md shadow-sm">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span class="text-gray-500 sm:text-sm">$</span>
+                                            </div>
+                                            <input type="number" name="recapado_importe[]" min="0" step="0.01" class="w-full pl-7 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="calcularImporteTotal()">
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="absolute -right-2 -top-2 inline-flex items-center justify-center p-1.5 border border-transparent text-sm font-medium rounded-full text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" onclick="this.closest('.relative').remove(); calcularImporteTotal();" title="Eliminar item">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="detallesNuevo" class="bg-gray-50 p-4 rounded-md hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold text-gray-700">Detalles de Neumáticos Nuevos</h2>
+                            <button type="button" id="agregarNuevo" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Agregar Neumático
+                            </button>
+                        </div>
+                        <div id="itemsNuevo" class="space-y-4">
+                            <div class="relative">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-white rounded-lg shadow-sm">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+                                        <input type="text" name="nuevo_marca[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
+                                        <input type="text" name="nuevo_modelo[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Medida</label>
+                                        <input type="text" name="nuevo_medida[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                                        <input type="number" name="nuevo_cantidad[]" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="calcularImporteTotal()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Precio Unitario</label>
+                                        <div class="relative rounded-md shadow-sm">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span class="text-gray-500 sm:text-sm">$</span>
+                                            </div>
+                                            <input type="number" name="nuevo_precio[]" min="0" step="0.01" class="w-full pl-7 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="calcularImporteTotal()">
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="absolute -right-2 -top-2 inline-flex items-center justify-center p-1.5 border border-transparent text-sm font-medium rounded-full text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" onclick="this.closest('.relative').remove(); calcularImporteTotal();" title="Eliminar item">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="detallesAlineacion" class="bg-gray-50 p-4 rounded-md hidden">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Detalles de Alineación</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Descripción del Servicio</label>
+                                <textarea name="alineacion_descripcion" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Importe Neto</label>
+                                <div class="relative rounded-md shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 sm:text-sm">$</span>
+                                    </div>
+                                    <input type="number" name="alineacion_importe" min="0" step="0.01" class="w-full pl-7 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="calcularImporteTotal()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección de Importes Fija -->
+                    <div class="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 p-4 z-50">
+                        <div class="max-w-7xl mx-auto">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <!-- Importe Neto -->
+                                <div>
+                                    <label for="importeNeto" class="block text-sm font-medium text-gray-700 mb-1">Importe Neto</label>
+                                    <div class="relative rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="text-gray-500 sm:text-sm">$</span>
+                                        </div>
+                                        <input type="number" id="importeNeto" name="importeNeto" min="0" step="0.01" required class="w-full pl-7 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                
+                                <!-- IVA -->
+                                <div>
+                                    <label for="iva" class="block text-sm font-medium text-gray-700 mb-1">IVA</label>
+                                    <div class="relative rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="text-gray-500 sm:text-sm">$</span>
+                                        </div>
+                                        <input type="number" id="iva" name="iva" min="0" step="0.01" required class="w-full pl-7 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="calcularImporteTotal()">
+                                    </div>
+                                </div>
+                                
+                                <!-- IIBB -->
+                                <div>
+                                    <label for="iibb" class="block text-sm font-medium text-gray-700 mb-1">IIBB</label>
+                                    <div class="relative rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="text-gray-500 sm:text-sm">$</span>
+                                        </div>
+                                        <input type="number" id="iibb" name="iibb" min="0" step="0.01" required class="w-full pl-7 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="calcularImporteTotal()">
+                                    </div>
+                                </div>
+                                
+                                <!-- Importe Total -->
+                                <div>
+                                    <label for="importeTotal" class="block text-sm font-medium text-gray-700 mb-1">Importe Total</label>
+                                    <div class="relative rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="text-gray-500 sm:text-sm">$</span>
+                                        </div>
+                                        <input type="number" id="importeTotal" name="importeTotal" readonly class="w-full pl-7 px-3 py-2 bg-gray-100 border border-gray-300 rounded-md">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-300 ease-in-out">
+                                    Registrar Factura
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agregar padding al final para compensar la barra fija -->
+    <div class="h-32"></div>
+
+    <script>
+        // Función para convertir texto a mayúsculas
+        function convertirAMayusculas() {
+            const inputsTexto = document.querySelectorAll('input[type="text"], textarea');
+            inputsTexto.forEach(input => {
+                input.addEventListener('input', function() {
+                    this.value = this.value.toUpperCase();
+                });
+            });
+        }
+        
+        // Función para mostrar/ocultar secciones según el tipo de factura
+        function toggleSeccionesFactura() {
+            const tipoFactura = document.getElementById('tipoFactura').value;
+            const secciones = {
+                recapado: document.getElementById('detallesRecapado'),
+                nuevo: document.getElementById('detallesNuevo'),
+                alineacion: document.getElementById('detallesAlineacion')
+            };
+            const camposRecapado = document.getElementById('camposRecapado');
+
+            // Ocultar todas las secciones
+            Object.values(secciones).forEach(seccion => {
+                seccion.classList.add('hidden');
+            });
+
+            // Mostrar/ocultar campos de recapado
+            camposRecapado.classList.toggle('hidden', tipoFactura !== 'recapado');
+
+            // Mostrar la sección seleccionada
+            if (tipoFactura && secciones[tipoFactura]) {
+                secciones[tipoFactura].classList.remove('hidden');
+            }
+        }
+        
+        // Función para calcular el importe total
+        function calcularImporteTotal() {
+            let totalNeto = 0;
+            const tipoFactura = document.getElementById('tipoFactura').value;
+
+            switch(tipoFactura) {
+                case 'recapado':
+                    // Sumar importes de recapados
+                    document.querySelectorAll('input[name="recapado_importe[]"]').forEach(input => {
+                        totalNeto += parseFloat(input.value) || 0;
+                    });
+                    break;
+
+                case 'nuevo':
+                    // Sumar importes de neumáticos nuevos
+                    const precios = document.querySelectorAll('input[name="nuevo_precio[]"]');
+                    const cantidades = document.querySelectorAll('input[name="nuevo_cantidad[]"]');
+                    
+                    for (let i = 0; i < precios.length; i++) {
+                        const precio = parseFloat(precios[i].value) || 0;
+                        const cantidad = parseInt(cantidades[i].value) || 0;
+                        totalNeto += precio * cantidad;
+                    }
+                    break;
+
+                case 'alineacion':
+                    // Importe de alineación
+                    totalNeto = parseFloat(document.querySelector('input[name="alineacion_importe"]').value) || 0;
+                    break;
+            }
+
+            // Actualizar el campo de importe neto
+            document.getElementById('importeNeto').value = totalNeto.toFixed(2);
+
+            // Calcular IVA y IIBB
+            const iva = parseFloat(document.getElementById('iva').value) || 0;
+            const iibb = parseFloat(document.getElementById('iibb').value) || 0;
+            
+            // Calcular total final
+            const total = totalNeto + iva + iibb;
+            document.getElementById('importeTotal').value = total.toFixed(2);
+        }
+        
+        // Agregar evento para validar el formato de factura
+        function validarNumeroFactura() {
+            const inputFactura = document.getElementById('numeroFactura');
+            const regex = /^[0-9]{4}[A-Z][0-9]{8}$/;
+            
+            inputFactura.addEventListener('input', function() {
+                if (this.value && !regex.test(this.value)) {
+                    this.setCustomValidity('El número de factura debe tener el formato 0000A00000000');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        }
+        
+        // Función para aplicar máscara al número de factura
+        function aplicarMascaraFactura() {
+            const inputFactura = document.getElementById('numeroFactura');
+            
+            inputFactura.addEventListener('input', function(e) {
+                let valor = this.value.toUpperCase();
+                let valorFiltrado = '';
+                
+                // Eliminar caracteres no válidos
+                for (let i = 0; i < valor.length && i < 13; i++) {
+                    // Posición 4 debe ser una letra
+                    if (i === 4) {
+                        // Si es un número, conservar lo anterior y agregar nada
+                        if (/[A-Z]/.test(valor[i])) {
+                            valorFiltrado += valor[i];
+                        } else if (/[a-z]/.test(valor[i])) {
+                            valorFiltrado += valor[i].toUpperCase();
+                        } else if (valor.length > 4) {
+                            // Si no es letra y hay más caracteres, buscar la primera letra
+                            let encontrada = false;
+                            for (let j = i; j < valor.length; j++) {
+                                if (/[A-Za-z]/.test(valor[j])) {
+                                    valorFiltrado += valor[j].toUpperCase();
+                                    encontrada = true;
+                                    break;
+                                }
+                            }
+                            if (!encontrada) {
+                                valorFiltrado += '';
+                            }
+                        }
+                    } 
+                    // Resto de posiciones deben ser números
+                    else if ((i < 4 || i > 4) && /[0-9]/.test(valor[i])) {
+                        valorFiltrado += valor[i];
+                    }
+                }
+                
+                // Establecer el nuevo valor
+                this.value = valorFiltrado;
+                
+                // Formatear visualmente mientras escribe
+                if (valorFiltrado.length > 0) {
+                    let ejemplo = "0000A00000000";
+                    let placeholder = "";
+                    
+                    for (let i = 0; i < ejemplo.length; i++) {
+                        if (i < valorFiltrado.length) {
+                            placeholder += valorFiltrado[i];
+                        } else {
+                            if (i === 4) {
+                                placeholder += "A";
+                            } else {
+                                placeholder += "0";
+                            }
+                        }
+                    }
+                    
+                    this.placeholder = placeholder;
+                } else {
+                    this.placeholder = "0000A00000000";
+                }
+            });
+            
+            // Añadir evento de focus para mostrar mejor la máscara
+            inputFactura.addEventListener('focus', function() {
+                if (!this.value) {
+                    this.placeholder = "0000A00000000";
+                }
+            });
+        }
+        
+        // Función para agregar nuevo item de recapado
+        function agregarItemRecapado() {
+            const container = document.getElementById('itemsRecapado');
+            const nuevoItem = document.createElement('div');
+            nuevoItem.className = 'relative';
+            nuevoItem.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white rounded-lg shadow-sm">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Número de Neumático</label>
+                        <input type="text" name="recapado_numero[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Número de Serie/DOT</label>
+                        <input type="text" name="recapado_serie[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Banda Utilizada</label>
+                        <input type="text" name="recapado_banda[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Importe Neto</label>
+                        <div class="relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            <input type="number" name="recapado_importe[]" min="0" step="0.01" class="w-full pl-7 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="calcularImporteTotal()">
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="absolute -right-2 -top-2 inline-flex items-center justify-center p-1.5 border border-transparent text-sm font-medium rounded-full text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" onclick="this.closest('.relative').remove(); calcularImporteTotal();" title="Eliminar item">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            `;
+            container.appendChild(nuevoItem);
+        }
+
+        // Función para agregar nuevo item de neumático nuevo
+        function agregarItemNuevo() {
+            const container = document.getElementById('itemsNuevo');
+            const nuevoItem = document.createElement('div');
+            nuevoItem.className = 'relative';
+            nuevoItem.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-white rounded-lg shadow-sm">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+                        <input type="text" name="nuevo_marca[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
+                        <input type="text" name="nuevo_modelo[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Medida</label>
+                        <input type="text" name="nuevo_medida[]" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                        <input type="number" name="nuevo_cantidad[]" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="calcularImporteTotal()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Precio Unitario</label>
+                        <div class="relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            <input type="number" name="nuevo_precio[]" min="0" step="0.01" class="w-full pl-7 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="calcularImporteTotal()">
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="absolute -right-2 -top-2 inline-flex items-center justify-center p-1.5 border border-transparent text-sm font-medium rounded-full text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" onclick="this.closest('.relative').remove(); calcularImporteTotal();" title="Eliminar item">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            `;
+            container.appendChild(nuevoItem);
+        }
+        
+        // Inicializar las funciones cuando el DOM esté cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aplicar conversión a mayúsculas
+            convertirAMayusculas();
+            
+            // Validar formato de factura
+            validarNumeroFactura();
+            
+            // Aplicar máscara al número de factura
+            aplicarMascaraFactura();
+            
+            // Calcular importe total al cambiar cualquier valor
+            const camposImporte = ['importeNeto', 'iva', 'iibb'];
+            camposImporte.forEach(campo => {
+                document.getElementById(campo).addEventListener('input', calcularImporteTotal);
+            });
+            
+            // Agregar evento para el tipo de factura
+            document.getElementById('tipoFactura').addEventListener('change', toggleSeccionesFactura);
+            
+            // Agregar eventos para los botones de agregar items
+            document.getElementById('agregarRecapado').addEventListener('click', agregarItemRecapado);
+            document.getElementById('agregarNuevo').addEventListener('click', agregarItemNuevo);
+            
+            // Agregar eventos para calcular importes
+            document.querySelectorAll('input[name="recapado_importe[]"], input[name="nuevo_precio[]"], input[name="nuevo_cantidad[]"], input[name="alineacion_importe"]').forEach(input => {
+                input.addEventListener('input', calcularImporteTotal);
+            });
+            
+            // Validar el formulario antes de enviar
+            document.getElementById('facturasForm').addEventListener('submit', function(event) {
+                // Prevenir el comportamiento predeterminado del formulario
+                event.preventDefault();
+                
+                // Recolectar los datos del formulario
+                const formData = new FormData(this);
+                const datos = Object.fromEntries(formData.entries());
+                
+                // Agregar el tipo de formulario
+                datos.type = "factura";
+                
+                // Convertir valores numéricos
+                ['importeNeto', 'iva', 'iibb', 'importeTotal'].forEach(campo => {
+                    if (datos[campo]) {
+                        datos[campo] = parseFloat(datos[campo]);
+                    }
+                });
+
+                // Estructurar los items según el tipo de factura
+                const tipoFactura = datos.tipoFactura;
+                datos.recapado = [];
+                datos.nuevos = [];
+                datos.detalles = []; // Array para todos los detalles en formato de filas
+
+                switch(tipoFactura) {
+                    case 'recapado':
+                        // Recolectar items de recapado
+                        const numeros = formData.getAll('recapado_numero[]');
+                        const series = formData.getAll('recapado_serie[]');
+                        const bandas = formData.getAll('recapado_banda[]');
+                        const importes = formData.getAll('recapado_importe[]');
+
+                        for (let i = 0; i < numeros.length; i++) {
+                            const item = {
+                                numero: numeros[i],
+                                serie: series[i],
+                                banda: bandas[i],
+                                importe: parseFloat(importes[i]) || 0
+                            };
+                            datos.recapado.push(item);
+                            
+                            // Agregar como fila para sheets
+                            datos.detalles.push({
+                                tipo: 'recapado',
+                                factura: datos.numeroFactura,
+                                fecha: datos.fechaFactura,
+                                proveedor: datos.proveedor,
+                                numero_neumatico: item.numero,
+                                serie_dot: item.serie,
+                                banda: item.banda,
+                                importe: item.importe,
+                                marca: '',
+                                modelo: '',
+                                medida: '',
+                                cantidad: '',
+                                precio_unitario: ''
+                            });
+                        }
+                        break;
+
+                    case 'nuevo':
+                        // Recolectar items de neumáticos nuevos
+                        const marcas = formData.getAll('nuevo_marca[]');
+                        const modelos = formData.getAll('nuevo_modelo[]');
+                        const medidas = formData.getAll('nuevo_medida[]');
+                        const cantidades = formData.getAll('nuevo_cantidad[]');
+                        const precios = formData.getAll('nuevo_precio[]');
+
+                        for (let i = 0; i < marcas.length; i++) {
+                            const item = {
+                                marca: marcas[i],
+                                modelo: modelos[i],
+                                medida: medidas[i],
+                                cantidad: parseInt(cantidades[i]) || 0,
+                                precio: parseFloat(precios[i]) || 0
+                            };
+                            datos.nuevos.push(item);
+                            
+                            // Agregar como fila para sheets
+                            datos.detalles.push({
+                                tipo: 'nuevo',
+                                factura: datos.numeroFactura,
+                                fecha: datos.fechaFactura,
+                                proveedor: datos.proveedor,
+                                numero_neumatico: '',
+                                serie_dot: '',
+                                banda: '',
+                                importe: item.cantidad * item.precio,
+                                marca: item.marca,
+                                modelo: item.modelo,
+                                medida: item.medida,
+                                cantidad: item.cantidad,
+                                precio_unitario: item.precio
+                            });
+                        }
+                        break;
+
+                    case 'alineacion':
+                        // Para alineación, solo agregar la descripción como item
+                        datos.recapado = [];
+                        datos.nuevos = [];
+                        
+                        // Agregar como fila para sheets
+                        datos.detalles.push({
+                            tipo: 'alineacion',
+                            factura: datos.numeroFactura,
+                            fecha: datos.fechaFactura,
+                            proveedor: datos.proveedor,
+                            numero_neumatico: '',
+                            serie_dot: '',
+                            banda: '',
+                            importe: parseFloat(datos.alineacion_importe) || 0,
+                            marca: '',
+                            modelo: '',
+                            medida: '',
+                            cantidad: '',
+                            precio_unitario: '',
+                            descripcion: datos.alineacion_descripcion
+                        });
+                        break;
+                }
+                
+                // Asegurarse de que los campos de texto estén en mayúsculas
+                for (const key in datos) {
+                    if (typeof datos[key] === 'string') {
+                        datos[key] = datos[key].toUpperCase();
+                    }
+                }
+                
+                // Enviar los datos como JSON mediante fetch
+                fetch('https://hook.us2.make.com/d8sazy9xs6bivvxwftbfogqv1pcmkqn8', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(datos)
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Mostrar mensaje de éxito
+                        alert('Factura registrada correctamente');
+                        // Reiniciar el formulario
+                        document.getElementById('facturasForm').reset();
+                        // Ocultar campos de recapados
+                        document.getElementById('camposRecapado').classList.add('hidden');
+                        // Reiniciar importe total
+                        document.getElementById('importeTotal').value = '';
+                    } else {
+                        // Mostrar mensaje de error
+                        alert('Error al registrar la factura. Por favor, inténtelo de nuevo.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al registrar la factura. Por favor, inténtelo de nuevo.');
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

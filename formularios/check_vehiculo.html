@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check de Verificación de Vehículo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print {
+                display: none;
+            }
+            button {
+                display: none;
+            }
+        }
+        /* Estilo para input radio personalizado más grande y accesible en móviles */
+        .radio-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+        }
+        .radio-container input[type="radio"] {
+            transform: scale(1.5);
+            margin: 0;
+            cursor: pointer;
+        }
+        /* Mejora la experiencia táctil */
+        .touch-target {
+            min-height: 44px;
+        }
+        @media (max-width: 640px) {
+            .table-scroll {
+                max-height: 70vh;
+                overflow-y: auto;
+            }
+            .touch-target {
+                min-height: 48px;
+            }
+            .radio-container input[type="radio"] {
+                transform: scale(1.8);
+            }
+        }
+        /* Espacio para los botones flotantes en móvil */
+        .content-wrapper {
+            padding-bottom: 120px; /* Espacio para los botones flotantes en móvil */
+        }
+        @media (min-width: 768px) {
+            .content-wrapper {
+                padding-bottom: 0; /* Sin padding en desktop */
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-2 sm:p-4">
+    <form id="formVehiculo" method="post" action="#" class="max-w-6xl mx-auto content-wrapper">
+        <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-300">
+            <!-- Encabezado - Responsive -->
+            <div class="flex flex-col md:flex-row border-b border-gray-300">
+                <div class="w-full md:w-1/5 p-3 md:p-4 border-b md:border-b-0 md:border-r border-gray-300 flex flex-col items-center justify-center">
+                    <div class="text-center mt-2 font-semibold">TRANSPORTE IBARRA S.A.</div>
+                </div>
+                <div class="w-full md:w-3/5 p-3 md:p-4 border-b md:border-b-0 md:border-r border-gray-300 flex items-center justify-center">
+                    <h1 class="text-lg md:text-xl font-bold text-center">CHECK DE VERIFICACIÓN DE VEHÍCULO</h1>
+                </div>
+                <div class="w-full md:w-1/5 p-3 md:p-4 flex items-center justify-center">
+                    <div class="text-lg md:text-xl font-bold">FORMULARIO A1</div>
+                </div>
+            </div>
+
+            <!-- Información básica - Responsive -->
+            <div class="flex flex-col md:flex-row border-b border-gray-300">
+                <div class="w-full md:w-1/4 p-2 md:p-4 bg-gray-50 font-bold flex items-center justify-center md:justify-start border-b md:border-b-0 md:border-r border-gray-300">FECHA Y HORA</div>
+                <div class="w-full md:w-1/4 p-2 md:p-4 border-b md:border-b-0 md:border-r border-gray-300">
+                    <input type="datetime-local" name="fechaHora" id="fechaHora" required 
+                          class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target">
+                </div>
+                <div class="w-full md:w-1/4 p-2 md:p-4 bg-gray-50 font-bold flex items-center justify-center md:justify-start border-b md:border-b-0 md:border-r border-gray-300">CHOFER</div>
+                <div class="w-full md:w-1/4 p-2 md:p-4">
+                    <input type="text" name="chofer" id="chofer" required 
+                          class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target">
+                </div>
+            </div>
+            <div class="flex flex-col md:flex-row border-b border-gray-300">
+                <div class="w-full md:w-1/4 p-2 md:p-4 bg-gray-50 font-bold flex items-center justify-center md:justify-start border-b md:border-b-0 md:border-r border-gray-300">TRACTOR</div>
+                <div class="w-full md:w-1/4 p-2 md:p-4 border-b md:border-b-0 md:border-r border-gray-300">
+                    <input type="text" name="tractor" id="tractor" required 
+                          class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target">
+                </div>
+                <div class="w-full md:w-1/4 p-2 md:p-4 bg-gray-50 font-bold flex items-center justify-center md:justify-start border-b md:border-b-0 md:border-r border-gray-300">SEMI</div>
+                <div class="w-full md:w-1/4 p-2 md:p-4">
+                    <input type="text" name="semi" id="semi" required 
+                          class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target">
+                </div>
+            </div>
+
+            <!-- Título de sección -->
+            <div class="p-3 md:p-4 text-center font-bold bg-gray-200 border-b border-gray-300">
+                INSPECCIÓN VEHICULAR
+            </div>
+
+            <!-- Contenedor dinámico para las secciones -->
+            <div id="secciones-container">
+                <!-- Las secciones se generarán dinámicamente desde el JSON -->
+            </div>
+            
+            <!-- Mensaje de estado de completado -->
+            <div id="status-bar" class="p-3 text-center bg-gray-100 border-t border-gray-300 hidden">
+                <span id="status-message" class="font-medium"></span>
+                <div class="w-full bg-gray-300 rounded-full h-4 mt-2">
+                    <div id="progress-bar" class="bg-green-600 h-4 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Botones flotantes para móvil y fijos para desktop -->
+        <div class="fixed bottom-0 left-0 w-full p-3 bg-white border-t border-gray-300 shadow-lg md:shadow-none md:static md:mt-6 md:flex md:justify-between no-print z-10">
+            <button type="submit" class="w-full md:w-auto bg-green-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-green-700 transition-colors mb-2 md:mb-0 touch-target">
+                Guardar Inspección
+            </button>
+            <div class="flex space-x-2 w-full md:w-auto">
+                <button type="button" id="btnImprimir" class="w-1/2 md:w-auto bg-blue-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors touch-target">
+                    Imprimir
+                </button>
+                <button type="button" id="btnExpandirTodo" class="w-1/2 md:w-auto bg-gray-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-gray-700 transition-colors touch-target">
+                    Expandir Todo
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        // Datos para generar las secciones del formulario
+        const datosFormulario = {
+            secciones: [
+                {
+                    id: "sistemaElectrico",
+                    titulo: "1-SISTEMA ELÉCTRICO",
+                    tipo: "check",
+                    items: [
+                        { id: "faros", nombre: "Faros delanteros y traseros" },
+                        { id: "luces_giro", nombre: "Luces de giro" },
+                        { id: "luces_posicion", nombre: "Luces de posición" },
+                        { id: "limpiaparabrisas", nombre: "Limpiaparabrisas" },
+                        { id: "luces_freno", nombre: "Luces de freno (stop)" },
+                        { id: "alarma_retroceso", nombre: "Alarma y luz de retroceso" },
+                        { id: "bocina", nombre: "Bocina" },
+                        { id: "tablero", nombre: "Tablero/instrumentos" },
+                        { id: "balizas", nombre: "Balizas" },
+                        { id: "desempanador", nombre: "Desempañador" },
+                        { id: "velocimetro", nombre: "Velocímetro" }
+                    ]
+                },
+                {
+                    id: "seccion_tractor",
+                    titulo: "2-TRACTOR",
+                    tipo: "check",
+                    items: [
+                        { id: "manijas", nombre: "Manijas,trabas,alzavidrios" },
+                        { id: "puertas", nombre: "Puertas y asientos" },
+                        { id: "estribos", nombre: "Estribos" },
+                        { id: "espejos", nombre: "Espejos retrovisores" },
+                        { id: "parabrisas", nombre: "Parabrisas/luneta" },
+                        { id: "apoya_cabeza", nombre: "Apoya cabeza" },
+                        { id: "cinturon", nombre: "Cinturón de seguridad" },
+                        { id: "calefaccion", nombre: "Calefacción" },
+                        { id: "aire", nombre: "Aire acondicionado" },
+                        { id: "iluminacion", nombre: "Iluminación interior" },
+                        { id: "piso", nombre: "Piso" },
+                        { id: "guardabarro", nombre: "Guardabarro" },
+                        { id: "paragolpes", nombre: "Paragolpes completos" },
+                        { id: "tanque", nombre: "Tanque de combustible" },
+                        { id: "cubiertas", nombre: "Cubiertas" }
+                    ]
+                },
+                {
+                    id: "elementos_carga",
+                    titulo: "3-ELEMENTOS DE CARGA",
+                    tipo: "cantidad",
+                    items: [
+                        { id: "juego_arcos", nombre: "JUEGO DE ARCOS" },
+                        { id: "cadenas", nombre: "CADENAS" },
+                        { id: "cantoneras", nombre: "CANTONERAS" },
+                        { id: "cunas", nombre: "CUÑAS" },
+                        { id: "estaqueras", nombre: "ESTAQUERAS" },
+                        { id: "fajas_chicas", nombre: "JUEGO DE FAJAS CHICAS" },
+                        { id: "fajas_anchas", nombre: "JUEGO DE FAJAS ANCHAS" },
+                        { id: "geomanta", nombre: "GEOMANTA" },
+                        { id: "kit_antiderrame", nombre: "KIT ANTIDERRAME" },
+                        { id: "lona_chica", nombre: "LONA CHICA" },
+                        { id: "lona_grande", nombre: "LONA GRANDE" },
+                        { id: "ponchos_bobina", nombre: "PONCHOS BOBINA" },
+                        { id: "ponchos_bobinon", nombre: "PONCHOS BOBINÓN" },
+                        { id: "tacos_finos", nombre: "TACOS FINOS" },
+                        { id: "tacos_bobina", nombre: "TACOS BOBINA" },
+                        { id: "soga_precinto", nombre: "SOGA PRECINTO" }
+                    ]
+                }
+            ]
+        };
+
+        // Función para generar secciones a partir del JSON
+        function generarSecciones(datos) {
+            const contenedor = document.getElementById('secciones-container');
+            contenedor.innerHTML = '';
+            
+            datos.secciones.forEach(seccion => {
+                let contenidoTabla = '';
+                
+                if (seccion.tipo === "check") {
+                    contenidoTabla = `
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="border border-gray-300 p-2 md:p-3 text-left">ITEMS A CONTROLAR</th>
+                                <th class="border border-gray-300 p-2 md:p-3 text-center w-10 md:w-12">SI</th>
+                                <th class="border border-gray-300 p-2 md:p-3 text-center w-10 md:w-12">NO</th>
+                                <th class="border border-gray-300 p-2 md:p-3 text-center w-10 md:w-12">N/A</th>
+                                <th class="border border-gray-300 p-2 md:p-3 text-left">OBSERVACIONES</th>
+                                <th class="border border-gray-300 p-2 md:p-3 text-left">FECHA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${seccion.items.map(item => `
+                                <tr class="item-row touch-target" data-item="${item.id}">
+                                    <td class="border border-gray-300 p-2 md:p-3">${item.nombre}</td>
+                                    <td class="border border-gray-300 p-1 text-center">
+                                        <div class="radio-container">
+                                            <input type="radio" name="${item.id}" value="si" required
+                                                   class="radio-input" data-seccion="${seccion.id}">
+                                        </div>
+                                    </td>
+                                    <td class="border border-gray-300 p-1 text-center">
+                                        <div class="radio-container">
+                                            <input type="radio" name="${item.id}" value="no"
+                                                   class="radio-input" data-seccion="${seccion.id}">
+                                        </div>
+                                    </td>
+                                    <td class="border border-gray-300 p-1 text-center">
+                                        <div class="radio-container">
+                                            <input type="radio" name="${item.id}" value="na"
+                                                   class="radio-input" data-seccion="${seccion.id}">
+                                        </div>
+                                    </td>
+                                    <td class="border border-gray-300 p-2 md:p-3">
+                                        <textarea name="obs_${item.id}" 
+                                                  class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
+                                    </td>
+                                    <td class="border border-gray-300 p-2 md:p-3">
+                                        <input type="date" name="corr_${item.id}" 
+                                               class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+                } else if (seccion.tipo === "cantidad") {
+                    contenidoTabla = `
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="border border-gray-300 p-2 md:p-3 text-left">ITEMS A CONTROLAR</th>
+                                <th class="border border-gray-300 p-2 md:p-3 text-center w-24 md:w-32">CANTIDAD</th>
+                                <th class="border border-gray-300 p-2 md:p-3 text-left">OBSERVACIONES</th>
+                                <th class="border border-gray-300 p-2 md:p-3 text-left">FECHA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${seccion.items.map(item => `
+                                <tr class="item-row touch-target" data-item="${item.id}">
+                                    <td class="border border-gray-300 p-2 md:p-3">${item.nombre}</td>
+                                    <td class="border border-gray-300 p-2 md:p-3">
+                                        <input type="number" name="${item.id}" min="0" required
+                                               class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm cantidad-input"
+                                               data-seccion="${seccion.id}">
+                                    </td>
+                                    <td class="border border-gray-300 p-2 md:p-3">
+                                        <textarea name="obs_${item.id}" 
+                                                  class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
+                                    </td>
+                                    <td class="border border-gray-300 p-2 md:p-3">
+                                        <input type="date" name="corr_${item.id}" 
+                                               class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    `;
+                }
+
+                const seccionHTML = `
+                    <div class="seccion mb-2 md:mb-4 section-container" data-id="${seccion.id}">
+                        <div class="bg-gray-100 p-3 md:p-4 cursor-pointer flex justify-between items-center section-header touch-target" data-section="${seccion.id}">
+                            <h2 class="font-bold">${seccion.titulo}</h2>
+                            <div class="flex items-center">
+                                <span class="progress-indicator text-xs text-gray-600 mr-2" id="progress-${seccion.id}">0/${seccion.items.length}</span>
+                                <span class="text-xl font-bold toggle-icon">+</span>
+                            </div>
+                        </div>
+                        <div class="section-content hidden" id="${seccion.id}">
+                            <div class="overflow-x-auto table-scroll">
+                                <table class="w-full border-collapse">
+                                    ${contenidoTabla}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                contenedor.innerHTML += seccionHTML;
+            });
+        }
+
+        // Cargar datos de JSON personalizado
+        function cargarDatosJSON(jsonURL) {
+            fetch(jsonURL)
+                .then(response => response.json())
+                .then(data => {
+                    generarSecciones(data);
+                    configurarSecciones();
+                    configurarRadioInputs();
+                    actualizarProgreso();
+                })
+                .catch(error => {
+                    console.error('Error al cargar el JSON:', error);
+                    // Si falla, usamos los datos predeterminados
+                    generarSecciones(datosFormulario);
+                    configurarSecciones();
+                    configurarRadioInputs();
+                    actualizarProgreso();
+                });
+        }
+
+        // Función para configurar las secciones desplegables
+        function configurarSecciones() {
+            // Configurar eventos para las secciones desplegables
+            const sectionHeaders = document.querySelectorAll('.section-header');
+            
+            sectionHeaders.forEach(header => {
+                header.addEventListener('click', function() {
+                    const sectionId = this.getAttribute('data-section');
+                    const content = document.getElementById(sectionId);
+                    const toggleIcon = this.querySelector('.toggle-icon');
+                    
+                    // Toggle active class
+                    content.classList.toggle('hidden');
+                    toggleIcon.textContent = content.classList.contains('hidden') ? '+' : '-';
+                });
+            });
+        }
+
+        // Configurar eventos para radios y mejorar UX móvil
+        function configurarRadioInputs() {
+            const radios = document.querySelectorAll('.radio-input');
+            const cantidadInputs = document.querySelectorAll('.cantidad-input');
+            
+            radios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const row = this.closest('.item-row');
+                    row.classList.add('bg-green-50');
+                    actualizarProgresoSeccion(this.getAttribute('data-seccion'));
+                    actualizarProgreso();
+                });
+                
+                const container = radio.closest('.radio-container');
+                container.addEventListener('click', function(e) {
+                    if (e.target !== radio) {
+                        radio.checked = true;
+                        const event = new Event('change');
+                        radio.dispatchEvent(event);
+                    }
+                });
+            });
+
+            cantidadInputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    const row = this.closest('.item-row');
+                    if (this.value && this.value > 0) {
+                        row.classList.add('bg-green-50');
+                    } else {
+                        row.classList.remove('bg-green-50');
+                    }
+                    actualizarProgresoSeccion(this.getAttribute('data-seccion'));
+                    actualizarProgreso();
+                });
+            });
+        }
+        
+        // Actualizar progreso de una sección específica
+        function actualizarProgresoSeccion(seccionId) {
+            const seccion = document.getElementById(seccionId);
+            const totalItems = seccion.querySelectorAll('.item-row').length;
+            const completadosRadio = seccion.querySelectorAll('.item-row input[type="radio"]:checked').length;
+            const completadosCantidad = Array.from(seccion.querySelectorAll('.item-row input[type="number"]'))
+                .filter(input => input.value && input.value > 0).length;
+            const completados = completadosRadio + completadosCantidad;
+            
+            const progressIndicator = document.getElementById(`progress-${seccionId}`);
+            if (progressIndicator) {
+                progressIndicator.textContent = `${completados}/${totalItems}`;
+                
+                if (completados === totalItems) {
+                    progressIndicator.classList.add('text-green-600', 'font-bold');
+                    progressIndicator.classList.remove('text-gray-600');
+                    const header = document.querySelector(`.section-header[data-section="${seccionId}"]`);
+                    header.classList.add('bg-green-100');
+                } else {
+                    progressIndicator.classList.remove('text-green-600', 'font-bold');
+                    progressIndicator.classList.add('text-gray-600');
+                    const header = document.querySelector(`.section-header[data-section="${seccionId}"]`);
+                    header.classList.remove('bg-green-100');
+                }
+            }
+        }
+        
+        // Actualizar progreso global del formulario
+        function actualizarProgreso() {
+            const totalItems = document.querySelectorAll('.item-row').length;
+            const completadosRadio = document.querySelectorAll('.item-row input[type="radio"]:checked').length;
+            const completadosCantidad = Array.from(document.querySelectorAll('.item-row input[type="number"]'))
+                .filter(input => input.value && input.value > 0).length;
+            const completados = completadosRadio + completadosCantidad;
+            
+            // Calcular porcentaje
+            const porcentaje = totalItems > 0 ? Math.round((completados / totalItems) * 100) : 0;
+            
+            // Actualizar barra de progreso y mensaje
+            document.getElementById('progress-bar').style.width = `${porcentaje}%`;
+            document.getElementById('status-message').textContent = `Completado: ${porcentaje}% (${completados}/${totalItems} items)`;
+            
+            // Mostrar barra de estado si hay algún progreso
+            if (completados > 0) {
+                document.getElementById('status-bar').classList.remove('hidden');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Generar secciones con los datos predeterminados
+            generarSecciones(datosFormulario);
+            
+            // Configurar secciones desplegables
+            configurarSecciones();
+            
+            // Configurar inputs radio para mejor UX móvil
+            configurarRadioInputs();
+            
+            // Para cargar desde un JSON externo, descomentar:
+            // cargarDatosJSON('ruta/a/tu/datos.json');
+            
+            // Función para imprimir
+            document.getElementById('btnImprimir').addEventListener('click', function() {
+                window.print();
+            });
+            
+            // Función para expandir todas las secciones
+            document.getElementById('btnExpandirTodo').addEventListener('click', function() {
+                const todosLosHeaders = document.querySelectorAll('.section-header');
+                const todasLasSecciones = document.querySelectorAll('.section-content');
+                
+                // Verificar si todas están abiertas o no
+                const todasAbiertas = Array.from(todasLasSecciones).every(seccion => !seccion.classList.contains('hidden'));
+                
+                if (todasAbiertas) {
+                    // Cerrar todas
+                    this.textContent = 'Expandir Todo';
+                    todasLasSecciones.forEach(seccion => {
+                        seccion.classList.add('hidden');
+                    });
+                    document.querySelectorAll('.toggle-icon').forEach(icon => {
+                        icon.textContent = '+';
+                    });
+                } else {
+                    // Abrir todas
+                    this.textContent = 'Contraer Todo';
+                    todasLasSecciones.forEach(seccion => {
+                        seccion.classList.remove('hidden');
+                    });
+                    document.querySelectorAll('.toggle-icon').forEach(icon => {
+                        icon.textContent = '-';
+                    });
+                }
+            });
+
+            // Validar formulario antes de enviar
+            const form = document.getElementById('formVehiculo');
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Validar que todos los campos requeridos estén completos
+                const requiredInputs = document.querySelectorAll('[required]');
+                let isValid = true;
+                let seccionesIncompletas = new Set();
+                
+                requiredInputs.forEach(input => {
+                    if (input.type === 'radio') {
+                        const name = input.name;
+                        const checked = document.querySelector(`input[name="${name}"]:checked`);
+                        if (!checked) {
+                            isValid = false;
+                            // Encontrar la sección que contiene este campo
+                            const seccionElement = input.closest('.section-content');
+                            if (seccionElement) {
+                                seccionesIncompletas.add(seccionElement.id);
+                            }
+                            
+                            // Destacar visualmente
+                            const row = document.querySelector(`[data-item="${name}"]`);
+                            if (row) {
+                                row.classList.add('bg-red-50');
+                                // Hacer scroll hasta el primer elemento con error si es móvil
+                                if (window.innerWidth < 768 && !window.firstErrorScrolled) {
+                                    row.scrollIntoView({behavior: 'smooth', block: 'center'});
+                                    window.firstErrorScrolled = true;
+                                }
+                            }
+                        } else {
+                            // Quitar marca si está checked
+                            const row = document.querySelector(`[data-item="${name}"]`);
+                            if (row) {
+                                row.classList.remove('bg-red-50');
+                            }
+                        }
+                    } else if (!input.value) {
+                        isValid = false;
+                        input.classList.add('border-red-500', 'bg-red-50');
+                        
+                        // Hacer scroll hasta el primer elemento con error
+                        if (!window.firstErrorScrolled) {
+                            input.scrollIntoView({behavior: 'smooth', block: 'center'});
+                            window.firstErrorScrolled = true;
+                        }
+                    } else {
+                        input.classList.remove('border-red-500', 'bg-red-50');
+                    }
+                });
+                
+                // Resetear flag de scroll
+                window.firstErrorScrolled = false;
+                
+                if (!isValid) {
+                    // Mostrar las secciones con campos incompletos
+                    seccionesIncompletas.forEach(seccionId => {
+                        const seccion = document.getElementById(seccionId);
+                        if (seccion.classList.contains('hidden')) {
+                            const header = document.querySelector(`.section-header[data-section="${seccionId}"]`);
+                            header.click();
+                        }
+                    });
+                    
+                    // Mostrar mensaje con feedback más claro
+                    const elementosFaltantes = requiredInputs.length - document.querySelectorAll('[required]:valid').length;
+                    alert(`Por favor complete todos los campos requeridos. Faltan ${elementosFaltantes} elementos.`);
+                    return;
+                }
+                
+                // Crear objeto con todos los datos del formulario
+                const formData = new FormData(form);
+                const formDataObj = {};
+                
+                formData.forEach((value, key) => {
+                    formDataObj[key] = value;
+                });
+                
+                // Convertir a JSON
+                const jsonData = JSON.stringify(formDataObj);
+                console.log('Datos a enviar:', jsonData);
+                
+                // Enviar datos por POST
+                fetch('url_del_servidor', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: jsonData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Inspección guardada correctamente');
+                    console.log('Respuesta del servidor:', data);
+                })
+                .catch(error => {
+                    alert('Error al guardar la inspección');
+                    console.error('Error:', error);
+                });
+            });
+            
+            // Mantener todas las secciones recogidas inicialmente
+            // (No abrir automáticamente la primera sección)
+            
+            // Inicializar contadores de progreso
+            datosFormulario.secciones.forEach(seccion => {
+                actualizarProgresoSeccion(seccion.id);
+            });
+            actualizarProgreso();
+        });
+
+        // Función para añadir una nueva sección al formulario
+        function agregarSeccion(seccionData) {
+            // Añadir la nueva sección al objeto de datos
+            datosFormulario.secciones.push(seccionData);
+            
+            // Regenerar las secciones
+            generarSecciones(datosFormulario);
+            
+            // Reconfigurar eventos de las secciones
+            configurarSecciones();
+            configurarRadioInputs();
+            actualizarProgreso();
+        }
+    </script>
+</body>
+</html> 

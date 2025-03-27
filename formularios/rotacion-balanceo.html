@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotación y Balanceo - Sistema de Gestión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="../index.html" class="text-xl font-bold text-gray-800">Sistema de Gestión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Rotación y Balanceo</h1>
+                    <a href="../index.html" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Volver
+                    </a>
+                </div>
+                
+                <form id="rotacionForm" class="space-y-6">
+                    <!-- Información del Camión -->
+                    <div class="bg-gray-50 p-4 rounded-md">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Información del Camión</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Patente -->
+                            <div>
+                                <label for="patente" class="block text-sm font-medium text-gray-700 mb-1">Patente</label>
+                                <input type="text" id="patente" name="patente" class="uppercase w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Odómetro -->
+                            <div>
+                                <label for="odometro" class="block text-sm font-medium text-gray-700 mb-1">Odómetro</label>
+                                <input type="number" id="odometro" name="odometro" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Fecha -->
+                            <div>
+                                <label for="fecha" class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                                <input type="date" id="fecha" name="fecha" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Servicios Realizados -->
+                    <div class="bg-gray-50 p-4 rounded-md">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Servicios Realizados</h2>
+                        <div class="space-y-4">
+                            <!-- Rotación -->
+                            <div class="flex items-center">
+                                <input type="checkbox" id="rotacion" name="rotacion" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <label for="rotacion" class="ml-2 block text-sm text-gray-700">Rotación de Neumáticos</label>
+                            </div>
+                            
+                            <!-- Balanceo -->
+                            <div class="flex items-center">
+                                <input type="checkbox" id="balanceo" name="balanceo" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <label for="balanceo" class="ml-2 block text-sm text-gray-700">Balanceo</label>
+                            </div>
+                            
+                            <!-- Alineación -->
+                            <div class="flex items-center">
+                                <input type="checkbox" id="alineacion" name="alineacion" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <label for="alineacion" class="ml-2 block text-sm text-gray-700">Alineación</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detalles de la Rotación -->
+                    <div id="detallesRotacion" class="bg-gray-50 p-4 rounded-md hidden">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Detalles de la Rotación</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Posición Inicial -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Posición Inicial</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label for="posicionInicial1" class="block text-sm text-gray-600">Izquierda</label>
+                                        <input type="number" id="posicionInicial1" name="posicionInicial1" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label for="posicionInicial2" class="block text-sm text-gray-600">Derecha</label>
+                                        <input type="number" id="posicionInicial2" name="posicionInicial2" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Posición Final -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Posición Final</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label for="posicionFinal1" class="block text-sm text-gray-600">Izquierda</label>
+                                        <input type="number" id="posicionFinal1" name="posicionFinal1" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label for="posicionFinal2" class="block text-sm text-gray-600">Derecha</label>
+                                        <input type="number" id="posicionFinal2" name="posicionFinal2" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Observaciones -->
+                    <div class="bg-gray-50 p-4 rounded-md">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-3">Observaciones</h2>
+                        <div>
+                            <textarea id="observaciones" name="observaciones" rows="3" class="uppercase w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out">
+                            Registrar Servicio
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Función para convertir textos a mayúsculas
+        function convertirAMayusculas() {
+            const inputsTexto = document.querySelectorAll('input[type="text"], textarea');
+            inputsTexto.forEach(input => {
+                input.addEventListener('input', function() {
+                    this.value = this.value.toUpperCase();
+                });
+            });
+        }
+
+        // Función para mostrar/ocultar detalles de rotación
+        function toggleDetallesRotacion() {
+            const detallesRotacion = document.getElementById('detallesRotacion');
+            const checkboxRotacion = document.getElementById('rotacion');
+            detallesRotacion.classList.toggle('hidden', !checkboxRotacion.checked);
+        }
+
+        // Inicializar cuando el DOM esté cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aplicar conversión a mayúsculas
+            convertirAMayusculas();
+
+            // Event listener para el checkbox de rotación
+            document.getElementById('rotacion').addEventListener('change', toggleDetallesRotacion);
+
+            // Event listener para el formulario
+            document.getElementById('rotacionForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+                
+                const formData = new FormData(this);
+                const datos = Object.fromEntries(formData.entries());
+                
+                // Validar que al menos un servicio esté seleccionado
+                if (!datos.rotacion && !datos.balanceo && !datos.alineacion) {
+                    alert('Por favor, seleccione al menos un servicio a realizar');
+                    return;
+                }
+
+                // Validar campos de rotación si está seleccionada
+                if (datos.rotacion) {
+                    if (!datos.posicionInicial1 || !datos.posicionInicial2 || 
+                        !datos.posicionFinal1 || !datos.posicionFinal2) {
+                        alert('Por favor, complete todas las posiciones de la rotación');
+                        return;
+                    }
+                }
+
+                // Validar campos requeridos
+                if (!datos.patente || !datos.odometro || !datos.fecha) {
+                    alert('Por favor, complete todos los campos requeridos');
+                    return;
+                }
+
+                // Mostrar resumen y confirmar
+                let mensaje = '¿Está seguro de registrar el siguiente servicio?\n\n';
+                mensaje += `Patente: ${datos.patente}\n`;
+                mensaje += `Odómetro: ${datos.odometro}\n`;
+                mensaje += `Fecha: ${datos.fecha}\n\n`;
+                mensaje += 'Servicios:\n';
+                if (datos.rotacion) mensaje += '- Rotación de Neumáticos\n';
+                if (datos.balanceo) mensaje += '- Balanceo\n';
+                if (datos.alineacion) mensaje += '- Alineación\n';
+
+                if (!confirm(mensaje)) {
+                    return;
+                }
+
+                // Enviar los datos
+                try {
+                    const response = await fetch('https://hook.us2.make.com/dywn961dobmvnbo8tifjy49t88g8ib08', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            type: "rotacion-balanceo",
+                            ...datos
+                        })
+                    });
+
+                    if (response.ok) {
+                        alert('¡Servicio registrado correctamente!');
+                        document.getElementById('rotacionForm').reset();
+                        toggleDetallesRotacion();
+                    } else {
+                        alert('Error al registrar el servicio. Por favor, inténtelo de nuevo.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error al registrar el servicio. Por favor, inténtelo de nuevo.');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

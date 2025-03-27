@@ -1,0 +1,36 @@
+{
+    "marcas": {
+        "BRIDGESTONE": {
+            "modelos": ["DUELER", "ECOPIA", "FIREHAWK", "TURANZA", "POTENZA"],
+            "medidas": ["205/55R16", "215/55R17", "225/45R17", "235/75R15", "265/70R16"]
+        },
+        "MICHELIN": {
+            "modelos": ["PRIMACY", "PILOT", "LATITUDE", "DEFENDER", "ENERGY"],
+            "medidas": ["205/55R16", "215/55R17", "225/45R17", "235/75R15", "265/70R16"]
+        },
+        "GOODYEAR": {
+            "modelos": ["EAGLE", "WRANGLER", "ASSURANCE", "DURATRAC", "EFFICIENTGRIP"],
+            "medidas": ["205/55R16", "215/55R17", "225/45R17", "235/75R15", "265/70R16"]
+        },
+        "CONTINENTAL": {
+            "modelos": ["CONTICONTACT", "TERRAINCONTACT", "CONTIPREMIUM", "CONTICROSSCONTACT", "CONTISPORTCONTACT"],
+            "medidas": ["205/55R16", "215/55R17", "225/45R17", "235/75R15", "265/70R16"]
+        },
+        "PIRELLI": {
+            "modelos": ["CINTURATO", "SCORPION", "P ZERO", "DIABLO", "ANGEL"],
+            "medidas": ["205/55R16", "215/55R17", "225/45R17", "235/75R15", "265/70R16"]
+        },
+        "DUNLOP": {
+            "modelos": ["SP SPORT", "GRANDTREK", "SP TOURING", "SP WINTER", "SP SUMMER"],
+            "medidas": ["205/55R16", "215/55R17", "225/45R17", "235/75R15", "265/70R16"]
+        },
+        "YOKOHAMA": {
+            "modelos": ["ADVAN", "GEOLANDAR", "BLUEARTH", "AVID", "PARADA"],
+            "medidas": ["205/55R16", "215/55R17", "225/45R17", "235/75R15", "265/70R16"]
+        },
+        "HANKOOK": {
+            "modelos": ["VENTUS", "DYNAPRO", "OPTIMO", "KINERGY", "WINTER"],
+            "medidas": ["205/55R16", "215/55R17", "225/45R17", "235/75R15", "265/70R16"]
+        }
+    }
+} 
