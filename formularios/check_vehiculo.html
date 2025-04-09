@@ -134,9 +134,42 @@
                 <button type="button" id="btnExpandirTodo" class="w-1/2 md:w-auto bg-gray-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-gray-700 transition-colors touch-target">
                     Expandir Todo
                 </button>
+                <button type="button" id="btnPantallaCompleta" class="w-1/2 md:w-auto bg-indigo-600 text-white p-3 rounded-lg font-bold hover:bg-indigo-700 transition-colors touch-target" title="Pantalla Completa">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                </button>
             </div>
         </div>
     </form>
+
+    <!-- Modal de Opciones de Guardado -->
+    <div id="modalGuardar" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50">
+        <div class="relative mx-auto p-5 border w-11/12 sm:w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Guardar y Generar PDF</h3>
+                <div class="mt-2 px-7 py-3 space-y-3">
+                    <p class="text-sm text-gray-500">
+                        Elige qué hacer con el PDF después de guardar la inspección:
+                    </p>
+                    <button id="btnGuardarCompartir" class="w-full block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Guardar y Compartir
+                    </button>
+                    <button id="btnGuardarAbrir" class="w-full block bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        Guardar y Abrir PDF
+                    </button>
+                    <button id="btnGuardarDescargar" class="w-full block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Solo Guardar (Descargar PDF)
+                    </button>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="btnCancelarModal" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Datos para generar las secciones del formulario
@@ -235,7 +268,8 @@
                         { id: "guantes", nombre: "Guantes" },
                         { id: "chalecoReflectivo", nombre: "Chaleco reflectivo" },
                         { id: "proteccionAuditiva", nombre: "Proteccion auditiva" },
-                        { id: "arnes", nombre: "Arnes" }
+                        { id: "arnes", nombre: "Arnes" },
+                        { id: "mangaAnticorte", nombre: "Guantes/Manga anticorte" }
                     ]
                 },
                 {
@@ -489,6 +523,15 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Cargar fecha y hora actual
+            const fechaHoraInput = document.getElementById('fechaHora');
+            if (fechaHoraInput) {
+                const now = new Date();
+                // Ajustar la zona horaria local para el formato datetime-local
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                fechaHoraInput.value = now.toISOString().slice(0, 16);
+            }
+
             // Generar secciones con los datos predeterminados
             generarSecciones(datosFormulario);
             
@@ -541,8 +584,39 @@
                 }
             });
 
+            // Función para Pantalla Completa
+            const btnPantallaCompleta = document.getElementById('btnPantallaCompleta');
+            const svgExpand = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>`;
+            const svgContract = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l-5 5m0 0l5-5m-5 5v-4m5 4h-4M4 10l5-5m0 0l-5 5m5-5v4M4 4h4m10 10l5 5m0 0l-5-5m5 5v-4m-5 4h4m-4-6l-5-5m0 0l5 5m-5-5v4m5-4h4" /></svg>`;
+
+            if (btnPantallaCompleta) {
+                btnPantallaCompleta.addEventListener('click', function() {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(err => {
+                            alert(`Error al intentar entrar en pantalla completa: ${err.message} (${err.name})`);
+                        });
+                        this.innerHTML = svgContract; // Cambiar a icono de contraer
+                        this.title = 'Salir Pantalla Completa';
+                    } else {
+                        if (document.exitFullscreen) {
+                            document.exitFullscreen();
+                            this.innerHTML = svgExpand; // Cambiar a icono de expandir
+                            this.title = 'Pantalla Completa';
+                        }
+                    }
+                });
+            
+                // Actualizar el icono del botón si se sale de pantalla completa con ESC
+                document.addEventListener('fullscreenchange', () => {
+                    if (!document.fullscreenElement) {
+                        btnPantallaCompleta.innerHTML = svgExpand; 
+                        btnPantallaCompleta.title = 'Pantalla Completa';
+                    }
+                });
+            }
+
             // Función para generar PDF
-            function generarPDF() {
+            function generarPDF(accion = 'download') {
                 // Obtener los datos del formulario
                 const formData = new FormData(document.getElementById('formVehiculo'));
                 const formDataObj = {};
@@ -693,22 +767,70 @@
                 const semi = formDataObj.semi || 'SIN_SEMI';
                 const nombreArchivo = `${fechaFormateada} - ${chofer} - ${tractor} - ${semi}.pdf`;
 
-                // Generar y descargar el PDF
-                pdfMake.createPdf(docDefinition).download(nombreArchivo);
+                // Generar y realizar acción sobre el PDF
+                const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+
+                if (accion === 'share' && navigator.share) {
+                    pdfDocGenerator.getBlob((blob) => {
+                        const file = new File([blob], nombreArchivo, { type: 'application/pdf' });
+                        navigator.share({
+                            title: nombreArchivo,
+                            text: `Check de Vehículo - ${chofer} - ${fechaFormateada}`,
+                            files: [file]
+                        })
+                        .then(() => console.log('Compartido con éxito'))
+                        .catch((error) => {
+                            console.error('Error al compartir:', error);
+                            // Fallback a descarga si falla el share
+                            pdfDocGenerator.download(nombreArchivo);
+                            alert('No se pudo compartir, se descargará el PDF.');
+                        });
+                    });
+                } else if (accion === 'open') {
+                    pdfDocGenerator.open({}, window.open('', '_blank'));
+                } else { // default o share no disponible
+                    pdfDocGenerator.download(nombreArchivo);
+                }
             }
 
             // Evento para el botón de generar PDF manual
-            document.getElementById('btnGenerarPDF').addEventListener('click', function() {
-                generarPDF();
-            });
+            const btnGenerarPDFManual = document.getElementById('btnGenerarPDF');
+            if(btnGenerarPDFManual) {
+                btnGenerarPDFManual.addEventListener('click', function() {
+                    // Podríamos mostrar un modal similar o simplemente descargar/abrir
+                    generarPDF('download'); // Por ejemplo, descarga por defecto
+                });
+            }
 
             // Validar formulario antes de enviar
             const form = document.getElementById('formVehiculo');
             const submitButton = form.querySelector('button[type="submit"]'); // Obtener el botón de guardar
+            const modal = document.getElementById('modalGuardar');
+            const btnGuardarCompartir = document.getElementById('btnGuardarCompartir');
+            const btnGuardarAbrir = document.getElementById('btnGuardarAbrir');
+            const btnGuardarDescargar = document.getElementById('btnGuardarDescargar');
+            const btnCancelarModal = document.getElementById('btnCancelarModal');
+            let accionPDFSeleccionada = 'download'; // Por defecto descarga
             
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
+            // Modificar el listener del botón de submit original
+            submitButton.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevenir envío automático
+                // Mostrar el modal en lugar de enviar
+                modal.classList.remove('hidden'); 
+            });
+
+            // Función para cerrar el modal
+            function cerrarModal() {
+                modal.classList.add('hidden');
+            }
+
+            // Listener para cancelar
+            btnCancelarModal.addEventListener('click', cerrarModal);
+
+            // Función para manejar el proceso de guardado real
+            function procederConGuardado() {
+                cerrarModal(); // Ocultar modal
+
                 // Deshabilitar botón para evitar duplicados
                 submitButton.disabled = true;
                 submitButton.textContent = 'Guardando...'; // Cambiar texto del botón
@@ -725,48 +847,23 @@
                         const checked = document.querySelector(`input[name="${name}"]:checked`);
                         if (!checked) {
                             isValid = false;
-                            // Encontrar la sección que contiene este campo
                             const seccionElement = input.closest('.section-content');
-                            if (seccionElement) {
-                                seccionesIncompletas.add(seccionElement.id);
-                            }
-                            
-                            // Destacar visualmente
+                            if (seccionElement) seccionesIncompletas.add(seccionElement.id);
                             const row = document.querySelector(`[data-item="${name}"]`);
-                            if (row) {
-                                row.classList.add('bg-red-50');
-                                // Hacer scroll hasta el primer elemento con error si es móvil
-                                if (window.innerWidth < 768 && !window.firstErrorScrolled) {
-                                    row.scrollIntoView({behavior: 'smooth', block: 'center'});
-                                    window.firstErrorScrolled = true;
-                                }
-                            }
+                            if (row) row.classList.add('bg-red-50');
                         } else {
-                            // Quitar marca si está checked
                             const row = document.querySelector(`[data-item="${name}"]`);
-                            if (row) {
-                                row.classList.remove('bg-red-50');
-                            }
+                            if (row) row.classList.remove('bg-red-50');
                         }
-                    } else if (!input.value) {
+                    } else if (!input.value && input.value !== "0") { // Permitir 0 en campos numéricos
                         isValid = false;
                         input.classList.add('border-red-500', 'bg-red-50');
-                        
-                        // Hacer scroll hasta el primer elemento con error
-                        if (!window.firstErrorScrolled) {
-                            input.scrollIntoView({behavior: 'smooth', block: 'center'});
-                            window.firstErrorScrolled = true;
-                        }
                     } else {
                         input.classList.remove('border-red-500', 'bg-red-50');
                     }
                 });
                 
-                // Resetear flag de scroll
-                window.firstErrorScrolled = false;
-                
                 if (!isValid) {
-                    // Mostrar las secciones con campos incompletos
                     seccionesIncompletas.forEach(seccionId => {
                         const seccion = document.getElementById(seccionId);
                         if (seccion.classList.contains('hidden')) {
@@ -774,8 +871,6 @@
                             header.click();
                         }
                     });
-                    
-                    // Mostrar mensaje con feedback más claro
                     const elementosFaltantes = requiredInputs.length - document.querySelectorAll('[required]:valid').length;
                     alert(`Por favor complete todos los campos requeridos. Faltan ${elementosFaltantes} elementos.`);
                     // Habilitar el botón si la validación falla
@@ -785,47 +880,117 @@
                     return;
                 }
                 
-                // Crear objeto con todos los datos del formulario
-                const formData = new FormData(form);
-                const formDataObj = {};
-                
-                formData.forEach((value, key) => {
-                    formDataObj[key] = value;
+                // Crear objeto JSON con la estructura deseada
+                const jsonDataToSend = {
+                    fechaHora: form.elements.fechaHora.value,
+                    chofer: form.elements.chofer.value,
+                    tractor: form.elements.tractor.value,
+                    semi: form.elements.semi.value,
+                    // Agrega aquí kmCamion y semi2 si los añadiste al HTML
+                    // kmCamion: form.elements.kmCamion?.value || '', 
+                    // semi2: form.elements.semi2?.value || '', 
+                    secciones: {}
+                };
+
+                datosFormulario.secciones.forEach(seccion => {
+                    jsonDataToSend.secciones[seccion.id] = {};
+                    seccion.items.forEach(item => {
+                        const observacionInput = form.elements[`obs_${item.id}`];
+                        const observacion = observacionInput ? observacionInput.value : '';
+
+                        if (seccion.tipo === 'check') {
+                            const radioChecked = form.querySelector(`input[name="${item.id}"]:checked`);
+                            const valor = radioChecked ? radioChecked.value : '';
+                            jsonDataToSend.secciones[seccion.id][item.id] = {
+                                valor: valor,
+                                observacion: observacion
+                            };
+                        } else if (seccion.tipo === 'cantidad') {
+                            const cantidadInput = form.elements[item.id];
+                            const cantidadStr = cantidadInput ? cantidadInput.value : '0';
+                            // Convertir la cantidad a número
+                            const cantidadNum = parseInt(cantidadStr, 10);
+                            // Usar 0 si la conversión falla (aunque type=number debería prevenirlo)
+                            const cantidadFinal = isNaN(cantidadNum) ? 0 : cantidadNum; 
+                            jsonDataToSend.secciones[seccion.id][item.id] = {
+                                cantidad: cantidadFinal, // Usar el valor numérico
+                                observacion: observacion
+                            };
+                        }
+                    });
                 });
                 
-                // Convertir a JSON
-                const jsonData = JSON.stringify(formDataObj);
-                console.log('Datos a enviar:', jsonData);
+                const jsonDataString = JSON.stringify(jsonDataToSend);
+                console.log('Datos a enviar (estructurados):', jsonDataString);
                 
+                // Salir de pantalla completa si está activa
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+
                 // Enviar datos por POST
                 fetch('https://hook.us2.make.com/s3uhwkuujk4xld7nnv96fcrye09gzn5z', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: jsonData
+                    body: jsonDataString // Enviar el JSON estructurado
                 })
-                .then(response => response.json())
-                .then(data => {
-                    // Generar PDF después de guardar exitosamente
-                    generarPDF();
-                    alert('Inspección guardada correctamente');
-                    console.log('Respuesta del servidor:', data);
-                    // Habilitar el botón después de éxito
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Guardar Inspección';
-                    submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Error HTTP ${response.status} - ${response.statusText}`);
+                    }
+                    return response.text(); 
+                })
+                .then(text => {
+                    console.log("Respuesta cruda del servidor (texto):", text);
+                    // Verificar si la respuesta es exactamente "Accepted"
+                    if (text.trim().toLowerCase() === "accepted") { // Usar toLowerCase para ser más flexible
+                        // --- Éxito --- 
+                        console.log('Respuesta del servidor interpretada como éxito ("Accepted").');
+                        // Generar PDF después de guardar exitosamente con la acción seleccionada
+                        generarPDF(accionPDFSeleccionada);
+                        alert('Inspección guardada correctamente');
+                        // Habilitar el botón después de éxito
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Guardar Inspección';
+                        submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                        // --- Fin Éxito ---
+                    } else {
+                        // Si la respuesta es 200 OK pero no es "Accepted", tratar como error
+                        console.error("Respuesta inesperada del servidor (se esperaba 'Accepted'):", text);
+                        throw new Error('Respuesta inesperada del servidor.');
+                    }
                 })
                 .catch(error => {
-                    alert('Error al guardar la inspección');
-                    console.error('Error:', error);
+                    // Captura errores de red, errores HTTP (4xx, 5xx), y la respuesta inesperada
+                    alert(`Error al guardar o procesar respuesta: ${error.message}`);
+                    console.error('Error detallado:', error);
+                    // Salir de pantalla completa si está activa (también en caso de error)
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    }
                     // Habilitar el botón después de error
                     submitButton.disabled = false;
                     submitButton.textContent = 'Guardar Inspección';
                     submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 });
+            }
+
+            // Listeners para los botones del modal
+            btnGuardarCompartir.addEventListener('click', () => {
+                accionPDFSeleccionada = 'share';
+                procederConGuardado();
             });
-            
+            btnGuardarAbrir.addEventListener('click', () => {
+                accionPDFSeleccionada = 'open';
+                procederConGuardado();
+            });
+            btnGuardarDescargar.addEventListener('click', () => {
+                accionPDFSeleccionada = 'download';
+                procederConGuardado();
+            });
+
             // Mantener todas las secciones recogidas inicialmente
             // (No abrir automáticamente la primera sección)
             
