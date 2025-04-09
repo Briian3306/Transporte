@@ -128,9 +128,6 @@
                 Guardar Inspección
             </button>
             <div class="flex space-x-2 w-full md:w-auto">
-                <button type="button" id="btnImprimir" class="w-1/2 md:w-auto bg-blue-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors touch-target">
-                    Imprimir
-                </button>
                 <button type="button" id="btnGenerarPDF" class="w-1/2 md:w-auto bg-purple-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors touch-target">
                     Generar PDF
                 </button>
@@ -147,65 +144,122 @@
             secciones: [
                 {
                     id: "sistemaElectrico",
-                    titulo: "1-SISTEMA ELÉCTRICO",
+                    titulo: "1-SISTEMA ELECTRICO",
                     tipo: "check",
                     items: [
-                        { id: "faros", nombre: "Faros delanteros y traseros" },
-                        { id: "luces_giro", nombre: "Luces de giro" },
-                        { id: "luces_posicion", nombre: "Luces de posición" },
+                        { id: "lucesCompleto", nombre: "Control de Luces completo" },
                         { id: "limpiaparabrisas", nombre: "Limpiaparabrisas" },
-                        { id: "luces_freno", nombre: "Luces de freno (stop)" },
-                        { id: "alarma_retroceso", nombre: "Alarma y luz de retroceso" },
+                        { id: "alarmaRetroceso", nombre: "Alarma de retroceso" },
                         { id: "bocina", nombre: "Bocina" },
-                        { id: "tablero", nombre: "Tablero/instrumentos" },
-                        { id: "balizas", nombre: "Balizas" },
+                        { id: "tableroInstrumentos", nombre: "Tablero/instrumentos" },
                         { id: "desempanador", nombre: "Desempañador" },
-                        { id: "velocimetro", nombre: "Velocímetro" }
+                        { id: "tacografo", nombre: "Tacografo" },
+                        { id: "vigia", nombre: "Vigia" }
                     ]
                 },
                 {
-                    id: "seccion_tractor",
+                    id: "seccionTractor",
                     titulo: "2-TRACTOR",
                     tipo: "check",
                     items: [
-                        { id: "manijas", nombre: "Manijas,trabas,alzavidrios" },
-                        { id: "puertas", nombre: "Puertas y asientos" },
+                        { id: "fluidos", nombre: "Fluidos" },
+                        { id: "presionAireFreno", nombre: "Precion de aire / Sist. Freno" },
+                        { id: "puertasAsientos", nombre: "Puertas y asientos" },
+                        { id: "manijasTrabasAlzavidrios", nombre: "Manijas, trabas, alzavidrios" },
                         { id: "estribos", nombre: "Estribos" },
-                        { id: "espejos", nombre: "Espejos retrovisores" },
-                        { id: "parabrisas", nombre: "Parabrisas/luneta" },
-                        { id: "apoya_cabeza", nombre: "Apoya cabeza" },
-                        { id: "cinturon", nombre: "Cinturón de seguridad" },
-                        { id: "calefaccion", nombre: "Calefacción" },
-                        { id: "aire", nombre: "Aire acondicionado" },
-                        { id: "iluminacion", nombre: "Iluminación interior" },
-                        { id: "piso", nombre: "Piso" },
-                        { id: "guardabarro", nombre: "Guardabarro" },
-                        { id: "paragolpes", nombre: "Paragolpes completos" },
-                        { id: "tanque", nombre: "Tanque de combustible" },
-                        { id: "cubiertas", nombre: "Cubiertas" }
+                        { id: "espejosRetrovisores", nombre: "Espejos retrovisores" },
+                        { id: "parabrisasLuneta", nombre: "Parabrisas/luneta" },
+                        { id: "cinturonSeguridad", nombre: "Cinturon de seguridad" },
+                        { id: "calefaccionAire", nombre: "Calefaccion/ Aire Acond." },
+                        { id: "guardabarroTractor", nombre: "Guardabarro" }, 
+                        { id: "paragolpesTractor", nombre: "Paragolpes completos" }, 
+                        { id: "tanqueCombustible", nombre: "Tanque de combustible" },
+                        { id: "cubiertasTractor", nombre: "Cubiertas" }, 
+                        { id: "cubiertaAuxilioTractor", nombre: "Cubierta de Auxilio" }, 
+                        { id: "gatoHidraulico", nombre: "Gato hidraulico" },
+                        { id: "llaveRueda", nombre: "Llave de rueda" },
+                        { id: "manijaCabina", nombre: "Manija p/cabina" }
                     ]
                 },
                 {
-                    id: "elementos_carga",
-                    titulo: "3-ELEMENTOS DE CARGA",
+                    id: "semirremolque",
+                    titulo: "3-SEMIRREMOLQUE",
+                    tipo: "check",
+                    items: [
+                        { id: "parantes", nombre: "Parantes" },
+                        { id: "barandas", nombre: "Barandas" },
+                        { id: "compuertaTrasera", nombre: "Compuerta trasera" },
+                        { id: "paragolpesSemi", nombre: "Paragolpes completos" }, 
+                        { id: "guardabarroSemi", nombre: "Guardabarro" }, 
+                        { id: "alarmaVuelco", nombre: "Alarma de vuelco" },
+                        { id: "cubiertasSemi", nombre: "Cubiertas" }, 
+                        { id: "cubiertaAuxilioSemi", nombre: "Cubierta de Auxilio" } 
+                    ]
+                },
+                {
+                    id: "general",
+                    titulo: "4-GENERAL",
+                    tipo: "check",
+                    items: [
+                        { id: "danos", nombre: "Daños" },
+                        { id: "perdidasFluidos", nombre: "Perdidas de Fluidos" },
+                        { id: "frenos", nombre: "Frenos" },
+                        { id: "chapasPatentes", nombre: "Chapas patentes" },
+                        { id: "limpieza", nombre: "Limpieza" },
+                        { id: "grafica", nombre: "Grafica" }
+                    ]
+                },
+                {
+                    id: "elementosSeguridad",
+                    titulo: "5-ELEMENTOS DE SEGURIDAD",
+                    tipo: "check",
+                    items: [
+                        { id: "extintorSemi", nombre: "Extintor semi" },
+                        { id: "extintorCabina", nombre: "Extintor Cabina" },
+                        { id: "botiquin", nombre: "Botiquin de primeros auxilios" },
+                        { id: "conosSeguridad", nombre: "Conos de seguridad" },
+                        { id: "cunasGoma", nombre: "Cuñas de goma" },
+                        { id: "banderines", nombre: "Banderines" },
+                        { id: "cintasReflectivas", nombre: "Cintas reflectivas" },
+                        { id: "cartelesSeguridad", nombre: "Carteles de seguridad" }
+                    ]
+                },
+                {
+                    id: "elementosEPP", 
+                    titulo: "6-ELEMENTOS DE EPP", 
+                    tipo: "check",
+                    items: [
+                        { id: "casco", nombre: "Casco" },
+                        { id: "calzadoSeguridad", nombre: "Calzado de seguridad" },
+                        { id: "anteojosSeguridad", nombre: "Anteojos de seguridad" },
+                        { id: "guantes", nombre: "Guantes" },
+                        { id: "chalecoReflectivo", nombre: "Chaleco reflectivo" },
+                        { id: "proteccionAuditiva", nombre: "Proteccion auditiva" },
+                        { id: "arnes", nombre: "Arnes" }
+                    ]
+                },
+                {
+                    id: "elementosCargas",
+                    titulo: "7-ELEMENTOS DE CARGAS",
                     tipo: "cantidad",
                     items: [
-                        { id: "juego_arcos", nombre: "JUEGO DE ARCOS" },
+                        { id: "juegoArcos", nombre: "JUEGO DE ARCOS" },
                         { id: "cadenas", nombre: "CADENAS" },
                         { id: "cantoneras", nombre: "CANTONERAS" },
-                        { id: "cunas", nombre: "CUÑAS" },
+                        { id: "cunasBobinas", nombre: "CUÑAS BOBINAS" },
+                        { id: "cunasAlambron", nombre: "CUÑAS ALAMBRON" },
                         { id: "estaqueras", nombre: "ESTAQUERAS" },
-                        { id: "fajas_chicas", nombre: "JUEGO DE FAJAS CHICAS" },
-                        { id: "fajas_anchas", nombre: "JUEGO DE FAJAS ANCHAS" },
-                        { id: "geomanta", nombre: "GEOMANTA" },
-                        { id: "kit_antiderrame", nombre: "KIT ANTIDERRAME" },
-                        { id: "lona_chica", nombre: "LONA CHICA" },
-                        { id: "lona_grande", nombre: "LONA GRANDE" },
-                        { id: "ponchos_bobina", nombre: "PONCHOS BOBINA" },
-                        { id: "ponchos_bobinon", nombre: "PONCHOS BOBINÓN" },
-                        { id: "tacos_finos", nombre: "TACOS FINOS" },
-                        { id: "tacos_bobina", nombre: "TACOS BOBINA" },
-                        { id: "soga_precinto", nombre: "SOGA PRECINTO" }
+                        { id: "juegoFajasChicas", nombre: "JUEGO DE FAJAS CHICAS" },
+                        { id: "juegoFajasAncha", nombre: "JUEGO DE FAJAS ANCHA" },
+                        { id: "geomantas", nombre: "GEOMANTAS" },
+                        { id: "kitAntiderrame", nombre: "KIT ANTIDERRAME" },
+                        { id: "lonaGrande", nombre: "LONA GRANDE" },
+                        { id: "lonaDobleEnlonado", nombre: "LONA DOBLE ENLONADO" },
+                        { id: "ponchosBobina", nombre: "PONCHOS BOBINA" },
+                        { id: "ponchosBobinon", nombre: "PONCHOS BOBINON" },
+                        { id: "tacosFinos", nombre: "TACOS FINOS" },
+                        { id: "tacosBobina", nombre: "TACOS BOBINA" },
+                        { id: "sogaPrecinto", nombre: "SOGA PRECINTO" }
                     ]
                 }
             ]
@@ -443,14 +497,20 @@
             
             // Configurar inputs radio para mejor UX móvil
             configurarRadioInputs();
+
+            // Convertir a mayúsculas en campos específicos
+            const uppercaseInputs = ['chofer', 'tractor', 'semi'];
+            uppercaseInputs.forEach(id => {
+                const inputElement = document.getElementById(id);
+                if (inputElement) {
+                    inputElement.addEventListener('input', function() {
+                        this.value = this.value.toUpperCase();
+                    });
+                }
+            });
             
             // Para cargar desde un JSON externo, descomentar:
             // cargarDatosJSON('ruta/a/tu/datos.json');
-            
-            // Función para imprimir
-            document.getElementById('btnImprimir').addEventListener('click', function() {
-                window.print();
-            });
             
             // Función para expandir todas las secciones
             document.getElementById('btnExpandirTodo').addEventListener('click', function() {
@@ -528,16 +588,10 @@
                                         { text: 'SEMI', style: 'tableHeader' },
                                         { text: formDataObj.semi || '', style: 'tableCell' }
                                     ],
-                                    [
-                                        { text: 'KM CAMION', style: 'tableHeader' },
-                                        { text: formDataObj.kmCamion || '', style: 'tableCell' }, // Necesitarás agregar este campo al HTML
-                                        { text: 'SEMI 2', style: 'tableHeader' },
-                                        { text: formDataObj.semi2 || '', style: 'tableCell' } // Necesitarás agregar este campo al HTML
-                                    ]
                                 ]
                             },
                             layout: 'lightHorizontalLines', // Estilo de borde simple
-                            margin: [0, 0, 0, 20]
+                            margin: [0, 0, 0, 10]
                         },
                         // Secciones
                         ...datosFormulario.secciones.map(seccion => {
@@ -546,9 +600,9 @@
                                     const radioValue = formDataObj[item.id] || '';
                                     return [
                                         { text: item.nombre, style: 'tableCell' },
-                                        { text: radioValue === 'si' ? '✓' : '', style: 'tableCell', alignment: 'center' },
-                                        { text: radioValue === 'no' ? '✓' : '', style: 'tableCell', alignment: 'center' },
-                                        { text: radioValue === 'na' ? '✓' : '', style: 'tableCell', alignment: 'center' },
+                                        { text: radioValue === 'si' ? 'X' : '', style: 'tableCell', alignment: 'center' },
+                                        { text: radioValue === 'no' ? 'X' : '', style: 'tableCell', alignment: 'center' },
+                                        { text: radioValue === 'na' ? 'X' : '', style: 'tableCell', alignment: 'center' },
                                         { text: formDataObj[`obs_${item.id}`] || '', style: 'tableCell' }
                                     ];
                                 } else {
@@ -628,8 +682,19 @@
                     }
                 };
 
+                // Generar nombre de archivo dinámico
+                const fechaHora = formDataObj.fechaHora ? new Date(formDataObj.fechaHora) : new Date();
+                const year = fechaHora.getFullYear();
+                const month = String(fechaHora.getMonth() + 1).padStart(2, '0'); // Meses son 0-indexados
+                const day = String(fechaHora.getDate()).padStart(2, '0');
+                const fechaFormateada = `${year}${month}${day}`;
+                const chofer = formDataObj.chofer || 'SIN_CHOFER';
+                const tractor = formDataObj.tractor || 'SIN_TRACTOR';
+                const semi = formDataObj.semi || 'SIN_SEMI';
+                const nombreArchivo = `${fechaFormateada} - ${chofer} - ${tractor} - ${semi}.pdf`;
+
                 // Generar y descargar el PDF
-                pdfMake.createPdf(docDefinition).download('check_vehiculo.pdf');
+                pdfMake.createPdf(docDefinition).download(nombreArchivo);
             }
 
             // Evento para el botón de generar PDF manual
@@ -639,10 +704,16 @@
 
             // Validar formulario antes de enviar
             const form = document.getElementById('formVehiculo');
+            const submitButton = form.querySelector('button[type="submit"]'); // Obtener el botón de guardar
             
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
+                // Deshabilitar botón para evitar duplicados
+                submitButton.disabled = true;
+                submitButton.textContent = 'Guardando...'; // Cambiar texto del botón
+                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+
                 // Validar que todos los campos requeridos estén completos
                 const requiredInputs = document.querySelectorAll('[required]');
                 let isValid = true;
@@ -707,6 +778,10 @@
                     // Mostrar mensaje con feedback más claro
                     const elementosFaltantes = requiredInputs.length - document.querySelectorAll('[required]:valid').length;
                     alert(`Por favor complete todos los campos requeridos. Faltan ${elementosFaltantes} elementos.`);
+                    // Habilitar el botón si la validación falla
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Guardar Inspección';
+                    submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
                     return;
                 }
                 
@@ -723,7 +798,7 @@
                 console.log('Datos a enviar:', jsonData);
                 
                 // Enviar datos por POST
-                fetch('url_del_servidor', {
+                fetch('https://hook.us2.make.com/s3uhwkuujk4xld7nnv96fcrye09gzn5z', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -736,10 +811,18 @@
                     generarPDF();
                     alert('Inspección guardada correctamente');
                     console.log('Respuesta del servidor:', data);
+                    // Habilitar el botón después de éxito
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Guardar Inspección';
+                    submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 })
                 .catch(error => {
                     alert('Error al guardar la inspección');
                     console.error('Error:', error);
+                    // Habilitar el botón después de error
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Guardar Inspección';
+                    submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 });
             });
             
