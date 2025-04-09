@@ -128,9 +128,6 @@
                 Guardar Inspección
             </button>
             <div class="flex space-x-2 w-full md:w-auto">
-                <button type="button" id="btnGenerarPDF" class="w-1/2 md:w-auto bg-purple-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors touch-target">
-                    Generar PDF
-                </button>
                 <button type="button" id="btnExpandirTodo" class="w-1/2 md:w-auto bg-gray-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-gray-700 transition-colors touch-target">
                     Expandir Todo
                 </button>
@@ -615,193 +612,6 @@
                 });
             }
 
-            // Función para generar PDF
-            function generarPDF(accion = 'download') {
-                // Obtener los datos del formulario
-                const formData = new FormData(document.getElementById('formVehiculo'));
-                const formDataObj = {};
-                formData.forEach((value, key) => {
-                    formDataObj[key] = value;
-                });
-
-                // Definir el contenido del PDF
-                const docDefinition = {
-                    pageSize: 'A4',
-                    pageMargins: [40, 40, 40, 40],
-                    content: [
-                        // Encabezado estilo imagen
-                        {
-                            table: {
-                                widths: ['25%', '50%', '25%'],
-                                body: [
-                                    [
-                                        // Celda para el logo (requiere imagen base64)
-                                        { text: 'TRANSPORTE IBARRA S.A.', style: 'header', alignment: 'center', margin: [0, 10, 0, 10] }, 
-                                        { text: 'CHECK DE VERIFICACIÓN DE VEHÍCULO', style: 'subheader', alignment: 'center', margin: [0, 10, 0, 10] },
-                                        { text: 'FORMULARIO A1', style: 'formNumber', alignment: 'center', margin: [0, 10, 0, 10] }
-                                    ]
-                                ]
-                            },
-                            layout: 'headerLines', // Estilo de borde simple
-                            margin: [0, 0, 0, 10]
-                        },
-                        // Información básica estilo imagen
-                        {
-                            table: {
-                                widths: ['auto', '*', 'auto', '*'],
-                                body: [
-                                    [
-                                        { text: 'FECHA', style: 'tableHeader' },
-                                        { text: formDataObj.fechaHora ? new Date(formDataObj.fechaHora).toLocaleDateString() : '', style: 'tableCell' }, // Formatear fecha
-                                        { text: 'CHOFER', style: 'tableHeader' },
-                                        { text: formDataObj.chofer || '', style: 'tableCell' }
-                                    ],
-                                    [
-                                        { text: 'TRACTOR', style: 'tableHeader' },
-                                        { text: formDataObj.tractor || '', style: 'tableCell' },
-                                        { text: 'SEMI', style: 'tableHeader' },
-                                        { text: formDataObj.semi || '', style: 'tableCell' }
-                                    ],
-                                ]
-                            },
-                            layout: 'lightHorizontalLines', // Estilo de borde simple
-                            margin: [0, 0, 0, 10]
-                        },
-                        // Secciones
-                        ...datosFormulario.secciones.map(seccion => {
-                            const rows = seccion.items.map(item => {
-                                if (seccion.tipo === 'check') {
-                                    const radioValue = formDataObj[item.id] || '';
-                                    return [
-                                        { text: item.nombre, style: 'tableCell' },
-                                        { text: radioValue === 'si' ? 'X' : '', style: 'tableCell', alignment: 'center' },
-                                        { text: radioValue === 'no' ? 'X' : '', style: 'tableCell', alignment: 'center' },
-                                        { text: radioValue === 'na' ? 'X' : '', style: 'tableCell', alignment: 'center' },
-                                        { text: formDataObj[`obs_${item.id}`] || '', style: 'tableCell' }
-                                    ];
-                                } else {
-                                    return [
-                                        { text: item.nombre, style: 'tableCell' },
-                                        { text: formDataObj[item.id] || '0', style: 'tableCell', alignment: 'center' },
-                                        { text: formDataObj[`obs_${item.id}`] || '', style: 'tableCell' }
-                                    ];
-                                }
-                            });
-
-                            return [
-                                {
-                                    text: seccion.titulo,
-                                    style: 'sectionHeader',
-                                    margin: [0, 20, 0, 10]
-                                },
-                                {
-                                    table: {
-                                        widths: seccion.tipo === 'check' ? ['40%', '10%', '10%', '10%', '30%'] : ['50%', '20%', '30%'],
-                                        headerRows: 1,
-                                        body: [
-                                            seccion.tipo === 'check' 
-                                                ? [
-                                                    { text: 'ITEMS A CONTROLAR', style: 'tableHeader' },
-                                                    { text: 'SI', style: 'tableHeader', alignment: 'center' },
-                                                    { text: 'NO', style: 'tableHeader', alignment: 'center' },
-                                                    { text: 'N/A', style: 'tableHeader', alignment: 'center' },
-                                                    { text: 'OBSERVACIONES', style: 'tableHeader' }
-                                                ]
-                                                : [
-                                                    { text: 'ITEMS A CONTROLAR', style: 'tableHeader' },
-                                                    { text: 'CANTIDAD', style: 'tableHeader', alignment: 'center' },
-                                                    { text: 'OBSERVACIONES', style: 'tableHeader' }
-                                                ],
-                                            ...rows
-                                        ]
-                                    },
-                                    layout: {
-                                        hLineWidth: function(i, node) { return 1; },
-                                        vLineWidth: function(i, node) { return 1; },
-                                        hLineColor: function(i, node) { return '#d1d5db'; },
-                                        vLineColor: function(i, node) { return '#d1d5db'; }
-                                    }
-                                }
-                            ];
-                        })
-                    ],
-                    styles: {
-                        header: {
-                            fontSize: 16,
-                            bold: true
-                        },
-                        subheader: {
-                            fontSize: 14,
-                            bold: true
-                        },
-                        formNumber: {
-                            fontSize: 14,
-                            bold: true
-                        },
-                        sectionHeader: {
-                            fontSize: 12,
-                            bold: true,
-                            color: '#1f2937'
-                        },
-                        tableHeader: {
-                            fontSize: 10,
-                            bold: true,
-                            fillColor: '#f3f4f6',
-                            color: '#1f2937'
-                        },
-                        tableCell: {
-                            fontSize: 10,
-                            color: '#1f2937'
-                        }
-                    }
-                };
-
-                // Generar nombre de archivo dinámico
-                const fechaHora = formDataObj.fechaHora ? new Date(formDataObj.fechaHora) : new Date();
-                const year = fechaHora.getFullYear();
-                const month = String(fechaHora.getMonth() + 1).padStart(2, '0'); // Meses son 0-indexados
-                const day = String(fechaHora.getDate()).padStart(2, '0');
-                const fechaFormateada = `${year}${month}${day}`;
-                const chofer = formDataObj.chofer || 'SIN_CHOFER';
-                const tractor = formDataObj.tractor || 'SIN_TRACTOR';
-                const semi = formDataObj.semi || 'SIN_SEMI';
-                const nombreArchivo = `${fechaFormateada} - ${chofer} - ${tractor} - ${semi}.pdf`;
-
-                // Generar y realizar acción sobre el PDF
-                const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-
-                if (accion === 'share' && navigator.share) {
-                    pdfDocGenerator.getBlob((blob) => {
-                        const file = new File([blob], nombreArchivo, { type: 'application/pdf' });
-                        navigator.share({
-                            title: nombreArchivo,
-                            text: `Check de Vehículo - ${chofer} - ${fechaFormateada}`,
-                            files: [file]
-                        })
-                        .then(() => console.log('Compartido con éxito'))
-                        .catch((error) => {
-                            console.error('Error al compartir:', error);
-                            // Fallback a descarga si falla el share
-                            pdfDocGenerator.download(nombreArchivo);
-                            alert('No se pudo compartir, se descargará el PDF.');
-                        });
-                    });
-                } else if (accion === 'open') {
-                    pdfDocGenerator.open({}, window.open('', '_blank'));
-                } else { // default o share no disponible
-                    pdfDocGenerator.download(nombreArchivo);
-                }
-            }
-
-            // Evento para el botón de generar PDF manual
-            const btnGenerarPDFManual = document.getElementById('btnGenerarPDF');
-            if(btnGenerarPDFManual) {
-                btnGenerarPDFManual.addEventListener('click', function() {
-                    // Podríamos mostrar un modal similar o simplemente descargar/abrir
-                    generarPDF('download'); // Por ejemplo, descarga por defecto
-                });
-            }
-
             // Validar formulario antes de enviar
             const form = document.getElementById('formVehiculo');
             const submitButton = form.querySelector('button[type="submit"]'); // Obtener el botón de guardar
@@ -1013,6 +823,184 @@
             configurarSecciones();
             configurarRadioInputs();
             actualizarProgreso();
+        }
+
+        // Función para generar PDF
+        function generarPDF(accion = 'download') {
+            // Obtener los datos del formulario
+            const formData = new FormData(document.getElementById('formVehiculo'));
+            const formDataObj = {};
+            formData.forEach((value, key) => {
+                formDataObj[key] = value;
+            });
+
+            // Definir el contenido del PDF
+            const docDefinition = {
+                pageSize: 'A4',
+                pageMargins: [40, 40, 40, 40],
+                content: [
+                    // Encabezado estilo imagen
+                    {
+                        table: {
+                            widths: ['25%', '50%', '25%'],
+                            body: [
+                                [
+                                    // Celda para el logo (requiere imagen base64)
+                                    { text: 'TRANSPORTE IBARRA S.A.', style: 'header', alignment: 'center', margin: [0, 10, 0, 10] }, 
+                                    { text: 'CHECK DE VERIFICACIÓN DE VEHÍCULO', style: 'subheader', alignment: 'center', margin: [0, 10, 0, 10] },
+                                    { text: 'FORMULARIO A1', style: 'formNumber', alignment: 'center', margin: [0, 10, 0, 10] }
+                                ]
+                            ]
+                        },
+                        layout: 'headerLines', // Estilo de borde simple
+                        margin: [0, 0, 0, 10]
+                    },
+                    // Información básica estilo imagen
+                    {
+                        table: {
+                            widths: ['auto', '*', 'auto', '*'],
+                            body: [
+                                [
+                                    { text: 'FECHA', style: 'tableHeader' },
+                                    { text: formDataObj.fechaHora ? new Date(formDataObj.fechaHora).toLocaleDateString() : '', style: 'tableCell' }, // Formatear fecha
+                                    { text: 'CHOFER', style: 'tableHeader' },
+                                    { text: formDataObj.chofer || '', style: 'tableCell' }
+                                ],
+                                [
+                                    { text: 'TRACTOR', style: 'tableHeader' },
+                                    { text: formDataObj.tractor || '', style: 'tableCell' },
+                                    { text: 'SEMI', style: 'tableHeader' },
+                                    { text: formDataObj.semi || '', style: 'tableCell' }
+                                ],
+                            ]
+                        },
+                        layout: 'lightHorizontalLines', // Estilo de borde simple
+                        margin: [0, 0, 0, 10]
+                    },
+                    // Secciones
+                    ...datosFormulario.secciones.map(seccion => {
+                        const rows = seccion.items.map(item => {
+                            if (seccion.tipo === 'check') {
+                                const radioValue = formDataObj[item.id] || '';
+                                return [
+                                    { text: item.nombre, style: 'tableCell' },
+                                    { text: radioValue === 'si' ? 'X' : '', style: 'tableCell', alignment: 'center' },
+                                    { text: radioValue === 'no' ? 'X' : '', style: 'tableCell', alignment: 'center' },
+                                    { text: radioValue === 'na' ? 'X' : '', style: 'tableCell', alignment: 'center' },
+                                    { text: formDataObj[`obs_${item.id}`] || '', style: 'tableCell' }
+                                ];
+                            } else {
+                                return [
+                                    { text: item.nombre, style: 'tableCell' },
+                                    { text: formDataObj[item.id] || '0', style: 'tableCell', alignment: 'center' },
+                                    { text: formDataObj[`obs_${item.id}`] || '', style: 'tableCell' }
+                                ];
+                            }
+                        });
+
+                        return [
+                            {
+                                text: seccion.titulo,
+                                style: 'sectionHeader',
+                                margin: [0, 20, 0, 10]
+                            },
+                            {
+                                table: {
+                                    widths: seccion.tipo === 'check' ? ['40%', '10%', '10%', '10%', '30%'] : ['50%', '20%', '30%'],
+                                    headerRows: 1,
+                                    body: [
+                                        seccion.tipo === 'check' 
+                                            ? [
+                                                { text: 'ITEMS A CONTROLAR', style: 'tableHeader' },
+                                                { text: 'SI', style: 'tableHeader', alignment: 'center' },
+                                                { text: 'NO', style: 'tableHeader', alignment: 'center' },
+                                                { text: 'N/A', style: 'tableHeader', alignment: 'center' },
+                                                { text: 'OBSERVACIONES', style: 'tableHeader' }
+                                            ]
+                                            : [
+                                                { text: 'ITEMS A CONTROLAR', style: 'tableHeader' },
+                                                { text: 'CANTIDAD', style: 'tableHeader', alignment: 'center' },
+                                                { text: 'OBSERVACIONES', style: 'tableHeader' }
+                                            ],
+                                        ...rows
+                                    ]
+                                },
+                                layout: {
+                                    hLineWidth: function(i, node) { return 1; },
+                                    vLineWidth: function(i, node) { return 1; },
+                                    hLineColor: function(i, node) { return '#d1d5db'; },
+                                    vLineColor: function(i, node) { return '#d1d5db'; }
+                                }
+                            }
+                        ];
+                    })
+                ],
+                styles: {
+                    header: {
+                        fontSize: 16,
+                        bold: true
+                    },
+                    subheader: {
+                        fontSize: 14,
+                        bold: true
+                    },
+                    formNumber: {
+                        fontSize: 14,
+                        bold: true
+                    },
+                    sectionHeader: {
+                        fontSize: 12,
+                        bold: true,
+                        color: '#1f2937'
+                    },
+                    tableHeader: {
+                        fontSize: 10,
+                        bold: true,
+                        fillColor: '#f3f4f6',
+                        color: '#1f2937'
+                    },
+                    tableCell: {
+                        fontSize: 10,
+                        color: '#1f2937'
+                    }
+                }
+            };
+
+            // Generar nombre de archivo dinámico
+            const fechaHora = formDataObj.fechaHora ? new Date(formDataObj.fechaHora) : new Date();
+            const year = fechaHora.getFullYear();
+            const month = String(fechaHora.getMonth() + 1).padStart(2, '0'); // Meses son 0-indexados
+            const day = String(fechaHora.getDate()).padStart(2, '0');
+            const fechaFormateada = `${year}${month}${day}`;
+            const chofer = formDataObj.chofer || 'SIN_CHOFER';
+            const tractor = formDataObj.tractor || 'SIN_TRACTOR';
+            const semi = formDataObj.semi || 'SIN_SEMI';
+            const nombreArchivo = `${fechaFormateada} - ${chofer} - ${tractor} - ${semi}.pdf`;
+
+            // Generar y realizar acción sobre el PDF
+            const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+
+            if (accion === 'share' && navigator.share) {
+                pdfDocGenerator.getBlob((blob) => {
+                    const file = new File([blob], nombreArchivo, { type: 'application/pdf' });
+                    navigator.share({
+                        title: nombreArchivo,
+                        text: `Check de Vehículo - ${chofer} - ${fechaFormateada}`,
+                        files: [file]
+                    })
+                    .then(() => console.log('Compartido con éxito'))
+                    .catch((error) => {
+                        console.error('Error al compartir:', error);
+                        // Fallback a descarga si falla el share
+                        pdfDocGenerator.download(nombreArchivo);
+                        alert('No se pudo compartir, se descargará el PDF.');
+                    });
+                });
+            } else if (accion === 'open') {
+                pdfDocGenerator.open({}, window.open('', '_blank'));
+            } else { // default o share no disponible
+                pdfDocGenerator.download(nombreArchivo);
+            }
         }
     </script>
 </body>
