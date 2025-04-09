@@ -6,6 +6,11 @@
     <title>Check de Verificación de Vehículo</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Bibliotecas para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
     <style>
         @media print {
             .no-print {
@@ -126,6 +131,9 @@
                 <button type="button" id="btnImprimir" class="w-1/2 md:w-auto bg-blue-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors touch-target">
                     Imprimir
                 </button>
+                <button type="button" id="btnGenerarPDF" class="w-1/2 md:w-auto bg-purple-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-purple-700 transition-colors touch-target">
+                    Generar PDF
+                </button>
                 <button type="button" id="btnExpandirTodo" class="w-1/2 md:w-auto bg-gray-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-gray-700 transition-colors touch-target">
                     Expandir Todo
                 </button>
@@ -220,7 +228,6 @@
                                 <th class="border border-gray-300 p-2 md:p-3 text-center w-10 md:w-12">NO</th>
                                 <th class="border border-gray-300 p-2 md:p-3 text-center w-10 md:w-12">N/A</th>
                                 <th class="border border-gray-300 p-2 md:p-3 text-left">OBSERVACIONES</th>
-                                <th class="border border-gray-300 p-2 md:p-3 text-left">FECHA</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -249,10 +256,6 @@
                                         <textarea name="obs_${item.id}" 
                                                   class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
                                     </td>
-                                    <td class="border border-gray-300 p-2 md:p-3">
-                                        <input type="date" name="corr_${item.id}" 
-                                               class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -264,7 +267,6 @@
                                 <th class="border border-gray-300 p-2 md:p-3 text-left">ITEMS A CONTROLAR</th>
                                 <th class="border border-gray-300 p-2 md:p-3 text-center w-24 md:w-32">CANTIDAD</th>
                                 <th class="border border-gray-300 p-2 md:p-3 text-left">OBSERVACIONES</th>
-                                <th class="border border-gray-300 p-2 md:p-3 text-left">FECHA</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -274,15 +276,11 @@
                                     <td class="border border-gray-300 p-2 md:p-3">
                                         <input type="number" name="${item.id}" min="0" required
                                                class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm cantidad-input"
-                                               data-seccion="${seccion.id}">
+                                               data-seccion="${seccion.id}" value="0">
                                     </td>
                                     <td class="border border-gray-300 p-2 md:p-3">
                                         <textarea name="obs_${item.id}" 
                                                   class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
-                                    </td>
-                                    <td class="border border-gray-300 p-2 md:p-3">
-                                        <input type="date" name="corr_${item.id}" 
-                                               class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                                     </td>
                                 </tr>
                             `).join('')}
@@ -483,6 +481,162 @@
                 }
             });
 
+            // Función para generar PDF
+            function generarPDF() {
+                // Obtener los datos del formulario
+                const formData = new FormData(document.getElementById('formVehiculo'));
+                const formDataObj = {};
+                formData.forEach((value, key) => {
+                    formDataObj[key] = value;
+                });
+
+                // Definir el contenido del PDF
+                const docDefinition = {
+                    pageSize: 'A4',
+                    pageMargins: [40, 40, 40, 40],
+                    content: [
+                        // Encabezado estilo imagen
+                        {
+                            table: {
+                                widths: ['25%', '50%', '25%'],
+                                body: [
+                                    [
+                                        // Celda para el logo (requiere imagen base64)
+                                        { text: 'TRANSPORTE IBARRA S.A.', style: 'header', alignment: 'center', margin: [0, 10, 0, 10] }, 
+                                        { text: 'CHECK DE VERIFICACIÓN DE VEHÍCULO', style: 'subheader', alignment: 'center', margin: [0, 10, 0, 10] },
+                                        { text: 'FORMULARIO A1', style: 'formNumber', alignment: 'center', margin: [0, 10, 0, 10] }
+                                    ]
+                                ]
+                            },
+                            layout: 'headerLines', // Estilo de borde simple
+                            margin: [0, 0, 0, 10]
+                        },
+                        // Información básica estilo imagen
+                        {
+                            table: {
+                                widths: ['auto', '*', 'auto', '*'],
+                                body: [
+                                    [
+                                        { text: 'FECHA', style: 'tableHeader' },
+                                        { text: formDataObj.fechaHora ? new Date(formDataObj.fechaHora).toLocaleDateString() : '', style: 'tableCell' }, // Formatear fecha
+                                        { text: 'CHOFER', style: 'tableHeader' },
+                                        { text: formDataObj.chofer || '', style: 'tableCell' }
+                                    ],
+                                    [
+                                        { text: 'TRACTOR', style: 'tableHeader' },
+                                        { text: formDataObj.tractor || '', style: 'tableCell' },
+                                        { text: 'SEMI', style: 'tableHeader' },
+                                        { text: formDataObj.semi || '', style: 'tableCell' }
+                                    ],
+                                    [
+                                        { text: 'KM CAMION', style: 'tableHeader' },
+                                        { text: formDataObj.kmCamion || '', style: 'tableCell' }, // Necesitarás agregar este campo al HTML
+                                        { text: 'SEMI 2', style: 'tableHeader' },
+                                        { text: formDataObj.semi2 || '', style: 'tableCell' } // Necesitarás agregar este campo al HTML
+                                    ]
+                                ]
+                            },
+                            layout: 'lightHorizontalLines', // Estilo de borde simple
+                            margin: [0, 0, 0, 20]
+                        },
+                        // Secciones
+                        ...datosFormulario.secciones.map(seccion => {
+                            const rows = seccion.items.map(item => {
+                                if (seccion.tipo === 'check') {
+                                    const radioValue = formDataObj[item.id] || '';
+                                    return [
+                                        { text: item.nombre, style: 'tableCell' },
+                                        { text: radioValue === 'si' ? '✓' : '', style: 'tableCell', alignment: 'center' },
+                                        { text: radioValue === 'no' ? '✓' : '', style: 'tableCell', alignment: 'center' },
+                                        { text: radioValue === 'na' ? '✓' : '', style: 'tableCell', alignment: 'center' },
+                                        { text: formDataObj[`obs_${item.id}`] || '', style: 'tableCell' }
+                                    ];
+                                } else {
+                                    return [
+                                        { text: item.nombre, style: 'tableCell' },
+                                        { text: formDataObj[item.id] || '0', style: 'tableCell', alignment: 'center' },
+                                        { text: formDataObj[`obs_${item.id}`] || '', style: 'tableCell' }
+                                    ];
+                                }
+                            });
+
+                            return [
+                                {
+                                    text: seccion.titulo,
+                                    style: 'sectionHeader',
+                                    margin: [0, 20, 0, 10]
+                                },
+                                {
+                                    table: {
+                                        widths: seccion.tipo === 'check' ? ['40%', '10%', '10%', '10%', '30%'] : ['50%', '20%', '30%'],
+                                        headerRows: 1,
+                                        body: [
+                                            seccion.tipo === 'check' 
+                                                ? [
+                                                    { text: 'ITEMS A CONTROLAR', style: 'tableHeader' },
+                                                    { text: 'SI', style: 'tableHeader', alignment: 'center' },
+                                                    { text: 'NO', style: 'tableHeader', alignment: 'center' },
+                                                    { text: 'N/A', style: 'tableHeader', alignment: 'center' },
+                                                    { text: 'OBSERVACIONES', style: 'tableHeader' }
+                                                ]
+                                                : [
+                                                    { text: 'ITEMS A CONTROLAR', style: 'tableHeader' },
+                                                    { text: 'CANTIDAD', style: 'tableHeader', alignment: 'center' },
+                                                    { text: 'OBSERVACIONES', style: 'tableHeader' }
+                                                ],
+                                            ...rows
+                                        ]
+                                    },
+                                    layout: {
+                                        hLineWidth: function(i, node) { return 1; },
+                                        vLineWidth: function(i, node) { return 1; },
+                                        hLineColor: function(i, node) { return '#d1d5db'; },
+                                        vLineColor: function(i, node) { return '#d1d5db'; }
+                                    }
+                                }
+                            ];
+                        })
+                    ],
+                    styles: {
+                        header: {
+                            fontSize: 16,
+                            bold: true
+                        },
+                        subheader: {
+                            fontSize: 14,
+                            bold: true
+                        },
+                        formNumber: {
+                            fontSize: 14,
+                            bold: true
+                        },
+                        sectionHeader: {
+                            fontSize: 12,
+                            bold: true,
+                            color: '#1f2937'
+                        },
+                        tableHeader: {
+                            fontSize: 10,
+                            bold: true,
+                            fillColor: '#f3f4f6',
+                            color: '#1f2937'
+                        },
+                        tableCell: {
+                            fontSize: 10,
+                            color: '#1f2937'
+                        }
+                    }
+                };
+
+                // Generar y descargar el PDF
+                pdfMake.createPdf(docDefinition).download('check_vehiculo.pdf');
+            }
+
+            // Evento para el botón de generar PDF manual
+            document.getElementById('btnGenerarPDF').addEventListener('click', function() {
+                generarPDF();
+            });
+
             // Validar formulario antes de enviar
             const form = document.getElementById('formVehiculo');
             
@@ -578,6 +732,8 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    // Generar PDF después de guardar exitosamente
+                    generarPDF();
                     alert('Inspección guardada correctamente');
                     console.log('Respuesta del servidor:', data);
                 })
