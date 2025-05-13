@@ -120,6 +120,13 @@
                     <div id="progress-bar" class="bg-green-600 h-4 rounded-full" style="width: 0%"></div>
                 </div>
             </div>
+
+            <!-- Selector de modo de inspección -->
+            <div class="p-3 md:p-4 text-center bg-yellow-100 border-t border-gray-300">
+                <button type="button" id="btnModoInspeccionParcial" class="w-full md:w-auto bg-yellow-500 text-white px-4 py-3 rounded-lg font-bold hover:bg-yellow-600 transition-colors touch-target">
+                    MODO PARCIAL (Solo secciones 5, 6 y 7)
+                </button>
+            </div>
         </div>
         
         <!-- Botones flotantes para móvil y fijos para desktop -->
@@ -295,6 +302,9 @@
                 }
             ]
         };
+
+        // Variable global para el modo de inspección
+        let modoInspeccionParcial = false;
 
         // Función para generar secciones a partir del JSON
         function generarSecciones(datos) {
@@ -500,10 +510,27 @@
         
         // Actualizar progreso global del formulario
         function actualizarProgreso() {
-            const totalItems = document.querySelectorAll('.item-row').length;
-            const completadosRadio = document.querySelectorAll('.item-row input[type="radio"]:checked').length;
-            const completadosCantidad = Array.from(document.querySelectorAll('.item-row input[type="number"]'))
-                .filter(input => input.value && input.value > 0).length;
+            // Seleccionar solo los items en secciones visibles
+            const itemsVisibles = Array.from(document.querySelectorAll('.item-row')).filter(item => {
+                const seccionContainer = item.closest('.section-container');
+                return seccionContainer && seccionContainer.style.display !== 'none';
+            });
+            
+            const totalItems = itemsVisibles.length;
+            
+            // Contar solo radios completados en secciones visibles
+            const completadosRadio = itemsVisibles.filter(item => {
+                const itemId = item.getAttribute('data-item');
+                return document.querySelector(`input[type="radio"][name="${itemId}"]:checked`);
+            }).length;
+            
+            // Contar solo cantidades completadas en secciones visibles
+            const completadosCantidad = itemsVisibles.filter(item => {
+                const itemId = item.getAttribute('data-item');
+                const input = document.querySelector(`input[type="number"][name="${itemId}"]`);
+                return input && input.value && parseInt(input.value, 10) > 0;
+            }).length;
+            
             const completados = completadosRadio + completadosCantidad;
             
             // Calcular porcentaje
@@ -513,9 +540,11 @@
             document.getElementById('progress-bar').style.width = `${porcentaje}%`;
             document.getElementById('status-message').textContent = `Completado: ${porcentaje}% (${completados}/${totalItems} items)`;
             
-            // Mostrar barra de estado si hay algún progreso
-            if (completados > 0) {
+            // Mostrar barra de estado si hay algún progreso o si estamos en modo parcial
+            if (completados > 0 || modoInspeccionParcial) {
                 document.getElementById('status-bar').classList.remove('hidden');
+            } else if (completados === 0 && !modoInspeccionParcial) {
+                document.getElementById('status-bar').classList.add('hidden');
             }
         }
 
@@ -527,6 +556,94 @@
                 // Ajustar la zona horaria local para el formato datetime-local
                 now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
                 fechaHoraInput.value = now.toISOString().slice(0, 16);
+            }
+
+            // Botón para modo de inspección parcial
+            const btnModoInspeccionParcial = document.getElementById('btnModoInspeccionParcial');
+            if (btnModoInspeccionParcial) {
+                btnModoInspeccionParcial.addEventListener('click', function() {
+                    modoInspeccionParcial = !modoInspeccionParcial;
+                    
+                    // Actualizar el estado visual del botón
+                    if (modoInspeccionParcial) {
+                        this.textContent = 'MODO COMPLETO (Todas las secciones)';
+                        this.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+                        this.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                    } else {
+                        this.textContent = 'MODO PARCIAL (Solo secciones 5, 6 y 7)';
+                        this.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                        this.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+                    }
+                    
+                    // Aplicar el modo de inspección
+                    aplicarModoInspeccion();
+                });
+            }
+            
+            // Función para aplicar el modo de inspección
+            function aplicarModoInspeccion() {
+                // IDs de las secciones que queremos mostrar en el modo parcial
+                const seccionesParcialesIds = ['elementosSeguridad', 'elementosEPP', 'elementosCargas'];
+                
+                // Recorrer todas las secciones
+                datosFormulario.secciones.forEach(seccion => {
+                    const seccionContainer = document.querySelector(`.section-container[data-id="${seccion.id}"]`);
+                    
+                    if (seccionContainer) {
+                        if (modoInspeccionParcial) {
+                            // En modo parcial: mostrar solo las secciones 5, 6 y 7
+                            const esMostrar = seccionesParcialesIds.includes(seccion.id);
+                            seccionContainer.style.display = esMostrar ? 'block' : 'none';
+                            
+                            // Hacer los inputs requeridos o no según corresponda
+                            seccion.items.forEach(item => {
+                                const inputs = document.querySelectorAll(`[name="${item.id}"]`);
+                                inputs.forEach(input => {
+                                    if (esMostrar) {
+                                        // Si la sección se muestra, mantener el required
+                                        if (!input.hasAttribute('data-required-original')) {
+                                            input.setAttribute('data-required-original', input.required);
+                                        }
+                                    } else {
+                                        // Si la sección se oculta, quitar el required
+                                        if (!input.hasAttribute('data-required-original')) {
+                                            input.setAttribute('data-required-original', input.required);
+                                        }
+                                        input.required = false;
+                                    }
+                                });
+                            });
+                        } else {
+                            // En modo completo: mostrar todas las secciones
+                            seccionContainer.style.display = 'block';
+                            
+                            // Restaurar el estado original de required
+                            seccion.items.forEach(item => {
+                                const inputs = document.querySelectorAll(`[name="${item.id}"]`);
+                                inputs.forEach(input => {
+                                    if (input.hasAttribute('data-required-original')) {
+                                        input.required = input.getAttribute('data-required-original') === 'true';
+                                    }
+                                });
+                            });
+                        }
+                    }
+                });
+                
+                // Recalcular progreso visible
+                calcularProgresoVisible();
+                // Actualizar el progreso
+                actualizarProgreso();
+            }
+            
+            // Función para calcular el progreso solo de secciones visibles
+            function calcularProgresoVisible() {
+                datosFormulario.secciones.forEach(seccion => {
+                    const seccionContainer = document.querySelector(`.section-container[data-id="${seccion.id}"]`);
+                    if (seccionContainer && seccionContainer.style.display !== 'none') {
+                        actualizarProgresoSeccion(seccion.id);
+                    }
+                });
             }
 
             // Generar secciones con los datos predeterminados
@@ -652,6 +769,12 @@
                 let seccionesIncompletas = new Set();
                 
                 requiredInputs.forEach(input => {
+                    // Solo validar campos que están visibles (para modo parcial)
+                    const seccionElement = input.closest('.section-container');
+                    if (seccionElement && seccionElement.style.display === 'none') {
+                        return; // Saltar validación para elementos en secciones ocultas
+                    }
+                    
                     if (input.type === 'radio') {
                         const name = input.name;
                         const checked = document.querySelector(`input[name="${name}"]:checked`);
@@ -681,7 +804,12 @@
                             header.click();
                         }
                     });
-                    const elementosFaltantes = requiredInputs.length - document.querySelectorAll('[required]:valid').length;
+                    const elementosFaltantes = Array.from(requiredInputs).filter(input => {
+                        // Solo contar elementos en secciones visibles
+                        const seccionElement = input.closest('.section-container');
+                        return seccionElement && seccionElement.style.display !== 'none' && !input.validity.valid;
+                    }).length;
+                    
                     alert(`Por favor complete todos los campos requeridos. Faltan ${elementosFaltantes} elementos.`);
                     // Habilitar el botón si la validación falla
                     submitButton.disabled = false;
@@ -698,11 +826,18 @@
                     semi: form.elements.semi.value,
                     // Agrega aquí kmCamion y semi2 si los añadiste al HTML
                     // kmCamion: form.elements.kmCamion?.value || '', 
-                    // semi2: form.elements.semi2?.value || '', 
+                    // semi2: form.elements.semi2?.value || '',
+                    modoParcial: modoInspeccionParcial, // Indicar si se usó modo parcial 
                     secciones: {}
                 };
 
-                datosFormulario.secciones.forEach(seccion => {
+                // Determinar qué secciones incluir según el modo actual
+                const seccionesAIncluir = modoInspeccionParcial
+                    ? datosFormulario.secciones.filter(seccion => 
+                        ['elementosSeguridad', 'elementosEPP', 'elementosCargas'].includes(seccion.id))
+                    : datosFormulario.secciones;
+
+                seccionesAIncluir.forEach(seccion => {
                     jsonDataToSend.secciones[seccion.id] = {};
                     seccion.items.forEach(item => {
                         const observacionInput = form.elements[`obs_${item.id}`];
@@ -834,6 +969,12 @@
                 formDataObj[key] = value;
             });
 
+            // Determinar qué secciones incluir según el modo actual
+            const seccionesAIncluir = modoInspeccionParcial
+                ? datosFormulario.secciones.filter(seccion => 
+                    ['elementosSeguridad', 'elementosEPP', 'elementosCargas'].includes(seccion.id))
+                : datosFormulario.secciones;
+            
             // Definir el contenido del PDF
             const docDefinition = {
                 pageSize: 'A4',
@@ -855,6 +996,13 @@
                         layout: 'headerLines', // Estilo de borde simple
                         margin: [0, 0, 0, 10]
                     },
+                    // Modo de inspección
+                    modoInspeccionParcial ? {
+                        text: 'MODO DE INSPECCIÓN PARCIAL (Solo Secciones 5, 6 y 7)',
+                        style: 'modoInspeccion',
+                        alignment: 'center',
+                        margin: [0, 5, 0, 15]
+                    } : null,
                     // Información básica estilo imagen
                     {
                         table: {
@@ -877,8 +1025,8 @@
                         layout: 'lightHorizontalLines', // Estilo de borde simple
                         margin: [0, 0, 0, 10]
                     },
-                    // Secciones
-                    ...datosFormulario.secciones.map(seccion => {
+                    // Secciones - Filtrado según el modo seleccionado
+                    ...seccionesAIncluir.map(seccion => {
                         const rows = seccion.items.map(item => {
                             if (seccion.tipo === 'check') {
                                 const radioValue = formDataObj[item.id] || '';
@@ -947,6 +1095,12 @@
                     formNumber: {
                         fontSize: 14,
                         bold: true
+                    },
+                    modoInspeccion: {
+                        fontSize: 12,
+                        bold: true,
+                        color: '#d97706',
+                        background: '#fef3c7'
                     },
                     sectionHeader: {
                         fontSize: 12,
