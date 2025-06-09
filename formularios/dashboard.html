@@ -34,8 +34,6 @@
         </div>
     </header>
 
-
-
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <!-- Status Banner -->
@@ -80,8 +78,8 @@
                         </div>
                         <div class="ml-5 w-0 flex-1">
                             <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Choferes Disponibles</dt>
-                                <dd id="choferesDisponibles" class="text-lg font-medium text-gray-900">-</dd>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Choferes Mostrados</dt>
+                                <dd id="choferesVisibles" class="text-lg font-medium text-gray-900">-</dd>
                             </dl>
                         </div>
                     </div>
@@ -98,7 +96,7 @@
                         </div>
                         <div class="ml-5 w-0 flex-1">
                             <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Unidades Logísticas</dt>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Unidades</dt>
                                 <dd id="totalLogistica" class="text-lg font-medium text-gray-900">-</dd>
                             </dl>
                         </div>
@@ -131,6 +129,20 @@
                             Actualizar
                         </button>
                     </div>
+                    
+                    <!-- Filtro de Choferes -->
+                    <div class="mb-4">
+                        <div class="max-w-md">
+                            <label for="filtroChoferes" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por nombre o apellido</label>
+                            <input 
+                                type="text" 
+                                id="filtroChoferes" 
+                                placeholder="Buscar chofer..." 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                            >
+                        </div>
+                    </div>
+                    
                     <div id="choferesLoading" class="text-center py-8">
                         <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                         <p class="mt-2 text-sm text-gray-600">Cargando choferes...</p>
@@ -143,8 +155,6 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disponible</th>
                                 </tr>
                             </thead>
                             <tbody id="choferesTableBody" class="bg-white divide-y divide-gray-200">
@@ -159,11 +169,34 @@
             <div class="bg-white shadow overflow-hidden sm:rounded-md">
                 <div class="px-4 py-5 sm:p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900">Unidades Logísticas</h3>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Unidades</h3>
                         <button id="refreshLogisticaBtn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">
                             Actualizar
                         </button>
                     </div>
+                    
+                    <!-- Filtros de Logística -->
+                    <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="filtroChoferLogistica" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por apellido del chofer</label>
+                            <input 
+                                type="text" 
+                                id="filtroChoferLogistica" 
+                                placeholder="Buscar por apellido..." 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                            >
+                        </div>
+                        <div>
+                            <label for="filtroPatente" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por patente del camión</label>
+                            <input 
+                                type="text" 
+                                id="filtroPatente" 
+                                placeholder="Buscar por patente..." 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                            >
+                        </div>
+                    </div>
+                    
                     <div id="logisticaLoading" class="text-center py-8">
                         <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                         <p class="mt-2 text-sm text-gray-600">Cargando logística...</p>
@@ -179,7 +212,6 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Camión</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Semi 1</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Semi 2</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                                 </tr>
                             </thead>
                             <tbody id="logisticaTableBody" class="bg-white divide-y divide-gray-200">
@@ -197,6 +229,10 @@
             apiBase: 'https://demo.tpteibarra.ar/api',
             authToken: null
         };
+
+        // Variables globales para los datos
+        let choferesData = [];
+        let logisticaData = [];
 
         // Cargar configuración desde variables de entorno
         async function loadConfig() {
@@ -316,11 +352,109 @@
             }
         }
 
+        // Filtrar choferes
+        function filtrarChoferes() {
+            const filtro = document.getElementById('filtroChoferes').value.toLowerCase();
+            const tbody = document.getElementById('choferesTableBody');
+            
+            // Filtrar datos
+            const choferesFiltrados = choferesData.filter(chofer => {
+                const nombreCompleto = `${chofer.nombre} ${chofer.apellido}`.toLowerCase();
+                return nombreCompleto.includes(filtro) || chofer.apellido.toLowerCase().includes(filtro);
+            });
+            
+            // Renderizar tabla filtrada
+            renderChoferesTable(choferesFiltrados);
+            
+            // Actualizar contador
+            document.getElementById('choferesVisibles').textContent = choferesFiltrados.length;
+        }
+
+        // Filtrar logística
+        function filtrarLogistica() {
+            const filtroChofer = document.getElementById('filtroChoferLogistica').value.toLowerCase();
+            const filtroPatente = document.getElementById('filtroPatente').value.toLowerCase();
+            
+            // Filtrar datos
+            const logisticaFiltrada = logisticaData.filter(logistica => {
+                const apellidoChofer = logistica.chofer?.apellido?.toLowerCase() || '';
+                const patenteFilter = logistica.conjunto_veh?.camiones?.patente?.toLowerCase() || '';
+                
+                const coincideChofer = !filtroChofer || apellidoChofer.includes(filtroChofer);
+                const coincidePatente = !filtroPatente || patenteFilter.includes(filtroPatente);
+                
+                return coincideChofer && coincidePatente;
+            });
+            
+            // Renderizar tabla filtrada
+            renderLogisticaTable(logisticaFiltrada);
+        }
+
+        // Renderizar tabla de choferes
+        function renderChoferesTable(choferes) {
+            const tbody = document.getElementById('choferesTableBody');
+            tbody.innerHTML = '';
+            
+            if (choferes.length > 0) {
+                choferes.forEach(chofer => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${chofer.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${chofer.apellido}, ${chofer.nombre}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${chofer.dni || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${chofer.telefono || 'N/A'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No hay choferes que coincidan con el filtro</td></tr>';
+            }
+        }
+
+        // Renderizar tabla de logística
+        function renderLogisticaTable(logisticas) {
+            const tbody = document.getElementById('logisticaTableBody');
+            tbody.innerHTML = '';
+            
+            if (logisticas.length > 0) {
+                logisticas.forEach(logistica => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${logistica.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                ${logistica.chofer ? `${logistica.chofer.apellido}, ${logistica.chofer.nombre}` : 'N/A'}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${logistica.chofer?.dni || 'N/A'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${logistica.chofer?.telefono || 'N/A'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${logistica.conjunto_veh?.camiones?.patente || 'N/A'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${logistica.conjunto_veh?.semi1?.patente || 'N/A'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${logistica.conjunto_veh?.semi2?.patente || 'N/A'}
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No hay unidades logísticas que coincidan con los filtros</td></tr>';
+            }
+        }
+
         // Cargar datos de choferes
         async function loadChoferes() {
             const loading = document.getElementById('choferesLoading');
             const table = document.getElementById('choferesTable');
-            const tbody = document.getElementById('choferesTableBody');
 
             loading.classList.remove('hidden');
             table.classList.add('hidden');
@@ -328,42 +462,19 @@
             try {
                 const data = await apiRequest('/choferes/');
                 console.log('Respuesta choferes:', data); // Debug
-                tbody.innerHTML = '';
 
                 // Manejar diferentes estructuras de respuesta
-                const choferes = data.results || data || [];
+                choferesData = data.results || data || [];
                 
-                if (choferes.length > 0) {
-                    choferes.forEach(chofer => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${chofer.id}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">${chofer.apellido}, ${chofer.nombre}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${chofer.dni || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${chofer.telefono || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${chofer.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                    ${chofer.is_active ? 'Activo' : 'Inactivo'}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${chofer.disponible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                    ${chofer.disponible ? 'Disponible' : 'No Disponible'}
-                                </span>
-                            </td>
-                        `;
-                        tbody.appendChild(row);
-                    });
+                // Renderizar tabla completa
+                renderChoferesTable(choferesData);
 
-                    // Actualizar estadísticas
-                    document.getElementById('totalChoferes').textContent = choferes.length;
-                    document.getElementById('choferesDisponibles').textContent = 
-                        choferes.filter(c => c.disponible).length;
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No hay choferes disponibles</td></tr>';
-                }
+                // Actualizar estadísticas
+                document.getElementById('totalChoferes').textContent = choferesData.length;
+                document.getElementById('choferesVisibles').textContent = choferesData.length;
+
+                // Limpiar filtro
+                document.getElementById('filtroChoferes').value = '';
 
                 table.classList.remove('hidden');
                 showStatus('Choferes cargados correctamente', 'success');
@@ -378,7 +489,6 @@
         async function loadLogistica() {
             const loading = document.getElementById('logisticaLoading');
             const table = document.getElementById('logisticaTable');
-            const tbody = document.getElementById('logisticaTableBody');
 
             loading.classList.remove('hidden');
             table.classList.add('hidden');
@@ -386,50 +496,19 @@
             try {
                 const data = await apiRequest('/logistica/');
                 console.log('Respuesta logística:', data); // Debug
-                tbody.innerHTML = '';
 
                 // Manejar diferentes estructuras de respuesta
-                const logisticas = data.results || data || [];
+                logisticaData = data.results || data || [];
                 
-                if (logisticas.length > 0) {
-                    logisticas.forEach(logistica => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${logistica.id}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">
-                                    ${logistica.chofer ? `${logistica.chofer.apellido}, ${logistica.chofer.nombre}` : 'N/A'}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                ${logistica.chofer?.dni || 'N/A'}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                ${logistica.chofer?.telefono || 'N/A'}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                ${logistica.conjunto_veh?.camiones?.patente || 'N/A'}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                ${logistica.conjunto_veh?.semi1?.patente || 'N/A'}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                ${logistica.conjunto_veh?.semi2?.patente || 'N/A'}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${logistica.disponible && logistica.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                    ${logistica.disponible && logistica.activo ? 'Activo' : 'Inactivo'}
-                                </span>
-                            </td>
-                        `;
-                        tbody.appendChild(row);
-                    });
+                // Renderizar tabla completa
+                renderLogisticaTable(logisticaData);
 
-                    // Actualizar estadísticas
-                    document.getElementById('totalLogistica').textContent = logisticas.length;
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No hay unidades logísticas disponibles</td></tr>';
-                }
+                // Actualizar estadísticas
+                document.getElementById('totalLogistica').textContent = logisticaData.length;
+
+                // Limpiar filtros
+                document.getElementById('filtroChoferLogistica').value = '';
+                document.getElementById('filtroPatente').value = '';
 
                 table.classList.remove('hidden');
                 showStatus('Logística cargada correctamente', 'success');
@@ -439,19 +518,6 @@
                 loading.classList.add('hidden');
             }
         }
-
-        function getStatusBadge(status) {
-            const statusMap = {
-                'ACTIVO': 'bg-green-100 text-green-800',
-                'INACTIVO': 'bg-red-100 text-red-800',
-                'DISPONIBLE': 'bg-yellow-100 text-yellow-800',
-                'VACACIONES': 'bg-blue-100 text-blue-800',
-                'LICENCIA': 'bg-purple-100 text-purple-800'
-            };
-            return statusMap[status] || 'bg-gray-100 text-gray-800';
-        }
-
-
 
         // Event listeners
         document.addEventListener('DOMContentLoaded', async function() {
@@ -465,6 +531,11 @@
             // Refresh buttons
             document.getElementById('refreshChoferesBtn').addEventListener('click', loadChoferes);
             document.getElementById('refreshLogisticaBtn').addEventListener('click', loadLogistica);
+
+            // Filtros
+            document.getElementById('filtroChoferes').addEventListener('input', filtrarChoferes);
+            document.getElementById('filtroChoferLogistica').addEventListener('input', filtrarLogistica);
+            document.getElementById('filtroPatente').addEventListener('input', filtrarLogistica);
 
             // Cargar datos iniciales
             loadChoferes();
