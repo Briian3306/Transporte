@@ -172,12 +172,13 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidad</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chofer</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Camión</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Semi 1</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KM Arribo</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Semi 2</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                                 </tr>
                             </thead>
@@ -343,8 +344,8 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${chofer.dni || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${chofer.telefono || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(chofer.status)}">
-                                    ${chofer.status || 'N/A'}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${chofer.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${chofer.is_active ? 'Activo' : 'Inactivo'}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -401,16 +402,19 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${logistica.chofer?.dni || 'N/A'}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${logistica.chofer?.telefono || 'N/A'}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 ${logistica.conjunto_veh?.camiones?.patente || 'N/A'}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 ${logistica.conjunto_veh?.semi1?.patente || 'N/A'}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                ${logistica.conjunto_veh?.categoria?.nombre || 'N/A'}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                ${logistica.km_arribo || 'N/A'}
+                                ${logistica.conjunto_veh?.semi2?.patente || 'N/A'}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${logistica.disponible && logistica.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
@@ -424,7 +428,7 @@
                     // Actualizar estadísticas
                     document.getElementById('totalLogistica').textContent = logisticas.length;
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No hay unidades logísticas disponibles</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No hay unidades logísticas disponibles</td></tr>';
                 }
 
                 table.classList.remove('hidden');
