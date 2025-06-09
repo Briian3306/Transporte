@@ -215,31 +215,31 @@
             }
         }
 
-        // Realizar petición HTTP
+        // Realizar petición HTTP usando funciones proxy de Netlify
         async function apiRequest(endpoint, method = 'GET') {
-            const headers = {
-                'Content-Type': 'application/json'
+            // Mapear endpoints a funciones de Netlify
+            const endpointMap = {
+                '/choferes/': '/.netlify/functions/choferes',
+                '/logistica/': '/.netlify/functions/logistica'
             };
 
-            if (config.authToken) {
-                headers['Authorization'] = config.authToken.startsWith('Token ') 
-                    ? config.authToken 
-                    : `Token ${config.authToken}`;
-            }
-
-            console.log('Haciendo petición a:', `${config.apiBase}${endpoint}`); // Debug
-            console.log('Headers:', headers); // Debug
+            const url = endpointMap[endpoint] || `${config.apiBase}${endpoint}`;
+            
+            console.log('Haciendo petición a:', url); // Debug
 
             try {
-                const response = await fetch(`${config.apiBase}${endpoint}`, {
+                const response = await fetch(url, {
                     method,
-                    headers
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
 
                 console.log('Response status:', response.status); // Debug
 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
                 }
 
                 const data = await response.json();
