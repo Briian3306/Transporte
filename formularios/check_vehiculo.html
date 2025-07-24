@@ -85,9 +85,14 @@
                           class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target">
                 </div>
                 <div class="w-full md:w-1/4 p-2 md:p-4 bg-gray-50 font-bold flex items-center justify-center md:justify-start border-b md:border-b-0 md:border-r border-gray-300">CHOFER</div>
-                <div class="w-full md:w-1/4 p-2 md:p-4">
+                <div class="w-full md:w-1/4 p-2 md:p-4 relative">
                     <input type="text" name="chofer" id="chofer" required 
-                          class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target">
+                          class="w-full p-2 pr-10 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target">
+                    <button type="button" id="btnCargarDatos" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors" title="Cargar datos desde sistema">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
             <div class="flex flex-col md:flex-row border-b border-gray-300">
@@ -123,8 +128,8 @@
 
             <!-- Selector de modo de inspección -->
             <div class="p-3 md:p-4 text-center bg-yellow-100 border-t border-gray-300">
-                <button type="button" id="btnModoInspeccionParcial" class="w-full md:w-auto bg-yellow-500 text-white px-4 py-3 rounded-lg font-bold hover:bg-yellow-600 transition-colors touch-target">
-                    MODO PARCIAL (Solo secciones 5, 6 y 7)
+                <button type="button" id="btnModoInspeccion" class="w-full md:w-auto bg-gray-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-gray-700 transition-colors touch-target">
+                    MODO COMPLETO (Todas las secciones)
                 </button>
             </div>
         </div>
@@ -146,6 +151,195 @@
             </div>
         </div>
     </form>
+
+    <!-- Página de Selección de Modo -->
+    <div id="modalSeleccionModo" class="fixed inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 h-full w-full overflow-y-auto z-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Encabezado -->
+            <div class="bg-white shadow-sm border-b border-gray-200">
+                <div class="max-w-4xl mx-auto px-4 py-6">
+                    <div class="text-center">
+                        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">TRANSPORTE IBARRA S.A.</h1>
+                        <h2 class="text-xl md:text-2xl font-semibold text-gray-700">Check de Verificación de Vehículo</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido Principal -->
+            <div class="flex-1 flex items-center justify-center p-4 md:p-8">
+                <div class="max-w-4xl w-full">
+                    <div class="text-center mb-8 md:mb-12">
+                        <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">Seleccionar Modo de Inspección</h3>
+                        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                            Elige el tipo de inspección que deseas realizar según tus necesidades operativas
+                        </p>
+                    </div>
+                    
+                    <!-- Grid de opciones -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                        <!-- Modo Diario -->
+                        <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-transparent hover:border-blue-200">
+                            <button id="btnSeleccionarDiario" class="w-full p-8 text-left bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 transform hover:scale-105">
+                                <div class="text-center">
+                                    <div class="text-4xl mb-4">🔧</div>
+                                    <h4 class="text-xl font-bold mb-3">MODO DIARIO</h4>
+                                    <div class="bg-white bg-opacity-20 rounded-lg p-3 mb-4">
+                                        <p class="text-sm font-semibold opacity-90">Secciones 1, 2, 3 y 4</p>
+                                    </div>
+                                    <div class="text-sm opacity-90 leading-relaxed">
+                                        <p>• Sistema eléctrico</p>
+                                        <p>• Tractor</p>
+                                        <p>• Semirremolque</p>
+                                        <p>• General</p>
+                                    </div>
+                                </div>
+                            </button>
+                            <div class="p-4 bg-blue-50">
+                                <p class="text-xs text-blue-700 text-center">Ideal para inspecciones rutinarias diarias</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Modo Parcial -->
+                        <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-transparent hover:border-green-200">
+                            <button id="btnSeleccionarParcial" class="w-full p-8 text-left bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white transition-all duration-300 transform hover:scale-105">
+                                <div class="text-center">
+                                    <div class="text-4xl mb-4">🛡️</div>
+                                    <h4 class="text-xl font-bold mb-3">MODO PARCIAL</h4>
+                                    <div class="bg-white bg-opacity-20 rounded-lg p-3 mb-4">
+                                        <p class="text-sm font-semibold opacity-90">Secciones 5, 6 y 7</p>
+                                    </div>
+                                    <div class="text-sm opacity-90 leading-relaxed">
+                                        <p>• Elementos de seguridad</p>
+                                        <p>• Elementos de EPP</p>
+                                        <p>• Elementos de cargas</p>
+                                    </div>
+                                </div>
+                            </button>
+                            <div class="p-4 bg-green-50">
+                                <p class="text-xs text-green-700 text-center">Enfoque en seguridad y manejo de cargas</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Modo Completo -->
+                        <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-2 border-transparent hover:border-gray-300">
+                            <button id="btnSeleccionarCompleto" class="w-full p-8 text-left bg-gradient-to-br from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white transition-all duration-300 transform hover:scale-105">
+                                <div class="text-center">
+                                    <div class="text-4xl mb-4">📋</div>
+                                    <h4 class="text-xl font-bold mb-3">MODO COMPLETO</h4>
+                                    <div class="bg-white bg-opacity-20 rounded-lg p-3 mb-4">
+                                        <p class="text-sm font-semibold opacity-90">Todas las secciones</p>
+                                    </div>
+                                    <div class="text-sm opacity-90 leading-relaxed">
+                                        <p>• Inspección integral</p>
+                                        <p>• Verificación exhaustiva</p>
+                                        <p>• Control total del vehículo</p>
+                                    </div>
+                                </div>
+                            </button>
+                            <div class="p-4 bg-gray-50">
+                                <p class="text-xs text-gray-700 text-center">Inspección completa y detallada</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Información adicional -->
+                    <div class="mt-8 md:mt-12 text-center">
+                        <div class="bg-white rounded-xl shadow-sm p-6 max-w-2xl mx-auto">
+                            <div class="flex items-center justify-center mb-3">
+                                <svg class="w-6 h-6 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <h4 class="text-lg font-semibold text-gray-900">Información</h4>
+                            </div>
+                            <p class="text-gray-600">
+                                Puedes cambiar el modo de inspección en cualquier momento usando el botón correspondiente en el formulario.
+                                Cada modo está optimizado para diferentes tipos de verificación según tus necesidades operativas.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pie de página -->
+            <div class="bg-white border-t border-gray-200 py-4">
+                <div class="max-w-4xl mx-auto px-4 text-center">
+                    <p class="text-sm text-gray-500">© 2025 Transporte Ibarra S.A. - Sistema de Control Vehicular</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Carga de Datos -->
+    <div id="modalCargaDatos" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50">
+        <div class="relative mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Seleccionar Unidad</h3>
+                <button id="btnCerrarModalDatos" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Filtros -->
+            <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="filtroChoferModal" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por apellido del chofer</label>
+                    <input 
+                        type="text" 
+                        id="filtroChoferModal" 
+                        placeholder="Buscar por apellido..." 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                </div>
+                <div>
+                    <label for="filtroPatenteModal" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por patente del camión</label>
+                    <input 
+                        type="text" 
+                        id="filtroPatenteModal" 
+                        placeholder="Buscar por patente..." 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                </div>
+            </div>
+            
+            <!-- Loading -->
+            <div id="cargaDatosLoading" class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <p class="mt-2 text-sm text-gray-600">Cargando unidades...</p>
+            </div>
+            
+            <!-- Tabla -->
+            <div id="tablaDatosContainer" class="hidden flex-1 overflow-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chofer</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Camión</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Semi 1</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Semi 2</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaDatosBody" class="bg-white divide-y divide-gray-200">
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Error -->
+            <div id="errorCargaDatos" class="hidden text-center py-8">
+                <div class="text-red-500 mb-2">
+                    <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <p class="text-sm text-gray-600">Error al cargar los datos. Verifica tu conexión e intenta nuevamente.</p>
+                <button id="btnRetryCargarDatos" class="mt-3 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">
+                    Reintentar
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal de Opciones de Guardado -->
     <div id="modalGuardar" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50">
@@ -202,7 +396,7 @@
                         { id: "fluidos", nombre: "Fluidos" },
                         { id: "presionAireFreno", nombre: "Precion de aire / Sist. Freno" },
                         { id: "puertasAsientos", nombre: "Puertas y asientos" },
-                        { id: "manijasTrabasAlzavidrios", nombre: "Manijas, trabas, alzavidrios" },
+                        { id: "manijasTrabasAlzavidrios", nombre: "Manijas, alzavidrios" },
                         { id: "estribos", nombre: "Estribos" },
                         { id: "espejosRetrovisores", nombre: "Espejos retrovisores" },
                         { id: "parabrisasLuneta", nombre: "Parabrisas/luneta" },
@@ -304,8 +498,9 @@
             ]
         };
 
-        // Variable global para el modo de inspección
+        // Variables globales para los modos de inspección
         let modoInspeccionParcial = false;
+        let modoInspeccionDiario = false;
 
         // Función para generar secciones a partir del JSON
         function generarSecciones(datos) {
@@ -559,21 +754,262 @@
                 fechaHoraInput.value = now.toISOString().slice(0, 16);
             }
 
-            // Botón para modo de inspección parcial
-            const btnModoInspeccionParcial = document.getElementById('btnModoInspeccionParcial');
-            if (btnModoInspeccionParcial) {
-                btnModoInspeccionParcial.addEventListener('click', function() {
-                    modoInspeccionParcial = !modoInspeccionParcial;
+            // Modal de selección de modo
+            const modalSeleccionModo = document.getElementById('modalSeleccionModo');
+            const btnSeleccionarDiario = document.getElementById('btnSeleccionarDiario');
+            const btnSeleccionarParcial = document.getElementById('btnSeleccionarParcial');
+            const btnSeleccionarCompleto = document.getElementById('btnSeleccionarCompleto');
+
+            // Función para cerrar el modal de selección y aplicar el modo
+            function seleccionarModo(tipoDiario, tipoParcial) {
+                modoInspeccionDiario = tipoDiario;
+                modoInspeccionParcial = tipoParcial;
+                
+                // Actualizar el botón del formulario
+                actualizarBotonModo();
+                
+                // Aplicar el modo seleccionado
+                aplicarModoInspeccion();
+                
+                // Cerrar modal
+                modalSeleccionModo.classList.add('hidden');
+            }
+
+            // Función para actualizar el botón de modo según el estado actual
+            function actualizarBotonModo() {
+                const botonModo = document.getElementById('btnModoInspeccion');
+                if (!botonModo) return;
+                
+                if (modoInspeccionDiario && !modoInspeccionParcial) {
+                    botonModo.textContent = 'MODO DIARIO (Secciones 1, 2, 3 y 4)';
+                    botonModo.className = 'w-full md:w-auto bg-blue-500 text-white px-4 py-3 rounded-lg font-bold hover:bg-blue-600 transition-colors touch-target';
+                } else if (!modoInspeccionDiario && modoInspeccionParcial) {
+                    botonModo.textContent = 'MODO PARCIAL (Secciones 5, 6 y 7)';
+                    botonModo.className = 'w-full md:w-auto bg-green-500 text-white px-4 py-3 rounded-lg font-bold hover:bg-green-600 transition-colors touch-target';
+                } else {
+                    botonModo.textContent = 'MODO COMPLETO (Todas las secciones)';
+                    botonModo.className = 'w-full md:w-auto bg-gray-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-gray-700 transition-colors touch-target';
+                }
+            }
+
+            // Event listeners para los botones de selección
+            btnSeleccionarDiario.addEventListener('click', () => {
+                seleccionarModo(true, false); // Diario
+            });
+
+            btnSeleccionarParcial.addEventListener('click', () => {
+                seleccionarModo(false, true); // Parcial
+            });
+
+            btnSeleccionarCompleto.addEventListener('click', () => {
+                seleccionarModo(false, false); // Completo
+            });
+
+            // Modal de Carga de Datos
+            const modalCargaDatos = document.getElementById('modalCargaDatos');
+            const btnCargarDatos = document.getElementById('btnCargarDatos');
+            const btnCerrarModalDatos = document.getElementById('btnCerrarModalDatos');
+            const btnRetryCargarDatos = document.getElementById('btnRetryCargarDatos');
+            let datosLogistica = [];
+
+            // Función para cargar datos de logística desde la API
+            async function cargarDatosLogistica() {
+                const loading = document.getElementById('cargaDatosLoading');
+                const tabla = document.getElementById('tablaDatosContainer');
+                const error = document.getElementById('errorCargaDatos');
+
+                // Mostrar loading y ocultar otros elementos
+                loading.classList.remove('hidden');
+                tabla.classList.add('hidden');
+                error.classList.add('hidden');
+
+                try {
+                    const response = await fetch('/.netlify/functions/logistica');
                     
-                    // Actualizar el estado visual del botón
-                    if (modoInspeccionParcial) {
-                        this.textContent = 'MODO COMPLETO (Todas las secciones)';
-                        this.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-                        this.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    datosLogistica = data.results || data || [];
+                    
+                    renderTablaLogistica(datosLogistica);
+                    tabla.classList.remove('hidden');
+                } catch (err) {
+                    console.error('Error cargando datos de logística:', err);
+                    error.classList.remove('hidden');
+                } finally {
+                    loading.classList.add('hidden');
+                }
+            }
+
+            // Función para renderizar la tabla de logística
+            function renderTablaLogistica(datos) {
+                const tbody = document.getElementById('tablaDatosBody');
+                tbody.innerHTML = '';
+
+                if (datos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No hay unidades disponibles</td></tr>';
+                    return;
+                }
+
+                datos.forEach((unidad, index) => {
+                    const chofer = unidad.chofer || {};
+                    const conjunto = unidad.conjunto_veh || {};
+                    const camion = conjunto.camiones || {};
+                    const semi1 = conjunto.semi1 || {};
+                    const semi2 = conjunto.semi2 || {};
+
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    row.innerHTML = `
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                ${chofer.apellido ? `${chofer.apellido}, ${chofer.nombre}` : 'N/A'}
+                            </div>
+                            <div class="text-sm text-gray-500">DNI: ${chofer.dni || 'N/A'}</div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${camion.patente || 'N/A'}</div>
+                            <div class="text-sm text-gray-500">${camion.marca ? `${camion.marca} ${camion.modelo}` : ''}</div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${semi1.patente || 'N/A'}</div>
+                            <div class="text-sm text-gray-500">${semi1.marca ? `${semi1.marca}` : ''}</div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${semi2.patente || 'N/A'}</div>
+                            <div class="text-sm text-gray-500">${semi2.marca ? `${semi2.marca}` : ''}</div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <button onclick="seleccionarUnidad(${index})" 
+                                    class="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition-colors text-sm">
+                                Seleccionar
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            // Función para filtrar datos de logística
+            function filtrarDatosLogistica() {
+                const filtroChofer = document.getElementById('filtroChoferModal').value.toLowerCase();
+                const filtroPatente = document.getElementById('filtroPatenteModal').value.toLowerCase();
+
+                const datosFiltrados = datosLogistica.filter(unidad => {
+                    const chofer = unidad.chofer || {};
+                    const conjunto = unidad.conjunto_veh || {};
+                    const camion = conjunto.camiones || {};
+
+                    const apellidoChofer = (chofer.apellido || '').toLowerCase();
+                    const patenteFilter = (camion.patente || '').toLowerCase();
+
+                    const coincideChofer = !filtroChofer || apellidoChofer.includes(filtroChofer);
+                    const coincidePatente = !filtroPatente || patenteFilter.includes(filtroPatente);
+
+                    return coincideChofer && coincidePatente;
+                });
+
+                renderTablaLogistica(datosFiltrados);
+            }
+
+            // Función para seleccionar una unidad (se expone globalmente)
+            window.seleccionarUnidad = function(index) {
+                const unidad = datosLogistica[index];
+                if (!unidad) return;
+
+                const chofer = unidad.chofer || {};
+                const conjunto = unidad.conjunto_veh || {};
+                const camion = conjunto.camiones || {};
+                const semi1 = conjunto.semi1 || {};
+                const semi2 = conjunto.semi2 || {};
+
+                // Rellenar campos del formulario
+                if (chofer.apellido && chofer.nombre) {
+                    document.getElementById('chofer').value = `${chofer.apellido}, ${chofer.nombre}`.toUpperCase();
+                }
+                if (camion.patente) {
+                    document.getElementById('tractor').value = camion.patente.toUpperCase();
+                }
+                // Priorizar Semi 1, pero usar Semi 2 si Semi 1 no está disponible
+                if (semi1.patente) {
+                    document.getElementById('semi').value = semi1.patente.toUpperCase();
+                } else if (semi2.patente) {
+                    document.getElementById('semi').value = semi2.patente.toUpperCase();
+                }
+
+                // Cerrar modal
+                modalCargaDatos.classList.add('hidden');
+
+                // Mostrar mensaje de confirmación temporal
+                const choferInput = document.getElementById('chofer');
+                const originalBorder = choferInput.style.border;
+                choferInput.style.border = '2px solid #10B981';
+                setTimeout(() => {
+                    choferInput.style.border = originalBorder;
+                }, 2000);
+            };
+
+            // Event listeners para el modal de carga de datos
+            btnCargarDatos.addEventListener('click', function() {
+                // Cambiar icono temporalmente mientras se abre
+                const originalHTML = this.innerHTML;
+                this.innerHTML = `
+                    <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                `;
+                
+                modalCargaDatos.classList.remove('hidden');
+                cargarDatosLogistica().finally(() => {
+                    // Restaurar icono original después de cargar
+                    setTimeout(() => {
+                        this.innerHTML = originalHTML;
+                    }, 500);
+                });
+            });
+
+            btnCerrarModalDatos.addEventListener('click', function() {
+                modalCargaDatos.classList.add('hidden');
+            });
+
+            btnRetryCargarDatos.addEventListener('click', cargarDatosLogistica);
+
+            // Filtros del modal
+            document.getElementById('filtroChoferModal').addEventListener('input', filtrarDatosLogistica);
+            document.getElementById('filtroPatenteModal').addEventListener('input', filtrarDatosLogistica);
+
+            // Cerrar modal con ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !modalCargaDatos.classList.contains('hidden')) {
+                    modalCargaDatos.classList.add('hidden');
+                }
+            });
+
+            // Botón para ciclar entre modos de inspección
+            const btnModoInspeccion = document.getElementById('btnModoInspeccion');
+            if (btnModoInspeccion) {
+                btnModoInspeccion.addEventListener('click', function() {
+                    // Ciclar entre los tres modos: completo -> diario -> parcial -> completo
+                    if (!modoInspeccionDiario && !modoInspeccionParcial) {
+                        // Modo completo -> Modo diario
+                        modoInspeccionDiario = true;
+                        modoInspeccionParcial = false;
+                        this.textContent = 'MODO DIARIO (Secciones 1, 2, 3 y 4)';
+                        this.className = 'w-full md:w-auto bg-blue-500 text-white px-4 py-3 rounded-lg font-bold hover:bg-blue-600 transition-colors touch-target';
+                    } else if (modoInspeccionDiario && !modoInspeccionParcial) {
+                        // Modo diario -> Modo parcial
+                        modoInspeccionDiario = false;
+                        modoInspeccionParcial = true;
+                        this.textContent = 'MODO PARCIAL (Secciones 5, 6 y 7)';
+                        this.className = 'w-full md:w-auto bg-green-500 text-white px-4 py-3 rounded-lg font-bold hover:bg-green-600 transition-colors touch-target';
                     } else {
-                        this.textContent = 'MODO PARCIAL (Solo secciones 5, 6 y 7)';
-                        this.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-                        this.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+                        // Modo parcial -> Modo completo
+                        modoInspeccionDiario = false;
+                        modoInspeccionParcial = false;
+                        this.textContent = 'MODO COMPLETO (Todas las secciones)';
+                        this.className = 'w-full md:w-auto bg-gray-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-gray-700 transition-colors touch-target';
                     }
                     
                     // Aplicar el modo de inspección
@@ -583,51 +1019,46 @@
             
             // Función para aplicar el modo de inspección
             function aplicarModoInspeccion() {
-                // IDs de las secciones que queremos mostrar en el modo parcial
-                const seccionesParcialesIds = ['elementosSeguridad', 'elementosEPP', 'elementosCargas'];
+                // IDs de las secciones que queremos mostrar en cada modo
+                const seccionesParcialesIds = ['elementosSeguridad', 'elementosEPP', 'elementosCargas']; // Secciones 5, 6, 7
+                const seccionesDiariasIds = ['sistemaElectrico', 'seccionTractor', 'semirremolque', 'general']; // Secciones 1, 2, 3, 4
                 
                 // Recorrer todas las secciones
                 datosFormulario.secciones.forEach(seccion => {
                     const seccionContainer = document.querySelector(`.section-container[data-id="${seccion.id}"]`);
                     
                     if (seccionContainer) {
+                        let esMostrar = true; // Por defecto mostrar (modo completo)
+                        
                         if (modoInspeccionParcial) {
                             // En modo parcial: mostrar solo las secciones 5, 6 y 7
-                            const esMostrar = seccionesParcialesIds.includes(seccion.id);
-                            seccionContainer.style.display = esMostrar ? 'block' : 'none';
-                            
-                            // Hacer los inputs requeridos o no según corresponda
-                            seccion.items.forEach(item => {
-                                const inputs = document.querySelectorAll(`[name="${item.id}"]`);
-                                inputs.forEach(input => {
-                                    if (esMostrar) {
-                                        // Si la sección se muestra, mantener el required
-                                        if (!input.hasAttribute('data-required-original')) {
-                                            input.setAttribute('data-required-original', input.required);
-                                        }
-                                    } else {
-                                        // Si la sección se oculta, quitar el required
-                                        if (!input.hasAttribute('data-required-original')) {
-                                            input.setAttribute('data-required-original', input.required);
-                                        }
-                                        input.required = false;
-                                    }
-                                });
-                            });
-                        } else {
-                            // En modo completo: mostrar todas las secciones
-                            seccionContainer.style.display = 'block';
-                            
-                            // Restaurar el estado original de required
-                            seccion.items.forEach(item => {
-                                const inputs = document.querySelectorAll(`[name="${item.id}"]`);
-                                inputs.forEach(input => {
-                                    if (input.hasAttribute('data-required-original')) {
-                                        input.required = input.getAttribute('data-required-original') === 'true';
-                                    }
-                                });
-                            });
+                            esMostrar = seccionesParcialesIds.includes(seccion.id);
+                        } else if (modoInspeccionDiario) {
+                            // En modo diario: mostrar solo las secciones 1, 2, 3 y 4
+                            esMostrar = seccionesDiariasIds.includes(seccion.id);
                         }
+                        // En modo completo esMostrar = true para todas
+                        
+                        seccionContainer.style.display = esMostrar ? 'block' : 'none';
+                        
+                        // Hacer los inputs requeridos o no según corresponda
+                        seccion.items.forEach(item => {
+                            const inputs = document.querySelectorAll(`[name="${item.id}"]`);
+                            inputs.forEach(input => {
+                                if (esMostrar) {
+                                    // Si la sección se muestra, mantener el required
+                                    if (!input.hasAttribute('data-required-original')) {
+                                        input.setAttribute('data-required-original', input.required);
+                                    }
+                                } else {
+                                    // Si la sección se oculta, quitar el required
+                                    if (!input.hasAttribute('data-required-original')) {
+                                        input.setAttribute('data-required-original', input.required);
+                                    }
+                                    input.required = false;
+                                }
+                            });
+                        });
                     }
                 });
                 
@@ -828,15 +1259,22 @@
                     // Agrega aquí kmCamion y semi2 si los añadiste al HTML
                     // kmCamion: form.elements.kmCamion?.value || '', 
                     // semi2: form.elements.semi2?.value || '',
-                    modoParcial: modoInspeccionParcial, // Indicar si se usó modo parcial 
+                    modoParcial: modoInspeccionParcial, // Indicar si se usó modo parcial
+                    modoDiario: modoInspeccionDiario, // Indicar si se usó modo diario 
                     secciones: {}
                 };
 
                 // Determinar qué secciones incluir según el modo actual
-                const seccionesAIncluir = modoInspeccionParcial
-                    ? datosFormulario.secciones.filter(seccion => 
-                        ['elementosSeguridad', 'elementosEPP', 'elementosCargas'].includes(seccion.id))
-                    : datosFormulario.secciones;
+                let seccionesAIncluir;
+                if (modoInspeccionParcial) {
+                    seccionesAIncluir = datosFormulario.secciones.filter(seccion => 
+                        ['elementosSeguridad', 'elementosEPP', 'elementosCargas'].includes(seccion.id));
+                } else if (modoInspeccionDiario) {
+                    seccionesAIncluir = datosFormulario.secciones.filter(seccion => 
+                        ['sistemaElectrico', 'seccionTractor', 'semirremolque', 'general'].includes(seccion.id));
+                } else {
+                    seccionesAIncluir = datosFormulario.secciones;
+                }
 
                 seccionesAIncluir.forEach(seccion => {
                     jsonDataToSend.secciones[seccion.id] = {};
@@ -971,10 +1409,16 @@
             });
 
             // Determinar qué secciones incluir según el modo actual
-            const seccionesAIncluir = modoInspeccionParcial
-                ? datosFormulario.secciones.filter(seccion => 
-                    ['elementosSeguridad', 'elementosEPP', 'elementosCargas'].includes(seccion.id))
-                : datosFormulario.secciones;
+            let seccionesAIncluir;
+            if (modoInspeccionParcial) {
+                seccionesAIncluir = datosFormulario.secciones.filter(seccion => 
+                    ['elementosSeguridad', 'elementosEPP', 'elementosCargas'].includes(seccion.id));
+            } else if (modoInspeccionDiario) {
+                seccionesAIncluir = datosFormulario.secciones.filter(seccion => 
+                    ['sistemaElectrico', 'seccionTractor', 'semirremolque', 'general'].includes(seccion.id));
+            } else {
+                seccionesAIncluir = datosFormulario.secciones;
+            }
             
             // Definir el contenido del PDF
             const docDefinition = {
@@ -1001,6 +1445,11 @@
                     modoInspeccionParcial ? {
                         text: 'MODO DE INSPECCIÓN PARCIAL (Solo Secciones 5, 6 y 7)',
                         style: 'modoInspeccion',
+                        alignment: 'center',
+                        margin: [0, 5, 0, 15]
+                    } : modoInspeccionDiario ? {
+                        text: 'MODO DE INSPECCIÓN DIARIO (Solo Secciones 1, 2, 3 y 4)',
+                        style: 'modoInspeccionDiario',
                         alignment: 'center',
                         margin: [0, 5, 0, 15]
                     } : null,
@@ -1102,6 +1551,12 @@
                         bold: true,
                         color: '#d97706',
                         background: '#fef3c7'
+                    },
+                    modoInspeccionDiario: {
+                        fontSize: 12,
+                        bold: true,
+                        color: '#059669',
+                        background: '#d1fae5'
                     },
                     sectionHeader: {
                         fontSize: 12,
