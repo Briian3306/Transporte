@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportar Incidente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <a href="dashboard.html" class="text-gray-400 hover:text-gray-600 mr-4">
+                        ← Volver
+                    </a>
+                    <h1 class="text-xl font-bold text-gray-900">🚨 Reportar Incidente</h1>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto py-6 px-4">
+        <!-- Status Banner -->
+        <div id="statusBanner" class="hidden mb-6 p-4 rounded-md">
+            <p id="statusMessage" class="text-sm font-medium"></p>
+        </div>
+
+        <!-- Form Simple -->
+        <form id="incidenteForm" class="bg-white shadow rounded-lg p-6">
+            <div class="space-y-6">
+                
+                <!-- Datos Básicos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+                        <input type="date" id="fecha" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Hora *</label>
+                        <input type="time" id="hora" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Quién llama *</label>
+                        <input type="text" id="nombre" placeholder="Nombre completo" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono *</label>
+                        <input type="tel" id="telefono" placeholder="+54 9 11 1234-5678" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría del llamante *</label>
+                    <select id="categoria" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="">Seleccionar...</option>
+                        <option value="chofer">🚛 Chofer</option>
+                        <option value="cliente">👤 Cliente</option>
+                        <option value="policia">👮 Policía</option>
+                        <option value="bomberos">🚒 Bomberos</option>
+                        <option value="tercero">👥 Tercero</option>
+                        <option value="otro">❓ Otro</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Motivo del llamado *</label>
+                    <textarea id="motivo" placeholder="¿Por qué está llamando? Describa brevemente la situación..." required class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="2"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">¿Dónde está? *</label>
+                    <textarea id="ubicacion" placeholder="Ubicación exacta, km, referencias..." required class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="2"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Patente</label>
+                        <input type="text" id="patente" placeholder="ABC-123" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de incidente *</label>
+                        <select id="tipo" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="">Seleccionar...</option>
+                            <option value="accidente" data-peso="5">🚗 Accidente</option>
+                            <option value="robo" data-peso="8">⚠️ Robo/Amenaza</option>
+                            <option value="averia" data-peso="2">⚙️ Avería</option>
+                            <option value="derrame" data-peso="10">🔥 Derrame/Incendio</option>
+                            <option value="consulta" data-peso="1">📋 Consulta</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Subtipo de incidente</label>
+                        <select id="subtipo" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="">Seleccionar subtipo...</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Subcategorías de Riesgo -->
+                <div class="bg-red-50 p-4 rounded-md">
+                    <div class="flex items-center justify-between cursor-pointer" onclick="toggleSubcategorias()">
+                        <h3 class="font-medium text-red-800">⚠️ Subcategorías de Riesgo</h3>
+                        <span id="subcategoriasToggle" class="text-red-600 font-bold text-lg">▼</span>
+                    </div>
+                    <div id="subcategoriasContent" class="space-y-3 mt-3">
+                        <!-- Categoría: Emergencias Médicas -->
+                        <div class="border border-red-200 rounded-md p-3 bg-white">
+                            <h4 class="font-medium text-gray-800 mb-2">🏥 Emergencias Médicas</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="heridos_graves" class="mr-2" data-peso="15" data-indicacion="Llamar 911 inmediatamente. No mover al herido. Avisar a Diego.">
+                                    <span class="text-sm">Heridos graves</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="heridos_leves" class="mr-2" data-peso="8" data-indicacion="Evaluar si necesita ambulancia. Avisar a oficina.">
+                                    <span class="text-sm">Heridos leves</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="atropello" class="mr-2" data-peso="12" data-indicacion="Llamar 911 y policía. No mover vehículos. Avisar a Diego.">
+                                    <span class="text-sm">Atropello</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="accidente_mortal" class="mr-2" data-peso="20" data-indicacion="Llamar 911 y policía INMEDIATAMENTE. No tocar nada. Avisar a Diego y gerencia.">
+                                    <span class="text-sm">Accidente mortal</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Categoría: Incendios y Explosiones -->
+                        <div class="border border-red-200 rounded-md p-3 bg-white">
+                            <h4 class="font-medium text-gray-800 mb-2">🔥 Incendios y Explosiones</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="fuego_vehiculo" class="mr-2" data-peso="15" data-indicacion="Llamar bomberos 911. Evacuar área. Avisar a Diego.">
+                                    <span class="text-sm">Fuego en vehículo</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="fuego_carga" class="mr-2" data-peso="18" data-indicacion="Llamar bomberos 911. Evacuar 500m. Avisar a Diego y bomberos.">
+                                    <span class="text-sm">Fuego en carga</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="explosion" class="mr-2" data-peso="20" data-indicacion="Llamar 911 INMEDIATAMENTE. Evacuar 1km. Avisar a Diego y gerencia.">
+                                    <span class="text-sm">Explosión</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="derrame_peligroso" class="mr-2" data-peso="12" data-indicacion="Llamar bomberos. Evacuar área. No tocar derrame. Avisar a Diego.">
+                                    <span class="text-sm">Derrame peligroso</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Categoría: Seguridad y Robo -->
+                        <div class="border border-red-200 rounded-md p-3 bg-white">
+                            <h4 class="font-medium text-gray-800 mb-2">🔒 Seguridad y Robo</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="robo_armado" class="mr-2" data-peso="18" data-indicacion="Llamar policía 911. No resistir. Avisar a Diego y gerencia.">
+                                    <span class="text-sm">Robo armado</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="amenaza_armas" class="mr-2" data-peso="15" data-indicacion="Llamar policía 911. Mantener calma. Avisar a Diego.">
+                                    <span class="text-sm">Amenaza con armas</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="secuestro" class="mr-2" data-peso="20" data-indicacion="Llamar policía 911 INMEDIATAMENTE. No negociar. Avisar a Diego y gerencia.">
+                                    <span class="text-sm">Secuestro</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="robo_simple" class="mr-2" data-peso="6" data-indicacion="Llamar policía. No perseguir. Avisar a oficina.">
+                                    <span class="text-sm">Robo simple</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Categoría: Tránsito y Vial -->
+                        <div class="border border-red-200 rounded-md p-3 bg-white">
+                            <h4 class="font-medium text-gray-800 mb-2">🚧 Tránsito y Vial</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="bloqueo_total" class="mr-2" data-peso="8" data-indicacion="Llamar policía. Señalizar área. Avisar a oficina.">
+                                    <span class="text-sm">Bloqueo total de vía</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="choque_multiples" class="mr-2" data-peso="10" data-indicacion="Llamar 911. Señalizar área. No mover vehículos. Avisar a Diego.">
+                                    <span class="text-sm">Choque múltiple</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="vuelco" class="mr-2" data-peso="12" data-indicacion="Llamar 911. Señalizar área. Verificar heridos. Avisar a Diego.">
+                                    <span class="text-sm">Vuelco</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="averia_mayor" class="mr-2" data-peso="4" data-indicacion="Señalizar vehículo. Llamar grúa. Avisar a oficina.">
+                                    <span class="text-sm">Avería mayor</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clasificación Automática -->
+                <div id="clasificacion" class="hidden p-4 rounded-md">
+                    <h3 class="font-medium mb-2" id="clasificacionTitulo"></h3>
+                    <p class="text-sm" id="clasificacionDescripcion"></p>
+                </div>
+
+                <!-- Indicaciones de Seguridad -->
+                <div id="indicacionesContainer" class="hidden border rounded-md p-4">
+                    <div id="indicacionesLista" class="space-y-2">
+                        <!-- Las indicaciones se mostrarán aquí dinámicamente -->
+                    </div>
+                </div>
+
+
+
+            </div>
+
+            <!-- Botones -->
+            <div class="flex justify-between mt-8">
+                <button type="button" onclick="window.location.href='dashboard.html'" class="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400">
+                    Cancelar
+                </button>
+                <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700">
+                    Enviar Reporte
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        // Configuración para Make
+        const MAKE_WEBHOOK_URL = 'https://hook.eu1.make.com/YOUR_WEBHOOK_URL_HERE';
+        
+        // Configuración de niveles de riesgo (directamente en el HTML)
+        const NIVELES_RIESGO = {
+            CRITICO: { 
+                puntajeMinimo: 20, 
+                color: "red", 
+                titulo: "🚨 CRÍTICO", 
+                responsable: "Diego y Damian", 
+                tiempoRespuesta: "Inmediato"
+            },
+            ALTO: { 
+                puntajeMinimo: 15, 
+                color: "orange", 
+                titulo: "⚠️ ALTO", 
+                responsable: "Guardia Logística o Mantenimiento", 
+                tiempoRespuesta: "15 minutos"
+            },
+            MEDIO: { 
+                puntajeMinimo: 10, 
+                color: "yellow", 
+                titulo: "⚡ MEDIO", 
+                responsable: "Guardia Logística o Mantenimiento", 
+                tiempoRespuesta: "2 horas"
+            },
+            BAJO: { 
+                puntajeMinimo: 0, 
+                color: "green", 
+                titulo: "✅ BAJO", 
+                responsable: "Horario de oficina", 
+                tiempoRespuesta: "24 horas"
+            }
+        };
+
+        // Configuración de subtipos por tipo de incidente con indicaciones y acciones específicas para personal de seguridad
+        const SUBTIPOS_INCIDENTE = {
+            accidente: [
+                { 
+                    value: "choque_simple", 
+                    text: "Choque simple", 
+                    peso: 3,
+                    indicaciones: [
+                        "Pedir al chofer: DNI, licencia de conducir, seguro del vehículo",
+                        "Solicitar datos del otro vehículo: patente, conductor, seguro",
+                        "Tomar fotos del accidente con el celular",
+                        "Estos datos se los tiene que enviar por whatsapp a Logistica"
+                    ],
+                    acciones: [
+                        "Informar a logística sobre el incidente",
+                    ]
+                },
+                { 
+                    value: "choque_multiples", 
+                    text: "Choque múltiple", 
+                    peso: 8,
+                    indicaciones: [
+                        "Pedir al chofer: DNI, licencia, seguro, datos de contacto",
+                        "Solicitar datos de TODOS los vehículos involucrados",
+                        "Tomar fotos de la escena completa",
+                        "Estos datos se los tiene que enviar por WhatsApp a Logistica"
+                    ],
+                    acciones: [
+                        "Informar a logística URGENTE",
+                    ]
+                },
+                { 
+                    value: "vuelco", 
+                    text: "Vuelco", 
+                    peso: 12,
+                    indicaciones: [
+                        "Pedir al chofer: DNI, licencia, seguro, estado físico",
+                        "Verificar si hay otros ocupantes en el vehículo",
+                        "Tomar fotos del vehículo volcado",
+                        "Estos datos se los tiene que enviar por WhatsApp a Logistica"
+                    ],
+                    acciones: [
+                        "Informar a Diego y logística",
+                        "Registrar como incidente crítico",
+                        "Solicitar al chofer que contacte seguros y familia"
+                    ]
+                },
+                { 
+                    value: "atropello", 
+                    text: "Atropello", 
+                    peso: 15,
+                    indicaciones: [
+                        "Pedir al chofer: DNI, licencia, seguro, datos de contacto",
+                        "Solicitar datos de la víctima si es posible",
+                        "Tomar fotos de la escena SIN tocar nada",
+                        "Estos datos se los tiene que enviar por WhatsApp a Logistica"
+                    ],
+                    acciones: [
+                        "Informar a logística URGENTE",
+                    ]
+                },
+                { 
+                    value: "accidente_mortal", 
+                    text: "Accidente mortal", 
+                    peso: 20,
+                    indicaciones: [
+                        "Llamar 911 INMEDIATAMENTE",
+                        "Pedir al chofer: DNI, licencia, seguro, datos de contacto",
+                        "NO tocar NADA en la escena",
+                        "Tomar fotos de lejos sin interferir"
+                    ],
+                    acciones: [
+                        "Informar a Diego y gerencia URGENTE",
+                        "Registrar como incidente crítico máximo",
+                        "Solicitar al chofer que contacte abogado especializado"
+                    ]
+                }
+            ],
+            robo: [
+                { 
+                    value: "robo_simple", 
+                    text: "Robo simple", 
+                    peso: 4,
+                    indicaciones: [
+                        "Llamar a la policía al 911",
+                        "Pedir al chofer: DNI, licencia, seguro, descripción del robo",
+                        "Solicitar descripción de los delincuentes",
+                        "Tomar fotos del lugar del robo"
+                    ],
+                    acciones: [
+                        "Informar a logística sobre el robo",
+                        "Registrar incidente en el sistema",
+                        "Solicitar al chofer que haga denuncia policial"
+                    ]
+                },
+                { 
+                    value: "robo_armado", 
+                    text: "Robo armado", 
+                    peso: 15,
+                    indicaciones: [
+                        "Llamar 911 INMEDIATAMENTE",
+                        "Pedir al chofer: DNI, licencia, seguro, estado físico",
+                        "Solicitar descripción detallada de los delincuentes",
+                        "Tomar fotos si es seguro hacerlo"
+                    ],
+                    acciones: [
+                        "Informar a Diego y logística URGENTE",
+                        "Registrar como incidente crítico",
+                        "Solicitar al chofer que contacte policía especializada"
+                    ]
+                },
+                { 
+                    value: "amenaza_armas", 
+                    text: "Amenaza con armas", 
+                    peso: 12,
+                    indicaciones: [
+                        "Llamar 911 inmediatamente",
+                        "Pedir al chofer: DNI, licencia, seguro, estado emocional",
+                        "Solicitar descripción de la amenaza recibida",
+                        "Verificar si hay heridos"
+                    ],
+                    acciones: [
+                        "Informar a Diego y logística URGENTE",
+                        "Registrar como incidente crítico",
+                        "Solicitar al chofer que contacte policía especializada"
+                    ]
+                },
+                { 
+                    value: "secuestro", 
+                    text: "Secuestro", 
+                    peso: 20,
+                    indicaciones: [
+                        "Llamar 911 INMEDIATAMENTE",
+                        "Pedir al chofer: DNI, licencia, seguro, datos de contacto familiar",
+                        "Solicitar descripción del vehículo y delincuentes",
+                        "NO dar consejos sobre negociación"
+                    ],
+                    acciones: [
+                        "Informar a Diego y gerencia URGENTE",
+                        "Registrar como incidente crítico máximo",
+                        "Solicitar al chofer que contacte policía especializada"
+                    ]
+                }
+            ],
+            averia: [
+                { 
+                    value: "averia_menor", 
+                    text: "Avería menor", 
+                    peso: 1,
+                    indicaciones: [
+                        "Pedir al chofer: DNI, licencia, seguro, descripción de la avería",
+                        "Solicitar ubicación exacta del vehículo",
+                        "Verificar si el chofer puede continuar viaje",
+                        "Tomar foto del problema si es visible"
+                    ],
+                    acciones: [
+                        "Informar a logística sobre la avería",
+                        "Registrar incidente en el sistema",
+                        "Solicitar al chofer que contacte taller autorizado"
+                    ]
+                },
+                { 
+                    value: "averia_mayor", 
+                    text: "Avería mayor", 
+                    peso: 4,
+                    indicaciones: [
+                        "Pedir al chofer: DNI, licencia, seguro, descripción detallada",
+                        "Solicitar ubicación exacta y estado del conductor",
+                        "Verificar si hay otros ocupantes",
+                        "Tomar fotos de la avería"
+                    ],
+                    acciones: [
+                        "Informar a logística URGENTE",
+                        "Registrar como avería mayor",
+                        "Solicitar al chofer que contacte grúa especializada"
+                    ]
+                },
+                { 
+                    value: "averia_motor", 
+                    text: "Avería de motor", 
+                    peso: 6,
+                    indicaciones: [
+                        "Pedir al chofer: DNI, licencia, seguro, descripción del motor",
+                        "Solicitar ubicación exacta y temperatura del motor",
+                        "Verificar si hay humo o líquidos derramados",
+                        "Tomar fotos del motor si es seguro"
+                    ],
+                    acciones: [
+                        "Informar a logística URGENTE",
+                        "Registrar como avería crítica",
+                        "Solicitar al chofer que contacte mecánico especializado"
+                    ]
+                },
+                { 
+                    value: "averia_frenos", 
+                    text: "Avería de frenos", 
+                    peso: 8,
+                    indicaciones: [
+                        "Pedir al chofer: DNI, licencia, seguro, descripción del problema",
+                        "Solicitar ubicación exacta y estado del conductor",
+                        "Verificar si el vehículo está detenido de forma segura",
+                        "Tomar fotos del vehículo detenido"
+                    ],
+                    acciones: [
+                        "Informar a Diego y logística URGENTE",
+                        "Registrar como avería crítica máxima",
+                        "Solicitar al chofer que contacte grúa especializada"
+                    ]
+                }
+            ],
+            derrame: [
+                { 
+                    value: "derrame_menor", 
+                    text: "Derrame menor", 
+                    peso: 6,
+                    indicaciones: [
+                        "Llamar a bomberos al 100",
+                        "Pedir al chofer: DNI, licencia, seguro, tipo de material derramado",
+                        "Solicitar ubicación exacta y descripción del derrame",
+                        "Tomar fotos del derrame desde distancia segura"
+                    ],
+                    acciones: [
+                        "Informar a logística sobre el derrame",
+                        "Registrar incidente en el sistema",
+                        "Solicitar al chofer que contacte empresa de limpieza especializada"
+                    ]
+                },
+                { 
+                    value: "derrame_peligroso", 
+                    text: "Derrame peligroso", 
+                    peso: 12,
+                    indicaciones: [
+                        "Llamar bomberos 911 INMEDIATAMENTE",
+                        "Pedir al chofer: DNI, licencia, seguro, tipo de material peligroso",
+                        "Solicitar ubicación exacta y descripción detallada",
+                        "Tomar fotos desde distancia segura"
+                    ],
+                    acciones: [
+                        "Informar a Diego y logística URGENTE",
+                        "Registrar como incidente crítico",
+                        "Solicitar al chofer que contacte empresa especializada en derrames"
+                    ]
+                },
+                { 
+                    value: "fuego_vehiculo", 
+                    text: "Fuego en vehículo", 
+                    peso: 15,
+                    indicaciones: [
+                        "Llamar bomberos 911 INMEDIATAMENTE",
+                        "Pedir al chofer: DNI, licencia, seguro, estado físico",
+                        "Solicitar ubicación exacta y descripción del fuego",
+                        "Tomar fotos desde distancia segura"
+                    ],
+                    acciones: [
+                        "Informar a Diego y logística URGENTE",
+                        "Registrar como incidente crítico",
+                        "Solicitar al chofer que contacte bomberos especializados"
+                    ]
+                },
+                { 
+                    value: "fuego_carga", 
+                    text: "Fuego en carga", 
+                    peso: 18,
+                    indicaciones: [
+                        "Llamar bomberos 911 INMEDIATAMENTE",
+                        "Pedir al chofer: DNI, licencia, seguro, tipo de carga",
+                        "Solicitar ubicación exacta y descripción del fuego",
+                        "Tomar fotos desde distancia segura"
+                    ],
+                    acciones: [
+                        "Informar a Diego y logística URGENTE",
+                        "Registrar como incidente crítico máximo",
+                        "Solicitar al chofer que contacte bomberos especializados"
+                    ]
+                },
+                { 
+                    value: "explosion", 
+                    text: "Explosión", 
+                    peso: 20,
+                    indicaciones: [
+                        "Llamar 911 INMEDIATAMENTE",
+                        "Pedir al chofer: DNI, licencia, seguro, estado físico",
+                        "Solicitar ubicación exacta y descripción de la explosión",
+                        "Tomar fotos desde distancia segura"
+                    ],
+                    acciones: [
+                        "Informar a Diego y gerencia URGENTE",
+                        "Registrar como incidente crítico máximo",
+                        "Solicitar al chofer que contacte bomberos especializados"
+                    ]
+                }
+            ],
+            consulta: [
+                { 
+                    value: "consulta_rutina", 
+                    text: "Consulta rutinaria", 
+                    peso: 0,
+                    indicaciones: [
+                        "Pedir al chofer: DNI, licencia, seguro, motivo de la consulta",
+                        "Solicitar datos de contacto del chofer",
+                        "Registrar consulta en el sistema",
+                        "Atender durante horario de oficina"
+                    ],
+                    acciones: [
+                        "Informar a logística sobre la consulta",
+                        "Registrar en sistema de seguimiento",
+                        "Derivar a departamento correspondiente"
+                    ]
+                },
+                { 
+                    value: "consulta_urgencia", 
+                    text: "Consulta urgente", 
+                    peso: 2,
+                    indicaciones: [
+                        "Pedir al chofer: DNI, licencia, seguro, motivo urgente",
+                        "Solicitar datos de contacto del chofer",
+                        "Evaluar urgencia real de la consulta",
+                        "Registrar como consulta prioritaria"
+                    ],
+                    acciones: [
+                        "Informar a logística URGENTE",
+                        "Registrar como prioritaria",
+                        "Derivar a supervisor de turno"
+                    ]
+                },
+                { 
+                    value: "consulta_tecnica", 
+                    text: "Consulta técnica", 
+                    peso: 1,
+                    indicaciones: [
+                        "Pedir al chofer: DNI, licencia, seguro, descripción técnica",
+                        "Solicitar datos de contacto del chofer",
+                        "Recopilar información detallada del problema",
+                        "Registrar consulta técnica en el sistema"
+                    ],
+                    acciones: [
+                        "Informar a logística sobre consulta técnica",
+                        "Registrar en sistema técnico",
+                        "Solicitar al chofer que contacte técnico especializado"
+                    ]
+                }
+            ]
+        };
+
+        // Toggle para subcategorías de riesgo
+        function toggleSubcategorias() {
+            const content = document.getElementById('subcategoriasContent');
+            const toggle = document.getElementById('subcategoriasToggle');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.textContent = '▼';
+            } else {
+                content.style.display = 'none';
+                toggle.textContent = '▶';
+            }
+        }
+
+        // Mostrar mensaje
+        function showStatus(message, type = 'info') {
+            const banner = document.getElementById('statusBanner');
+            const messageEl = document.getElementById('statusMessage');
+            
+            banner.className = `mb-6 p-4 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : type === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`;
+            messageEl.textContent = message;
+            banner.classList.remove('hidden');
+
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Actualizar subtipos cuando cambia el tipo de incidente
+        function actualizarSubtipos() {
+            const tipoSelect = document.getElementById('tipo');
+            const subtipoSelect = document.getElementById('subtipo');
+            const tipoSeleccionado = tipoSelect.value;
+            
+            // Limpiar opciones de subtipo
+            subtipoSelect.innerHTML = '<option value="">Seleccionar subtipo...</option>';
+            
+            if (tipoSeleccionado && SUBTIPOS_INCIDENTE[tipoSeleccionado]) {
+                SUBTIPOS_INCIDENTE[tipoSeleccionado].forEach(subtipo => {
+                    const option = document.createElement('option');
+                    option.value = subtipo.value;
+                    option.textContent = subtipo.text;
+                    option.setAttribute('data-peso', subtipo.peso);
+                    subtipoSelect.appendChild(option);
+                });
+            }
+            
+            // Recalcular clasificación
+            clasificar();
+        }
+
+        // Calcular puntaje total basado en subcategorías y tipo/subtipo
+        function calcularPuntaje() {
+            let puntaje = 0;
+            
+            // Sumar puntos de subcategorías de riesgo (checkboxes con data-peso)
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][data-peso]');
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    puntaje += parseInt(checkbox.getAttribute('data-peso')) || 0;
+                }
+            });
+            
+            // Sumar puntos del tipo de incidente
+            const tipoSelect = document.getElementById('tipo');
+            const tipoOption = tipoSelect.selectedOptions[0];
+            if (tipoOption && tipoOption.getAttribute('data-peso')) {
+                puntaje += parseInt(tipoOption.getAttribute('data-peso')) || 0;
+            }
+            
+            // Sumar puntos del subtipo de incidente
+            const subtipoSelect = document.getElementById('subtipo');
+            const subtipoOption = subtipoSelect.selectedOptions[0];
+            if (subtipoOption && subtipoOption.getAttribute('data-peso')) {
+                puntaje += parseInt(subtipoOption.getAttribute('data-peso')) || 0;
+            }
+            
+            return puntaje;
+        }
+
+        // Determinar nivel de riesgo basado en el puntaje
+        function determinarNivelRiesgo(puntaje) {
+            const niveles = Object.keys(NIVELES_RIESGO).sort((a, b) => 
+                NIVELES_RIESGO[b].puntajeMinimo - NIVELES_RIESGO[a].puntajeMinimo
+            );
+            
+            for (const nivel of niveles) {
+                if (puntaje >= NIVELES_RIESGO[nivel].puntajeMinimo) {
+                    return nivel;
+                }
+            }
+            
+            return 'BAJO'; // Nivel por defecto
+        }
+
+        // Mostrar indicaciones de seguridad
+        function mostrarIndicaciones() {
+            const indicacionesContainer = document.getElementById('indicacionesContainer');
+            const indicacionesLista = document.getElementById('indicacionesLista');
+            
+            // Obtener checkboxes marcados con indicaciones
+            const checkboxesMarcados = document.querySelectorAll('input[type="checkbox"][data-indicacion]:checked');
+            
+            // Obtener indicaciones del subtipo seleccionado
+            const subtipoSelect = document.getElementById('subtipo');
+            const tipoSelect = document.getElementById('tipo');
+            const subtipoSeleccionado = subtipoSelect.value;
+            const tipoSeleccionado = tipoSelect.value;
+            
+            let hayIndicaciones = false;
+            indicacionesLista.innerHTML = '';
+            
+            // Mostrar indicaciones de subcategorías de riesgo
+            if (checkboxesMarcados.length > 0) {
+                hayIndicaciones = true;
+                
+                const subcategoriasDiv = document.createElement('div');
+                subcategoriasDiv.className = 'mb-4';
+                subcategoriasDiv.innerHTML = '<h4 class="font-medium text-yellow-800 mb-2">🚨 Indicaciones de Subcategorías de Riesgo</h4>';
+                indicacionesLista.appendChild(subcategoriasDiv);
+                
+                checkboxesMarcados.forEach(checkbox => {
+                    const indicacion = checkbox.getAttribute('data-indicacion');
+                    const descripcion = checkbox.nextElementSibling.textContent.trim();
+                    
+                    const div = document.createElement('div');
+                    div.className = 'flex items-start space-x-2 p-2 bg-white rounded border border-yellow-200 mb-2';
+                    div.innerHTML = `
+                        <span class="text-yellow-600 font-medium">•</span>
+                        <div>
+                            <span class="text-sm font-medium text-gray-800">${descripcion}:</span>
+                            <p class="text-sm text-gray-700 mt-1">${indicacion}</p>
+                        </div>
+                    `;
+                    indicacionesLista.appendChild(div);
+                });
+            }
+            
+            // Mostrar indicaciones específicas del subtipo
+            if (subtipoSeleccionado && tipoSeleccionado && SUBTIPOS_INCIDENTE[tipoSeleccionado]) {
+                const subtipoConfig = SUBTIPOS_INCIDENTE[tipoSeleccionado].find(s => s.value === subtipoSeleccionado);
+                
+                if (subtipoConfig && subtipoConfig.indicaciones) {
+                    hayIndicaciones = true;
+                    
+                    const subtipoDiv = document.createElement('div');
+                    subtipoDiv.className = 'mb-4';
+                    subtipoDiv.innerHTML = `<h4 class="font-medium text-blue-800 mb-2">📋 Indicaciones para ${subtipoConfig.text}</h4>`;
+                    indicacionesLista.appendChild(subtipoDiv);
+                    
+                    subtipoConfig.indicaciones.forEach(indicacion => {
+                        const div = document.createElement('div');
+                        div.className = 'flex items-start space-x-2 p-2 bg-blue-50 rounded border border-blue-200 mb-2';
+                        div.innerHTML = `
+                            <span class="text-blue-600 font-medium">•</span>
+                            <p class="text-sm text-gray-700">${indicacion}</p>
+                        `;
+                        indicacionesLista.appendChild(div);
+                    });
+                }
+                
+                // Mostrar acciones específicas del subtipo
+                if (subtipoConfig && subtipoConfig.acciones) {
+                    hayIndicaciones = true;
+                    
+                    const accionesDiv = document.createElement('div');
+                    accionesDiv.className = 'mb-4';
+                    accionesDiv.innerHTML = `<h4 class="font-medium text-green-800 mt-1 mb-2">⚡ Acciones para ${subtipoConfig.text}</h4>`;
+                    indicacionesLista.appendChild(accionesDiv);
+                    
+                    subtipoConfig.acciones.forEach(accion => {
+                        const div = document.createElement('div');
+                        div.className = 'flex items-start space-x-2 p-2 bg-green-50 rounded border border-green-200 mb-2';
+                        div.innerHTML = `
+                            <span class="text-green-600 font-medium">✓</span>
+                            <p class="text-sm text-gray-700">${accion}</p>
+                        `;
+                        indicacionesLista.appendChild(div);
+                    });
+                }
+            }
+            
+            if (hayIndicaciones) {
+                indicacionesContainer.classList.remove('hidden');
+            } else {
+                indicacionesContainer.classList.add('hidden');
+            }
+        }
+
+        // Clasificar automáticamente
+        function clasificar() {
+            const puntaje = calcularPuntaje();
+            const nivel = determinarNivelRiesgo(puntaje);
+            const configNivel = NIVELES_RIESGO[nivel];
+
+            // Mostrar indicaciones de seguridad
+            mostrarIndicaciones();
+
+            // Mostrar puntaje en tiempo real
+            const puntajeContainer = document.getElementById('puntajeContainer');
+            const puntajeActual = document.getElementById('puntajeActual');
+            
+            if (puntajeContainer && puntajeActual) {
+                puntajeActual.textContent = puntaje;
+                if (puntaje > 0) {
+                    puntajeContainer.classList.remove('hidden');
+                } else {
+                    puntajeContainer.classList.add('hidden');
+                }
+            }
+
+            // Mostrar clasificación
+            const div = document.getElementById('clasificacion');
+            const titulo = document.getElementById('clasificacionTitulo');
+            const desc = document.getElementById('clasificacionDescripcion');
+
+            // Aplicar colores dinámicos
+            const colorClasses = {
+                red: 'bg-red-100 text-red-800',
+                orange: 'bg-orange-100 text-orange-800',
+                yellow: 'bg-yellow-100 text-yellow-800',
+                green: 'bg-green-100 text-green-800'
+            };
+
+            div.className = `p-4 rounded-md ${colorClasses[configNivel.color] || 'bg-gray-100 text-gray-800'}`;
+            titulo.textContent = "Clasificación: " + configNivel.titulo;
+            
+            let descripcionCompleta = `Puntaje: ${puntaje} | Responsable: ${configNivel.responsable}`;
+            
+            desc.textContent = descripcionCompleta;
+            div.classList.remove('hidden');
+        }
+
+        // Enviar a Make
+        async function enviarAMake(datos) {
+            try {
+                const response = await fetch(MAKE_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datos)
+                });
+                return response.ok;
+            } catch (error) {
+                console.error('Error:', error);
+                return false;
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fecha y hora actual
+            const ahora = new Date();
+            document.getElementById('fecha').value = ahora.toISOString().split('T')[0];
+            document.getElementById('hora').value = ahora.toTimeString().slice(0,5);
+
+            // Inicializar subcategorías como plegadas
+            document.getElementById('subcategoriasContent').style.display = 'none';
+            document.getElementById('subcategoriasToggle').textContent = '▶';
+
+            // Eventos para tipo de incidente y subtipo
+            document.getElementById('tipo').addEventListener('change', function() {
+                actualizarSubtipos();
+                clasificar();
+                validarEnTiempoReal();
+            });
+            
+            document.getElementById('subtipo').addEventListener('change', function() {
+                clasificar();
+                validarEnTiempoReal();
+            });
+
+            // Eventos para todas las subcategorías de riesgo (checkboxes con data-peso)
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][data-peso]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', clasificar);
+            });
+
+            // Validación en tiempo real
+            function validarEnTiempoReal() {
+                const errores = validarIncidente();
+                const patenteField = document.getElementById('patente');
+                const ubicacionField = document.getElementById('ubicacion');
+                const motivoField = document.getElementById('motivo');
+                
+                // Limpiar estilos de error previos
+                patenteField.classList.remove('border-red-500');
+                ubicacionField.classList.remove('border-red-500');
+                motivoField.classList.remove('border-red-500');
+                
+                // Aplicar estilos de error según validaciones
+                if (errores.some(e => e.includes('patente'))) {
+                    patenteField.classList.add('border-red-500');
+                }
+                if (errores.some(e => e.includes('ubicación'))) {
+                    ubicacionField.classList.add('border-red-500');
+                }
+                if (errores.some(e => e.includes('motivo'))) {
+                    motivoField.classList.add('border-red-500');
+                }
+            }
+
+            // Eventos para validación en tiempo real
+            document.getElementById('patente').addEventListener('input', validarEnTiempoReal);
+            document.getElementById('ubicacion').addEventListener('input', validarEnTiempoReal);
+            document.getElementById('motivo').addEventListener('input', validarEnTiempoReal);
+
+            // Validaciones específicas según tipo y subtipo
+            function validarIncidente() {
+                const tipo = document.getElementById('tipo').value;
+                const subtipo = document.getElementById('subtipo').value;
+                const patente = document.getElementById('patente').value;
+                const ubicacion = document.getElementById('ubicacion').value;
+                const motivo = document.getElementById('motivo').value;
+                
+                let errores = [];
+                
+                // Validaciones específicas por tipo de incidente
+                if (tipo === 'accidente') {
+                    if (!patente.trim()) {
+                        errores.push('La patente es obligatoria para accidentes');
+                    }
+                    if (ubicacion.length < 20) {
+                        errores.push('La ubicación debe ser más detallada para accidentes (mínimo 20 caracteres)');
+                    }
+                }
+                
+                if (tipo === 'robo') {
+                    if (!patente.trim()) {
+                        errores.push('La patente es obligatoria para robos');
+                    }
+                    if (motivo.length < 30) {
+                        errores.push('El motivo debe ser más detallado para robos (mínimo 30 caracteres)');
+                    }
+                }
+                
+                if (tipo === 'derrame') {
+                    if (ubicacion.length < 30) {
+                        errores.push('La ubicación debe ser muy detallada para derrames (mínimo 30 caracteres)');
+                    }
+                    if (motivo.length < 40) {
+                        errores.push('El motivo debe describir detalladamente el derrame (mínimo 40 caracteres)');
+                    }
+                }
+                
+                // Validaciones específicas por subtipo
+                if (subtipo === 'accidente_mortal' || subtipo === 'secuestro' || subtipo === 'explosion') {
+                    if (motivo.length < 50) {
+                        errores.push('Para incidentes críticos, el motivo debe ser muy detallado (mínimo 50 caracteres)');
+                    }
+                }
+                
+                if (subtipo === 'averia_frenos') {
+                    if (!patente.trim()) {
+                        errores.push('La patente es obligatoria para averías de frenos');
+                    }
+                }
+                
+                return errores;
+            }
+
+            // Enviar formulario
+            document.getElementById('incidenteForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                // Validar formulario
+                const errores = validarIncidente();
+                if (errores.length > 0) {
+                    showStatus('❌ Errores de validación: ' + errores.join(', '), 'error');
+                    return;
+                }
+
+                // Recopilar subcategorías seleccionadas
+                const subcategoriasSeleccionadas = [];
+                const checkboxes = document.querySelectorAll('input[type="checkbox"][data-peso]:checked');
+                checkboxes.forEach(checkbox => {
+                    subcategoriasSeleccionadas.push({
+                        id: checkbox.id,
+                        peso: parseInt(checkbox.getAttribute('data-peso')),
+                        descripcion: checkbox.nextElementSibling.textContent.trim(),
+                        indicacion: checkbox.getAttribute('data-indicacion') || null
+                    });
+                });
+
+                // Obtener indicaciones y acciones del subtipo
+                const tipo = document.getElementById('tipo').value;
+                const subtipo = document.getElementById('subtipo').value;
+                let indicacionesSubtipo = [];
+                let accionesSubtipo = [];
+                
+                if (tipo && subtipo && SUBTIPOS_INCIDENTE[tipo]) {
+                    const subtipoConfig = SUBTIPOS_INCIDENTE[tipo].find(s => s.value === subtipo);
+                    if (subtipoConfig) {
+                        indicacionesSubtipo = subtipoConfig.indicaciones || [];
+                        accionesSubtipo = subtipoConfig.acciones || [];
+                    }
+                }
+
+                const datos = {
+                    fecha: document.getElementById('fecha').value,
+                    hora: document.getElementById('hora').value,
+                    nombre: document.getElementById('nombre').value,
+                    telefono: document.getElementById('telefono').value,
+                    categoria: document.getElementById('categoria').value,
+                    motivo: document.getElementById('motivo').value,
+                    ubicacion: document.getElementById('ubicacion').value,
+                    patente: document.getElementById('patente').value,
+                    tipo: tipo,
+                    subtipo: subtipo,
+                    subcategorias: subcategoriasSeleccionadas,
+                    indicacionesSubtipo: indicacionesSubtipo,
+                    accionesSubtipo: accionesSubtipo,
+                    puntajeTotal: calcularPuntaje(),
+                    nivelRiesgo: determinarNivelRiesgo(calcularPuntaje()),
+                    timestamp: new Date().toISOString()
+                };
+
+                // Enviar a Make
+                const enviado = await enviarAMake(datos);
+                
+                if (enviado) {
+                    showStatus('✅ Reporte enviado correctamente', 'success');
+                } else {
+                    showStatus('⚠️ Reporte guardado localmente (error de conexión)', 'error');
+                }
+
+                // Guardar localmente también
+                const incidentes = JSON.parse(localStorage.getItem('incidentes') || '[]');
+                incidentes.push(datos);
+                localStorage.setItem('incidentes', JSON.stringify(incidentes));
+
+                // Volver al dashboard
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>
