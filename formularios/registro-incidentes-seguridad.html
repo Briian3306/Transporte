@@ -23,10 +23,6 @@
 
     <!-- Main Content -->
     <main class="max-w-4xl mx-auto py-6 px-4">
-        <!-- Status Banner -->
-        <div id="statusBanner" class="hidden mb-6 p-4 rounded-md">
-            <p id="statusMessage" class="text-sm font-medium"></p>
-        </div>
 
         <!-- Form Simple -->
         <form id="incidenteForm" class="bg-white shadow rounded-lg p-6">
@@ -93,6 +89,9 @@
                             <option value="robo" data-peso="8">⚠️ Robo/Amenaza</option>
                             <option value="averia" data-peso="2">⚙️ Avería</option>
                             <option value="derrame" data-peso="10">🔥 Derrame/Incendio</option>
+                            <option value="documentacion" data-peso="1">📄 Documentación</option>
+                            <option value="operaciones_cliente" data-peso="1">🏢 Operaciones de Cliente</option>
+                            <option value="combustible" data-peso="1">⛽ Combustible</option>
                             <option value="consulta" data-peso="1">📋 Consulta</option>
                         </select>
                     </div>
@@ -101,106 +100,6 @@
                         <select id="subtipo" class="w-full px-3 py-2 border border-gray-300 rounded-md">
                             <option value="">Seleccionar subtipo...</option>
                         </select>
-                    </div>
-                </div>
-                <!-- Subcategorías de Riesgo -->
-                <div class="bg-red-50 p-4 rounded-md">
-                    <div class="flex items-center justify-between cursor-pointer" onclick="toggleSubcategorias()">
-                        <h3 class="font-medium text-red-800">⚠️ Subcategorías de Riesgo</h3>
-                        <span id="subcategoriasToggle" class="text-red-600 font-bold text-lg">▼</span>
-                    </div>
-                    <div id="subcategoriasContent" class="space-y-3 mt-3">
-                        <!-- Categoría: Emergencias Médicas -->
-                        <div class="border border-red-200 rounded-md p-3 bg-white">
-                            <h4 class="font-medium text-gray-800 mb-2">🏥 Emergencias Médicas</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="heridos_graves" class="mr-2" data-peso="15" data-indicacion="Llamar 911 inmediatamente. No mover al herido. Avisar a Diego.">
-                                    <span class="text-sm">Heridos graves</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="heridos_leves" class="mr-2" data-peso="8" data-indicacion="Evaluar si necesita ambulancia. Avisar a oficina.">
-                                    <span class="text-sm">Heridos leves</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="atropello" class="mr-2" data-peso="12" data-indicacion="Llamar 911 y policía. No mover vehículos. Avisar a Diego.">
-                                    <span class="text-sm">Atropello</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="accidente_mortal" class="mr-2" data-peso="20" data-indicacion="Llamar 911 y policía INMEDIATAMENTE. No tocar nada. Avisar a Diego y gerencia.">
-                                    <span class="text-sm">Accidente mortal</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Categoría: Incendios y Explosiones -->
-                        <div class="border border-red-200 rounded-md p-3 bg-white">
-                            <h4 class="font-medium text-gray-800 mb-2">🔥 Incendios y Explosiones</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="fuego_vehiculo" class="mr-2" data-peso="15" data-indicacion="Llamar bomberos 911. Evacuar área. Avisar a Diego.">
-                                    <span class="text-sm">Fuego en vehículo</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="fuego_carga" class="mr-2" data-peso="18" data-indicacion="Llamar bomberos 911. Evacuar 500m. Avisar a Diego y bomberos.">
-                                    <span class="text-sm">Fuego en carga</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="explosion" class="mr-2" data-peso="20" data-indicacion="Llamar 911 INMEDIATAMENTE. Evacuar 1km. Avisar a Diego y gerencia.">
-                                    <span class="text-sm">Explosión</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="derrame_peligroso" class="mr-2" data-peso="12" data-indicacion="Llamar bomberos. Evacuar área. No tocar derrame. Avisar a Diego.">
-                                    <span class="text-sm">Derrame peligroso</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Categoría: Seguridad y Robo -->
-                        <div class="border border-red-200 rounded-md p-3 bg-white">
-                            <h4 class="font-medium text-gray-800 mb-2">🔒 Seguridad y Robo</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="robo_armado" class="mr-2" data-peso="18" data-indicacion="Llamar policía 911. No resistir. Avisar a Diego y gerencia.">
-                                    <span class="text-sm">Robo armado</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="amenaza_armas" class="mr-2" data-peso="15" data-indicacion="Llamar policía 911. Mantener calma. Avisar a Diego.">
-                                    <span class="text-sm">Amenaza con armas</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="secuestro" class="mr-2" data-peso="20" data-indicacion="Llamar policía 911 INMEDIATAMENTE. No negociar. Avisar a Diego y gerencia.">
-                                    <span class="text-sm">Secuestro</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="robo_simple" class="mr-2" data-peso="6" data-indicacion="Llamar policía. No perseguir. Avisar a oficina.">
-                                    <span class="text-sm">Robo simple</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Categoría: Tránsito y Vial -->
-                        <div class="border border-red-200 rounded-md p-3 bg-white">
-                            <h4 class="font-medium text-gray-800 mb-2">🚧 Tránsito y Vial</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="bloqueo_total" class="mr-2" data-peso="8" data-indicacion="Llamar policía. Señalizar área. Avisar a oficina.">
-                                    <span class="text-sm">Bloqueo total de vía</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="choque_multiples" class="mr-2" data-peso="10" data-indicacion="Llamar 911. Señalizar área. No mover vehículos. Avisar a Diego.">
-                                    <span class="text-sm">Choque múltiple</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="vuelco" class="mr-2" data-peso="12" data-indicacion="Llamar 911. Señalizar área. Verificar heridos. Avisar a Diego.">
-                                    <span class="text-sm">Vuelco</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="averia_mayor" class="mr-2" data-peso="4" data-indicacion="Señalizar vehículo. Llamar grúa. Avisar a oficina.">
-                                    <span class="text-sm">Avería mayor</span>
-                                </label>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -235,7 +134,7 @@
 
     <script>
         // Configuración para Make
-        const MAKE_WEBHOOK_URL = 'https://hook.eu1.make.com/YOUR_WEBHOOK_URL_HERE';
+        const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/13r45n327bvgejvy9vxjaj63rtlx6ec3';
         
         // Configuración de niveles de riesgo (directamente en el HTML)
         const NIVELES_RIESGO = {
@@ -250,14 +149,14 @@
                 puntajeMinimo: 15, 
                 color: "orange", 
                 titulo: "⚠️ ALTO", 
-                responsable: "Guardia Logística o Mantenimiento", 
+                responsable: "Guardia Logística / Mantenimiento", 
                 tiempoRespuesta: "15 minutos"
             },
             MEDIO: { 
                 puntajeMinimo: 10, 
                 color: "yellow", 
                 titulo: "⚡ MEDIO", 
-                responsable: "Guardia Logística o Mantenimiento", 
+                responsable: "Guardia Logística / Mantenimiento", 
                 tiempoRespuesta: "2 horas"
             },
             BAJO: { 
@@ -269,81 +168,155 @@
             }
         };
 
-        // Configuración de subtipos por tipo de incidente con indicaciones y acciones específicas para personal de seguridad
+        // Configuración de subtipos por tipo de incidente con indicaciones y acciones específicas para operador de seguridad
         const SUBTIPOS_INCIDENTE = {
             accidente: [
                 { 
-                    value: "choque_simple", 
-                    text: "Choque simple", 
+                    value: "choque_simple_sin_heridos", 
+                    text: "Choque simple sin heridos", 
                     peso: 3,
                     indicaciones: [
-                        "Pedir al chofer: DNI, licencia de conducir, seguro del vehículo",
-                        "Solicitar datos del otro vehículo: patente, conductor, seguro",
-                        "Tomar fotos del accidente con el celular",
-                        "Estos datos se los tiene que enviar por whatsapp a Logistica"
+                        "INSTRUIR AL CHOFER: Mantener calma y no moverse del lugar",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia y colocar balizas",
+                        "INSTRUIR AL CHOFER: NO admitir responsabilidad ni discutir con el otro conductor",
+                        "INSTRUIR AL CHOFER: Recopilar datos del otro vehículo (patente, conductor, seguro)",
+                        "INSTRUIR AL CHOFER: Tomar fotos del accidente y daños",
+                        "VERIFICAR: Que no hay heridos ni daños a terceros",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto"
                     ],
                     acciones: [
-                        "Informar a logística sobre el incidente",
+                        "Enviar información por WhatsApp a Logística para informar sobre el incidente",
+                        "Registrar en el sistema",
                     ]
                 },
                 { 
-                    value: "choque_multiples", 
-                    text: "Choque múltiple", 
+                    value: "choque_simple_con_heridos", 
+                    text: "Choque simple con heridos", 
                     peso: 8,
                     indicaciones: [
-                        "Pedir al chofer: DNI, licencia, seguro, datos de contacto",
-                        "Solicitar datos de TODOS los vehículos involucrados",
-                        "Tomar fotos de la escena completa",
-                        "Estos datos se los tiene que enviar por WhatsApp a Logistica"
+                        "INSTRUIR AL CHOFER: Llamar 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: NO mover a los heridos bajo ninguna circunstancia",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia y colocar balizas",
+                        "INSTRUIR AL CHOFER: Tomar fotos de la escena sin interferir",
+                        "INSTRUIR AL CHOFER: Recopilar datos del otro vehículo y heridos",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto",
+                        "VERIFICAR: Estado físico y emocional del chofer"
                     ],
                     acciones: [
-                        "Informar a logística URGENTE",
+                        "Llamar INMEDIATAMENTE a Diego y Damian",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar en el sistema"
                     ]
                 },
                 { 
-                    value: "vuelco", 
-                    text: "Vuelco", 
-                    peso: 12,
+                    value: "choque_multiples_sin_heridos", 
+                    text: "Choque múltiple sin heridos", 
+                    peso: 6,
                     indicaciones: [
-                        "Pedir al chofer: DNI, licencia, seguro, estado físico",
-                        "Verificar si hay otros ocupantes en el vehículo",
-                        "Tomar fotos del vehículo volcado",
-                        "Estos datos se los tiene que enviar por WhatsApp a Logistica"
+                        "INSTRUIR AL CHOFER: Mantener calma y no moverse del lugar",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia y colocar balizas",
+                        "INSTRUIR AL CHOFER: NO admitir responsabilidad ni discutir",
+                        "INSTRUIR AL CHOFER: Recopilar datos de TODOS los vehículos involucrados",
+                        "INSTRUIR AL CHOFER: Tomar fotos de la escena completa",
+                        "VERIFICAR: Que no hay heridos en ningún vehículo",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto"
                     ],
                     acciones: [
-                        "Informar a Diego y logística",
-                        "Registrar como incidente crítico",
-                        "Solicitar al chofer que contacte seguros y familia"
+                        "Llamar INMEDIATAMENTE a Guardia Logística",
+                        "Registrar en el sistema",
+                    ]
+                },
+                { 
+                    value: "choque_multiples_con_heridos", 
+                    text: "Choque múltiple con heridos", 
+                    peso: 15,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Llamar 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: NO mover a los heridos bajo ninguna circunstancia",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia y colocar balizas",
+                        "INSTRUIR AL CHOFER: Tomar fotos de la escena sin interferir",
+                        "INSTRUIR AL CHOFER: Recopilar datos de TODOS los vehículos y heridos",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto",
+                        "VERIFICAR: Estado físico y emocional del chofer"
+                    ],
+                    acciones: [
+                        "Llamar INMEDIATAMENTE a Diego y Damian",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar en el sistema"
+                    ]
+                },
+                { 
+                    value: "vuelco_sin_heridos", 
+                    text: "Vuelco sin heridos", 
+                    peso: 8,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: NO intentar enderezar el vehículo",
+                        "INSTRUIR AL CHOFER: Salir del vehículo con cuidado si es posible",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia y colocar balizas",
+                        "INSTRUIR AL CHOFER: Verificar si hay otros ocupantes en el vehículo",
+                        "INSTRUIR AL CHOFER: Tomar fotos del hecho desde diferentes ángulos",
+                        "VERIFICAR: Que no hay heridos ni daños a terceros",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto"
+                    ],
+                    acciones: [
+                        "Llamar INMEDIATAMENTE a Guardia Logística",
+                        "Registrar en el sistema"
+                    ]
+                },
+                { 
+                    value: "vuelco_con_heridos", 
+                    text: "Vuelco con heridos", 
+                    peso: 15,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Llamar 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: NO mover a los heridos bajo ninguna circunstancia",
+                        "INSTRUIR AL CHOFER: Salir del vehículo con cuidado si es posible",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia y colocar balizas",
+                        "INSTRUIR AL CHOFER: Verificar si hay otros ocupantes en el vehículo",
+                        "INSTRUIR AL CHOFER: Tomar fotos del hecho sin interferir",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto"
+                    ],
+                    acciones: [
+                        "Llamar INMEDIATAMENTE a Guardia Logística",
+                        "Registrar en el sistema"
                     ]
                 },
                 { 
                     value: "atropello", 
                     text: "Atropello", 
-                    peso: 15,
+                    peso: 18,
                     indicaciones: [
-                        "Pedir al chofer: DNI, licencia, seguro, datos de contacto",
-                        "Solicitar datos de la víctima si es posible",
-                        "Tomar fotos de la escena SIN tocar nada",
-                        "Estos datos se los tiene que enviar por WhatsApp a Logistica"
+                        "INSTRUIR AL CHOFER: Llamar 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: NO mover a la víctima bajo ninguna circunstancia",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia y colocar balizas",
+                        "INSTRUIR AL CHOFER: Tomar fotos de la escena SIN tocar nada",
+                        "INSTRUIR AL CHOFER: Recopilar datos de contacto de la víctima si es posible",
+                        "INSTRUIR AL CHOFER: NO admitir responsabilidad ni discutir",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto"
                     ],
                     acciones: [
-                        "Informar a logística URGENTE",
+                        "Llamar INMEDIATAMENTE a Diego y Damian",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar en el sistema"
                     ]
                 },
                 { 
                     value: "accidente_mortal", 
                     text: "Accidente mortal", 
-                    peso: 20,
+                    peso: 25,
                     indicaciones: [
-                        "Llamar 911 INMEDIATAMENTE",
-                        "Pedir al chofer: DNI, licencia, seguro, datos de contacto",
-                        "NO tocar NADA en la escena",
-                        "Tomar fotos de lejos sin interferir"
+                        "INSTRUIR AL CHOFER: Llamar 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: NO tocar NADA en la escena",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia y colocar balizas",
+                        "INSTRUIR AL CHOFER: Tomar fotos de lejos sin interferir",
+                        "INSTRUIR AL CHOFER: NO admitir responsabilidad ni discutir",
+                        "INSTRUIR AL CHOFER: Avisar a familiares si es posible",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto"
                     ],
                     acciones: [
-                        "Informar a Diego y gerencia URGENTE",
-                        "Registrar como incidente crítico máximo",
-                        "Solicitar al chofer que contacte abogado especializado"
+                        "Llamar INMEDIATAMENTE a Diego y Damian",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar en el sistema"
                     ]
                 }
             ],
@@ -351,131 +324,200 @@
                 { 
                     value: "robo_simple", 
                     text: "Robo simple", 
-                    peso: 4,
+                    peso: 6,
                     indicaciones: [
-                        "Llamar a la policía al 911",
-                        "Pedir al chofer: DNI, licencia, seguro, descripción del robo",
-                        "Solicitar descripción de los delincuentes",
-                        "Tomar fotos del lugar del robo"
+                        "INSTRUIR AL CHOFER: Llamar a la policía al 911",
+                        "INSTRUIR AL CHOFER: NO perseguir a los delincuentes",
+                        "INSTRUIR AL CHOFER: Mantener calma y no resistirse",
+                        "INSTRUIR AL CHOFER: Tomar fotos del lugar del robo si es seguro",
+                        "INSTRUIR AL CHOFER: Recopilar descripción detallada de los delincuentes",
+                        "VERIFICAR: Estado físico y emocional del chofer",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y descripción del robo"
                     ],
                     acciones: [
-                        "Informar a logística sobre el robo",
-                        "Registrar incidente en el sistema",
-                        "Solicitar al chofer que haga denuncia policial"
+                        "Llamar INMEDIATAMENTE a Guardia Logística",
+                        "Registrar en el sistema",
+                    ]
+                },
+                { 
+                    value: "robo_con_amenaza", 
+                    text: "Robo con amenaza", 
+                    peso: 10,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Llamar 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: NO resistirse ni discutir con los delincuentes",
+                        "INSTRUIR AL CHOFER: Mantener calma y cooperar",
+                        "INSTRUIR AL CHOFER: Recopilar descripción detallada de los delincuentes",
+                        "INSTRUIR AL CHOFER: Tomar fotos si es seguro hacerlo",
+                        "VERIFICAR: Si hay heridos o lesiones",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y estado emocional"
+                    ],
+                    acciones: [
+                        "Llamar INMEDIATAMENTE a Guardia Logística",
+                        "Registrar en el sistema",
                     ]
                 },
                 { 
                     value: "robo_armado", 
                     text: "Robo armado", 
-                    peso: 15,
+                    peso: 18,
                     indicaciones: [
-                        "Llamar 911 INMEDIATAMENTE",
-                        "Pedir al chofer: DNI, licencia, seguro, estado físico",
-                        "Solicitar descripción detallada de los delincuentes",
-                        "Tomar fotos si es seguro hacerlo"
+                        "INSTRUIR AL CHOFER: Llamar 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: NO resistirse bajo ninguna circunstancia",
+                        "INSTRUIR AL CHOFER: Mantener calma y cooperar completamente",
+                        "INSTRUIR AL CHOFER: Recopilar descripción detallada de delincuentes y armas",
+                        "INSTRUIR AL CHOFER: Tomar fotos si es seguro hacerlo",
+                        "VERIFICAR: Si hay heridos o lesiones",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y estado físico"
                     ],
                     acciones: [
-                        "Informar a Diego y logística URGENTE",
-                        "Registrar como incidente crítico",
-                        "Solicitar al chofer que contacte policía especializada"
-                    ]
-                },
-                { 
-                    value: "amenaza_armas", 
-                    text: "Amenaza con armas", 
-                    peso: 12,
-                    indicaciones: [
-                        "Llamar 911 inmediatamente",
-                        "Pedir al chofer: DNI, licencia, seguro, estado emocional",
-                        "Solicitar descripción de la amenaza recibida",
-                        "Verificar si hay heridos"
-                    ],
-                    acciones: [
-                        "Informar a Diego y logística URGENTE",
-                        "Registrar como incidente crítico",
-                        "Solicitar al chofer que contacte policía especializada"
+                        "Llamar INMEDIATAMENTE a Diego y Damian",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar en el sistema",
                     ]
                 },
                 { 
                     value: "secuestro", 
                     text: "Secuestro", 
-                    peso: 20,
+                    peso: 25,
                     indicaciones: [
-                        "Llamar 911 INMEDIATAMENTE",
-                        "Pedir al chofer: DNI, licencia, seguro, datos de contacto familiar",
-                        "Solicitar descripción del vehículo y delincuentes",
-                        "NO dar consejos sobre negociación"
+                        "INSTRUIR AL CHOFER: Llamar 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: NO dar consejos sobre negociación",
+                        "INSTRUIR AL CHOFER: Mantener comunicación constante si es posible",
+                        "INSTRUIR AL CHOFER: Recopilar descripción del vehículo y delincuentes",
+                        "INSTRUIR AL CHOFER: NO intentar escapar o resistirse",
+                        "VERIFICAR: Estado físico y emocional del chofer",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto familiar"
                     ],
                     acciones: [
-                        "Informar a Diego y gerencia URGENTE",
-                        "Registrar como incidente crítico máximo",
-                        "Solicitar al chofer que contacte policía especializada"
+                        "Llamar INMEDIATAMENTE a Diego y Damian",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar en el sistema",
+                    ]
+                },
+                {
+                    value: "robo_en_curso",
+                    text: "Robo en curso",
+                    peso: 25,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Llamar 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: NO intentar resistirse ni dar caza a los delincuentes",
+                        "INSTRUIR AL CHOFER: Recopilar descripción detallada de los delincuentes y vehículo",
+                    ],
+                    acciones: [
+                        "Llamar INMEDIATAMENTE a Diego y Damian",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar en el sistema",
                     ]
                 }
             ],
             averia: [
                 { 
-                    value: "averia_menor", 
-                    text: "Avería menor", 
-                    peso: 1,
+                    value: "averia_menor_sin_bloqueo", 
+                    text: "Avería menor sin bloqueo", 
+                    peso: 2,
                     indicaciones: [
-                        "Pedir al chofer: DNI, licencia, seguro, descripción de la avería",
-                        "Solicitar ubicación exacta del vehículo",
-                        "Verificar si el chofer puede continuar viaje",
-                        "Tomar foto del problema si es visible"
+                        "INSTRUIR AL CHOFER: Describir detalladamente la avería",
+                        "INSTRUIR AL CHOFER: Verificar si puede continuar el viaje de forma segura",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia si está detenido",
+                        "INSTRUIR AL CHOFER: Colocar balizas si está en la vía",
+                        "VERIFICAR: Que el vehículo no obstruye la circulación",
                     ],
                     acciones: [
-                        "Informar a logística sobre la avería",
-                        "Registrar incidente en el sistema",
-                        "Solicitar al chofer que contacte taller autorizado"
+                        "Llamar a Guardia de Mantenimiento",
+                        "Registrar en el sistema",
                     ]
                 },
                 { 
-                    value: "averia_mayor", 
-                    text: "Avería mayor", 
-                    peso: 4,
+                    value: "averia_menor_con_bloqueo", 
+                    text: "Avería menor con bloqueo", 
+                    peso: 5,
                     indicaciones: [
-                        "Pedir al chofer: DNI, licencia, seguro, descripción detallada",
-                        "Solicitar ubicación exacta y estado del conductor",
-                        "Verificar si hay otros ocupantes",
-                        "Tomar fotos de la avería"
+                        "INSTRUIR AL CHOFER: Describir detalladamente la avería",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: Colocar balizas a 50 metros del vehículo",
+                        "INSTRUIR AL CHOFER: Tomar fotos de la situación",
+                        "VERIFICAR: Que el vehículo obstruye la vía",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y ubicación exacta"
                     ],
                     acciones: [
-                        "Informar a logística URGENTE",
-                        "Registrar como avería mayor",
-                        "Solicitar al chofer que contacte grúa especializada"
+                        "Llamar INMEDIATAMENTE a Guardia de Mantenimiento",
+                        "Registrar en el sistema",
+                    ]
+                },
+                { 
+                    value: "averia_mayor_sin_bloqueo", 
+                    text: "Avería mayor sin bloqueo", 
+                    peso: 6,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Describir detalladamente la avería",
+                        "INSTRUIR AL CHOFER: NO intentar reparar la avería",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia si está detenido",
+                        "INSTRUIR AL CHOFER: Colocar balizas si está en la vía",
+                        "INSTRUIR AL CHOFER: Tomar fotos de la avería",
+                        "VERIFICAR: Estado del conductor y si hay otros ocupantes",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y ubicación exacta"
+                    ],
+                    acciones: [
+                        "Llamar INMEDIATAMENTE a Guardia de Mantenimiento",
+                        "Registrar en el sistema",
+                    ]
+                },
+                { 
+                    value: "averia_mayor_con_bloqueo", 
+                    text: "Avería mayor con bloqueo", 
+                    peso: 10,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Describir detalladamente la avería",
+                        "INSTRUIR AL CHOFER: NO intentar reparar la avería",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: Colocar balizas a 50 metros del vehículo",
+                        "INSTRUIR AL CHOFER: Tomar fotos de la avería y bloqueo",
+                        "VERIFICAR: Estado del conductor y si hay otros ocupantes",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y ubicación exacta"
+                    ],
+                    acciones: [
+                        "Llamar INMEDIATAMENTE a Guardia de Mantenimiento",
+                        "Si no responden, llamar al que está de guardia de logística.",
+                        "Registrar en el sistema",
                     ]
                 },
                 { 
                     value: "averia_motor", 
                     text: "Avería de motor", 
-                    peso: 6,
+                    peso: 8,
                     indicaciones: [
-                        "Pedir al chofer: DNI, licencia, seguro, descripción del motor",
-                        "Solicitar ubicación exacta y temperatura del motor",
-                        "Verificar si hay humo o líquidos derramados",
-                        "Tomar fotos del motor si es seguro"
+                        "INSTRUIR AL CHOFER: Describir detalladamente la avería del motor",
+                        "INSTRUIR AL CHOFER: NO intentar reparar la avería",
+                        "INSTRUIR AL CHOFER: Verificar temperatura del motor",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia si está detenido",
+                        "INSTRUIR AL CHOFER: Tomar fotos del motor si es seguro",
+                        "VERIFICAR: Si hay humo o líquidos derramados",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y ubicación exacta"
                     ],
                     acciones: [
-                        "Informar a logística URGENTE",
-                        "Registrar como avería crítica",
+                        "Llamar INMEDIATAMENTE a Guardia de Mantenimiento",
+                        "Registrar como avería crítica en el sistema",
                         "Solicitar al chofer que contacte mecánico especializado"
                     ]
                 },
                 { 
                     value: "averia_frenos", 
                     text: "Avería de frenos", 
-                    peso: 8,
+                    peso: 12,
                     indicaciones: [
-                        "Pedir al chofer: DNI, licencia, seguro, descripción del problema",
-                        "Solicitar ubicación exacta y estado del conductor",
-                        "Verificar si el vehículo está detenido de forma segura",
-                        "Tomar fotos del vehículo detenido"
+                        "INSTRUIR AL CHOFER: Describir detalladamente el problema de frenos",
+                        "INSTRUIR AL CHOFER: NO continuar el viaje bajo ninguna circunstancia",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: Colocar balizas a 50 metros del vehículo",
+                        "INSTRUIR AL CHOFER: Tomar fotos del vehículo detenido",
+                        "VERIFICAR: Que el vehículo está detenido de forma segura",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y ubicación exacta"
                     ],
                     acciones: [
-                        "Informar a Diego y logística URGENTE",
-                        "Registrar como avería crítica máxima",
-                        "Solicitar al chofer que contacte grúa especializada"
+                        "Llamar INMEDIATAMENTE a Guardia de Mantenimiento",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar como avería crítica máxima en el sistema",
                     ]
                 }
             ],
@@ -483,81 +525,225 @@
                 { 
                     value: "derrame_menor", 
                     text: "Derrame menor", 
-                    peso: 6,
+                    peso: 8,
                     indicaciones: [
-                        "Llamar a bomberos al 100",
-                        "Pedir al chofer: DNI, licencia, seguro, tipo de material derramado",
-                        "Solicitar ubicación exacta y descripción del derrame",
-                        "Tomar fotos del derrame desde distancia segura"
+                        "INSTRUIR AL CHOFER: Llamar a bomberos al 100",
+                        "INSTRUIR AL CHOFER: NO tocar el material derramado",
+                        "INSTRUIR AL CHOFER: Alejarse del área del derrame",
+                        "INSTRUIR AL CHOFER: Tomar fotos desde distancia segura",
+                        "INSTRUIR AL CHOFER: Consultar la hoja de seguridad del material",
+                        "VERIFICAR: Que no hay riesgo de propagación",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y tipo de material derramado"
                     ],
                     acciones: [
-                        "Informar a logística sobre el derrame",
-                        "Registrar incidente en el sistema",
+                        "Llamar INMEDIATAMENTE a Guardia Logística",
+                        "Registrar en el sistema",
                         "Solicitar al chofer que contacte empresa de limpieza especializada"
                     ]
                 },
                 { 
                     value: "derrame_peligroso", 
                     text: "Derrame peligroso", 
-                    peso: 12,
+                    peso: 15,
                     indicaciones: [
-                        "Llamar bomberos 911 INMEDIATAMENTE",
-                        "Pedir al chofer: DNI, licencia, seguro, tipo de material peligroso",
-                        "Solicitar ubicación exacta y descripción detallada",
-                        "Tomar fotos desde distancia segura"
+                        "INSTRUIR AL CHOFER: Llamar bomberos 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: NO tocar el material bajo ninguna circunstancia",
+                        "INSTRUIR AL CHOFER: Alejarse inmediatamente del área",
+                        "INSTRUIR AL CHOFER: Consultar la hoja de seguridad del material",
+                        "INSTRUIR AL CHOFER: Tomar fotos desde distancia segura",
+                        "VERIFICAR: Si hay riesgo de propagación o explosión",
                     ],
                     acciones: [
-                        "Informar a Diego y logística URGENTE",
-                        "Registrar como incidente crítico",
-                        "Solicitar al chofer que contacte empresa especializada en derrames"
+                        "Llamar INMEDIATAMENTE a Diego y Damian",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar en el sistema",
                     ]
                 },
                 { 
                     value: "fuego_vehiculo", 
                     text: "Fuego en vehículo", 
-                    peso: 15,
+                    peso: 18,
                     indicaciones: [
-                        "Llamar bomberos 911 INMEDIATAMENTE",
-                        "Pedir al chofer: DNI, licencia, seguro, estado físico",
-                        "Solicitar ubicación exacta y descripción del fuego",
-                        "Tomar fotos desde distancia segura"
+                        "INSTRUIR AL CHOFER: Llamar bomberos 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: Alejarse del vehículo inmediatamente",
+                        "INSTRUIR AL CHOFER: NO intentar apagar el fuego",
+                        "INSTRUIR AL CHOFER: Tomar fotos desde distancia segura",
+                        "INSTRUIR AL CHOFER: Verificar si hay otros ocupantes",
+                        "VERIFICAR: Si hay riesgo de explosión",
                     ],
                     acciones: [
-                        "Informar a Diego y logística URGENTE",
-                        "Registrar como incidente crítico",
-                        "Solicitar al chofer que contacte bomberos especializados"
+                        "Llamar INMEDIATAMENTE a Diego y Damian",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar en el sistema",
                     ]
                 },
                 { 
                     value: "fuego_carga", 
                     text: "Fuego en carga", 
-                    peso: 18,
+                    peso: 22,
                     indicaciones: [
-                        "Llamar bomberos 911 INMEDIATAMENTE",
-                        "Pedir al chofer: DNI, licencia, seguro, tipo de carga",
-                        "Solicitar ubicación exacta y descripción del fuego",
-                        "Tomar fotos desde distancia segura"
+                        "INSTRUIR AL CHOFER: Llamar bomberos 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: Alejarse del vehículo inmediatamente",
+                        "INSTRUIR AL CHOFER: NO intentar apagar el fuego",
+                        "INSTRUIR AL CHOFER: Evacuar área de 500 metros",
+                        "INSTRUIR AL CHOFER: Tomar fotos desde distancia segura",
+                        "VERIFICAR: Si hay riesgo de explosión",
                     ],
                     acciones: [
-                        "Informar a Diego y logística URGENTE",
-                        "Registrar como incidente crítico máximo",
-                        "Solicitar al chofer que contacte bomberos especializados"
+                        "Llamar INMEDIATAMENTE a Diego y Damian",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar en el sistema",
                     ]
                 },
                 { 
                     value: "explosion", 
                     text: "Explosión", 
-                    peso: 20,
+                    peso: 30,
                     indicaciones: [
-                        "Llamar 911 INMEDIATAMENTE",
-                        "Pedir al chofer: DNI, licencia, seguro, estado físico",
-                        "Solicitar ubicación exacta y descripción de la explosión",
-                        "Tomar fotos desde distancia segura"
+                        "INSTRUIR AL CHOFER: Llamar 911 INMEDIATAMENTE",
+                        "INSTRUIR AL CHOFER: Alejarse inmediatamente del área",
+                        "INSTRUIR AL CHOFER: Evacuar área de 1 kilómetro",
+                        "INSTRUIR AL CHOFER: NO regresar al área bajo ninguna circunstancia",
+                        "INSTRUIR AL CHOFER: Tomar fotos desde distancia segura",
+                        "VERIFICAR: Si hay heridos en el área",
                     ],
                     acciones: [
-                        "Informar a Diego y gerencia URGENTE",
-                        "Registrar como incidente crítico máximo",
-                        "Solicitar al chofer que contacte bomberos especializados"
+                        "Llamar INMEDIATAMENTE a Diego y Damian",
+                        "Si no responden, llamar al que está de guardia de logística URGENTE",
+                        "Registrar en el sistema",
+                    ]
+                }
+            ],
+            documentacion: [
+                { 
+                    value: "documentacion_faltante", 
+                    text: "Documentación faltante", 
+                    peso: 1,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Describir qué documentación específica falta",
+                        "INSTRUIR AL CHOFER: Verificar si puede continuar el viaje",
+                        "VERIFICAR: Qué documentos específicos necesita",
+                    ],
+                    acciones: [
+                        "Registrar en el sistema para horario de oficina (07:00-21:00)"
+                    ]
+                },
+                { 
+                    value: "documentacion_vencida", 
+                    text: "Documentación vencida", 
+                    peso: 2,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Describir qué documento está vencido",
+                        "INSTRUIR AL CHOFER: Verificar si puede continuar el viaje",
+                        "INSTRUIR AL CHOFER: Contactar a la empresa para renovación urgente",
+                        "VERIFICAR: Fecha de vencimiento del documento",
+                    ],
+                    acciones: [
+                        "Registrar en el sistema para horario de oficina (07:00-21:00)",
+                    ]
+                },
+                { 
+                    value: "documentacion_incorrecta", 
+                    text: "Documentación incorrecta", 
+                    peso: 1,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Describir qué información está incorrecta",
+                        "INSTRUIR AL CHOFER: Verificar si puede continuar el viaje",
+                        "INSTRUIR AL CHOFER: Contactar a la empresa para corrección",
+                        "VERIFICAR: Qué información específica está incorrecta",
+                    ],
+                    acciones: [
+                        "Registrar en el sistema para horario de oficina (07:00-21:00)"
+                    ]
+                }
+            ],
+            operaciones_cliente: [
+                { 
+                    value: "carga_cliente", 
+                    text: "Problema en carga de mercadería", 
+                    peso: 1,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Describir detalladamente el problema de carga",
+                        "INSTRUIR AL CHOFER: Verificar si puede continuar el viaje",
+                        "INSTRUIR AL CHOFER: Contactar al cliente para coordinar",
+                        "VERIFICAR: Ubicación exacta del cliente",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto del cliente"
+                    ],
+                    acciones: [
+                        "Registrar en el sistema para horario de oficina (07:00-21:00)"
+                    ]
+                },
+                { 
+                    value: "descarga_cliente", 
+                    text: "Problema en descarga de mercadería", 
+                    peso: 1,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Describir detalladamente el problema de descarga",
+                        "INSTRUIR AL CHOFER: Verificar si puede continuar el viaje",
+                        "INSTRUIR AL CHOFER: Contactar al cliente para coordinar",
+                        "VERIFICAR: Ubicación exacta del cliente",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto del cliente"
+                    ],
+                    acciones: [
+                        "Registrar en el sistema para horario de oficina (07:00-21:00)"
+                    ]
+                },
+                { 
+                    value: "acceso_cliente", 
+                    text: "Problema de acceso al cliente", 
+                    peso: 2,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Describir detalladamente el problema de acceso",
+                        "INSTRUIR AL CHOFER: Verificar horarios del cliente",
+                        "INSTRUIR AL CHOFER: Contactar al cliente para coordinar",
+                        "VERIFICAR: Ubicación exacta y horarios del cliente",
+                        "RECOPILAR: DNI, licencia, seguro del chofer y datos de contacto del cliente"
+                    ],
+                    acciones: [
+                        "Registrar en el sistema para horario de oficina (07:00-21:00)",
+                    ]
+                }
+            ],
+            combustible: [
+                { 
+                    value: "sin_combustible", 
+                    text: "Sin combustible - no puede continuar", 
+                    peso: 10,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Describir la situación de combustible",
+                        "INSTRUIR AL CHOFER: Verificar si el vehículo está en lugar seguro",
+                        "INSTRUIR AL CHOFER: Encender luces de emergencia si está en la vía",
+                        "INSTRUIR AL CHOFER: Colocar balizas si está en la vía",
+                        "VERIFICAR: Ubicación exacta del vehículo",
+                    ],
+                    acciones: [
+                        "Llamar INMEDIATAMENTE a Guardia Logística",
+                        "Registrar en el sistema",
+                    ]
+                },
+                { 
+                    value: "no_sabe_donde_cargar", 
+                    text: "No sabe dónde cargar combustible", 
+                    peso: 1,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Verificar si puede continuar el viaje",
+                        "VERIFICAR: Ubicación exacta para buscar estaciones cercanas",
+                    ],
+                    acciones: [
+                        "Registrar en el sistema para horario de oficina (07:00-21:00)"
+                    ]
+                },
+                { 
+                    value: "problema_estacion", 
+                    text: "Problema en estación de servicio", 
+                    peso: 1,
+                    indicaciones: [
+                        "INSTRUIR AL CHOFER: Describir detalladamente el problema en la estación",
+                        "INSTRUIR AL CHOFER: Verificar si puede continuar el viaje",
+                        "INSTRUIR AL CHOFER: Buscar estaciones alternativas cercanas",
+                    ],
+                    acciones: [
+                        "Registrar en el sistema para horario de oficina (07:00-21:00)"
                     ]
                 }
             ],
@@ -567,31 +753,19 @@
                     text: "Consulta rutinaria", 
                     peso: 0,
                     indicaciones: [
-                        "Pedir al chofer: DNI, licencia, seguro, motivo de la consulta",
-                        "Solicitar datos de contacto del chofer",
-                        "Registrar consulta en el sistema",
-                        "Atender durante horario de oficina"
                     ],
                     acciones: [
-                        "Informar a logística sobre la consulta",
-                        "Registrar en sistema de seguimiento",
-                        "Derivar a departamento correspondiente"
+                        "Registrar en el sistema para horario de oficina (07:00-21:00)"
                     ]
                 },
                 { 
                     value: "consulta_urgencia", 
                     text: "Consulta urgente", 
-                    peso: 2,
+                    peso: 10,
                     indicaciones: [
-                        "Pedir al chofer: DNI, licencia, seguro, motivo urgente",
-                        "Solicitar datos de contacto del chofer",
-                        "Evaluar urgencia real de la consulta",
-                        "Registrar como consulta prioritaria"
                     ],
                     acciones: [
-                        "Informar a logística URGENTE",
-                        "Registrar como prioritaria",
-                        "Derivar a supervisor de turno"
+                        "Llamar a Guardia Logística",
                     ]
                 },
                 { 
@@ -599,47 +773,15 @@
                     text: "Consulta técnica", 
                     peso: 1,
                     indicaciones: [
-                        "Pedir al chofer: DNI, licencia, seguro, descripción técnica",
-                        "Solicitar datos de contacto del chofer",
-                        "Recopilar información detallada del problema",
-                        "Registrar consulta técnica en el sistema"
                     ],
                     acciones: [
-                        "Informar a logística sobre consulta técnica",
-                        "Registrar en sistema técnico",
-                        "Solicitar al chofer que contacte técnico especializado"
+                        "Registrar en el sistema para horario de oficina (07:00-21:00)"
                     ]
                 }
             ]
         };
 
-        // Toggle para subcategorías de riesgo
-        function toggleSubcategorias() {
-            const content = document.getElementById('subcategoriasContent');
-            const toggle = document.getElementById('subcategoriasToggle');
-            
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-                toggle.textContent = '▼';
-            } else {
-                content.style.display = 'none';
-                toggle.textContent = '▶';
-            }
-        }
 
-        // Mostrar mensaje
-        function showStatus(message, type = 'info') {
-            const banner = document.getElementById('statusBanner');
-            const messageEl = document.getElementById('statusMessage');
-            
-            banner.className = `mb-6 p-4 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : type === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`;
-            messageEl.textContent = message;
-            banner.classList.remove('hidden');
-
-            setTimeout(() => {
-                banner.classList.add('hidden');
-            }, 3000);
-        }
 
         // Actualizar subtipos cuando cambia el tipo de incidente
         function actualizarSubtipos() {
@@ -664,17 +806,9 @@
             clasificar();
         }
 
-        // Calcular puntaje total basado en subcategorías y tipo/subtipo
+        // Calcular puntaje total basado en tipo y subtipo de incidente
         function calcularPuntaje() {
             let puntaje = 0;
-            
-            // Sumar puntos de subcategorías de riesgo (checkboxes con data-peso)
-            const checkboxes = document.querySelectorAll('input[type="checkbox"][data-peso]');
-            checkboxes.forEach(checkbox => {
-                if (checkbox.checked) {
-                    puntaje += parseInt(checkbox.getAttribute('data-peso')) || 0;
-                }
-            });
             
             // Sumar puntos del tipo de incidente
             const tipoSelect = document.getElementById('tipo');
@@ -713,9 +847,6 @@
             const indicacionesContainer = document.getElementById('indicacionesContainer');
             const indicacionesLista = document.getElementById('indicacionesLista');
             
-            // Obtener checkboxes marcados con indicaciones
-            const checkboxesMarcados = document.querySelectorAll('input[type="checkbox"][data-indicacion]:checked');
-            
             // Obtener indicaciones del subtipo seleccionado
             const subtipoSelect = document.getElementById('subtipo');
             const tipoSelect = document.getElementById('tipo');
@@ -724,32 +855,6 @@
             
             let hayIndicaciones = false;
             indicacionesLista.innerHTML = '';
-            
-            // Mostrar indicaciones de subcategorías de riesgo
-            if (checkboxesMarcados.length > 0) {
-                hayIndicaciones = true;
-                
-                const subcategoriasDiv = document.createElement('div');
-                subcategoriasDiv.className = 'mb-4';
-                subcategoriasDiv.innerHTML = '<h4 class="font-medium text-yellow-800 mb-2">🚨 Indicaciones de Subcategorías de Riesgo</h4>';
-                indicacionesLista.appendChild(subcategoriasDiv);
-                
-                checkboxesMarcados.forEach(checkbox => {
-                    const indicacion = checkbox.getAttribute('data-indicacion');
-                    const descripcion = checkbox.nextElementSibling.textContent.trim();
-                    
-                    const div = document.createElement('div');
-                    div.className = 'flex items-start space-x-2 p-2 bg-white rounded border border-yellow-200 mb-2';
-                    div.innerHTML = `
-                        <span class="text-yellow-600 font-medium">•</span>
-                        <div>
-                            <span class="text-sm font-medium text-gray-800">${descripcion}:</span>
-                            <p class="text-sm text-gray-700 mt-1">${indicacion}</p>
-                        </div>
-                    `;
-                    indicacionesLista.appendChild(div);
-                });
-            }
             
             // Mostrar indicaciones específicas del subtipo
             if (subtipoSeleccionado && tipoSeleccionado && SUBTIPOS_INCIDENTE[tipoSeleccionado]) {
@@ -861,6 +966,36 @@
             }
         }
 
+        // Limpiar formulario
+        function limpiarFormulario() {
+            // Limpiar campos de texto
+            document.getElementById('nombre').value = '';
+            document.getElementById('telefono').value = '';
+            document.getElementById('motivo').value = '';
+            document.getElementById('ubicacion').value = '';
+            document.getElementById('patente').value = '';
+            
+            // Limpiar selects
+            document.getElementById('categoria').value = '';
+            document.getElementById('tipo').value = '';
+            document.getElementById('subtipo').innerHTML = '<option value="">Seleccionar subtipo...</option>';
+            
+            // Establecer fecha y hora actual
+            const ahora = new Date();
+            document.getElementById('fecha').value = ahora.toISOString().split('T')[0];
+            document.getElementById('hora').value = ahora.toTimeString().slice(0,5);
+            
+            // Ocultar elementos dinámicos
+            document.getElementById('clasificacion').classList.add('hidden');
+            document.getElementById('indicacionesContainer').classList.add('hidden');
+            
+            // Limpiar estilos de error
+            const campos = ['patente', 'ubicacion', 'motivo'];
+            campos.forEach(campo => {
+                document.getElementById(campo).classList.remove('border-red-500');
+            });
+        }
+
         // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
             // Fecha y hora actual
@@ -868,9 +1003,6 @@
             document.getElementById('fecha').value = ahora.toISOString().split('T')[0];
             document.getElementById('hora').value = ahora.toTimeString().slice(0,5);
 
-            // Inicializar subcategorías como plegadas
-            document.getElementById('subcategoriasContent').style.display = 'none';
-            document.getElementById('subcategoriasToggle').textContent = '▶';
 
             // Eventos para tipo de incidente y subtipo
             document.getElementById('tipo').addEventListener('change', function() {
@@ -884,11 +1016,6 @@
                 validarEnTiempoReal();
             });
 
-            // Eventos para todas las subcategorías de riesgo (checkboxes con data-peso)
-            const checkboxes = document.querySelectorAll('input[type="checkbox"][data-peso]');
-            checkboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', clasificar);
-            });
 
             // Validación en tiempo real
             function validarEnTiempoReal() {
@@ -934,8 +1061,8 @@
                     if (!patente.trim()) {
                         errores.push('La patente es obligatoria para accidentes');
                     }
-                    if (ubicacion.length < 20) {
-                        errores.push('La ubicación debe ser más detallada para accidentes (mínimo 20 caracteres)');
+                    if (ubicacion.length < 5) {
+                        errores.push('La ubicación debe ser más detallada para accidentes (mínimo 5 caracteres)');
                     }
                 }
                 
@@ -943,24 +1070,24 @@
                     if (!patente.trim()) {
                         errores.push('La patente es obligatoria para robos');
                     }
-                    if (motivo.length < 30) {
-                        errores.push('El motivo debe ser más detallado para robos (mínimo 30 caracteres)');
+                    if (motivo.length < 5) {
+                        errores.push('El motivo debe ser más detallado para robos (mínimo 5 caracteres)');
                     }
                 }
                 
                 if (tipo === 'derrame') {
-                    if (ubicacion.length < 30) {
-                        errores.push('La ubicación debe ser muy detallada para derrames (mínimo 30 caracteres)');
+                    if (ubicacion.length < 5) {
+                        errores.push('La ubicación debe ser muy detallada para derrames (mínimo 5 caracteres)');
                     }
-                    if (motivo.length < 40) {
-                        errores.push('El motivo debe describir detalladamente el derrame (mínimo 40 caracteres)');
+                    if (motivo.length < 5) {
+                        errores.push('El motivo debe describir detalladamente el derrame (mínimo 5 caracteres)');
                     }
                 }
                 
                 // Validaciones específicas por subtipo
                 if (subtipo === 'accidente_mortal' || subtipo === 'secuestro' || subtipo === 'explosion') {
-                    if (motivo.length < 50) {
-                        errores.push('Para incidentes críticos, el motivo debe ser muy detallado (mínimo 50 caracteres)');
+                    if (motivo.length < 5) {
+                        errores.push('Para incidentes críticos, el motivo debe ser muy detallado (mínimo 5 caracteres)');
                     }
                 }
                 
@@ -980,21 +1107,10 @@
                 // Validar formulario
                 const errores = validarIncidente();
                 if (errores.length > 0) {
-                    showStatus('❌ Errores de validación: ' + errores.join(', '), 'error');
+                    alert('❌ Errores de validación:\n\n' + errores.join('\n'));
                     return;
                 }
 
-                // Recopilar subcategorías seleccionadas
-                const subcategoriasSeleccionadas = [];
-                const checkboxes = document.querySelectorAll('input[type="checkbox"][data-peso]:checked');
-                checkboxes.forEach(checkbox => {
-                    subcategoriasSeleccionadas.push({
-                        id: checkbox.id,
-                        peso: parseInt(checkbox.getAttribute('data-peso')),
-                        descripcion: checkbox.nextElementSibling.textContent.trim(),
-                        indicacion: checkbox.getAttribute('data-indicacion') || null
-                    });
-                });
 
                 // Obtener indicaciones y acciones del subtipo
                 const tipo = document.getElementById('tipo').value;
@@ -1021,7 +1137,6 @@
                     patente: document.getElementById('patente').value,
                     tipo: tipo,
                     subtipo: subtipo,
-                    subcategorias: subcategoriasSeleccionadas,
                     indicacionesSubtipo: indicacionesSubtipo,
                     accionesSubtipo: accionesSubtipo,
                     puntajeTotal: calcularPuntaje(),
@@ -1033,9 +1148,9 @@
                 const enviado = await enviarAMake(datos);
                 
                 if (enviado) {
-                    showStatus('✅ Reporte enviado correctamente', 'success');
+                    alert('✅ ¡Gracias por registrar el incidente!\n\nEl reporte ha sido enviado correctamente y el equipo ha sido notificado.');
                 } else {
-                    showStatus('⚠️ Reporte guardado localmente (error de conexión)', 'error');
+                    alert('⚠️ Error de conexión\n\nEl reporte se ha guardado localmente. Se intentará enviar nuevamente más tarde.');
                 }
 
                 // Guardar localmente también
@@ -1043,10 +1158,9 @@
                 incidentes.push(datos);
                 localStorage.setItem('incidentes', JSON.stringify(incidentes));
 
-                // Volver al dashboard
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 2000);
+                // Limpiar formulario y preparar para nuevo reporte
+                limpiarFormulario();
+                alert('📝 Formulario listo para un nuevo reporte');
             });
         });
     </script>
