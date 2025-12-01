@@ -1,0 +1,223 @@
+<div class="role-permissions-edit-container" *ngIf="isAdmin()">
+  <!-- Header -->
+  <div class="header-section">
+    <div class="header-content">
+      <button (click)="goBack()" class="btn-back">
+        <i class="fas fa-arrow-left"></i>
+        Volver a Roles
+      </button>
+      
+      <div class="title-section">
+        <h1 class="page-title">
+          <i class="fas fa-key"></i>
+          Permisos del Rol: {{ role?.name | titlecase }}
+        </h1>
+        <p class="page-subtitle">{{ role?.description }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensajes -->
+  <div class="messages-section" *ngIf="errorMessage || successMessage">
+    <div class="alert alert-error" *ngIf="errorMessage">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ errorMessage }}
+    </div>
+    <div class="alert alert-success" *ngIf="successMessage">
+      <i class="fas fa-check-circle"></i>
+      {{ successMessage }}
+    </div>
+  </div>
+
+  <!-- Controles de selección -->
+  <div class="controls-section" *ngIf="!loading">
+    <div class="controls-card">
+      <div class="controls-header">
+        <h3 class="controls-title">
+          <i class="fas fa-tools"></i>
+          Controles de Selección
+        </h3>
+      </div>
+      <div class="controls-body">
+        <div class="control-buttons">
+          <button 
+            (click)="selectAllPermissions()"
+            class="btn btn-success">
+            <i class="fas fa-check-double"></i>
+            Seleccionar Todos
+          </button>
+          
+          <button 
+            (click)="deselectAllPermissions()"
+            class="btn btn-warning">
+            <i class="fas fa-times"></i>
+            Deseleccionar Todos
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparación de permisos -->
+  <div class="permissions-comparison-section" *ngIf="!loading">
+    <div class="comparison-container">
+      
+      <!-- Permisos Asignados -->
+      <div class="permissions-card assigned-permissions">
+        <div class="permissions-header">
+          <h3 class="permissions-title">
+            <i class="fas fa-check-circle text-success"></i>
+            Permisos Asignados
+            <span class="badge badge-success">{{ assignedPermissions.length }}</span>
+          </h3>
+        </div>
+
+        <div class="permissions-body">
+          <div class="modules-container">
+            <div 
+              *ngFor="let moduleData of getAssignedPermissionsByModule(); let i = index"
+              class="module-section">
+              
+              <div class="module-header">
+                <div class="module-info">
+                  <h4 class="module-name">
+                    <i [class]="moduleData.module.icon || 'fas fa-cube'"></i>
+                    {{ moduleData.module.name | titlecase }}
+                  </h4>
+                  <p class="module-description">{{ moduleData.module.description }}</p>
+                </div>
+              </div>
+
+              <div class="permissions-grid">
+                <div 
+                  *ngFor="let permission of moduleData.permissions; let j = index"
+                  class="permission-item">
+                  
+                  <div class="permission-card assigned">
+                    <div class="permission-header">
+                      <div class="permission-info">
+                        <h5 class="permission-title">
+                          <i class="fas fa-shield-alt"></i>
+                          {{ permission.action.name | titlecase }}
+                        </h5>
+                        <p class="permission-description">{{ permission.action.description }}</p>
+                      </div>
+                      
+                      <div class="permission-actions">
+                        <button 
+                          (click)="removePermission(permission)"
+                          [disabled]="loading"
+                          class="btn btn-sm btn-danger"
+                          title="Remover permiso">
+                          <i class="fas fa-times"></i>
+                          Remover
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Permisos Disponibles -->
+      <div class="permissions-card available-permissions">
+        <div class="permissions-header">
+          <h3 class="permissions-title">
+            <i class="fas fa-plus-circle text-primary"></i>
+            Permisos Disponibles
+            <span class="badge badge-primary">{{ availablePermissions.length }}</span>
+          </h3>
+        </div>
+
+        <div class="permissions-body">
+          <div class="modules-container">
+            <div 
+              *ngFor="let moduleData of getAvailablePermissionsByModule(); let i = index"
+              class="module-section">
+              
+              <div class="module-header">
+                <div class="module-info">
+                  <h4 class="module-name">
+                    <i [class]="moduleData.module.icon || 'fas fa-cube'"></i>
+                    {{ moduleData.module.name | titlecase }}
+                  </h4>
+                  <p class="module-description">{{ moduleData.module.description }}</p>
+                </div>
+              </div>
+
+              <div class="permissions-grid">
+                <div 
+                  *ngFor="let permission of moduleData.permissions; let j = index"
+                  class="permission-item">
+                  
+                  <div class="permission-card available">
+                    <div class="permission-header">
+                      <div class="permission-info">
+                        <h5 class="permission-title">
+                          <i class="fas fa-shield-alt"></i>
+                          {{ permission.action.name | titlecase }}
+                        </h5>
+                        <p class="permission-description">{{ permission.action.description }}</p>
+                      </div>
+                      
+                      <div class="permission-actions">
+                        <button 
+                          (click)="addPermission(permission)"
+                          [disabled]="loading"
+                          class="btn btn-sm btn-success"
+                          title="Agregar permiso">
+                          <i class="fas fa-plus"></i>
+                          Agregar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div class="loading-section" *ngIf="loading">
+    <div class="loading-card">
+      <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <h3>Cargando permisos...</h3>
+        <p>Por favor espera mientras se cargan los datos</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-section" *ngIf="!loading && modulePermissions.length === 0">
+    <div class="empty-card">
+      <i class="fas fa-shield-alt"></i>
+      <h3>No hay permisos disponibles</h3>
+      <p>No se encontraron permisos de módulos para configurar</p>
+      <button (click)="goBack()" class="btn btn-primary">
+        <i class="fas fa-arrow-left"></i>
+        Volver a Roles
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Acceso Denegado -->
+<div class="access-denied" *ngIf="!isAdmin()">
+  <div class="access-denied-content">
+    <i class="fas fa-shield-alt"></i>
+    <h2>Acceso Restringido</h2>
+    <p>Solo los administradores pueden gestionar permisos del sistema</p>
+    <button class="btn btn-primary" routerLink="/roles">
+      <i class="fas fa-arrow-left"></i>
+      Volver a Roles
+    </button>
+  </div>
+</div>

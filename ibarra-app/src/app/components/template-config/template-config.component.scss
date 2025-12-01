@@ -1,0 +1,140 @@
+.validation-config {
+  transition: all 0.3s ease;
+}
+
+.error-value-btn {
+  transition: all 0.2s ease;
+  
+  &.selected {
+    background-color: #dc2626;
+    color: white;
+    border-color: #dc2626;
+  }
+  
+  &:not(.selected) {
+    background-color: #f3f4f6;
+    color: #374151;
+    border-color: #d1d5db;
+  }
+  
+  &:hover {
+    background-color: #ef4444;
+    color: white;
+    border-color: #ef4444;
+  }
+}
+
+// Animaciones para transiciones suaves
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Estilos para el modal
+.modal-backdrop {
+  backdrop-filter: blur(2px);
+}
+
+// Estilos para los botones de acción
+.action-button {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Estilos para las secciones
+.section-item {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateX(2px);
+  }
+}
+
+// Estilos para los items
+.item-row {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: #f9fafb;
+  }
+}
+
+// Estilos para el formulario
+.form-input {
+  transition: all 0.2s ease;
+  
+  &:focus {
+    transform: scale(1.02);
+  }
+}
+
+// Estilos para los botones de validación
+.validation-btn {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+// Estilos para el estado de carga
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Estilos responsivos
+@media (max-width: 1024px) {
+  .grid-cols-1 {
+    grid-template-columns: 1fr;
+  }
+  
+  .lg\\:col-span-1,
+  .lg\\:col-span-2 {
+    grid-column: span 1;
+  }
+}
+
+// Estilos para el estado de error
+.error-state {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+// Estilos para el estado de éxito
+.success-state {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+// Estilos para el estado de advertencia
+.warning-state {
+  border-color: #f59e0b;
+  background-color: #fffbeb;
+}

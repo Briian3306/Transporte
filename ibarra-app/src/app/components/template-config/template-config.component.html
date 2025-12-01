@@ -1,0 +1,470 @@
+<div class="bg-gray-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Configuración de Checklist</h1>
+          <p class="text-gray-600 mt-2">Sistema escalable para gestión de checklists con validación configurable</p>
+        </div>
+        <div class="flex space-x-3">
+          <button 
+            (click)="abrirModalNuevaPlantilla()"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+            Nueva Plantilla
+          </button>
+          <button 
+            (click)="guardarPlantilla()"
+            [disabled]="cargando"
+            class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
+            <span *ngIf="!cargando">Guardar Plantilla</span>
+            <span *ngIf="cargando" class="flex items-center">
+              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Guardando...
+            </span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Formulario de Información de la Plantilla -->
+      <div class="border-t pt-4">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Información de la Plantilla</h2>
+        <div>
+          <label for="nombrePlantilla" class="block text-sm font-medium text-gray-700 mb-2">
+            Nombre de la Plantilla <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="nombrePlantilla" 
+            [(ngModel)]="plantillaActual.nombre"
+            [class]="(!plantillaActual.nombre || plantillaActual.nombre.trim() === '') ? 'w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500' : 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'"
+            placeholder="Ej: Inspección Vehicular Diaria">
+          <div *ngIf="!plantillaActual.nombre || plantillaActual.nombre.trim() === ''" class="text-red-500 text-xs mt-1">
+            El nombre de la plantilla es requerido
+          </div>
+        </div>
+        <div class="mt-4">
+          <label for="descripcionPlantilla" class="block text-sm font-medium text-gray-700 mb-2">
+            Descripción
+          </label>
+          <textarea 
+            id="descripcionPlantilla" 
+            [(ngModel)]="plantillaActual.descripcion"
+            rows="3"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Descripción de la plantilla..."></textarea>
+        </div>
+        
+        <div class="mt-4">
+          <label for="tipoPlantilla" class="block text-sm font-medium text-gray-700 mb-2">
+            Tipo de Recurso <span class="text-red-500">*</span>
+          </label>
+          <select 
+            id="tipoPlantilla" 
+            [(ngModel)]="plantillaActual.tipo"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option *ngFor="let tipo of opcionesTipoRecurso" [value]="tipo">
+              {{ tiposRecurso[tipo].icono }} {{ tiposRecurso[tipo].nombre }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <!-- Panel de Gestión de Secciones -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">Secciones</h2>
+          
+          <div class="space-y-3 mb-4">
+            <button 
+              (click)="agregarNuevaSeccion()"
+              class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+              + Agregar Sección
+            </button>
+          </div>
+          
+          <div class="space-y-2">
+            <div 
+              *ngFor="let seccion of secciones; let i = index"
+              (click)="seleccionarSeccion(i)"
+              class="p-3 border rounded-lg cursor-pointer transition-colors"
+              [class]="seccion === seccionEditando ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h3 class="font-medium text-gray-900">{{ seccion.titulo }}</h3>
+                  <p class="text-sm text-gray-500">{{ seccion.items.length }} ítems</p>
+                </div>
+                <button 
+                  (click)="eliminarSeccion(i); $event.stopPropagation()"
+                  class="text-red-500 hover:text-red-700">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel de Edición de Ítem -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">Editar Ítem</h2>
+          
+          <form [formGroup]="formEditarItem" (ngSubmit)="onSubmitItem()" class="space-y-4">
+            <!-- Descripción -->
+            <div>
+              <label for="itemDescripcion" class="block text-sm font-medium text-gray-700 mb-2">
+                Descripción <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="itemDescripcion" 
+                formControlName="descripcion"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ej: Control de Luces completo">
+              <div *ngIf="formEditarItem.get('descripcion')?.invalid && formEditarItem.get('descripcion')?.touched" 
+                   class="text-red-500 text-xs mt-1">
+                La descripción es requerida
+              </div>
+            </div>
+
+            <!-- Descripción Detallada -->
+            <div>
+              <label for="itemDescripcionDetallada" class="block text-sm font-medium text-gray-700 mb-2">
+                Descripción Detallada (Opcional)
+              </label>
+              <textarea 
+                id="itemDescripcionDetallada" 
+                formControlName="descripcionDetallada"
+                rows="4"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Instrucciones detalladas para este item..."></textarea>
+              <p class="text-xs text-gray-500 mt-1">Esta descripción aparecerá en un modal informativo</p>
+            </div>
+
+            <!-- Tipo de Validación -->
+            <div>
+              <label for="tipoValidacion" class="block text-sm font-medium text-gray-700 mb-2">
+                Tipo de Validación
+              </label>
+              <select 
+                id="tipoValidacion" 
+                formControlName="tipoValidacion"
+                (change)="onTipoValidacionChange()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option *ngFor="let tipo of opcionesTipoValidacion" [value]="tipo">
+                  {{ tiposValidacion[tipo].nombre }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Configuración de Validación -->
+            <div class="space-y-4" *ngIf="formEditarItem.get('tipoValidacion')?.value !== 'sin_validacion'">
+              <!-- Comportamiento -->
+              <div>
+                <label for="comportamiento" class="block text-sm font-medium text-gray-700 mb-2">
+                  Comportamiento
+                </label>
+                <select 
+                  id="comportamiento" 
+                  formControlName="comportamiento"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="genera_error">Generar error si no cumple...</option>
+                  <option value="solo_advertencia">Solo advertencia si no cumple...</option>
+                  <option value="sin_validacion">Sin validación</option>
+                </select>
+              </div>
+
+              <!-- Valores que generan error (para Sí/No/N/A) -->
+              <div *ngIf="formEditarItem.get('tipoValidacion')?.value === 'si_no' || formEditarItem.get('tipoValidacion')?.value === 'si_no_na'">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Valores que generan error
+                </label>
+                <p class="text-xs text-gray-500 mb-3">Seleccione los valores que deben generar error.</p>
+                <div class="flex space-x-2">
+                  <button 
+                    type="button" 
+                    (click)="toggleValorError('no')"
+                    [class]="isValorErrorSeleccionado('no') ? 'bg-red-600 text-white border-red-600' : 'bg-gray-100 text-gray-700 border-gray-300'"
+                    class="px-3 py-2 rounded-md border transition-colors">
+                    No
+                  </button>
+                  <button 
+                    type="button" 
+                    (click)="toggleValorError('si')"
+                    [class]="isValorErrorSeleccionado('si') ? 'bg-red-600 text-white border-red-600' : 'bg-gray-100 text-gray-700 border-gray-300'"
+                    class="px-3 py-2 rounded-md border transition-colors">
+                    Sí
+                  </button>
+                  <button 
+                    type="button" 
+                    (click)="toggleValorError('na')"
+                    [class]="isValorErrorSeleccionado('na') ? 'bg-red-600 text-white border-red-600' : 'bg-gray-100 text-gray-700 border-gray-300'"
+                    class="px-3 py-2 rounded-md border transition-colors"
+                    *ngIf="formEditarItem.get('tipoValidacion')?.value === 'si_no_na'">
+                    N/A
+                  </button>
+                </div>
+              </div>
+
+              <!-- Valores que generan error (para Bueno/Regular/Malo) -->
+              <div *ngIf="formEditarItem.get('tipoValidacion')?.value === 'bueno_regular_malo'">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Valores que generan error
+                </label>
+                <p class="text-xs text-gray-500 mb-3">Seleccione los valores que deben generar error.</p>
+                <div class="flex space-x-2">
+                  <button 
+                    type="button" 
+                    (click)="toggleValorError('malo')"
+                    [class]="isValorErrorSeleccionado('malo') ? 'bg-red-600 text-white border-red-600' : 'bg-gray-100 text-gray-700 border-gray-300'"
+                    class="px-3 py-2 rounded-md border transition-colors">
+                    Malo
+                  </button>
+                  <button 
+                    type="button" 
+                    (click)="toggleValorError('regular')"
+                    [class]="isValorErrorSeleccionado('regular') ? 'bg-red-600 text-white border-red-600' : 'bg-gray-100 text-gray-700 border-gray-300'"
+                    class="px-3 py-2 rounded-md border transition-colors">
+                    Regular
+                  </button>
+                  <button 
+                    type="button" 
+                    (click)="toggleValorError('bueno')"
+                    [class]="isValorErrorSeleccionado('bueno') ? 'bg-red-600 text-white border-red-600' : 'bg-gray-100 text-gray-700 border-gray-300'"
+                    class="px-3 py-2 rounded-md border transition-colors">
+                    Bueno
+                  </button>
+                </div>
+              </div>
+
+              <!-- Configuración Min/Max -->
+              <div *ngIf="formEditarItem.get('tipoValidacion')?.value === 'valor_min_max' || formEditarItem.get('tipoValidacion')?.value === 'cantidad'">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Configuración de Rango
+                </label>
+                <div [formGroup]="formConfiguracionMinMax">
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label for="valorMinimo" class="block text-xs text-gray-600 mb-1">
+                        Valor Mínimo
+                      </label>
+                      <input 
+                        type="number" 
+                        id="valorMinimo" 
+                        formControlName="valorMinimo"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="0">
+                    </div>
+                    <div>
+                      <label for="valorMaximo" class="block text-xs text-gray-600 mb-1">
+                        Valor Máximo
+                      </label>
+                      <input 
+                        type="number" 
+                        id="valorMaximo" 
+                        formControlName="valorMaximo"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="100">
+                    </div>
+                  </div>
+                  <div class="mt-3">
+                    <label class="flex items-center">
+                      <input 
+                        type="checkbox" 
+                        formControlName="generarErrorFueraRango"
+                        class="mr-2">
+                      <span class="text-sm text-gray-700">Generar error si está fuera del rango</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Obligatoriedad -->
+            <div>
+              <label for="esObligatorio" class="block text-sm font-medium text-gray-700 mb-2">
+                ¿Es obligatorio?
+              </label>
+              <select 
+                id="esObligatorio" 
+                formControlName="esObligatorio"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="flex space-x-3 pt-4">
+              <button 
+                type="button" 
+                (click)="cancelarEdicionItem()"
+                class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors">
+                Cancelar
+              </button>
+              <button 
+                type="submit" 
+                [disabled]="formEditarItem.invalid"
+                class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50">
+                {{ itemEditando ? 'Actualizar Ítem' : 'Agregar Ítem' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Panel de Ítems de la Plantilla -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">Ítems de la Plantilla</h2>
+          
+          <!-- Filtros -->
+          <div class="mb-4 flex space-x-4">
+            <div class="flex-1">
+              <input 
+                type="text" 
+                [(ngModel)]="filtroItems"
+                placeholder="Buscar ítems..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button 
+              (click)="agregarNuevoItem()"
+              class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+              Agregar Ítem
+            </button>
+          </div>
+
+          <!-- Lista de secciones con sus ítems -->
+          <div *ngIf="tieneSecciones" class="space-y-6">
+            <div *ngFor="let seccion of secciones; let indexSeccion = index" class="border rounded-lg">
+              <div class="bg-gray-50 px-4 py-3 border-b">
+                <h3 class="font-semibold text-gray-900">{{ seccion.titulo }}</h3>
+                <p class="text-sm text-gray-500">{{ seccion.items.length }} ítems</p>
+              </div>
+              <div class="p-4">
+                <div *ngIf="seccion.items.length === 0" class="text-gray-500 text-center py-4">
+                  No hay ítems en esta sección
+                </div>
+                <div *ngFor="let item of seccion.items; let indexItem = index" 
+                     class="flex justify-between items-center py-2 border-b last:border-b-0">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-900">{{ item.descripcion }}</div>
+                    <div class="text-sm text-gray-500">
+                      {{ tiposValidacion[item.tipoValidacion].nombre }} • 
+                      {{ item.esObligatorio ? 'Obligatorio' : 'Opcional' }} • 
+                      {{ item.comportamiento === 'genera_error' ? 'Genera error' : 
+                         item.comportamiento === 'solo_advertencia' ? 'Solo advertencia' : 'Sin validación' }}
+                    </div>
+                  </div>
+                  <div class="flex space-x-2">
+                    <button 
+                      (click)="editarItem(indexSeccion, indexItem)"
+                      class="text-indigo-600 hover:text-indigo-900">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                      </svg>
+                    </button>
+                    <button 
+                      (click)="eliminarItem(indexSeccion, indexItem)"
+                      class="text-red-600 hover:text-red-900">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mensaje cuando no hay secciones -->
+          <div *ngIf="!tieneSecciones" class="text-center py-8 text-gray-500">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <p *ngIf="plantillaActual.nombre">No hay secciones en la plantilla "{{ plantillaActual.nombre }}"</p>
+            <p *ngIf="!plantillaActual.nombre">No hay secciones en la plantilla</p>
+            <p class="text-sm">Primero complete la información de la plantilla arriba, luego haga clic en "Agregar Sección" para comenzar</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Nueva Plantilla -->
+    <div *ngIf="mostrarModalNuevaPlantilla" 
+         class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+      <div class="relative mx-auto p-5 border w-11/12 sm:w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Nueva Plantilla de Checklist</h3>
+          
+          <form [formGroup]="formNuevaPlantilla" (ngSubmit)="crearNuevaPlantilla()" class="space-y-4">
+            <div>
+              <label for="nombrePlantilla" class="block text-sm font-medium text-gray-700 mb-2">
+                Nombre de la Plantilla <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="nombrePlantilla" 
+                formControlName="nombre"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ej: Inspección Vehicular Diaria">
+              <div *ngIf="formNuevaPlantilla.get('nombre')?.invalid && formNuevaPlantilla.get('nombre')?.touched" 
+                   class="text-red-500 text-xs mt-1">
+                El nombre es requerido
+              </div>
+            </div>
+            
+            <div>
+              <label for="descripcionPlantilla" class="block text-sm font-medium text-gray-700 mb-2">
+                Descripción
+              </label>
+              <textarea 
+                id="descripcionPlantilla" 
+                formControlName="descripcion"
+                rows="3"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Descripción de la plantilla..."></textarea>
+            </div>
+            
+            <div>
+              <label for="tipoPlantillaModal" class="block text-sm font-medium text-gray-700 mb-2">
+                Tipo de Recurso <span class="text-red-500">*</span>
+              </label>
+              <select 
+                id="tipoPlantillaModal" 
+                formControlName="tipo"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option *ngFor="let tipo of opcionesTipoRecurso" [value]="tipo">
+                  {{ tiposRecurso[tipo].icono }} {{ tiposRecurso[tipo].nombre }}
+                </option>
+              </select>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+              <button 
+                type="button"
+                (click)="cerrarModalNuevaPlantilla()"
+                class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors">
+                Cancelar
+              </button>
+              <button 
+                type="submit"
+                [disabled]="formNuevaPlantilla.invalid"
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50">
+                Crear Plantilla
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

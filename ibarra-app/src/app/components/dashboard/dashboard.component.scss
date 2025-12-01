@@ -1,0 +1,317 @@
+.dashboard-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  
+  .welcome-section {
+    .dashboard-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #2c3e50;
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      
+      i {
+        color: #3498db;
+      }
+    }
+    
+    .dashboard-subtitle {
+      font-size: 1.1rem;
+      color: #7f8c8d;
+      margin: 0;
+    }
+  }
+  
+  .user-info {
+    text-align: right;
+    
+    .user-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      
+      .user-email {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 1rem;
+      }
+      
+      .user-role {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        
+        &.role-admin {
+          background: #e74c3c;
+          color: white;
+        }
+        
+        &.role-administrador {
+          background: #9b59b6;
+          color: white;
+        }
+        
+        &.role-supervisor {
+          background: #f39c12;
+          color: white;
+        }
+        
+        &.role-operador {
+          background: #27ae60;
+          color: white;
+        }
+        
+        &.role-tecnico {
+          background: #3498db;
+          color: white;
+        }
+        
+        &.role-visor {
+          background: #95a5a6;
+          color: white;
+        }
+      }
+    }
+  }
+}
+
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.module-card {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3498db, #2ecc71);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+  }
+  
+  &:hover:not(.disabled) {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    
+    &::before {
+      transform: scaleX(1);
+    }
+  }
+  
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #f8f9fa;
+    
+    .module-icon i {
+      color: #bdc3c7 !important;
+    }
+  }
+  
+  .module-icon {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    
+    i {
+      font-size: 3rem;
+      transition: all 0.3s ease;
+    }
+  }
+  
+  .module-content {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    
+    .module-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0 0 1rem 0;
+      color: #2c3e50;
+    }
+    
+    .module-description {
+      color: #7f8c8d;
+      font-size: 1rem;
+      line-height: 1.5;
+      margin: 0;
+    }
+  }
+  
+  .module-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    
+    .module-status {
+      color: #e74c3c;
+      font-size: 0.9rem;
+    }
+    
+    .module-action {
+      color: #27ae60;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+  }
+  
+  // Colores por módulo
+  &.primary {
+    .module-icon i { color: #3498db; }
+    &:hover:not(.disabled) { border-color: #3498db; }
+  }
+  
+  &.success {
+    .module-icon i { color: #27ae60; }
+    &:hover:not(.disabled) { border-color: #27ae60; }
+  }
+  
+  &.info {
+    .module-icon i { color: #17a2b8; }
+    &:hover:not(.disabled) { border-color: #17a2b8; }
+  }
+  
+  &.warning {
+    .module-icon i { color: #ffc107; }
+    &:hover:not(.disabled) { border-color: #ffc107; }
+  }
+  
+  &.danger {
+    .module-icon i { color: #dc3545; }
+    &:hover:not(.disabled) { border-color: #dc3545; }
+  }
+  
+  &.secondary {
+    .module-icon i { color: #6c757d; }
+    &:hover:not(.disabled) { border-color: #6c757d; }
+  }
+  
+  &.dark {
+    .module-icon i { color: #343a40; }
+    &:hover:not(.disabled) { border-color: #343a40; }
+  }
+}
+
+.dashboard-footer {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  
+  .quick-stats {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      border-radius: 10px;
+      background: #f8f9fa;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+      }
+      
+      i {
+        font-size: 2rem;
+        color: #3498db;
+      }
+      
+      span {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 0.9rem;
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+    
+    .user-info {
+      text-align: center;
+    }
+  }
+  
+  .modules-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .dashboard-footer .quick-stats {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header {
+    .welcome-section .dashboard-title {
+      font-size: 2rem;
+    }
+  }
+  
+  .module-card {
+    padding: 1.5rem;
+    
+    .module-icon i {
+      font-size: 2.5rem;
+    }
+    
+    .module-content .module-title {
+      font-size: 1.3rem;
+    }
+  }
+}
+

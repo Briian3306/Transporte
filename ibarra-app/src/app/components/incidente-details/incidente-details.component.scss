@@ -1,0 +1,511 @@
+// Estilos específicos para el componente de detalles de incidente
+
+// Animaciones para transiciones suaves
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Estilos para las tarjetas de información
+.info-card {
+  @apply bg-white shadow rounded-lg;
+}
+
+.info-card-header {
+  @apply px-6 py-4 border-b border-gray-200;
+}
+
+.info-card-title {
+  @apply text-lg font-medium text-gray-900;
+}
+
+.info-card-content {
+  @apply p-6;
+}
+
+// Estilos para la información principal
+.main-info-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+.info-field {
+  @apply space-y-1;
+}
+
+.info-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.info-value {
+  @apply text-sm text-gray-900;
+}
+
+.info-value-large {
+  @apply text-2xl font-bold text-gray-900;
+}
+
+.info-value-multiline {
+  @apply text-sm text-gray-900 bg-gray-50 p-3 rounded-md;
+}
+
+// Estilos para la clasificación del incidente
+.classification-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6;
+}
+
+.classification-item {
+  @apply space-y-1;
+}
+
+.classification-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.classification-value {
+  @apply text-sm text-gray-900;
+}
+
+.classification-badge {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border;
+}
+
+// Estilos para indicaciones y acciones
+.instructions-section {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+}
+
+.instructions-card {
+  @apply space-y-2;
+}
+
+.instructions-header {
+  @apply text-md font-medium text-blue-800 mb-3;
+}
+
+.instructions-item {
+  @apply flex items-start space-x-2 p-3 bg-blue-50 rounded border border-blue-200;
+}
+
+.instructions-bullet {
+  @apply text-blue-600 font-medium mt-1;
+}
+
+.instructions-text {
+  @apply text-sm text-gray-700;
+}
+
+.actions-card {
+  @apply space-y-2;
+}
+
+.actions-header {
+  @apply text-md font-medium text-green-800 mb-3;
+}
+
+.actions-item {
+  @apply flex items-start space-x-2 p-3 bg-green-50 rounded border border-green-200;
+}
+
+.actions-bullet {
+  @apply text-green-600 font-medium mt-1;
+}
+
+.actions-text {
+  @apply text-sm text-gray-700;
+}
+
+// Estilos para el seguimiento
+.tracking-section {
+  @apply space-y-6;
+}
+
+.tracking-status {
+  @apply mb-6;
+}
+
+.tracking-status-label {
+  @apply block text-sm font-medium text-gray-700 mb-2;
+}
+
+.tracking-status-content {
+  @apply flex items-center space-x-4;
+}
+
+.tracking-status-badge {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+}
+
+.tracking-status-change {
+  @apply flex items-center space-x-2;
+}
+
+.tracking-status-select {
+  @apply px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+// Estilos para comentarios
+.comments-section {
+  @apply mb-6;
+}
+
+.comments-label {
+  @apply block text-sm font-medium text-gray-700 mb-2;
+}
+
+.comments-form {
+  @apply flex space-x-2;
+}
+
+.comments-textarea {
+  @apply flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+.comments-button {
+  @apply px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.comments-timeline {
+  @apply space-y-4;
+}
+
+.comments-timeline-header {
+  @apply text-md font-medium text-gray-900 mb-4;
+}
+
+.comments-timeline-item {
+  @apply flex items-start space-x-3 p-4 bg-gray-50 rounded-lg;
+}
+
+.comments-timeline-avatar {
+  @apply flex-shrink-0;
+}
+
+.comments-timeline-avatar-icon {
+  @apply w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center;
+}
+
+.comments-timeline-content {
+  @apply flex-1 min-w-0;
+}
+
+.comments-timeline-header-info {
+  @apply flex items-center justify-between;
+}
+
+.comments-timeline-user {
+  @apply text-sm font-medium text-gray-900;
+}
+
+.comments-timeline-timestamp {
+  @apply text-xs text-gray-500;
+}
+
+.comments-timeline-text {
+  @apply mt-1 text-sm text-gray-700;
+}
+
+// Estilos para la información de auditoría
+.audit-section {
+  @apply space-y-6;
+}
+
+.audit-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+}
+
+.audit-field {
+  @apply space-y-1;
+}
+
+.audit-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.audit-value {
+  @apply text-sm text-gray-900;
+}
+
+// Estilos para los badges de estado
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.status-badge-critical {
+  @apply bg-red-100 text-red-800;
+}
+
+.status-badge-high {
+  @apply bg-orange-100 text-orange-800;
+}
+
+.status-badge-medium {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-badge-low {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-badge-pending {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-badge-en-proceso {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-badge-resuelto {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-badge-cerrado {
+  @apply bg-gray-100 text-gray-800;
+}
+
+// Estilos para los iconos
+.icon {
+  @apply w-5 h-5;
+}
+
+.icon-sm {
+  @apply w-4 h-4;
+}
+
+.icon-xs {
+  @apply w-3 h-3;
+}
+
+.icon-lg {
+  @apply w-6 h-6;
+}
+
+.icon-xl {
+  @apply w-8 h-8;
+}
+
+// Estilos para el loading
+.loading-spinner {
+  @apply animate-spin rounded-full border-b-2 border-blue-600;
+}
+
+// Estilos para los mensajes
+.message {
+  @apply rounded-md p-4 mb-6;
+}
+
+.message-error {
+  @apply bg-red-50 border border-red-200;
+}
+
+.message-success {
+  @apply bg-green-50 border border-green-200;
+}
+
+.message-warning {
+  @apply bg-yellow-50 border border-yellow-200;
+}
+
+.message-info {
+  @apply bg-blue-50 border border-blue-200;
+}
+
+// Estilos para el estado vacío
+.empty-state {
+  @apply text-center py-12;
+}
+
+.empty-state-icon {
+  @apply text-gray-400 text-6xl mb-4;
+}
+
+.empty-state-title {
+  @apply text-lg font-medium text-gray-900 mb-2;
+}
+
+.empty-state-description {
+  @apply text-gray-500 mb-6;
+}
+
+.empty-state-button {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+// Estilos para los botones
+.btn-primary {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+.btn-danger {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500;
+}
+
+.btn-success {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500;
+}
+
+// Estilos para los tooltips
+.tooltip {
+  @apply absolute z-10 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg opacity-0 transition-opacity duration-200;
+}
+
+.tooltip-visible {
+  @apply opacity-100;
+}
+
+// Estilos para el estado disabled
+.disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+// Estilos responsivos
+@media (max-width: 768px) {
+  .main-info-grid {
+    @apply grid-cols-1;
+  }
+  
+  .classification-grid {
+    @apply grid-cols-1;
+  }
+  
+  .instructions-section {
+    @apply grid-cols-1;
+  }
+  
+  .audit-grid {
+    @apply grid-cols-1;
+  }
+  
+  .tracking-status-content {
+    @apply flex-col items-start space-x-0 space-y-2;
+  }
+  
+  .comments-form {
+    @apply flex-col space-x-0 space-y-2;
+  }
+  
+  .comments-textarea {
+    @apply w-full;
+  }
+  
+  .comments-button {
+    @apply w-full justify-center;
+  }
+}
+
+// Estilos para las animaciones de entrada
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// Estilos para los hover effects
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}
+
+.hover-scale {
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+// Estilos para los focus states
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+// Estilos para los estados de carga
+.loading-overlay {
+  @apply absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center;
+}
+
+// Estilos para los indicadores de estado
+.status-indicator {
+  @apply w-2 h-2 rounded-full;
+}
+
+.status-indicator-online {
+  @apply bg-green-400;
+}
+
+.status-indicator-offline {
+  @apply bg-gray-400;
+}
+
+.status-indicator-warning {
+  @apply bg-yellow-400;
+}
+
+.status-indicator-error {
+  @apply bg-red-400;
+}
+
+// Estilos para el timeline de comentarios
+.timeline-container {
+  @apply relative;
+}
+
+.timeline-line {
+  @apply absolute left-4 top-8 bottom-0 w-0.5 bg-gray-200;
+}
+
+.timeline-item {
+  @apply relative pl-12;
+}
+
+.timeline-item::before {
+  content: '';
+  @apply absolute left-4 top-8 w-2 h-2 bg-blue-400 rounded-full;
+}
+
+// Estilos para los formularios
+.form-group {
+  @apply space-y-1;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700;
+}
+
+.form-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+.form-textarea {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical;
+}
+
+.form-select {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+// Estilos para los estados de validación
+.valid {
+  @apply border-green-300 focus:ring-green-500 focus:border-green-500;
+}
+
+.invalid {
+  @apply border-red-300 focus:ring-red-500 focus:border-red-500;
+}

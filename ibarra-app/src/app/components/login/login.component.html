@@ -1,0 +1,113 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="logo">
+        <i class="fas fa-tire"></i>
+        <h1>Sistema de Neumáticos Ibarra</h1>
+      </div>
+      <p class="subtitle">Inicie sesión para acceder al sistema</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <!-- Campo Email -->
+      <div class="form-group">
+        <label for="email" class="form-label">
+          <i class="fas fa-envelope"></i>
+          Email
+        </label>
+        <input
+          type="email"
+          id="email"
+          formControlName="email"
+          class="form-input"
+          [class.error]="getFieldError('email')"
+          placeholder="Ingrese su email"
+          autocomplete="email"
+        />
+        <div class="error-message" *ngIf="getFieldError('email')">
+          {{ getFieldError('email') }}
+        </div>
+      </div>
+
+      <!-- Campo Contraseña -->
+      <div class="form-group">
+        <label for="password" class="form-label">
+          <i class="fas fa-lock"></i>
+          Contraseña
+        </label>
+        <div class="password-input-container">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            id="password"
+            formControlName="password"
+            class="form-input"
+            [class.error]="getFieldError('password')"
+            placeholder="Ingrese su contraseña"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          >
+            <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
+        <div class="error-message" *ngIf="getFieldError('password')">
+          {{ getFieldError('password') }}
+        </div>
+      </div>
+
+      <!-- Mensaje de error general -->
+      <div class="error-message general-error" *ngIf="errorMessage">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ errorMessage }}
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="form-actions">
+        <button
+          type="submit"
+          class="btn btn-primary btn-login"
+          [disabled]="isLoading"
+        >
+          <i class="fas fa-sign-in-alt" *ngIf="!isLoading"></i>
+          <i class="fas fa-spinner fa-spin" *ngIf="isLoading"></i>
+          {{ isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-secondary btn-register"
+          (click)="signUp()"
+          [disabled]="isLoading"
+        >
+          <i class="fas fa-user-plus"></i>
+          Registrarse
+        </button>
+      </div>
+
+      <!-- Enlaces adicionales -->
+      <div class="login-links">
+        <button
+          type="button"
+          class="link-button"
+          (click)="resetPassword()"
+          [disabled]="isLoading"
+        >
+          <i class="fas fa-key"></i>
+          ¿Olvidó su contraseña?
+        </button>
+      </div>
+    </form>
+
+    <!-- Información adicional -->
+    <div class="login-footer">
+      <div class="system-info">
+        <p><i class="fas fa-info-circle"></i> Sistema de Gestión de Neumáticos</p>
+        <p><i class="fas fa-shield-alt"></i> Acceso seguro con Supabase</p>
+      </div>
+    </div>
+  </div>
+</div>

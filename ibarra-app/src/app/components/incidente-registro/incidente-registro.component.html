@@ -1,0 +1,330 @@
+<div class="min-h-screen bg-gray-50 py-6">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">
+            <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+            Reportar Incidente de Seguridad
+          </h1>
+          <p class="mt-2 text-gray-600">Complete el formulario para registrar un nuevo incidente</p>
+        </div>
+        <div class="flex space-x-3">
+          <button
+            (click)="goToHistory()"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <i class="fas fa-history mr-2"></i>
+            Ver Historial
+          </button>
+          <button
+            (click)="goToConfig()"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <i class="fas fa-cog mr-2"></i>
+            Configuración
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensajes -->
+    <div *ngIf="error" class="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-red-800">{{ error }}</p>
+        </div>
+        <div class="ml-auto pl-3">
+          <button (click)="clearMessages()" class="text-red-400 hover:text-red-600">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="success" class="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-green-800">{{ success }}</p>
+        </div>
+        <div class="ml-auto pl-3">
+          <button (click)="clearMessages()" class="text-green-400 hover:text-green-600">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+
+    <!-- Formulario -->
+    <div *ngIf="!loading" class="bg-white shadow rounded-lg">
+      <form [formGroup]="incidenteForm" (ngSubmit)="onSubmit()" class="p-6 space-y-6">
+        <!-- Datos Básicos -->
+        <div class="border-b border-gray-200 pb-6">
+          <h2 class="text-lg font-medium text-gray-900 mb-4">
+            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+            Información Básica
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+              <input
+                formControlName="fecha"
+                type="date"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                [class.border-red-300]="getFieldError('fecha')">
+              <p *ngIf="getFieldError('fecha')" class="text-sm text-red-600 mt-1">{{ getFieldError('fecha') }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Hora *</label>
+              <input
+                formControlName="hora"
+                type="time"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                [class.border-red-300]="getFieldError('hora')">
+              <p *ngIf="getFieldError('hora')" class="text-sm text-red-600 mt-1">{{ getFieldError('hora') }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información del Reportante -->
+        <div class="border-b border-gray-200 pb-6">
+          <h2 class="text-lg font-medium text-gray-900 mb-4">
+            <i class="fas fa-user text-green-600 mr-2"></i>
+            Información del Reportante
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo *</label>
+              <input
+                formControlName="nombre_reportante"
+                type="text"
+                placeholder="Nombre completo del reportante"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                [class.border-red-300]="getFieldError('nombre_reportante')">
+              <p *ngIf="getFieldError('nombre_reportante')" class="text-sm text-red-600 mt-1">{{ getFieldError('nombre_reportante') }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono *</label>
+              <input
+                formControlName="telefono_reportante"
+                type="tel"
+                placeholder="+54 9 11 1234-5678"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                [class.border-red-300]="getFieldError('telefono_reportante')">
+              <p *ngIf="getFieldError('telefono_reportante')" class="text-sm text-red-600 mt-1">{{ getFieldError('telefono_reportante') }}</p>
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría del Reportante *</label>
+            <select
+              formControlName="categoria_reportante"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              [class.border-red-300]="getFieldError('categoria_reportante')">
+              <option value="">Seleccionar categoría...</option>
+              <option *ngFor="let categoria of categoriasReportante" [value]="categoria.value">
+                <div class="flex items-center space-x-2">
+                  <i [class]="categoria.icon"></i>
+                  {{ categoria.label }}
+                </div>
+                
+              </option>
+            </select>
+            <p *ngIf="getFieldError('categoria_reportante')" class="text-sm text-red-600 mt-1">{{ getFieldError('categoria_reportante') }}</p>
+          </div>
+        </div>
+
+        <!-- Detalles del Incidente -->
+        <div class="border-b border-gray-200 pb-6">
+          <h2 class="text-lg font-medium text-gray-900 mb-4">
+            <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+            Detalles del Incidente
+          </h2>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Motivo del Llamado *</label>
+              <textarea
+                formControlName="motivo"
+                placeholder="¿Por qué está llamando? Describa brevemente la situación..."
+                rows="3"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                [class.border-red-300]="getFieldError('motivo')"></textarea>
+              <p *ngIf="getFieldError('motivo')" class="text-sm text-red-600 mt-1">{{ getFieldError('motivo') }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación *</label>
+              <textarea
+                formControlName="ubicacion"
+                placeholder="Ubicación exacta, km, referencias..."
+                rows="2"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                [class.border-red-300]="getFieldError('ubicacion')"></textarea>
+              <p *ngIf="getFieldError('ubicacion')" class="text-sm text-red-600 mt-1">{{ getFieldError('ubicacion') }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Patente del Vehículo</label>
+              <input
+                formControlName="patente"
+                type="text"
+                placeholder="ABC-123"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                [class.border-red-300]="getFieldError('patente')">
+              <p *ngIf="getFieldError('patente')" class="text-sm text-red-600 mt-1">{{ getFieldError('patente') }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clasificación del Incidente -->
+        <div class="border-b border-gray-200 pb-6">
+          <h2 class="text-lg font-medium text-gray-900 mb-4">
+            <i class="fas fa-tags text-purple-600 mr-2"></i>
+            Clasificación del Incidente
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Incidente *</label>
+              <select
+                formControlName="tipo_incidente"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                [class.border-red-300]="getFieldError('tipo_incidente')">
+                <option value="">Seleccionar tipo...</option>
+                <option *ngFor="let tipo of tiposIncidente" [value]="tipo.codigo">
+                  <i [class]="tipo.icono"></i>{{ tipo.nombre }}
+                </option>
+              </select>
+              <p *ngIf="getFieldError('tipo_incidente')" class="text-sm text-red-600 mt-1">{{ getFieldError('tipo_incidente') }}</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Subtipo de Incidente *</label>
+              <select
+                formControlName="subtipo_incidente"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                [class.border-red-300]="getFieldError('subtipo_incidente')"
+                [disabled]="subtiposDisponibles.length === 0">
+                <option value="">Seleccionar subtipo...</option>
+                <option *ngFor="let subtipo of subtiposDisponibles" [value]="subtipo.codigo">
+                  {{ subtipo.nombre }}
+                </option>
+              </select>
+              <p *ngIf="getFieldError('subtipo_incidente')" class="text-sm text-red-600 mt-1">{{ getFieldError('subtipo_incidente') }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clasificación Automática -->
+        <div *ngIf="nivelCalculado" class="border-b border-gray-200 pb-6">
+          <h2 class="text-lg font-medium text-gray-900 mb-4">
+            <i class="fas fa-chart-line text-orange-600 mr-2"></i>
+            Clasificación Automática
+          </h2>
+          
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-3">
+                <div class="p-2 rounded-full" [style.background-color]="getNivelRiesgoColor()">
+                  <i [class]="getNivelRiesgoIcon()" class="text-white"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">{{ nivelCalculado.nombre }}</h3>
+                  <p class="text-sm text-gray-600">Responsable: {{ nivelCalculado.responsable }}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-sm text-gray-600">Tiempo de respuesta</p>
+                <p class="text-lg font-semibold text-gray-900">{{ nivelCalculado.tiempo_respuesta }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicaciones y Acciones -->
+        <div *ngIf="indicaciones.length > 0 || acciones.length > 0" class="border-b border-gray-200 pb-6">
+          <h2 class="text-lg font-medium text-gray-900 mb-4">
+            <i class="fas fa-list-check text-blue-600 mr-2"></i>
+            Indicaciones y Acciones
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Indicaciones -->
+            <div *ngIf="indicaciones.length > 0">
+              <h3 class="text-md font-medium text-blue-800 mb-3">
+                <i class="fas fa-clipboard-list mr-2"></i>
+                Indicaciones
+              </h3>
+              <div class="space-y-2">
+                <div *ngFor="let indicacion of indicaciones" 
+                     class="flex items-start space-x-2 p-3 bg-blue-50 rounded border border-blue-200">
+                  <span class="text-blue-600 font-medium mt-1">•</span>
+                  <p class="text-sm text-gray-700">{{ indicacion }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Acciones -->
+            <div *ngIf="acciones.length > 0">
+              <h3 class="text-md font-medium text-green-800 mb-3">
+                <i class="fas fa-tasks mr-2"></i>
+                Acciones
+              </h3>
+              <div class="space-y-2">
+                <div *ngFor="let accion of acciones" 
+                     class="flex items-start space-x-2 p-3 bg-green-50 rounded border border-green-200">
+                  <span class="text-green-600 font-medium mt-1">✓</span>
+                  <p class="text-sm text-gray-700">{{ accion }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex justify-between pt-6">
+          <button
+            type="button"
+            (click)="goToHistory()"
+            class="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Cancelar
+          </button>
+          
+          <button
+            type="submit"
+            [disabled]="incidenteForm.invalid || submitting"
+            class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed">
+            <i *ngIf="!submitting" class="fas fa-paper-plane mr-2"></i>
+            <i *ngIf="submitting" class="fas fa-spinner fa-spin mr-2"></i>
+            {{ submitting ? 'Enviando...' : 'Enviar Reporte' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+

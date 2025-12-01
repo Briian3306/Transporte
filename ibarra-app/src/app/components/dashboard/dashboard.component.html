@@ -1,0 +1,57 @@
+<div class="dashboard-container">
+  <!-- Header del Dashboard -->
+  <div class="dashboard-header">
+    <div class="welcome-section">
+      <h1 class="dashboard-title">
+        <i class="fas fa-tachometer-alt"></i>
+        Panel de Control
+      </h1>
+      <p class="dashboard-subtitle">
+        Bienvenido al Sistema de Gestión de Transporte Ibarra
+      </p>
+    </div>
+    
+    <div class="user-info" *ngIf="currentUser$ | async as user">
+      <div class="user-details">
+        <span class="user-email">{{ user.email }}</span>
+        <span class="user-role" 
+              [class]="'role-' + (getCurrentRole() | lowercase)">
+          {{ getCurrentRole() | titlecase }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid de Módulos -->
+  <div class="modules-grid">
+    <div 
+      *ngFor="let module of dashboardModules" 
+      class="module-card"
+      [class]="getModuleClass(module)"
+      [routerLink]="module.isAvailable ? module.route : null"
+      [class.disabled]="!module.isAvailable">
+      
+      <div class="module-icon">
+        <i [class]="module.icon"></i>
+      </div>
+      
+      <div class="module-content">
+        <h3 class="module-title">{{ module.name }}</h3>
+        <p class="module-description">{{ module.description }}</p>
+      </div>
+      
+      <div class="module-footer">
+        <span class="module-status" *ngIf="!module.isAvailable">
+          <i class="fas fa-lock"></i>
+          Sin acceso
+        </span>
+        <span class="module-action" *ngIf="module.isAvailable">
+          <i class="fas fa-arrow-right"></i>
+          Acceder
+        </span>
+      </div>
+    </div>
+  </div>
+
+</div>
+

@@ -1,0 +1,81 @@
+// Estilos específicos para el componente checklist-panel
+// La mayoría del diseño usa Tailwind CSS, estos son estilos adicionales
+
+.checklist-panel {
+  // Mejoras para móviles
+  @media (max-width: 640px) {
+    .grid {
+      gap: 1rem;
+    }
+    
+    .p-6 {
+      padding: 1rem;
+    }
+    
+    // Asegurar que los dropdowns no se salgan de la pantalla
+    .relative {
+      .absolute {
+        right: 0;
+        left: auto;
+        transform: none;
+        
+        // En móviles, ajustar posición si es necesario
+        @media (max-width: 480px) {
+          right: -0.5rem;
+          width: calc(100vw - 2rem);
+          max-width: 12rem;
+        }
+      }
+    }
+  }
+  
+  // Transiciones suaves para elementos interactivos
+  .transition-all {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  // Estados de focus mejorados
+  .focus\:ring-2:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+  }
+  
+  // Animaciones de carga
+  .fa-spinner {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  // Mejoras para botones en móviles
+  @media (max-width: 640px) {
+    button {
+      min-height: 44px; // Tamaño mínimo recomendado para touch
+      touch-action: manipulation;
+    }
+  }
+  
+  // Mejoras para dropdowns
+  .relative {
+    .absolute {
+      z-index: 20;
+      
+      // Animación suave para mostrar/ocultar
+      transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
+      
+      &.hidden {
+        opacity: 0;
+        transform: translateY(-10px);
+        pointer-events: none;
+      }
+      
+      &:not(.hidden) {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+    }
+  }
+}

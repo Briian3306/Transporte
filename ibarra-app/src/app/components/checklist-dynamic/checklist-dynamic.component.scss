@@ -1,0 +1,372 @@
+.validation-error {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2 !important;
+}
+
+.validation-warning {
+  border-color: #d97706 !important;
+  background-color: #fffbeb !important;
+}
+
+.validation-success {
+  border-color: #059669 !important;
+  background-color: #f0fdf4 !important;
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.warning-message {
+  color: #d97706;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.item-completed {
+  background-color: #f0fdf4;
+  border-left: 4px solid #059669;
+}
+
+.item-error {
+  background-color: #fef2f2;
+  border-left: 4px solid #dc2626;
+}
+
+.item-warning {
+  background-color: #fffbeb;
+  border-left: 4px solid #d97706;
+}
+
+/* Estilos para botones más accesibles en móviles y tablets */
+.btn-touch {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-touch:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-touch:active {
+  transform: translateY(0);
+}
+
+.btn-touch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .btn-touch {
+    min-height: 56px;
+    padding: 16px 20px;
+    font-size: 18px;
+  }
+}
+
+/* Estilos para radio buttons más grandes */
+.radio-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  min-height: 30px;
+  padding: 8px;
+}
+
+.radio-container input[type="radio"] {
+  transform: scale(2);
+  margin: 0 0 4px 0;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.radio-container label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .radio-container input[type="radio"] {
+    transform: scale(2.5);
+    accent-color: #3b82f6;
+  }
+  .radio-container {
+    min-height: 70px;
+  }
+  .radio-container label {
+    font-size: 14px;
+  }
+}
+
+/* Estilos para inputs más accesibles */
+.input-touch {
+  min-height: 48px;
+  padding: 12px 16px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  transition: all 0.2s ease;
+}
+
+.input-touch:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+@media (max-width: 768px) {
+  .input-touch {
+    min-height: 56px;
+    padding: 16px 20px;
+    font-size: 18px;
+  }
+}
+
+/* Estados de items */
+.item-row {
+  transition: all 0.2s ease;
+}
+
+.item-row:hover {
+  background-color: #f9fafb;
+}
+
+/* Estados de validación */
+.estado-error {
+  background-color: #dc2626;
+}
+
+.estado-advertencia {
+  background-color: #d97706;
+}
+
+.estado-correcto {
+  background-color: #059669;
+}
+
+.estado-pendiente {
+  background-color: #9ca3af;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .flex {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .space-x-2 > * + * {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+  
+  .space-x-4 > * + * {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+  
+  /* Mejoras específicas para móviles */
+  .btn-touch {
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+  
+  .input-touch {
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+  
+  /* Radio buttons más grandes en móviles */
+  .radio-container input[type="radio"] {
+    transform: scale(1.5);
+    margin-bottom: 8px;
+    accent-color: #3b82f6;
+  }
+  
+  .radio-container {
+    min-height: 60px;
+    padding: 12px;
+  }
+  
+  .radio-container label {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  /* Mejoras para modales en móviles */
+  .modal-content {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+  
+  /* Tabla responsive mejorada */
+  .table-responsive {
+    font-size: 14px;
+  }
+  
+  /* Cards móviles */
+  .mobile-card {
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.2s ease;
+  }
+  
+  .mobile-card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Botones flotantes para móviles */
+  .floating-buttons {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    display: flex;
+    gap: 4px;
+  }
+  
+  .floating-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: white;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .floating-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Estado flotante */
+  .estado-flotante {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Modal styles */
+.modal-overlay {
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Table responsive */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Loading states */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Focus states for accessibility */
+.btn-touch:focus,
+.input-touch:focus,
+.radio-container input[type="radio"]:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .btn-touch {
+    border: 2px solid currentColor;
+  }
+  
+  .input-touch {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .btn-touch,
+  .input-touch,
+  .item-row {
+    transition: none;
+  }
+  
+  .fade-in {
+    animation: none;
+  }
+  
+  .loading-spinner {
+    animation: none;
+  }
+}

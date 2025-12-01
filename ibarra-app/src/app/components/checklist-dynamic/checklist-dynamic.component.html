@@ -1,0 +1,984 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="py-4 sm:py-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex-1 min-w-0">
+            <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+              <i class="fas fa-clipboard-check text-blue-600 mr-2 sm:mr-3"></i>
+              {{ plantillaActual?.nombre || 'Checklist Dinámico' }}
+            </h1>
+            <p class="mt-1 text-xs sm:text-sm text-gray-500">
+              {{ plantillaActual?.descripcion || 'Sistema escalable de checklists con validación configurable' }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+    <!-- Información del Checklist -->
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 mb-6">
+      <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg sm:text-xl font-medium text-gray-900">
+          <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+          Información del Checklist
+        </h2>
+      </div>
+      
+      <div class="p-4 sm:p-6">
+        <div [formGroup]="checklistForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label for="fechaHora" class="block text-sm font-medium text-gray-700 mb-2">Fecha y Hora</label>
+            <input 
+              type="datetime-local" 
+              id="fechaHora" 
+              formControlName="fechaHora"
+              [disabled]="esFinalizado"
+              class="w-full input-touch border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+      
+          <!-- Campo dinámico según tipo de recurso -->
+          <div *ngIf="plantillaActual?.tipo === 'vehiculo'">
+            <label for="recursoPrincipal" class="block text-sm font-medium text-gray-700 mb-2">🚛 Vehículo</label>
+            <div class="relative">
+              <input 
+                type="text" 
+                id="recursoPrincipal" 
+                formControlName="tractor"
+                [disabled]="esFinalizado"
+                class="w-full input-touch pr-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Patente del vehículo">
+              <button 
+                type="button" 
+                (click)="abrirModalCargaDatos()"
+                class="absolute right-1 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm transition-colors" 
+                title="Seleccionar vehículo">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </div>
+      
+          <div *ngIf="plantillaActual?.tipo === 'chofer'">
+            <label for="recursoPrincipal" class="block text-sm font-medium text-gray-700 mb-2">👨‍💼 Chofer</label>
+            <div class="relative">
+              <input 
+                type="text" 
+                id="recursoPrincipal" 
+                formControlName="chofer"
+                [disabled]="esFinalizado"
+                class="w-full input-touch pr-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Nombre del chofer">
+              <button 
+                type="button" 
+                (click)="abrirModalCargaDatos()"
+                class="absolute right-1 top-1/2 transform -translate-y-1/2 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm transition-colors" 
+                title="Seleccionar chofer">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div *ngIf="plantillaActual?.tipo === 'unidad'">
+            <label for="recursoPrincipal" class="block text-sm font-medium text-gray-700 mb-2">🚚 Unidad</label>
+            <div class="relative">
+              <input 
+                type="text" 
+                id="recursoPrincipal" 
+                formControlName="tractor"
+                [disabled]="esFinalizado"
+                class="w-full input-touch pr-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Número de unidad">
+              <button 
+                type="button" 
+                (click)="abrirModalCargaDatos()"
+                class="absolute right-1 top-1/2 transform -translate-y-1/2 bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm transition-colors" 
+                title="Seleccionar unidad">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div *ngIf="plantillaActual?.tipo === 'maquina'">
+            <label for="recursoPrincipal" class="block text-sm font-medium text-gray-700 mb-2">⚙️ Máquina</label>
+            <div class="relative">
+              <input 
+                type="text" 
+                id="recursoPrincipal" 
+                formControlName="tractor"
+                class="w-full input-touch pr-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Nombre de la máquina">
+              <button 
+                type="button" 
+                (click)="abrirModalCargaDatos()"
+                class="absolute right-1 top-1/2 transform -translate-y-1/2 bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-md text-sm transition-colors" 
+                title="Seleccionar máquina">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div *ngIf="plantillaActual?.tipo === 'sector'">
+            <label for="recursoPrincipal" class="block text-sm font-medium text-gray-700 mb-2">🏢 Sector/Área</label>
+            <div class="relative">
+              <input 
+                type="text" 
+                id="recursoPrincipal" 
+                formControlName="tractor"
+                class="w-full input-touch pr-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Nombre del sector">
+              <button 
+                type="button" 
+                (click)="abrirModalCargaDatos()"
+                class="absolute right-1 top-1/2 transform -translate-y-1/2 bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-md text-sm transition-colors" 
+                title="Seleccionar sector">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Información del recurso seleccionado -->
+        <div *ngIf="recursoSeleccionado" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="flex flex-col sm:flex-row sm:items-center">
+            <div class="flex items-center flex-1 min-w-0">
+              <div class="flex-shrink-0">
+                <i class="fas fa-check-circle text-blue-500 text-lg"></i>
+              </div>
+              <div class="ml-3 min-w-0 flex-1">
+                <h4 class="text-sm font-medium text-blue-800 truncate">
+                  {{ recursoSeleccionado.nombre }} seleccionado
+                </h4>
+                <div class="mt-1 text-sm text-blue-700">
+                  <span *ngIf="plantillaActual?.tipo === 'vehiculo'">
+                    {{ recursoSeleccionado.informacion.marca }} {{ recursoSeleccionado.informacion.modelo }}
+                  </span>
+                  <span *ngIf="plantillaActual?.tipo === 'chofer'">
+                    DNI: {{ recursoSeleccionado.informacion.dni }}
+                  </span>
+                  <span *ngIf="plantillaActual?.tipo === 'unidad'">
+                    Tipo: {{ recursoSeleccionado.informacion.tipo_unidad }} - Capacidad: {{ recursoSeleccionado.informacion.capacidad }} - Estado: {{ recursoSeleccionado.informacion.estado }}
+                  </span>
+                  <span *ngIf="plantillaActual?.tipo === 'maquina'">
+                    Modelo: {{ recursoSeleccionado.informacion.modelo }} - Responsable: {{ recursoSeleccionado.informacion.responsable }} - Ubicación: {{ recursoSeleccionado.informacion.ubicacion }}
+                  </span>
+                  <span *ngIf="plantillaActual?.tipo === 'sector'">
+                    Ubicación: {{ recursoSeleccionado.informacion.ubicacion }} - Responsable: {{ recursoSeleccionado.informacion.responsable }} - Tipo: {{ recursoSeleccionado.informacion.tipo_area }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 sm:mt-0 sm:ml-4">
+              <button 
+                type="button" 
+                (click)="recursoSeleccionado = null; checklistForm.patchValue({chofer: '', tractor: '', semi: ''})"
+                class="w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                <i class="fas fa-edit mr-2"></i>
+                Cambiar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Contenedor de Ítems -->
+    <div *ngIf="plantillaActual" class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+      <div *ngFor="let seccion of plantillaActual.secciones" class="border-b border-gray-200 last:border-b-0">
+        <div class="bg-gray-50 px-4 sm:px-6 py-3">
+          <h3 class="text-base sm:text-lg font-semibold text-gray-900">{{ seccion.titulo }}</h3>
+        </div>
+        
+         <!-- Vista móvil: Cards -->
+         <div class="block sm:hidden">
+           <div *ngFor="let item of seccion.items" class="border-b border-gray-200 last:border-b-0 p-4 relative">
+             <!-- Botones flotantes para móvil -->
+             <div class="absolute top-2 right-2 flex space-x-1 z-10">
+               <!-- Estado -->
+               <div class="w-4 h-4 rounded-full"
+                    [class]="getEstadoItem(item.id)"
+                    title="Estado del item">
+               </div>
+               <!-- Botón de descripción detallada -->
+               <button *ngIf="item.descripcionDetallada" 
+                       type="button" 
+                       (click)="abrirModalDescripcion(item)"
+                       class="p-2 text-gray-400 hover:text-blue-500 transition-colors rounded-full hover:bg-blue-50 bg-white shadow-sm border border-gray-200"
+                       title="Ver descripción detallada">
+                 <i class="fas fa-info-circle text-sm"></i>
+               </button>
+               <!-- Botón de observaciones -->
+               <button type="button" 
+                       (click)="abrirModalObservacion(item.id, item.descripcion)"
+                       class="p-2 text-gray-400 hover:text-green-500 transition-colors rounded-full hover:bg-green-50 bg-white shadow-sm border border-gray-200"
+                       title="Agregar observación">
+                 <i class="fas fa-edit text-sm"></i>
+               </button>
+             </div>
+             
+             <div class="pr-20">
+               <div class="text-sm font-medium text-gray-900 mb-2">{{ item.descripcion }}</div>
+               <div class="flex items-center space-x-2 mb-2">
+                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                       [class]="item.esObligatorio ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'">
+                   {{ item.esObligatorio ? 'Obligatorio' : 'Opcional' }}
+                 </span>
+               </div>
+               <div *ngIf="item.tipoValidacion === 'valor_min_max' || item.tipoValidacion === 'cantidad'" 
+                    class="text-xs text-gray-500 mb-3">
+                 Rango válido: {{ item.configuracion.valorMinimo }} - {{ item.configuracion.valorMaximo }}
+               </div>
+             </div>
+            
+            <!-- Validación móvil -->
+            <div class="mb-4">
+              <!-- Radio buttons para si/no -->
+              <div *ngIf="item.tipoValidacion === 'si_no'" class="flex space-x-4 justify-center">
+                <div class="radio-container">
+                  <label>
+                    <input type="radio" 
+                           [name]="item.id" 
+                           value="si"
+                           [checked]="respuestas[item.id] && respuestas[item.id].valor === 'si'"
+                           [disabled]="esFinalizado"
+                           (change)="onItemChange(item.id, 'si')"
+                           class="text-blue-600 focus:ring-blue-500">
+                    <span>Sí</span>
+                  </label>
+                </div>
+                <div class="radio-container">
+                  <label>
+                    <input type="radio" 
+                           [name]="item.id" 
+                           value="no"
+                           [checked]="respuestas[item.id] && respuestas[item.id].valor === 'no'"
+                           [disabled]="esFinalizado"
+                           (change)="onItemChange(item.id, 'no')"
+                           class="text-blue-600 focus:ring-blue-500">
+                    <span>No</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Radio buttons para si/no/na -->
+              <div *ngIf="item.tipoValidacion === 'si_no_na'" class="flex space-x-2 justify-center">
+                <div class="radio-container">
+                  <label>
+                    <input type="radio" 
+                           [name]="item.id" 
+                           value="si"
+                           [checked]="respuestas[item.id] && respuestas[item.id].valor === 'si'"
+                           [disabled]="esFinalizado"
+                           (change)="onItemChange(item.id, 'si')"
+                           class="text-blue-600 focus:ring-blue-500">
+                    <span>Sí</span>
+                  </label>
+                </div>
+                <div class="radio-container">
+                  <label>
+                    <input type="radio" 
+                           [name]="item.id" 
+                           value="no"
+                           [checked]="respuestas[item.id] && respuestas[item.id].valor === 'no'"
+                           [disabled]="esFinalizado"
+                           (change)="onItemChange(item.id, 'no')"
+                           class="text-blue-600 focus:ring-blue-500">
+                    <span>No</span>
+                  </label>
+                </div>
+                <div class="radio-container">
+                  <label>
+                    <input type="radio" 
+                           [name]="item.id" 
+                           value="na"
+                           [checked]="respuestas[item.id] && respuestas[item.id].valor === 'na'"
+                           [disabled]="esFinalizado"
+                           (change)="onItemChange(item.id, 'na')"
+                           class="text-blue-600 focus:ring-blue-500">
+                    <span>N/A</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Radio buttons para bueno/regular/malo -->
+              <div *ngIf="item.tipoValidacion === 'bueno_regular_malo'" class="flex space-x-1 justify-center">
+                <div class="radio-container">
+                  <label>
+                    <input type="radio" 
+                           [name]="item.id" 
+                           value="bueno"
+                           [checked]="respuestas[item.id] && respuestas[item.id].valor === 'bueno'"
+                           (change)="onItemChange(item.id, 'bueno')"
+                           class="text-green-600 focus:ring-green-500">
+                    <span>Bueno</span>
+                  </label>
+                </div>
+                <div class="radio-container">
+                  <label>
+                    <input type="radio" 
+                           [name]="item.id" 
+                           value="regular"
+                           [checked]="respuestas[item.id] && respuestas[item.id].valor === 'regular'"
+                           (change)="onItemChange(item.id, 'regular')"
+                           class="text-yellow-600 focus:ring-yellow-500">
+                    <span>Regular</span>
+                  </label>
+                </div>
+                <div class="radio-container">
+                  <label>
+                    <input type="radio" 
+                           [name]="item.id" 
+                           value="malo"
+                           [checked]="respuestas[item.id] && respuestas[item.id].valor === 'malo'"
+                           (change)="onItemChange(item.id, 'malo')"
+                           class="text-red-600 focus:ring-red-500">
+                    <span>Malo</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Input numérico para valor_min_max y cantidad -->
+              <div *ngIf="item.tipoValidacion === 'valor_min_max' || item.tipoValidacion === 'cantidad'">
+                <input type="number" 
+                       [name]="item.id"
+                       [value]="respuestas[item.id] ? respuestas[item.id].valor : ''"
+                       [disabled]="esFinalizado"
+                       (input)="onNumericInputChange(item.id, $event)"
+                       [min]="item.configuracion.valorMinimo || 0"
+                       [max]="item.configuracion.valorMaximo || 999999"
+                       class="w-full input-touch border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       [placeholder]="item.tipoValidacion === 'cantidad' ? 'Cantidad' : 'Valor'">
+              </div>
+            </div>
+             
+             <!-- Observaciones móvil -->
+             <div *ngIf="observaciones[item.id]" class="mt-3 text-xs text-gray-600 bg-green-50 p-2 rounded border-l-4 border-green-400">
+               <div class="flex items-start">
+                 <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5 flex-shrink-0"></i>
+                 <span class="truncate">{{ observaciones[item.id] | slice:0:80 }}{{ observaciones[item.id] && observaciones[item.id].length > 80 ? '...' : '' }}</span>
+               </div>
+             </div>
+          </div>
+        </div>
+        
+        <!-- Vista desktop: Tabla -->
+        <div class="hidden sm:block overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">
+                  ITEMS A CONTROLAR
+                </th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">
+                  VALIDACIÓN
+                </th>
+                <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
+                  ESTADO
+                </th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
+                  OBSERVACIONES
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let item of seccion.items" class="hover:bg-gray-50">
+                <td class="px-4 py-4">
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <div class="text-sm font-medium text-gray-900">{{ item.descripcion }}</div>
+                      <div class="text-xs text-gray-500 mt-1">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                              [class]="item.esObligatorio ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'">
+                          {{ item.esObligatorio ? 'Obligatorio' : 'Opcional' }}
+                        </span>
+                      </div>
+                      <div *ngIf="item.tipoValidacion === 'valor_min_max' || item.tipoValidacion === 'cantidad'" 
+                           class="text-xs text-gray-500 mt-1">
+                        Rango válido: {{ item.configuracion.valorMinimo }} - {{ item.configuracion.valorMaximo }}
+                      </div>
+                    </div>
+                    <button *ngIf="item.descripcionDetallada" 
+                            type="button" 
+                            (click)="abrirModalDescripcion(item)"
+                            class="ml-2 p-2 text-gray-400 hover:text-blue-500 transition-colors rounded-full hover:bg-blue-50"
+                            title="Ver descripción detallada">
+                      <i class="fas fa-info-circle"></i>
+                    </button>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <!-- Radio buttons para si/no -->
+                  <div *ngIf="item.tipoValidacion === 'si_no'" class="flex space-x-2 justify-center">
+                    <div class="radio-container">
+                      <label>
+                        <input type="radio" 
+                               [name]="item.id" 
+                               value="si"
+                               [checked]="respuestas[item.id] && respuestas[item.id].valor === 'si'"
+                               (change)="onItemChange(item.id, 'si')"
+                               class="text-blue-600 focus:ring-blue-500">
+                        <span>Sí</span>
+                      </label>
+                    </div>
+                    <div class="radio-container">
+                      <label>
+                        <input type="radio" 
+                               [name]="item.id" 
+                               value="no"
+                               [checked]="respuestas[item.id] && respuestas[item.id].valor === 'no'"
+                               (change)="onItemChange(item.id, 'no')"
+                               class="text-blue-600 focus:ring-blue-500">
+                        <span>No</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Radio buttons para si/no/na -->
+                  <div *ngIf="item.tipoValidacion === 'si_no_na'" class="flex space-x-2 justify-center">
+                    <div class="radio-container">
+                      <label>
+                        <input type="radio" 
+                               [name]="item.id" 
+                               value="si"
+                               [checked]="respuestas[item.id] && respuestas[item.id].valor === 'si'"
+                               (change)="onItemChange(item.id, 'si')"
+                               class="text-blue-600 focus:ring-blue-500">
+                        <span>Sí</span>
+                      </label>
+                    </div>
+                    <div class="radio-container">
+                      <label>
+                        <input type="radio" 
+                               [name]="item.id" 
+                               value="no"
+                               [checked]="respuestas[item.id] && respuestas[item.id].valor === 'no'"
+                               (change)="onItemChange(item.id, 'no')"
+                               class="text-blue-600 focus:ring-blue-500">
+                        <span>No</span>
+                      </label>
+                    </div>
+                    <div class="radio-container">
+                      <label>
+                        <input type="radio" 
+                               [name]="item.id" 
+                               value="na"
+                               [checked]="respuestas[item.id] && respuestas[item.id].valor === 'na'"
+                               (change)="onItemChange(item.id, 'na')"
+                               class="text-blue-600 focus:ring-blue-500">
+                        <span>N/A</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Radio buttons para bueno/regular/malo -->
+                  <div *ngIf="item.tipoValidacion === 'bueno_regular_malo'" class="flex space-x-1 justify-center">
+                    <div class="radio-container">
+                      <label>
+                        <input type="radio" 
+                               [name]="item.id" 
+                               value="bueno"
+                               [checked]="respuestas[item.id] && respuestas[item.id].valor === 'bueno'"
+                               (change)="onItemChange(item.id, 'bueno')"
+                               class="text-green-600 focus:ring-green-500">
+                        <span>Bueno</span>
+                      </label>
+                    </div>
+                    <div class="radio-container">
+                      <label>
+                        <input type="radio" 
+                               [name]="item.id" 
+                               value="regular"
+                               [checked]="respuestas[item.id] && respuestas[item.id].valor === 'regular'"
+                               (change)="onItemChange(item.id, 'regular')"
+                               class="text-yellow-600 focus:ring-yellow-500">
+                        <span>Regular</span>
+                      </label>
+                    </div>
+                    <div class="radio-container">
+                      <label>
+                        <input type="radio" 
+                               [name]="item.id" 
+                               value="malo"
+                               [checked]="respuestas[item.id] && respuestas[item.id].valor === 'malo'"
+                               (change)="onItemChange(item.id, 'malo')"
+                               class="text-red-600 focus:ring-red-500">
+                        <span>Malo</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Input numérico para valor_min_max y cantidad -->
+                  <input *ngIf="item.tipoValidacion === 'valor_min_max' || item.tipoValidacion === 'cantidad'"
+                         type="number" 
+                         [name]="item.id"
+                         [value]="respuestas[item.id] ? respuestas[item.id].valor : ''"
+                         [disabled]="esFinalizado"
+                         (input)="onNumericInputChange(item.id, $event)"
+                         [min]="item.configuracion.valorMinimo || 0"
+                         [max]="item.configuracion.valorMaximo || 999999"
+                         class="w-full input-touch border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                         [placeholder]="item.tipoValidacion === 'cantidad' ? 'Cantidad' : 'Valor'">
+                </td>
+                <td class="px-2 py-4 text-center">
+                  <div class="w-4 h-4 rounded-full mx-auto"
+                       [class]="getEstadoItem(item.id)">
+                  </div>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <button type="button" 
+                          (click)="abrirModalObservacion(item.id, item.descripcion)"
+                          class="btn-touch bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm">
+                    <i class="fas fa-edit mr-1"></i>
+                    Observar
+                  </button>
+                  <div *ngIf="observaciones[item.id]" class="mt-2 text-xs text-gray-600">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    <span class="truncate">{{ observaciones[item.id] | slice:0:50 }}{{ observaciones[item.id] && observaciones[item.id].length > 50 ? '...' : '' }}</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Progreso, Botones y Validaciones al Final -->
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200 mt-6">
+      <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg sm:text-xl font-medium text-gray-900">
+          <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+          Progreso y Acciones
+        </h2>
+      </div>
+      
+      <div class="p-4 sm:p-6">
+        <!-- Progreso del Checklist -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900">Progreso del Checklist</h3>
+            <span class="text-sm font-medium text-gray-600">{{ progreso.porcentajeCompletado }}%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              class="h-2 rounded-full transition-all duration-300"
+              [class]="estaCompletado ? 'bg-green-600' : 'bg-blue-600'"
+              [style.width.%]="progreso.porcentajeCompletado">
+            </div>
+          </div>
+          <div class="mt-1 text-sm text-gray-600">
+            {{ progreso.itemsCompletados }} de {{ progreso.totalItems }} ítems completados
+          </div>
+          <div *ngIf="estaCompletado" class="mt-2 p-3 bg-green-100 border border-green-200 rounded-lg">
+            <div class="flex items-center">
+              <i class="fas fa-check-circle text-green-500 mr-2"></i>
+              <span class="text-sm font-medium text-green-800">¡Checklist completado! Ya puede guardar el formulario.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicador de estado -->
+        <div *ngIf="esFinalizado" class="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle text-blue-600 mr-2"></i>
+            <span class="text-sm font-medium text-blue-800">Este checklist está finalizado y no se puede editar</span>
+          </div>
+        </div>
+        <div *ngIf="esEnProgreso && !esFinalizado" class="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <i class="fas fa-clock text-yellow-600 mr-2"></i>
+            <span class="text-sm font-medium text-yellow-800">Reanudando checklist en progreso</span>
+          </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="flex flex-col sm:flex-row gap-3 mb-6" *ngIf="!esFinalizado">
+          <button 
+            (click)="validarTodoChecklist()"
+            class="w-full sm:w-auto btn-touch bg-yellow-600 text-white hover:bg-yellow-700">
+            <i class="fas fa-check-double mr-2"></i>
+            Validar Todo
+          </button>
+          <button 
+            (click)="guardarEnProgreso()"
+            [disabled]="guardando || finalizando"
+            class="w-full sm:w-auto btn-touch bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50">
+            <i *ngIf="!guardando" class="fas fa-save mr-2"></i>
+            <i *ngIf="guardando" class="fas fa-spinner fa-spin mr-2"></i>
+            {{ guardando ? 'Guardando...' : 'Guardar' }}
+          </button>
+          <button 
+            (click)="finalizarChecklist()"
+            [disabled]="guardando || finalizando"
+            class="w-full sm:w-auto btn-touch bg-green-600 text-white hover:bg-green-700 disabled:opacity-50">
+            <i *ngIf="!finalizando" class="fas fa-check-circle mr-2"></i>
+            <i *ngIf="finalizando" class="fas fa-spinner fa-spin mr-2"></i>
+            {{ finalizando ? 'Finalizando...' : 'Finalizar' }}
+          </button>
+        </div>
+
+        <!-- Resumen de Validaciones (solo visible después de validar) -->
+        <div *ngIf="mostrarResumenValidaciones && (tieneErrores || tieneAdvertencias)" class="bg-gray-50 rounded-lg p-4">
+          <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-4">Resumen de Validaciones</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                <span class="text-sm font-medium text-red-800">Errores</span>
+              </div>
+              <div class="text-xl sm:text-2xl font-bold text-red-600 mt-1">{{ validaciones.errores.length }}</div>
+            </div>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div class="flex items-center">
+                <i class="fas fa-exclamation-circle text-yellow-500 mr-2"></i>
+                <span class="text-sm font-medium text-yellow-800">Advertencias</span>
+              </div>
+              <div class="text-xl sm:text-2xl font-bold text-yellow-600 mt-1">{{ validaciones.advertencias.length }}</div>
+            </div>
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div class="flex items-center">
+                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                <span class="text-sm font-medium text-green-800">Correctos</span>
+              </div>
+              <div class="text-xl sm:text-2xl font-bold text-green-600 mt-1">{{ validaciones.correctos.length }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje cuando no hay ítems -->
+    <div *ngIf="!plantillaActual" class="bg-white shadow-sm rounded-lg border border-gray-200">
+      <div class="p-8 sm:p-12 text-center">
+        <div class="flex flex-col items-center">
+          <i class="fas fa-exclamation-triangle text-4xl text-gray-300 mb-4"></i>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">Error al cargar la plantilla</h3>
+          <p class="text-gray-500 mb-6">No se pudo cargar la plantilla solicitada. Verifique que la URL sea correcta.</p>
+          <button (click)="navigateToTemplates()"
+                  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Volver a Plantillas
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal de Carga de Datos -->
+<div *ngIf="mostrarModalCargaDatos" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
+  <div class="relative mx-auto w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="flex justify-between items-center p-4 sm:p-6 border-b border-gray-200">
+      <h3 class="text-lg sm:text-xl font-medium text-gray-900">
+        <i class="fas fa-search mr-2 text-blue-600"></i>
+        <span *ngIf="plantillaActual?.tipo === 'vehiculo'">Seleccionar Vehículo</span>
+        <span *ngIf="plantillaActual?.tipo === 'chofer'">Seleccionar Chofer</span>
+        <span *ngIf="plantillaActual?.tipo === 'unidad'">Seleccionar Unidad</span>
+        <span *ngIf="plantillaActual?.tipo === 'maquina'">Seleccionar Máquina</span>
+        <span *ngIf="plantillaActual?.tipo === 'sector'">Seleccionar Sector/Área</span>
+        <span *ngIf="!plantillaActual?.tipo">Seleccionar Recurso</span>
+      </h3>
+      <button (click)="mostrarModalCargaDatos = false"
+              class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="p-4 sm:p-6 border-b border-gray-200">
+      <div class="grid grid-cols-1 gap-4">
+        <!-- Filtros para vehículos -->
+        <div *ngIf="plantillaActual?.tipo === 'vehiculo'">
+          <label for="filtroRecursoModal" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por marca, modelo o patente</label>
+          <input 
+            type="text" 
+            id="filtroRecursoModal" 
+            [(ngModel)]="filtroRecurso"
+            placeholder="Buscar vehículo..." 
+            class="w-full input-touch border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        
+        <!-- Filtros para choferes -->
+        <div *ngIf="plantillaActual?.tipo === 'chofer'">
+          <label for="filtroRecursoModal" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por nombre o apellido</label>
+          <input 
+            type="text" 
+            id="filtroRecursoModal" 
+            [(ngModel)]="filtroRecurso"
+            placeholder="Buscar chofer..." 
+            class="w-full input-touch border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        
+        <!-- Filtros para unidades -->
+        <div *ngIf="plantillaActual?.tipo === 'unidad'">
+          <label for="filtroRecursoModal" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por número o tipo</label>
+          <input 
+            type="text" 
+            id="filtroRecursoModal" 
+            [(ngModel)]="filtroRecurso"
+            placeholder="Buscar unidad..." 
+            class="w-full input-touch border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        
+        <!-- Filtros para máquinas -->
+        <div *ngIf="plantillaActual?.tipo === 'maquina'">
+          <label for="filtroRecursoModal" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por nombre o modelo</label>
+          <input 
+            type="text" 
+            id="filtroRecursoModal" 
+            [(ngModel)]="filtroRecurso"
+            placeholder="Buscar máquina..." 
+            class="w-full input-touch border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        
+        <!-- Filtros para sectores -->
+        <div *ngIf="plantillaActual?.tipo === 'sector'">
+          <label for="filtroRecursoModal" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por nombre o ubicación</label>
+          <input 
+            type="text" 
+            id="filtroRecursoModal" 
+            [(ngModel)]="filtroRecurso"
+            placeholder="Buscar sector..." 
+            class="w-full input-touch border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+      </div>
+    </div>
+    
+    <!-- Loading -->
+    <div *ngIf="cargandoDatos || cargandoRecursos" class="flex-1 flex items-center justify-center py-12">
+      <div class="text-center">
+        <i class="fas fa-spinner fa-spin text-3xl text-blue-500 mb-4"></i>
+        <p class="text-sm text-gray-600">
+          <span *ngIf="plantillaActual?.tipo === 'vehiculo'">Cargando vehículos...</span>
+          <span *ngIf="plantillaActual?.tipo === 'chofer'">Cargando choferes...</span>
+          <span *ngIf="plantillaActual?.tipo === 'unidad'">Cargando unidades...</span>
+          <span *ngIf="plantillaActual?.tipo === 'maquina'">Cargando máquinas...</span>
+          <span *ngIf="plantillaActual?.tipo === 'sector'">Cargando sectores...</span>
+          <span *ngIf="!plantillaActual?.tipo">Cargando recursos...</span>
+        </p>
+      </div>
+    </div>
+    
+    <!-- Tabla de Recursos -->
+    <div *ngIf="!cargandoDatos && !cargandoRecursos && plantillaActual?.tipo" class="flex-1 overflow-auto">
+      <!-- Vista móvil: Cards -->
+      <div class="block sm:hidden p-4 space-y-4">
+        <div *ngFor="let recurso of recursosFiltrados" class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex-1 min-w-0">
+              <h4 class="text-sm font-medium text-gray-900 truncate">{{ recurso.nombre }}</h4>
+              <p class="text-xs text-gray-500 mt-1">
+                <span *ngIf="plantillaActual?.tipo === 'vehiculo'">{{ recurso.informacion.marca }} {{ recurso.informacion.modelo }}</span>
+                <span *ngIf="plantillaActual?.tipo === 'chofer'">DNI: {{ recurso.informacion.dni }}</span>
+                <span *ngIf="plantillaActual?.tipo === 'unidad'">Tipo: {{ recurso.informacion.tipo_unidad }}</span>
+                <span *ngIf="plantillaActual?.tipo === 'maquina'">Modelo: {{ recurso.informacion.modelo }}</span>
+                <span *ngIf="plantillaActual?.tipo === 'sector'">Tipo: {{ recurso.informacion.tipo_area }}</span>
+              </p>
+            </div>
+            <button (click)="seleccionarRecurso(recurso)" 
+                    class="btn-touch bg-blue-500 text-white hover:bg-blue-600 text-sm px-3 py-2">
+              <i class="fas fa-check mr-1"></i>
+              Seleccionar
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Vista desktop: Tabla -->
+      <div class="hidden sm:block">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50 sticky top-0">
+            <tr>
+              <!-- Columnas para vehículos -->
+              <th *ngIf="plantillaActual?.tipo === 'vehiculo'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehículo</th>
+              <th *ngIf="plantillaActual?.tipo === 'vehiculo'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marca/Modelo</th>
+              <th *ngIf="plantillaActual?.tipo === 'vehiculo'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
+              
+              <!-- Columnas para choferes -->
+              <th *ngIf="plantillaActual?.tipo === 'chofer'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chofer</th>
+              <th *ngIf="plantillaActual?.tipo === 'chofer'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
+              
+              <!-- Columnas para unidades -->
+              <th *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidad</th>
+              <th *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+              <th *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              
+              <!-- Columnas para máquinas -->
+              <th *ngIf="plantillaActual?.tipo === 'maquina'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Máquina</th>
+              <th *ngIf="plantillaActual?.tipo === 'maquina'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modelo</th>
+              <th *ngIf="plantillaActual?.tipo === 'maquina'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">N° Serie</th>
+              <th *ngIf="plantillaActual?.tipo === 'maquina'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              
+              <!-- Columnas para sectores -->
+              <th *ngIf="plantillaActual?.tipo === 'sector'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
+              <th *ngIf="plantillaActual?.tipo === 'sector'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+              
+              <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acción</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <!-- Filas para vehículos -->
+            <tr *ngFor="let recurso of recursosFiltrados" class="hover:bg-gray-50">
+              <!-- Contenido para vehículos -->
+              <td *ngIf="plantillaActual?.tipo === 'vehiculo'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ recurso.informacion.placa }}</div>
+              </td>
+              <td *ngIf="plantillaActual?.tipo === 'vehiculo'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ recurso.informacion.marca }} {{ recurso.informacion.modelo }}</div>
+              </td>
+              <td *ngIf="plantillaActual?.tipo === 'vehiculo'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ recurso.informacion.ubicacion }}</div>
+              </td>
+              
+              <!-- Contenido para choferes -->
+              <td *ngIf="plantillaActual?.tipo === 'chofer'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ recurso.informacion.nombre }}</div>
+              </td>
+              <td *ngIf="plantillaActual?.tipo === 'chofer'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ recurso.informacion.dni }}</div>
+              </td>
+              
+              <!-- Contenido para unidades -->
+              <td *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ recurso.informacion.numero_unidad }}</div>
+              </td>
+              <td *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ recurso.informacion.tipo_unidad }}</div>
+              </td>
+              <td *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ recurso.informacion.estado }}</div>
+              </td>
+              
+              <!-- Contenido para máquinas -->
+              <td *ngIf="plantillaActual?.tipo === 'maquina'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ recurso.informacion.nombre }}</div>
+              </td>
+              <td *ngIf="plantillaActual?.tipo === 'maquina'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ recurso.informacion.modelo }}</div>
+              </td>
+              <td *ngIf="plantillaActual?.tipo === 'maquina'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ recurso.informacion.numero_serie }}</div>
+              </td>
+              <td *ngIf="plantillaActual?.tipo === 'maquina'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ recurso.informacion.estado }}</div>
+              </td>
+              
+              <!-- Contenido para sectores -->
+              <td *ngIf="plantillaActual?.tipo === 'sector'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ recurso.informacion.nombre }}</div>
+              </td>
+              <td *ngIf="plantillaActual?.tipo === 'sector'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ recurso.informacion.tipo_area }}</div>
+              </td>
+              
+              <!-- Botón de acción -->
+              <td class="px-4 py-4 whitespace-nowrap text-center">
+                <button (click)="seleccionarRecurso(recurso)" 
+                        class="btn-touch bg-blue-500 text-white hover:bg-blue-600 text-sm">
+                  <i class="fas fa-check mr-1"></i>
+                  Seleccionar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Observaciones -->
+<div *ngIf="mostrarModalObservacion" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
+  <div class="relative mx-auto w-full max-w-2xl shadow-lg rounded-md bg-white">
+    <div class="flex justify-between items-center p-4 sm:p-6 border-b border-gray-200">
+      <h3 class="text-lg sm:text-xl font-medium text-gray-900">
+        <i class="fas fa-edit text-blue-500 mr-2"></i>
+        Observaciones
+      </h3>
+      <button (click)="cerrarModalObservacion()"
+              class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    
+    <div class="p-4 sm:p-6">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Item a controlar:</label>
+        <p class="text-sm text-gray-900 bg-gray-50 p-3 rounded border">{{ itemObservacionActual }}</p>
+      </div>
+      
+      <div class="mb-6">
+        <label for="observacionModal" class="block text-sm font-medium text-gray-700 mb-2">
+          Observaciones:
+        </label>
+        <textarea 
+          id="observacionModal" 
+          #observacionTextarea
+          rows="6" 
+          [value]="observacionActual"
+          (input)="onObservacionInputChange(observacionTextarea.value)"
+          class="w-full input-touch border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Ingrese sus observaciones sobre este item...">
+        </textarea>
+      </div>
+      
+      <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+        <button (click)="cerrarModalObservacion()"
+                class="w-full sm:w-auto btn-touch bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded">
+          <i class="fas fa-times mr-1"></i>
+          Cancelar
+        </button>
+        <button (click)="guardarObservacionYcerrar()"
+                class="w-full sm:w-auto btn-touch bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+          <i class="fas fa-check mr-1"></i>
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Descripción Detallada -->
+<div *ngIf="mostrarModalDescripcion" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
+  <div class="relative mx-auto w-full max-w-2xl shadow-lg rounded-md bg-white">
+    <div class="flex justify-between items-center p-4 sm:p-6 border-b border-gray-200">
+      <h3 class="text-lg sm:text-xl font-medium text-gray-900">
+        <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+        Descripción Detallada
+      </h3>
+      <button (click)="cerrarModalDescripcion()"
+              class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    
+    <div class="p-4 sm:p-6">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Item a controlar:</label>
+        <p class="text-sm text-gray-900 bg-gray-50 p-3 rounded border">{{ itemDescripcionActual?.descripcion }}</p>
+      </div>
+      
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Indicaciones y observaciones:
+        </label>
+        <div class="text-sm text-gray-700 bg-gray-50 p-4 rounded border max-h-96 overflow-y-auto whitespace-pre-line">
+          {{ itemDescripcionActual?.detallada }}
+        </div>
+      </div>
+      
+      <div class="flex justify-end">
+        <button (click)="cerrarModalDescripcion()"
+                class="btn-touch bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded">
+          <i class="fas fa-times mr-1"></i>
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,115 @@
+<div class="app-container">
+  <!-- Header solo se muestra si está autenticado -->
+  <header class="app-header" *ngIf="isAuthenticated$ | async">
+    <div class="header-content">
+      <!-- Desktop Layout -->
+      <div class="header-left desktop-only">
+        <h1>Sistema de Gestión</h1>
+        <nav class="main-nav">
+          <!-- Navegación dinámica basada en permisos -->
+           <a routerLink="/dashboard" routerLinkActive="active" title="Dashboard">
+            <i class="fas fa-tachometer-alt"></i>
+            Dashboard
+          </a>
+          <ng-container *ngFor="let module of accessibleModules$ | async">
+            <a [routerLink]="module.route" 
+               routerLinkActive="active"
+               [title]="module.description">
+              <i [class]="module.icon"></i>
+              {{ module.name | titlecase }}
+            </a>
+          </ng-container>
+        </nav>
+      </div>
+      
+      <!-- Mobile Layout -->
+      <div class="header-left mobile-only">
+        <h1>Sistema de Gestión</h1>
+        <button class="mobile-menu-toggle" (click)="toggleMobileMenu()" [class.active]="isMobileMenuOpen">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+      </div>
+      
+      <!-- Desktop User Info -->
+      <div class="header-right desktop-only">
+        <div class="user-info" *ngIf="currentUser$ | async as user">
+          <div class="user-details">
+            <span class="user-email">{{ user.email }}</span>
+            <span class="user-role" 
+                  [class]="'role-' + (getCurrentRole() | lowercase)">
+              {{ getCurrentRole() | titlecase }}
+            </span>
+          </div>
+          <button class="btn-logout" (click)="logout()" title="Cerrar sesión">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" [class.active]="isMobileMenuOpen" (click)="closeMobileMenu()"></div>
+    
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" [class.active]="isMobileMenuOpen">
+      <div class="mobile-menu-header">
+        <h2>Menú</h2>
+        <button class="mobile-menu-close" (click)="closeMobileMenu()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <!-- Mobile Navigation -->
+      <nav class="mobile-nav">
+        <a routerLink="/dashboard" 
+           routerLinkActive="active" 
+           (click)="closeMobileMenu()"
+           class="mobile-nav-item">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
+        </a>
+        <ng-container *ngFor="let module of accessibleModules$ | async">
+          <a [routerLink]="module.route" 
+             routerLinkActive="active"
+             (click)="closeMobileMenu()"
+             class="mobile-nav-item"
+             [title]="module.description">
+            <i [class]="module.icon"></i>
+            <span>{{ module.name | titlecase }}</span>
+          </a>
+        </ng-container>
+      </nav>
+      
+      <!-- Mobile User Info -->
+      <div class="mobile-user-info" *ngIf="currentUser$ | async as user">
+        <div class="mobile-user-details">
+          <div class="mobile-user-avatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="mobile-user-text">
+            <span class="mobile-user-email">{{ user.email }}</span>
+            <span class="mobile-user-role" 
+                  [class]="'role-' + (getCurrentRole() | lowercase)">
+              {{ getCurrentRole() | titlecase }}
+            </span>
+          </div>
+        </div>
+        <button class="mobile-logout-btn" (click)="logout(); closeMobileMenu()">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Cerrar Sesión</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <router-outlet></router-outlet>
+  </main>
+
+  <!-- Footer solo se muestra si está autenticado -->
+  <footer class="app-footer" *ngIf="isAuthenticated$ | async">
+    <p>&copy; 2025 Sistema de Gestión - Transporte Ibarra. Todos los derechos reservados.</p>
+  </footer>
+</div>

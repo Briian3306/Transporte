@@ -1,0 +1,372 @@
+<div class="min-h-screen bg-gray-50 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div appGranularPermission="incidentes:read" appPermissionAction="show">
+          <h1 class="text-3xl font-bold text-gray-900">
+            <i class="fas fa-history text-blue-600 mr-3"></i>
+            Historial de Incidentes
+          </h1>
+          <p class="mt-2 text-gray-600">Gestionar y consultar todos los incidentes de seguridad registrados</p>
+        </div>
+        <div class="flex space-x-3">
+          <button
+            (click)="goToRegistro()"
+            appGranularPermission="incidentes:create"
+            appPermissionAction="show"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+            <i class="fas fa-plus mr-2"></i>
+            Nuevo Incidente
+          </button>
+          <button
+            (click)="goToConfig()"
+            appGranularPermission="incidentes:manage"
+            appPermissionAction="show"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <i class="fas fa-cog mr-2"></i>
+            Configuración
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensajes de error -->
+    <div *ngIf="error" class="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-red-800">{{ error }}</p>
+        </div>
+        <div class="ml-auto pl-3">
+          <button (click)="clearError()" class="text-red-400 hover:text-red-600">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Total de incidentes -->
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Total de Incidentes</dt>
+                <dd class="text-lg font-medium text-gray-900">{{ estadisticas.total }}</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Por nivel de riesgo -->
+      <div *ngFor="let nivel of nivelesRiesgo" class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <i [class]="nivel.icono || 'fas fa-circle'" [style.color]="nivel.color" class="text-2xl"></i>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">{{ nivel.nombre }}</dt>
+                <dd class="text-lg font-medium text-gray-900">{{ getEstadisticaNivelRiesgo(nivel.codigo) }}</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white shadow rounded-lg mb-6">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">Filtros</h3>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Rango de fechas -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio</label>
+            <input
+              [(ngModel)]="filters.fechaInicio"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Fin</label>
+            <input
+              [(ngModel)]="filters.fechaFin"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <!-- Tipo de incidente -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Incidente</label>
+            <select
+              [(ngModel)]="filters.tipo_incidente"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Todos los tipos</option>
+              <option *ngFor="let tipo of tiposIncidente" [value]="tipo.codigo">
+                {{ tipo.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Nivel de riesgo -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nivel de Riesgo</label>
+            <select
+              [(ngModel)]="filters.nivel_riesgo"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Todos los niveles</option>
+              <option *ngFor="let nivel of nivelesRiesgo" [value]="nivel.codigo">
+                {{ nivel.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Estado de seguimiento -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+            <select
+              [(ngModel)]="filters.estado_seguimiento"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Todos los estados</option>
+              <option *ngFor="let estado of estadosSeguimiento" [value]="estado.value">
+                {{ estado.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Categoría del reportante -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría Reportante</label>
+            <select
+              [(ngModel)]="filters.categoria_reportante"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Todas las categorías</option>
+              <option *ngFor="let categoria of categoriasReportante" [value]="categoria.value">
+                {{ categoria.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Botones de filtros -->
+        <div class="mt-6 flex justify-between">
+          <button
+            (click)="clearFilters()"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <i class="fas fa-times mr-2"></i>
+            Limpiar Filtros
+          </button>
+          <div class="flex space-x-3">
+            <button
+              (click)="exportToExcel()"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <i class="fas fa-file-excel mr-2"></i>
+              Exportar Excel
+            </button>
+            <button
+              (click)="exportToPDF()"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <i class="fas fa-file-pdf mr-2"></i>
+              Exportar PDF
+            </button>
+            <button
+              (click)="applyFilters()"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <i class="fas fa-search mr-2"></i>
+              Aplicar Filtros
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+
+    <!-- Tabla de incidentes -->
+    <div *ngIf="!loading" class="bg-white shadow rounded-lg">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">
+          Incidentes ({{ filteredIncidentes.length }} registros)
+        </h3>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Fecha/Hora
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Reportante
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Tipo/Subtipo
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Nivel de Riesgo
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Estado
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Ubicación
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Acciones
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr *ngFor="let incidente of getPaginatedIncidentes()" 
+                class="hover:bg-gray-50 cursor-pointer"
+                (click)="viewIncidenteDetails(incidente)">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <div>{{ incidente.fecha | date:'dd/MM/yyyy' }}</div>
+                <div class="text-gray-500">{{ incidente.hora }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <i [class]="getCategoriaIcon(incidente.categoria_reportante)" class="text-gray-400 mr-2"></i>
+                  <div>
+                    <div class="text-sm font-medium text-gray-900">{{ incidente.nombre_reportante }}</div>
+                    <div class="text-sm text-gray-500">{{ getCategoriaLabel(incidente.categoria_reportante) }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">
+                  {{ getTipoIncidenteInfo(incidente.tipo_incidente)?.nombre || incidente.tipo_incidente }}
+                </div>
+                <div class="text-sm text-gray-500">
+                  {{ getSubtipoIncidenteInfo(incidente.tipo_incidente, incidente.subtipo_incidente)?.nombre || incidente.subtipo_incidente }}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [class]="getNivelRiesgoClass(incidente.nivel_riesgo)">
+                  <i [class]="getNivelRiesgoInfo(incidente.nivel_riesgo)?.icono || 'fas fa-circle'" class="mr-1"></i>
+                  {{ getNivelRiesgoInfo(incidente.nivel_riesgo)?.nombre || incidente.nivel_riesgo }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [class]="getEstadoClass(incidente.estado_seguimiento)">
+                  {{ incidente.estado_seguimiento | titlecase }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <div class="max-w-xs truncate" [title]="incidente.ubicacion">
+                  {{ incidente.ubicacion }}
+                </div>
+                <div *ngIf="incidente.patente" class="text-sm text-gray-500">
+                  <i class="fas fa-car mr-1"></i>{{ incidente.patente }}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button
+                  appGranularPermission="incidentes:read"
+                  appPermissionAction="show"
+                  (click)="viewIncidenteDetails(incidente); $event.stopPropagation()"
+                  class="text-blue-600 hover:text-blue-900">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div *ngIf="totalPages > 1" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+          <button
+            (click)="onPageChange(currentPage - 1)"
+            [disabled]="currentPage <= 1"
+            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+            Anterior
+          </button>
+          <button
+            (click)="onPageChange(currentPage + 1)"
+            [disabled]="currentPage >= totalPages"
+            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+            Siguiente
+          </button>
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              Mostrando
+              <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
+              a
+              <span class="font-medium">{{ getEndIndex() }}</span>
+              de
+              <span class="font-medium">{{ filteredIncidentes.length }}</span>
+              resultados
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+              <button
+                (click)="onPageChange(currentPage - 1)"
+                [disabled]="currentPage <= 1"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              
+              <button
+                *ngFor="let page of getPageNumbers()"
+                (click)="onPageChange(page)"
+                [class]="page === currentPage 
+                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
+                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'"
+                class="relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                {{ page }}
+              </button>
+              
+              <button
+                (click)="onPageChange(currentPage + 1)"
+                [disabled]="currentPage >= totalPages"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje cuando no hay incidentes -->
+    <div *ngIf="!loading && filteredIncidentes.length === 0" class="text-center py-12">
+      <i class="fas fa-exclamation-triangle text-gray-400 text-6xl mb-4"></i>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No se encontraron incidentes</h3>
+      <p class="text-gray-500 mb-6">No hay incidentes que coincidan con los filtros seleccionados.</p>
+      <button
+        (click)="goToRegistro()"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+        <i class="fas fa-plus mr-2"></i>
+        Registrar Primer Incidente
+      </button>
+    </div>
+  </div>
+</div>

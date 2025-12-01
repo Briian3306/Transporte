@@ -1,0 +1,10 @@
+# Redirects para Angular SPA
+# Todas las rutas que no sean archivos estáticos se redirigen a index.html
+# Esto permite que el routing de Angular funcione correctamente
+
+# Redirigir todas las rutas a index.html (excepto archivos estáticos)
+/*    /index.html   200
+
+# Opcional: Redirecciones específicas si las necesitas
+# /old-path    /new-path    301
+

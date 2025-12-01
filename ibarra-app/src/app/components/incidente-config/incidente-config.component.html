@@ -1,0 +1,461 @@
+<div class="min-h-screen bg-gray-50 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Configuración de Incidentes</h1>
+      <p class="mt-2 text-gray-600">Gestionar tipos, subtipos y niveles de riesgo para incidentes de seguridad</p>
+    </div>
+
+    <!-- Mensajes -->
+    <div *ngIf="error" class="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-red-800">{{ error }}</p>
+        </div>
+        <div class="ml-auto pl-3">
+          <button (click)="clearMessages()" class="text-red-400 hover:text-red-600">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="success" class="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-green-800">{{ success }}</p>
+        </div>
+        <div class="ml-auto pl-3">
+          <button (click)="clearMessages()" class="text-green-400 hover:text-green-600">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div *ngIf="!loading" class="bg-white shadow rounded-lg">
+      <!-- Pestañas -->
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8 px-6">
+          <button
+            (click)="setActiveTab('niveles')"
+            [class]="activeTab === 'niveles' 
+              ? 'border-blue-500 text-blue-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Niveles de Riesgo
+          </button>
+          <button
+            (click)="setActiveTab('tipos')"
+            [class]="activeTab === 'tipos' 
+              ? 'border-blue-500 text-blue-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+            <i class="fas fa-list mr-2"></i>
+            Tipos de Incidente
+          </button>
+        </nav>
+      </div>
+
+      <!-- Contenido de pestañas -->
+      <div class="p-6">
+        <!-- Pestaña Niveles de Riesgo -->
+        <div *ngIf="activeTab === 'niveles'">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-900">Niveles de Riesgo</h2>
+            <button
+              (click)="addNivel()"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <i class="fas fa-plus mr-2"></i>
+              Agregar Nivel
+            </button>
+          </div>
+
+          <form [formGroup]="nivelesForm" (ngSubmit)="saveNiveles()">
+            <div formArrayName="niveles" class="space-y-6">
+              <div *ngFor="let nivel of nivelesArray.controls; let i = index" [formGroupName]="i" 
+                   class="border border-gray-200 rounded-lg p-6">
+                <div class="flex justify-between items-start mb-4">
+                  <h3 class="text-lg font-medium text-gray-900">Nivel {{ i + 1 }}</h3>
+                  <button
+                    type="button"
+                    (click)="removeNivel(i)"
+                    [disabled]="nivelesArray.length <= 1"
+                    class="text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Código *</label>
+                    <input
+                      formControlName="codigo"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="CRITICO">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                    <input
+                      formControlName="nombre"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Crítico">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Puntaje Mínimo *</label>
+                    <input
+                      formControlName="puntaje_minimo"
+                      type="number"
+                      min="0"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="20">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Color *</label>
+                    <div class="flex items-center space-x-2">
+                      <input
+                        formControlName="color"
+                        type="color"
+                        class="w-12 h-10 border border-gray-300 rounded cursor-pointer">
+                      <input
+                        formControlName="color"
+                        type="text"
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="#dc3545">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Icono</label>
+                    <input
+                      formControlName="icono"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="fas fa-exclamation-circle">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Orden *</label>
+                    <input
+                      formControlName="orden"
+                      type="number"
+                      min="1"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="1">
+                  </div>
+
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Responsable *</label>
+                    <input
+                      formControlName="responsable"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Diego y Damian">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tiempo de Respuesta *</label>
+                    <input
+                      formControlName="tiempo_respuesta"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Inmediato">
+                  </div>
+                </div>
+
+                <!-- Vista previa del color -->
+                <div class="mt-4">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Vista Previa</label>
+                  <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white"
+                       [style.background-color]="nivel.get('color')?.value">
+                    <i [class]="nivel.get('icono')?.value || 'fas fa-circle'" class="mr-2"></i>
+                    {{ nivel.get('nombre')?.value || 'Nivel' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-8 flex justify-end">
+              <button
+                type="submit"
+                [disabled]="nivelesForm.invalid || loading"
+                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-save mr-2"></i>
+                Guardar Niveles
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Pestaña Tipos de Incidente -->
+        <div *ngIf="activeTab === 'tipos'">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-900">Tipos de Incidente</h2>
+            <button
+              (click)="addTipo()"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <i class="fas fa-plus mr-2"></i>
+              Agregar Tipo
+            </button>
+          </div>
+
+          <form [formGroup]="tiposForm" (ngSubmit)="saveTipos()">
+            <div formArrayName="tipos" class="space-y-8">
+              <div *ngFor="let tipo of tiposArray.controls; let i = index" [formGroupName]="i" 
+                   class="border border-gray-200 rounded-lg p-6">
+                <div class="flex justify-between items-start mb-4">
+                  <h3 class="text-lg font-medium text-gray-900">Tipo {{ i + 1 }}</h3>
+                  <button
+                    type="button"
+                    (click)="removeTipo(i)"
+                    class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+
+                <!-- Información del tipo -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Código *</label>
+                    <input
+                      formControlName="codigo"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="accidente">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                    <input
+                      formControlName="nombre"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Accidente">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Icono</label>
+                    <input
+                      formControlName="icono"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="fas fa-car-crash">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Peso Base *</label>
+                    <input
+                      formControlName="peso_base"
+                      type="number"
+                      min="0"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="5">
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Orden *</label>
+                    <input
+                      formControlName="orden"
+                      type="number"
+                      min="1"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="1">
+                  </div>
+
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                    <input
+                      formControlName="descripcion"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Descripción del tipo de incidente">
+                  </div>
+
+                  <div class="flex items-center space-x-4">
+                    <label class="flex items-center">
+                      <input
+                        formControlName="requiere_patente"
+                        type="checkbox"
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                      <span class="ml-2 text-sm text-gray-700">Requiere Patente</span>
+                    </label>
+
+                    <label class="flex items-center">
+                      <input
+                        formControlName="requiere_ubicacion_detallada"
+                        type="checkbox"
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                      <span class="ml-2 text-sm text-gray-700">Requiere Ubicación Detallada</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Subtipos -->
+                <div class="border-t border-gray-200 pt-6">
+                  <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-md font-medium text-gray-900">Subtipos</h4>
+                    <button
+                      type="button"
+                      (click)="addSubtipo(i)"
+                      class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                      <i class="fas fa-plus mr-1"></i>
+                      Agregar Subtipo
+                    </button>
+                  </div>
+
+                  <div formArrayName="subtipos" class="space-y-4">
+                    <div *ngFor="let subtipo of getSubtiposArray(i).controls; let j = index" [formGroupName]="j" 
+                         class="border border-gray-100 rounded-lg p-4 bg-gray-50">
+                      <div class="flex justify-between items-start mb-3">
+                        <h5 class="text-sm font-medium text-gray-700">Subtipo {{ j + 1 }}</h5>
+                        <button
+                          type="button"
+                          (click)="removeSubtipo(i, j)"
+                          class="text-red-600 hover:text-red-800">
+                          <i class="fas fa-trash text-xs"></i>
+                        </button>
+                      </div>
+
+                      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700 mb-1">Código *</label>
+                          <input
+                            formControlName="codigo"
+                            type="text"
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            placeholder="choque_simple">
+                        </div>
+
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700 mb-1">Nombre *</label>
+                          <input
+                            formControlName="nombre"
+                            type="text"
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            placeholder="Choque simple">
+                        </div>
+
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700 mb-1">Peso *</label>
+                          <input
+                            formControlName="peso"
+                            type="number"
+                            min="0"
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            placeholder="3">
+                        </div>
+
+                        <div>
+                          <label class="block text-xs font-medium text-gray-700 mb-1">Orden *</label>
+                          <input
+                            formControlName="orden"
+                            type="number"
+                            min="1"
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            placeholder="1">
+                        </div>
+                      </div>
+
+                      <!-- Indicaciones -->
+                      <div class="mb-4">
+                        <label class="block text-xs font-medium text-gray-700 mb-2">Indicaciones</label>
+                        <div formArrayName="indicaciones" class="space-y-2">
+                          <div *ngFor="let indicacion of getIndicacionesArray(i, j).controls; let k = index" 
+                               class="flex items-center space-x-2">
+                            <input
+                              [formControlName]="k"
+                              type="text"
+                              class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              placeholder="INSTRUIR AL CHOFER: ...">
+                            <button
+                              type="button"
+                              (click)="removeIndicacion(i, j, k)"
+                              class="text-red-600 hover:text-red-800">
+                              <i class="fas fa-trash text-xs"></i>
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            (click)="addIndicacion(i, j)"
+                            class="text-blue-600 hover:text-blue-800 text-xs">
+                            <i class="fas fa-plus mr-1"></i>
+                            Agregar Indicación
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Acciones -->
+                      <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-2">Acciones</label>
+                        <div formArrayName="acciones" class="space-y-2">
+                          <div *ngFor="let accion of getAccionesArray(i, j).controls; let k = index" 
+                               class="flex items-center space-x-2">
+                            <input
+                              [formControlName]="k"
+                              type="text"
+                              class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              placeholder="Llamar a Guardia Logística">
+                            <button
+                              type="button"
+                              (click)="removeAccion(i, j, k)"
+                              class="text-red-600 hover:text-red-800">
+                              <i class="fas fa-trash text-xs"></i>
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            (click)="addAccion(i, j)"
+                            class="text-blue-600 hover:text-blue-800 text-xs">
+                            <i class="fas fa-plus mr-1"></i>
+                            Agregar Acción
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-8 flex justify-end">
+              <button
+                type="submit"
+                [disabled]="tiposForm.invalid || loading"
+                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-save mr-2"></i>
+                Guardar Tipos
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

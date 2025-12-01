@@ -1,0 +1,153 @@
+<div class="checklist-details">
+  <!-- Header -->
+  <div class="header">
+    <button class="btn-back" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i>
+      Volver
+    </button>
+    <h1>Detalles del Checklist</h1>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="error">
+    <i class="fas fa-exclamation-triangle"></i>
+    {{ error }}
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!loading && !error && checklist" class="content">
+    
+    <!-- Información del Recurso -->
+    <div class="card resource-info">
+      <div class="card-header">
+        <h2>{{ getResourceDisplayName() }}</h2>
+        <span class="badge">{{ getResourceType() | titlecase }}</span>
+      </div>
+      <div class="card-body">
+        <div class="info-grid">
+          <div *ngFor="let detail of getResourceDetails()" class="info-item">
+            <span class="label">{{ detail.label }}</span>
+            <span class="value">{{ detail.value }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Estadísticas -->
+    <div class="card stats-info" *ngIf="getCompletionStats()">
+      <div class="card-header">
+        <h3>Estadísticas</h3>
+      </div>
+      <div class="card-body">
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-number">{{ getCompletionStats()?.total }}</div>
+            <div class="stat-label">Total</div>
+          </div>
+          <div class="stat-item success">
+            <div class="stat-number">{{ getCompletionStats()?.correct }}</div>
+            <div class="stat-label">Correctos</div>
+          </div>
+          <div class="stat-item warning">
+            <div class="stat-number">{{ getCompletionStats()?.warnings }}</div>
+            <div class="stat-label">Advertencias</div>
+          </div>
+          <div class="stat-item error">
+            <div class="stat-number">{{ getCompletionStats()?.errors }}</div>
+            <div class="stat-label">Errores</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preguntas y Respuestas Compactas -->
+    <div class="card responses-info" *ngIf="hasResponses()">
+      <div class="card-header">
+        <h3>Preguntas y Respuestas</h3>
+      </div>
+      <div class="card-body">
+        <div class="sections-container-compact">
+          <div *ngFor="let section of getSectionsWithResponses()" class="section-compact">
+            <div class="section-title">
+              <h4>{{ section.titulo }}</h4>
+              <span class="section-count">{{ section.responses.length }}</span>
+            </div>
+            
+            <div class="responses-table">
+              <div *ngFor="let response of section.responses" class="response-row">
+                <div class="response-question">
+                  <span class="question-text">{{ response.itemConfig?.descripcion || 'Pregunta sin descripción' }}</span>
+                  <div class="question-badges">
+                    <span class="badge-mini" [ngClass]="wasItemRequired(response.itemId) ? 'required' : 'optional'">
+                      {{ wasItemRequired(response.itemId) ? 'Obligatorio' : 'Opcional' }}
+                    </span>
+                    <span *ngIf="isResponseEdited(response.itemId)" class="badge-mini edited">Editado</span>
+                  </div>
+                </div>
+                
+                <div class="response-answer">
+                  <span class="answer-value" [ngClass]="'status-' + (response.validacion?.tipo || 'unknown')">
+                    {{ response.valor }}
+                  </span>
+                  <span *ngIf="response.observacion" class="answer-observation" title="{{ response.observacion }}">
+                    📝
+                  </span>
+                </div>
+                
+                <div class="response-status">
+                  <i class="fas status-icon" [ngClass]="{
+                    'fa-check-circle status-ok': response.validacion?.tipo === 'correcto',
+                    'fa-exclamation-triangle status-warning': response.validacion?.tipo === 'advertencia',
+                    'fa-times-circle status-error': response.validacion?.tipo === 'error',
+                    'fa-question-circle status-unknown': !response.validacion?.tipo
+                  }"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="card observations-info" *ngIf="hasObservations()">
+      <div class="card-header">
+        <h3>Observaciones</h3>
+      </div>
+      <div class="card-body">
+        <div class="observations-list">
+          <div *ngFor="let observation of getObservationsArray()" class="observation-item">
+            <div class="observation-id">{{ observation.itemId }}</div>
+            <div class="observation-text">{{ observation.text }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información Adicional -->
+    <div class="card additional-info">
+      <div class="card-header">
+        <h3>Información Adicional</h3>
+      </div>
+      <div class="card-body">
+        <div class="info-row">
+          <span class="info-label">Requiere Revisión:</span>
+          <span class="info-value" [ngClass]="checklist.requiere_revision ? 'requires-review' : 'no-review'">
+            {{ checklist.requiere_revision ? 'Sí' : 'No' }}
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Creado:</span>
+          <span class="info-value">{{ formatDate(checklist.fecha_creacion) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

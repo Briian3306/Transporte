@@ -1,0 +1,488 @@
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background: #007bff;
+  color: white;
+  padding: 1rem 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  position: relative;
+
+  .header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+
+      h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .main-nav {
+        display: flex;
+        gap: 20px;
+
+        a {
+          color: white;
+          text-decoration: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          transition: background-color 0.3s ease;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+          }
+
+          &.active {
+            background: rgba(255, 255, 255, 0.2);
+          }
+        }
+      }
+    }
+
+    .header-right {
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 8px 16px;
+        border-radius: 25px;
+
+        .user-details {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+
+          .user-email {
+            font-size: 0.9rem;
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .user-role {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+
+            &.role-admin {
+              background: rgba(220, 38, 38, 0.2);
+              color: #fecaca;
+            }
+
+            &.role-administrador {
+              background: rgba(59, 130, 246, 0.2);
+              color: #93c5fd;
+            }
+
+            &.role-operador {
+              background: rgba(34, 197, 94, 0.2);
+              color: #86efac;
+            }
+
+            &.role-visor {
+              background: rgba(156, 163, 175, 0.2);
+              color: #d1d5db;
+            }
+
+            &.role-supervisor {
+              background: rgba(168, 85, 247, 0.2);
+              color: #c4b5fd;
+            }
+
+            &.role-tecnico {
+              background: rgba(245, 158, 11, 0.2);
+              color: #fde68a;
+            }
+          }
+        }
+
+        .btn-logout {
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          color: white;
+          padding: 8px;
+          border-radius: 50%;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+          }
+
+          &:active {
+            transform: scale(0.95);
+          }
+
+          i {
+            font-size: 0.9rem;
+          }
+        }
+      }
+    }
+  }
+
+  // Mobile Menu Toggle Button
+  .mobile-menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1001;
+
+    .hamburger-line {
+      width: 25px;
+      height: 3px;
+      background: white;
+      border-radius: 3px;
+      transition: all 0.3s ease;
+      transform-origin: 1px;
+    }
+
+    &.active {
+      .hamburger-line:nth-child(1) {
+        transform: rotate(45deg);
+      }
+
+      .hamburger-line:nth-child(2) {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+
+      .hamburger-line:nth-child(3) {
+        transform: rotate(-45deg);
+      }
+    }
+  }
+
+  // Mobile Menu Overlay
+  .mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+
+    &.active {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  // Mobile Menu
+  .mobile-menu {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 280px;
+    height: 100%;
+    background: white;
+    z-index: 1000;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+
+    &.active {
+      right: 0;
+    }
+
+    .mobile-menu-header {
+      background: #007bff;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      h2 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+      }
+
+      .mobile-menu-close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: background-color 0.3s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+      }
+    }
+
+    .mobile-nav {
+      flex: 1;
+      padding: 1rem 0;
+      overflow-y: auto;
+
+      .mobile-nav-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        color: #333;
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+        border-left: 4px solid transparent;
+
+        &:hover {
+          background: #f8f9fa;
+        }
+
+        &.active {
+          background: #e3f2fd;
+          border-left-color: #007bff;
+          color: #007bff;
+        }
+
+        i {
+          margin-right: 1rem;
+          width: 20px;
+          text-align: center;
+        }
+
+        span {
+          font-weight: 500;
+        }
+      }
+    }
+
+    .mobile-user-info {
+      border-top: 1px solid #e0e0e0;
+      padding: 1rem;
+
+      .mobile-user-details {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+
+        .mobile-user-avatar {
+          width: 50px;
+          height: 50px;
+          background: #007bff;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 1rem;
+
+          i {
+            color: white;
+            font-size: 1.2rem;
+          }
+        }
+
+        .mobile-user-text {
+          flex: 1;
+
+          .mobile-user-email {
+            display: block;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 0.25rem;
+            word-break: break-all;
+          }
+
+          .mobile-user-role {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+
+            &.role-admin {
+              background: #fecaca;
+              color: #dc2626;
+            }
+
+            &.role-administrador {
+              background: #93c5fd;
+              color: #2563eb;
+            }
+
+            &.role-operador {
+              background: #86efac;
+              color: #16a34a;
+            }
+
+            &.role-visor {
+              background: #d1d5db;
+              color: #6b7280;
+            }
+
+            &.role-supervisor {
+              background: #c4b5fd;
+              color: #7c3aed;
+            }
+
+            &.role-tecnico {
+              background: #fde68a;
+              color: #d97706;
+            }
+          }
+        }
+      }
+
+      .mobile-logout-btn {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        font-weight: 500;
+
+        &:hover {
+          background: #c82333;
+        }
+
+        i {
+          margin-right: 0.5rem;
+        }
+      }
+    }
+  }
+}
+
+.app-main {
+  flex: 1;
+  background: #f8f9fa;
+  min-height: calc(100vh - 140px);
+}
+
+.app-footer {
+  background: #343a40;
+  color: white;
+  text-align: center;
+  padding: 20px;
+  margin-top: auto;
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .app-header {
+    .header-content {
+      .desktop-only {
+        display: none;
+      }
+
+      .mobile-only {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+
+        h1 {
+          font-size: 1.3rem;
+        }
+
+        .mobile-menu-toggle {
+          display: flex;
+        }
+      }
+    }
+  }
+}
+
+@media (min-width: 769px) {
+  .app-header {
+    .header-content {
+      .desktop-only {
+        display: flex;
+      }
+
+      .mobile-only {
+        display: none;
+      }
+    }
+  }
+}
+
+// Mobile Menu Responsive
+@media (max-width: 480px) {
+  .app-header {
+    .mobile-menu {
+      width: 100%;
+      right: -100%;
+
+      &.active {
+        right: 0;
+      }
+    }
+  }
+}
+
+// Tablet adjustments
+@media (max-width: 1024px) and (min-width: 769px) {
+  .app-header {
+    .header-content {
+      padding: 0 15px;
+
+      .header-left {
+        gap: 20px;
+
+        .main-nav {
+          gap: 15px;
+
+          a {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+          }
+        }
+      }
+    }
+  }
+}

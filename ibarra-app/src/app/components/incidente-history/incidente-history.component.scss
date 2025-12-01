@@ -1,0 +1,399 @@
+// Estilos específicos para el componente de histórico de incidentes
+
+// Animaciones para transiciones suaves
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Estilos para las tarjetas de estadísticas
+.stats-card {
+  @apply bg-white overflow-hidden shadow rounded-lg;
+}
+
+.stats-card-content {
+  @apply p-5;
+}
+
+.stats-card-icon {
+  @apply flex-shrink-0;
+}
+
+.stats-card-info {
+  @apply ml-5 w-0 flex-1;
+}
+
+.stats-card-title {
+  @apply text-sm font-medium text-gray-500 truncate;
+}
+
+.stats-card-value {
+  @apply text-lg font-medium text-gray-900;
+}
+
+// Estilos para la tabla
+.table-container {
+  @apply overflow-x-auto;
+}
+
+.table {
+  @apply min-w-full divide-y divide-gray-200;
+}
+
+.table-header {
+  @apply bg-gray-50;
+}
+
+.table-header-cell {
+  @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+}
+
+.table-body {
+  @apply bg-white divide-y divide-gray-200;
+}
+
+.table-row {
+  @apply hover:bg-gray-50 cursor-pointer transition-colors duration-200;
+}
+
+.table-cell {
+  @apply px-6 py-4 whitespace-nowrap;
+}
+
+.table-cell-text {
+  @apply text-sm text-gray-900;
+}
+
+.table-cell-subtext {
+  @apply text-sm text-gray-500;
+}
+
+// Estilos para los badges
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-critical {
+  @apply bg-red-100 text-red-800;
+}
+
+.badge-high {
+  @apply bg-orange-100 text-orange-800;
+}
+
+.badge-medium {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.badge-low {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-pending {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.badge-en-proceso {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.badge-resuelto {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-cerrado {
+  @apply bg-gray-100 text-gray-800;
+}
+
+// Estilos para los filtros
+.filters-container {
+  @apply bg-white shadow rounded-lg mb-6;
+}
+
+.filters-header {
+  @apply px-6 py-4 border-b border-gray-200;
+}
+
+.filters-title {
+  @apply text-lg font-medium text-gray-900;
+}
+
+.filters-content {
+  @apply p-6;
+}
+
+.filters-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4;
+}
+
+.filter-field {
+  @apply space-y-1;
+}
+
+.filter-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.filter-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+.filter-select {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+.filter-buttons {
+  @apply mt-6 flex justify-between;
+}
+
+.filter-button {
+  @apply inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+.filter-button-primary {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+// Estilos para la paginación
+.pagination-container {
+  @apply bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6;
+}
+
+.pagination-mobile {
+  @apply flex-1 flex justify-between sm:hidden;
+}
+
+.pagination-desktop {
+  @apply hidden sm:flex-1 sm:flex sm:items-center sm:justify-between;
+}
+
+.pagination-info {
+  @apply text-sm text-gray-700;
+}
+
+.pagination-nav {
+  @apply relative z-0 inline-flex rounded-md shadow-sm -space-x-px;
+}
+
+.pagination-button {
+  @apply relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.pagination-button-left {
+  @apply rounded-l-md;
+}
+
+.pagination-button-right {
+  @apply rounded-r-md;
+}
+
+.pagination-button-number {
+  @apply relative inline-flex items-center px-4 py-2 border text-sm font-medium;
+}
+
+.pagination-button-active {
+  @apply z-10 bg-blue-50 border-blue-500 text-blue-600;
+}
+
+.pagination-button-inactive {
+  @apply bg-white border-gray-300 text-gray-500 hover:bg-gray-50;
+}
+
+// Estilos para los iconos
+.icon {
+  @apply w-5 h-5;
+}
+
+.icon-sm {
+  @apply w-4 h-4;
+}
+
+.icon-xs {
+  @apply w-3 h-3;
+}
+
+.icon-lg {
+  @apply w-6 h-6;
+}
+
+.icon-xl {
+  @apply w-8 h-8;
+}
+
+// Estilos para el loading
+.loading-spinner {
+  @apply animate-spin rounded-full border-b-2 border-blue-600;
+}
+
+// Estilos para los mensajes
+.message {
+  @apply rounded-md p-4 mb-6;
+}
+
+.message-error {
+  @apply bg-red-50 border border-red-200;
+}
+
+.message-success {
+  @apply bg-green-50 border border-green-200;
+}
+
+.message-warning {
+  @apply bg-yellow-50 border border-yellow-200;
+}
+
+.message-info {
+  @apply bg-blue-50 border border-blue-200;
+}
+
+// Estilos para el estado vacío
+.empty-state {
+  @apply text-center py-12;
+}
+
+.empty-state-icon {
+  @apply text-gray-400 text-6xl mb-4;
+}
+
+.empty-state-title {
+  @apply text-lg font-medium text-gray-900 mb-2;
+}
+
+.empty-state-description {
+  @apply text-gray-500 mb-6;
+}
+
+.empty-state-button {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500;
+}
+
+// Estilos para los botones de acción
+.action-button {
+  @apply text-blue-600 hover:text-blue-900 transition-colors duration-200;
+}
+
+.action-button-danger {
+  @apply text-red-600 hover:text-red-900 transition-colors duration-200;
+}
+
+.action-button-success {
+  @apply text-green-600 hover:text-green-900 transition-colors duration-200;
+}
+
+// Estilos para los tooltips
+.tooltip {
+  @apply absolute z-10 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg opacity-0 transition-opacity duration-200;
+}
+
+.tooltip-visible {
+  @apply opacity-100;
+}
+
+// Estilos para el truncado de texto
+.text-truncate {
+  @apply max-w-xs truncate;
+}
+
+// Estilos para los estados de validación
+.valid {
+  @apply border-green-300 focus:ring-green-500 focus:border-green-500;
+}
+
+.invalid {
+  @apply border-red-300 focus:ring-red-500 focus:border-red-500;
+}
+
+// Estilos para el estado disabled
+.disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+// Estilos responsivos
+@media (max-width: 768px) {
+  .filters-grid {
+    @apply grid-cols-1;
+  }
+  
+  .filter-buttons {
+    @apply flex-col space-y-3;
+  }
+  
+  .filter-button,
+  .filter-button-primary {
+    @apply w-full justify-center;
+  }
+  
+  .pagination-mobile {
+    @apply flex-col space-y-2;
+  }
+  
+  .pagination-mobile button {
+    @apply w-full;
+  }
+}
+
+// Estilos para las animaciones de entrada
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// Estilos para los hover effects
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}
+
+.hover-scale {
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+// Estilos para los focus states
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+// Estilos para los estados de carga
+.loading-overlay {
+  @apply absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center;
+}
+
+// Estilos para los indicadores de estado
+.status-indicator {
+  @apply w-2 h-2 rounded-full;
+}
+
+.status-indicator-online {
+  @apply bg-green-400;
+}
+
+.status-indicator-offline {
+  @apply bg-gray-400;
+}
+
+.status-indicator-warning {
+  @apply bg-yellow-400;
+}
+
+.status-indicator-error {
+  @apply bg-red-400;
+}

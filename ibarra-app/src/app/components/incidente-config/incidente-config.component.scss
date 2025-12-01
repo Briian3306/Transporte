@@ -1,0 +1,265 @@
+// Estilos específicos para el componente de configuración de incidentes
+
+// Animaciones para transiciones suaves
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Estilos para los formularios
+.form-section {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6;
+}
+
+.form-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+.form-field {
+  @apply space-y-1;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700;
+}
+
+.form-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+.form-input-error {
+  @apply border-red-300 focus:ring-red-500 focus:border-red-500;
+}
+
+.form-error {
+  @apply text-sm text-red-600 mt-1;
+}
+
+// Estilos para las pestañas
+.tab-nav {
+  @apply border-b border-gray-200;
+}
+
+.tab-button {
+  @apply whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200;
+}
+
+.tab-button-active {
+  @apply border-blue-500 text-blue-600;
+}
+
+.tab-button-inactive {
+  @apply border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300;
+}
+
+// Estilos para los niveles de riesgo
+.nivel-card {
+  @apply border border-gray-200 rounded-lg p-6 bg-white shadow-sm;
+}
+
+.nivel-preview {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white;
+}
+
+// Estilos para los tipos de incidente
+.tipo-card {
+  @apply border border-gray-200 rounded-lg p-6 bg-white shadow-sm;
+}
+
+.subtipo-card {
+  @apply border border-gray-100 rounded-lg p-4 bg-gray-50;
+}
+
+// Estilos para los botones
+.btn-primary {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+.btn-danger {
+  @apply text-red-600 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500;
+}
+
+.btn-success {
+  @apply text-green-600 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-500;
+}
+
+// Estilos para los mensajes
+.message {
+  @apply rounded-md p-4 mb-6;
+}
+
+.message-error {
+  @apply bg-red-50 border border-red-200;
+}
+
+.message-success {
+  @apply bg-green-50 border border-green-200;
+}
+
+.message-warning {
+  @apply bg-yellow-50 border border-yellow-200;
+}
+
+.message-info {
+  @apply bg-blue-50 border border-blue-200;
+}
+
+// Estilos para los iconos
+.icon {
+  @apply w-5 h-5;
+}
+
+.icon-sm {
+  @apply w-4 h-4;
+}
+
+.icon-xs {
+  @apply w-3 h-3;
+}
+
+// Estilos para el loading
+.loading-spinner {
+  @apply animate-spin rounded-full border-b-2 border-blue-600;
+}
+
+// Estilos para las listas
+.list-item {
+  @apply flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors duration-200;
+}
+
+.list-item-header {
+  @apply flex items-center space-x-3;
+}
+
+.list-item-actions {
+  @apply flex items-center space-x-2;
+}
+
+// Estilos para los checkboxes
+.checkbox-container {
+  @apply flex items-center space-x-2;
+}
+
+.checkbox-input {
+  @apply h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded;
+}
+
+.checkbox-label {
+  @apply text-sm text-gray-700;
+}
+
+// Estilos para los arrays de indicaciones y acciones
+.array-item {
+  @apply flex items-center space-x-2 p-2 border border-gray-200 rounded bg-gray-50;
+}
+
+.array-input {
+  @apply flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500;
+}
+
+.array-button {
+  @apply text-blue-600 hover:text-blue-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500;
+}
+
+.array-button-danger {
+  @apply text-red-600 hover:text-red-800 focus:outline-none focus:ring-1 focus:ring-red-500;
+}
+
+// Estilos responsivos
+@media (max-width: 768px) {
+  .form-grid {
+    @apply grid-cols-1;
+  }
+  
+  .tab-button {
+    @apply text-xs px-2 py-2;
+  }
+  
+  .nivel-card,
+  .tipo-card {
+    @apply p-4;
+  }
+  
+  .subtipo-card {
+    @apply p-3;
+  }
+}
+
+// Estilos para el estado disabled
+.disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+// Estilos para el estado de validación
+.valid {
+  @apply border-green-300 focus:ring-green-500 focus:border-green-500;
+}
+
+.invalid {
+  @apply border-red-300 focus:ring-red-500 focus:border-red-500;
+}
+
+// Estilos para los tooltips
+.tooltip {
+  @apply absolute z-10 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg opacity-0 transition-opacity duration-200;
+}
+
+.tooltip-visible {
+  @apply opacity-100;
+}
+
+// Estilos para las animaciones de entrada
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// Estilos para los badges
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-blue {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.badge-green {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-yellow {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.badge-red {
+  @apply bg-red-100 text-red-800;
+}
+
+.badge-gray {
+  @apply bg-gray-100 text-gray-800;
+}
+
