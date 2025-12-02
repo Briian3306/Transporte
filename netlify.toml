@@ -3,7 +3,7 @@
   # Directorio base del proyecto Angular
   base = "ibarra-app"
   # Comando para construir la aplicación
-  command = "npm run build:prod"
+  command = "npm install --legacy-peer-deps && npm run build:prod"
   # Directorio donde se publicará la aplicación construida (relativo a base)
   # Angular 19 genera los archivos en dist/ibarra-app/browser
   publish = "dist/ibarra-app/browser"
