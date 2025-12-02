@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, from } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { TemplateResourceType } from '../models/checklist-template.model';
 import { ApiIbarraService } from './api-ibarra.service';
+import { SupabaseService } from './supabase.service';
 
 // Interfaces para recursos
 export interface RecursoSeleccion {
@@ -38,7 +39,10 @@ export interface Sector {
 })
 export class ResourceService {
 
-  constructor(private apiService: ApiIbarraService) {}
+  constructor(
+    private apiService: ApiIbarraService,
+    private supabaseService: SupabaseService
+  ) {}
 
   /**
    * Carga recursos según el tipo de template
@@ -129,85 +133,83 @@ export class ResourceService {
   }
 
   /**
-   * Obtiene máquinas (datos de prueba)
+   * Obtiene máquinas desde Supabase
    */
   private getRecursosMaquinas(): Observable<RecursoSeleccion[]> {
-    // Datos de prueba para máquinas
-    const maquinasPrueba: Maquina[] = [
-      {
-        id: '1',
-        nombre: 'Grúa Hidráulica',
-        modelo: 'GH-500',
-        numero_serie: 'SN123456',
-        estado: 'activa'
-      },
-      {
-        id: '2',
-        nombre: 'Montacargas',
-        modelo: 'MT-200',
-        numero_serie: 'SN789012',
-        estado: 'activa'
-      },
-      {
-        id: '3',
-        nombre: 'Compresor de Aire',
-        modelo: 'CA-100',
-        numero_serie: 'SN345678',
-        estado: 'mantenimiento'
-      }
-    ];
-
-    return of(maquinasPrueba.map(m => ({
-      id: m.id,
-      nombre: `${m.nombre} - ${m.modelo}`,
-      tipo: 'maquina' as TemplateResourceType,
-      informacion: {
-        maquina_id: m.id,
-        nombre: m.nombre,
-        modelo: m.modelo,
-        numero_serie: m.numero_serie,
-        estado: m.estado,
-      }
-    })));
+    return from(
+      this.supabaseService.executeWithRetry(async () => {
+        const client = await this.supabaseService.getClient();
+        const response = await client
+          .from('maquinas')
+          .select('*')
+          .eq('activo', true)
+          .order('nombre', { ascending: true });
+        
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+        
+        return response.data || [];
+      })
+    ).pipe(
+      map(maquinas => maquinas.map((m: any) => ({
+        id: m.id,
+        nombre: `${m.nombre} - ${m.modelo}`,
+        tipo: 'maquina' as TemplateResourceType,
+        informacion: {
+          maquina_id: m.id,
+          nombre: m.nombre,
+          modelo: m.modelo,
+          numero_serie: m.numero_serie,
+          estado: m.estado,
+          descripcion: m.descripcion,
+          ubicacion: m.ubicacion,
+        }
+      }))),
+      catchError(error => {
+        console.error('Error al obtener máquinas:', error);
+        return of([]);
+      })
+    );
   }
 
   /**
-   * Obtiene sectores (datos de prueba)
+   * Obtiene sectores desde Supabase
    */
   private getRecursosSectores(): Observable<RecursoSeleccion[]> {
-    // Datos de prueba para sectores
-    const sectoresPrueba: Sector[] = [
-      {
-        id: '1',
-        nombre: 'Almacén Principal',
-        tipo: 'almacen',
-      },
-      {
-        id: '2',
-        nombre: 'Oficina Administrativa',
-        tipo: 'oficina',
-      },
-      {
-        id: '3',
-        nombre: 'Taller de Mantenimiento',
-        tipo: 'taller',
-      },
-      {
-        id: '4',
-        nombre: 'Patio de Vehículos',
-        tipo: 'patio',
-      }
-    ];
-
-    return of(sectoresPrueba.map(s => ({
-      id: s.id,
-      nombre: `${s.nombre}`,
-      tipo: 'sector' as TemplateResourceType,
-      informacion: {
-        sector_id: s.id,
+    return from(
+      this.supabaseService.executeWithRetry(async () => {
+        const client = await this.supabaseService.getClient();
+        const response = await client
+          .from('sectores')
+          .select('*')
+          .eq('activo', true)
+          .order('nombre', { ascending: true });
+        
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+        
+        return response.data || [];
+      })
+    ).pipe(
+      map(sectores => sectores.map((s: any) => ({
+        id: s.id,
         nombre: s.nombre,
-        tipo_area: s.tipo,
-      }
-    })));
+        tipo: 'sector' as TemplateResourceType,
+        informacion: {
+          sector_id: s.id,
+          nombre: s.nombre,
+          tipo_area: s.tipo,
+          descripcion: s.descripcion,
+          ubicacion: s.ubicacion,
+          responsable: s.responsable,
+        }
+      }))),
+      catchError(error => {
+        console.error('Error al obtener sectores:', error);
+        return of([]);
+      })
+    );
   }
 }

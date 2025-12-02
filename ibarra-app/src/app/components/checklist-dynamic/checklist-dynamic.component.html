@@ -682,10 +682,10 @@
 
 
 <!-- Modal de Carga de Datos -->
-<div *ngIf="mostrarModalCargaDatos" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
-  <div class="relative mx-auto w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-hidden flex flex-col">
-    <div class="flex justify-between items-center p-4 sm:p-6 border-b border-gray-200">
-      <h3 class="text-lg sm:text-xl font-medium text-gray-900">
+<div *ngIf="mostrarModalCargaDatos" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-2 sm:p-4">
+  <div class="relative mx-auto w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+    <div class="flex justify-between items-center p-3 sm:p-4 lg:p-6 border-b border-gray-200 flex-shrink-0">
+      <h3 class="text-base sm:text-lg lg:text-xl font-medium text-gray-900">
         <i class="fas fa-search mr-2 text-blue-600"></i>
         <span *ngIf="plantillaActual?.tipo === 'vehiculo'">Seleccionar Vehículo</span>
         <span *ngIf="plantillaActual?.tipo === 'chofer'">Seleccionar Chofer</span>
@@ -695,13 +695,13 @@
         <span *ngIf="!plantillaActual?.tipo">Seleccionar Recurso</span>
       </h3>
       <button (click)="mostrarModalCargaDatos = false"
-              class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
+              class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100 flex-shrink-0">
         <i class="fas fa-times text-lg"></i>
       </button>
     </div>
     
     <!-- Filtros -->
-    <div class="p-4 sm:p-6 border-b border-gray-200">
+    <div class="p-3 sm:p-4 lg:p-6 border-b border-gray-200 flex-shrink-0">
       <div class="grid grid-cols-1 gap-4">
         <!-- Filtros para vehículos -->
         <div *ngIf="plantillaActual?.tipo === 'vehiculo'">
@@ -761,7 +761,7 @@
     </div>
     
     <!-- Loading -->
-    <div *ngIf="cargandoDatos || cargandoRecursos" class="flex-1 flex items-center justify-center py-12">
+    <div *ngIf="cargandoDatos || cargandoRecursos" class="flex-1 flex items-center justify-center py-12 min-h-[200px]">
       <div class="text-center">
         <i class="fas fa-spinner fa-spin text-3xl text-blue-500 mb-4"></i>
         <p class="text-sm text-gray-600">
@@ -776,14 +776,18 @@
     </div>
     
     <!-- Tabla de Recursos -->
-    <div *ngIf="!cargandoDatos && !cargandoRecursos && plantillaActual?.tipo" class="flex-1 overflow-auto">
+    <div *ngIf="!cargandoDatos && !cargandoRecursos && plantillaActual?.tipo" class="flex-1 overflow-y-auto min-h-0">
       <!-- Vista móvil: Cards -->
-      <div class="block sm:hidden p-4 space-y-4">
-        <div *ngFor="let recurso of recursosFiltrados" class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <div class="flex items-center justify-between mb-3">
+      <div class="block sm:hidden p-3 sm:p-4 space-y-3 sm:space-y-4 pb-4">
+        <div *ngIf="recursosFiltrados.length === 0" class="text-center py-8">
+          <i class="fas fa-search text-3xl text-gray-300 mb-3"></i>
+          <p class="text-sm text-gray-500">No se encontraron resultados</p>
+        </div>
+        <div *ngFor="let recurso of recursosFiltrados" class="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="flex-1 min-w-0">
-              <h4 class="text-sm font-medium text-gray-900 truncate">{{ recurso.nombre }}</h4>
-              <p class="text-xs text-gray-500 mt-1">
+              <h4 class="text-sm font-medium text-gray-900 break-words">{{ recurso.nombre }}</h4>
+              <p class="text-xs text-gray-500 mt-1 break-words">
                 <span *ngIf="plantillaActual?.tipo === 'vehiculo'">{{ recurso.informacion.marca }} {{ recurso.informacion.modelo }}</span>
                 <span *ngIf="plantillaActual?.tipo === 'chofer'">DNI: {{ recurso.informacion.dni }}</span>
                 <span *ngIf="plantillaActual?.tipo === 'unidad'">Tipo: {{ recurso.informacion.tipo_unidad }}</span>
@@ -792,7 +796,7 @@
               </p>
             </div>
             <button (click)="seleccionarRecurso(recurso)" 
-                    class="btn-touch bg-blue-500 text-white hover:bg-blue-600 text-sm px-3 py-2">
+                    class="btn-touch bg-blue-500 text-white hover:bg-blue-600 text-sm px-4 py-2 rounded-md whitespace-nowrap flex-shrink-0">
               <i class="fas fa-check mr-1"></i>
               Seleccionar
             </button>
@@ -802,8 +806,12 @@
       
       <!-- Vista desktop: Tabla -->
       <div class="hidden sm:block">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50 sticky top-0">
+        <div *ngIf="recursosFiltrados.length === 0" class="text-center py-12">
+          <i class="fas fa-search text-4xl text-gray-300 mb-4"></i>
+          <p class="text-sm text-gray-500">No se encontraron resultados</p>
+        </div>
+        <table *ngIf="recursosFiltrados.length > 0" class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50 sticky top-0 z-10">
             <tr>
               <!-- Columnas para vehículos -->
               <th *ngIf="plantillaActual?.tipo === 'vehiculo'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehículo</th>
