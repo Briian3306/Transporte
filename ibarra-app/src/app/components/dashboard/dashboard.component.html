@@ -53,5 +53,11 @@
     </div>
   </div>
 
-</div>
+  <!-- Popup de instalación PWA -->
+  <app-pwa-install-popup 
+    *ngIf="showPwaPopup"
+    (closed)="onPwaPopupClosed()"
+    (installed)="onPwaInstalled($event)">
+  </app-pwa-install-popup>
 
+</div>

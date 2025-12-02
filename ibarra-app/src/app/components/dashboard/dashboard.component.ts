@@ -5,8 +5,10 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SupabaseService } from '../../services/supabase.service';
 import { GranularPermissionService } from '../../services/granular-permission.service';
+import { PwaInstallService } from '../../services/pwa-install.service';
 import { SystemModule } from '../../models/system-module.model';
 import { User } from '@supabase/supabase-js';
+import { PwaInstallPopupComponent } from '../pwa-install-popup/pwa-install-popup.component';
 
 interface DashboardModule {
   id: string;
@@ -21,17 +23,19 @@ interface DashboardModule {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, PwaInstallPopupComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit {
   private supabaseService = inject(SupabaseService);
   private granularPermissionService = inject(GranularPermissionService);
+  private pwaInstallService = inject(PwaInstallService);
 
   currentUser$: Observable<User | null>;
   accessibleModules$: Observable<SystemModule[]>;
   dashboardModules: DashboardModule[] = [];
+  showPwaPopup = false;
 
   constructor() {
     this.currentUser$ = this.supabaseService.currentUser$;
@@ -41,6 +45,27 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.initializeDashboardModules();
     this.loadUserModules();
+    this.checkPwaInstallPrompt();
+  }
+
+  private checkPwaInstallPrompt(): void {
+    // Mostrar el popup de instalación después de 3 segundos si está disponible
+    setTimeout(() => {
+      if (this.pwaInstallService.shouldShowInstallPrompt()) {
+        this.showPwaPopup = true;
+      }
+    }, 3000);
+  }
+
+  onPwaPopupClosed(): void {
+    this.showPwaPopup = false;
+  }
+
+  onPwaInstalled(installed: boolean): void {
+    if (installed) {
+      console.log('PWA instalada correctamente');
+    }
+    this.showPwaPopup = false;
   }
 
   private initializeDashboardModules(): void {

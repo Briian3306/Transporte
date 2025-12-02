@@ -56,7 +56,8 @@
                 "fonts": true
               },
               "sourceMap": false,
-              "extractLicenses": true
+              "extractLicenses": true,
+              "serviceWorker": "ngsw-config.json"
             },
             "development": {
               "optimization": false,

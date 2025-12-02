@@ -1,0 +1,72 @@
+<div class="pwa-popup-overlay" [class.visible]="isVisible" (click)="onLater()">
+  <div class="pwa-popup-card" [class.visible]="isVisible" (click)="$event.stopPropagation()">
+    <!-- Botón de cerrar -->
+    <button class="close-button" (click)="onLater()" [disabled]="isInstalling">
+      <i class="fas fa-times"></i>
+    </button>
+
+    <!-- Icono de la app -->
+    <div class="popup-icon">
+      <i class="fas fa-tire"></i>
+    </div>
+
+    <!-- Contenido -->
+    <div class="popup-content">
+      <h2 class="popup-title">Instalar Aplicación</h2>
+      <p class="popup-description">
+        Instala el <strong>Sistema de Gestión de Transporte Ibarra</strong> en tu dispositivo 
+        para un acceso rápido y una mejor experiencia de uso.
+      </p>
+
+      <!-- Beneficios -->
+      <ul class="benefits-list">
+        <li>
+          <i class="fas fa-bolt"></i>
+          <span>Acceso rápido desde tu pantalla de inicio</span>
+        </li>
+        <li>
+          <i class="fas fa-wifi"></i>
+          <span>Funciona sin conexión (offline)</span>
+        </li>
+        <li>
+          <i class="fas fa-mobile-alt"></i>
+          <span>Experiencia como app nativa</span>
+        </li>
+      </ul>
+
+      <!-- Checkbox "No volver a mostrar" -->
+      <div class="checkbox-container">
+        <input 
+          type="checkbox" 
+          id="dontShowAgain" 
+          [(ngModel)]="dontShowAgain"
+          [disabled]="isInstalling"
+        />
+        <label for="dontShowAgain">No volver a mostrar este mensaje</label>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="popup-actions">
+        <button 
+          class="btn btn-primary" 
+          (click)="onInstall()"
+          [disabled]="isInstalling"
+        >
+          <i class="fas fa-download" *ngIf="!isInstalling"></i>
+          <i class="fas fa-spinner fa-spin" *ngIf="isInstalling"></i>
+          {{ isInstalling ? 'Instalando...' : 'Instalar Ahora' }}
+        </button>
+        
+        <button 
+          class="btn btn-secondary" 
+          (click)="onLater()"
+          [disabled]="isInstalling"
+        >
+          <i class="fas fa-clock"></i>
+          Más Tarde
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
