@@ -1,69 +1,73 @@
-<div class="user-management-container">
+<div class="user-management-container px-3 sm:px-4 py-4 sm:py-6">
   <!-- Header -->
   <div class="header-section">
-    <div class="header-content">
-      <h1 class="page-title">
+    <div class="header-content mb-4 sm:mb-0">
+      <h1 class="page-title text-2xl sm:text-3xl">
         <i class="fas fa-users"></i>
         Gestión de Usuarios
       </h1>
-      <p class="page-subtitle">Administra usuarios, roles y permisos del sistema</p>
+      <p class="page-subtitle text-sm sm:text-base">Administra usuarios, roles y permisos del sistema</p>
     </div>
-    <div class="header-actions">
+    <div class="header-actions flex flex-col sm:flex-row gap-2 sm:gap-3">
       <button 
       (click)="goToRoles()"
-      class="btn btn-primary"
+      class="btn btn-primary text-sm sm:text-base px-3 sm:px-4 py-2"
       appGranularPermission="users:create"
       appPermissionAction="show">
       <i class="fas fa-user-tag"></i>
-      Ver Roles
+      <span class="hidden sm:inline">Ver Roles</span>
+      <span class="sm:hidden">Roles</span>
     </button>
       <button 
         (click)="openCreateModal()"
-        class="btn btn-primary"
+        class="btn btn-primary text-sm sm:text-base px-3 sm:px-4 py-2"
         appGranularPermission="users:create"
         appPermissionAction="show">
         <i class="fas fa-plus"></i>
-        Crear Usuario
+        <span class="hidden sm:inline">Crear Usuario</span>
+        <span class="sm:hidden">Crear</span>
       </button>
       
       <a 
         routerLink="/roles"
-        class="btn btn-info"
+        class="btn btn-info text-sm sm:text-base px-3 sm:px-4 py-2"
         appGranularPermission="settings:manage"
         appPermissionAction="show">
         <i class="fas fa-user-tag"></i>
-        Configurar Roles
+        <span class="hidden sm:inline">Configurar Roles</span>
+        <span class="sm:hidden">Roles</span>
       </a>
       
       <a 
         routerLink="/role-permissions"
-        class="btn btn-secondary"
+        class="btn btn-secondary text-sm sm:text-base px-3 sm:px-4 py-2"
         appGranularPermission="settings:manage"
         appPermissionAction="show">
         <i class="fas fa-shield-alt"></i>
-        Gestionar Permisos
+        <span class="hidden sm:inline">Gestionar Permisos</span>
+        <span class="sm:hidden">Permisos</span>
       </a>
     </div>
   </div>
 
   <!-- Filtros y búsqueda -->
-  <div class="filters-section">
-    <div class="filters-row">
-      <div class="search-box">
+  <div class="filters-section mb-4 sm:mb-6">
+    <div class="filters-row flex flex-col sm:flex-row gap-3 sm:gap-4">
+      <div class="search-box flex-1 w-full sm:w-auto">
         <i class="fas fa-search"></i>
         <input 
           type="text" 
           [(ngModel)]="searchTerm" 
           (input)="onSearch()"
           placeholder="Buscar por nombre o email..."
-          class="search-input">
+          class="search-input text-sm sm:text-base">
       </div>
 
-      <div class="filter-group">
+      <div class="filter-group flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
         <select 
           [(ngModel)]="roleFilter" 
           (change)="onFilterChange()"
-          class="filter-select">
+          class="filter-select text-sm sm:text-base flex-1 sm:flex-none">
           <option value="">Todos los roles</option>
           <option *ngFor="let role of roles" [value]="role.id">
             {{ role.name | titlecase }}
@@ -73,7 +77,7 @@
         <select 
           [(ngModel)]="statusFilter" 
           (change)="onFilterChange()"
-          class="filter-select">
+          class="filter-select text-sm sm:text-base flex-1 sm:flex-none">
           <option value="all">Todos los estados</option>
           <option value="active">Activos</option>
           <option value="inactive">Inactivos</option>
@@ -81,7 +85,7 @@
 
         <button 
           (click)="clearFilters()" 
-          class="btn btn-secondary">
+          class="btn btn-secondary text-sm sm:text-base px-3 sm:px-4 py-2 whitespace-nowrap">
           <i class="fas fa-times"></i>
           Limpiar
         </button>
@@ -90,12 +94,12 @@
   </div>
 
   <!-- Mensajes -->
-  <div class="messages-section" *ngIf="errorMessage || successMessage">
-    <div class="alert alert-error" *ngIf="errorMessage">
+  <div class="messages-section mb-4 sm:mb-6" *ngIf="errorMessage || successMessage">
+    <div class="alert alert-error text-sm sm:text-base" *ngIf="errorMessage">
       <i class="fas fa-exclamation-triangle"></i>
       {{ errorMessage }}
     </div>
-    <div class="alert alert-success" *ngIf="successMessage">
+    <div class="alert alert-success text-sm sm:text-base" *ngIf="successMessage">
       <i class="fas fa-check-circle"></i>
       {{ successMessage }}
     </div>
@@ -103,43 +107,43 @@
 
   <!-- Tabla de usuarios -->
   <div class="table-section">
-    <div class="table-container">
-      <table class="users-table">
+    <div class="table-container overflow-x-auto">
+      <table class="users-table min-w-full">
         <thead>
           <tr>
-            <th>Usuario</th>
-            <th>Rol</th>
-            <th>Estado</th>
-            <th>Fecha de Registro</th>
-            <th>Acciones</th>
+            <th class="text-xs sm:text-sm">Usuario</th>
+            <th class="text-xs sm:text-sm">Rol</th>
+            <th class="text-xs sm:text-sm">Estado</th>
+            <th class="text-xs sm:text-sm hidden sm:table-cell">Fecha de Registro</th>
+            <th class="text-xs sm:text-sm">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngIf="loading" class="loading-row">
-            <td colspan="5" class="text-center">
+            <td colspan="5" class="text-center px-4 py-6 sm:py-8">
               <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i>
-                Cargando usuarios...
+                <i class="fas fa-spinner fa-spin text-2xl sm:text-3xl mb-2"></i>
+                <p class="text-sm sm:text-base">Cargando usuarios...</p>
               </div>
             </td>
           </tr>
 
           <tr *ngFor="let user of paginatedUsers; trackBy: trackByUserId" class="user-row">
-            <td class="user-info">
+            <td class="user-info min-w-[200px] sm:min-w-0">
               <div class="user-avatar">
                 <i class="fas fa-user"></i>
               </div>
               <div class="user-details">
-                <div class="user-name">{{ user.fullName }}</div>
-                <div class="user-email">{{ user.email }}</div>
+                <div class="user-name text-sm sm:text-base break-words">{{ user.fullName }}</div>
+                <div class="user-email text-xs sm:text-sm break-all">{{ user.email }}</div>
               </div>
             </td>
 
-            <td class="role-cell">
+            <td class="role-cell min-w-[120px] sm:min-w-0">
               <select 
                 [(ngModel)]="user.roleId" 
                 (change)="updateUserRole(user)"
-                class="role-select"
+                class="role-select text-xs sm:text-sm"
                 appGranularPermission="users:update"
                 appPermissionAction="show">
                 <option *ngFor="let role of roles" [value]="role.id">
@@ -148,21 +152,21 @@
               </select>
             </td>
 
-            <td class="status-cell">
-              <span class="status-badge" [class]="getStatusBadgeClass(user.isActive)">
+            <td class="status-cell min-w-[100px] sm:min-w-0">
+              <span class="status-badge text-xs sm:text-sm" [class]="getStatusBadgeClass(user.isActive)">
                 {{ user.isActive ? 'Activo' : 'Inactivo' }}
               </span>
             </td>
 
-            <td class="date-cell">
+            <td class="date-cell min-w-[120px] sm:min-w-0 text-xs sm:text-sm hidden sm:table-cell">
               {{ user.createdAt | date:'dd/MM/yyyy' }}
             </td>
 
-            <td class="actions-cell">
-              <div class="action-buttons">
+            <td class="actions-cell min-w-[140px] sm:min-w-0">
+              <div class="action-buttons flex gap-1 sm:gap-2">
                 <button 
                   (click)="openPermissionModal(user)"
-                  class="btn btn-info"
+                  class="btn btn-info text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
                   title="Gestionar permisos"
                   appGranularPermission="users:update"
                   appPermissionAction="show">
@@ -172,6 +176,7 @@
                 <button 
                   (click)="toggleUserStatus(user)"
                   [class]="user.isActive ? 'btn btn-warning' : 'btn btn-success'"
+                  class="text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
                   [title]="user.isActive ? 'Desactivar usuario' : 'Activar usuario'"
                   appGranularPermission="users:update"
                   appPermissionAction="show">
@@ -180,7 +185,7 @@
 
                 <button 
                   (click)="deleteUser(user)"
-                  class="btn btn-danger"
+                  class="btn btn-danger text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
                   title="Eliminar usuario"
                   appGranularPermission="users:delete"
                   appPermissionAction="show">
@@ -191,11 +196,11 @@
           </tr>
 
           <tr *ngIf="!loading && paginatedUsers.length === 0" class="empty-row">
-            <td colspan="5" class="text-center">
+            <td colspan="5" class="text-center px-4 py-6 sm:py-8">
               <div class="empty-state">
-                <i class="fas fa-users-slash"></i>
-                <h3>No se encontraron usuarios</h3>
-                <p>No hay usuarios que coincidan con los filtros aplicados</p>
+                <i class="fas fa-users-slash text-4xl sm:text-5xl mb-3 sm:mb-4"></i>
+                <h3 class="text-base sm:text-lg mb-2">No se encontraron usuarios</h3>
+                <p class="text-sm sm:text-base">No hay usuarios que coincidan con los filtros aplicados</p>
               </div>
             </td>
           </tr>
@@ -205,27 +210,27 @@
 
     <!-- Paginación -->
     <div class="pagination-section" *ngIf="totalPages > 1">
-      <div class="pagination-info">
+      <div class="pagination-info text-xs sm:text-sm mb-3 sm:mb-0">
         Mostrando {{ (currentPage - 1) * itemsPerPage + 1 }} - 
         {{ Math.min(currentPage * itemsPerPage, filteredUsers.length) }} 
         de {{ filteredUsers.length }} usuarios
       </div>
       
-      <div class="pagination-controls">
+      <div class="pagination-controls flex flex-col sm:flex-row gap-2 sm:gap-3 items-center">
         <button 
           (click)="goToPage(currentPage - 1)"
           [disabled]="currentPage === 1"
-          class="btn btn-secondary">
+          class="btn btn-secondary text-sm sm:text-base px-3 sm:px-4 py-2 w-full sm:w-auto">
           <i class="fas fa-chevron-left"></i>
-          Anterior
+          <span class="hidden sm:inline">Anterior</span>
         </button>
 
-        <div class="page-numbers">
+        <div class="page-numbers flex flex-wrap gap-1 sm:gap-2 justify-center">
           <button 
             *ngFor="let page of [].constructor(totalPages); let i = index"
             (click)="goToPage(i + 1)"
             [class]="currentPage === i + 1 ? 'btn btn-primary' : 'btn btn-outline'"
-            class="page-btn">
+            class="page-btn text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 min-w-[36px] sm:min-w-[40px]">
             {{ i + 1 }}
           </button>
         </div>
@@ -233,8 +238,8 @@
         <button 
           (click)="goToPage(currentPage + 1)"
           [disabled]="currentPage === totalPages"
-          class="btn btn-secondary">
-          Siguiente
+          class="btn btn-secondary text-sm sm:text-base px-3 sm:px-4 py-2 w-full sm:w-auto">
+          <span class="hidden sm:inline">Siguiente</span>
           <i class="fas fa-chevron-right"></i>
         </button>
       </div>
@@ -243,9 +248,9 @@
 
   <!-- Modal de Creación de Usuario -->
   <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content w-full sm:w-auto max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3 class="modal-title">
+        <h3 class="modal-title text-base sm:text-lg">
           <i class="fas fa-user-plus"></i>
           Crear Nuevo Usuario
         </h3>
@@ -256,12 +261,12 @@
 
       <form [formGroup]="userForm" (ngSubmit)="createUser()" class="modal-body">
         <div class="form-group">
-          <label for="email">Email *</label>
+          <label for="email" class="text-sm sm:text-base">Email *</label>
           <input 
             type="email" 
             id="email"
             formControlName="email"
-            class="form-control"
+            class="form-control text-sm sm:text-base"
             [class.error]="userForm.get('email')?.invalid && userForm.get('email')?.touched"
             placeholder="usuario@empresa.com">
           <div class="error-message" *ngIf="userForm.get('email')?.invalid && userForm.get('email')?.touched">
@@ -271,12 +276,12 @@
         </div>
 
         <div class="form-group">
-          <label for="fullName">Nombre Completo *</label>
+          <label for="fullName" class="text-sm sm:text-base">Nombre Completo *</label>
           <input 
             type="text" 
             id="fullName"
             formControlName="fullName"
-            class="form-control"
+            class="form-control text-sm sm:text-base"
             [class.error]="userForm.get('fullName')?.invalid && userForm.get('fullName')?.touched"
             placeholder="Nombre Apellido">
           <div class="error-message" *ngIf="userForm.get('fullName')?.invalid && userForm.get('fullName')?.touched">
@@ -286,11 +291,11 @@
         </div>
 
         <div class="form-group">
-          <label for="roleId">Rol *</label>
+          <label for="roleId" class="text-sm sm:text-base">Rol *</label>
           <select 
             id="roleId"
             formControlName="roleId"
-            class="form-control"
+            class="form-control text-sm sm:text-base"
             [class.error]="userForm.get('roleId')?.invalid && userForm.get('roleId')?.touched">
             <option value="">Seleccionar rol</option>
             <option *ngFor="let role of roles" [value]="role.id">
@@ -308,24 +313,24 @@
               type="checkbox" 
               formControlName="useCustomPassword"
               class="checkbox-input">
-            <span class="checkbox-text">Establecer contraseña personalizada</span>
+            <span class="checkbox-text text-sm sm:text-base">Establecer contraseña personalizada</span>
           </label>
         </div>
 
         <div class="form-group" *ngIf="userForm.get('useCustomPassword')?.value">
-          <label for="password">Contraseña *</label>
+          <label for="password" class="text-sm sm:text-base">Contraseña *</label>
           <input 
             type="password" 
             id="password"
             formControlName="password"
-            class="form-control"
+            class="form-control text-sm sm:text-base"
             [class.error]="userForm.get('password')?.invalid && userForm.get('password')?.touched"
             placeholder="Mínimo 8 caracteres">
           <div class="error-message" *ngIf="userForm.get('password')?.invalid && userForm.get('password')?.touched">
             <span *ngIf="userForm.get('password')?.errors?.['required']">Contraseña es requerida</span>
             <span *ngIf="userForm.get('password')?.errors?.['minlength']">Mínimo 8 caracteres</span>
           </div>
-          <div class="help-text">
+          <div class="help-text text-xs sm:text-sm">
             <i class="fas fa-info-circle"></i>
             La contraseña debe tener al menos 8 caracteres. Si no se especifica, se generará una contraseña temporal.
           </div>
@@ -337,23 +342,23 @@
               type="checkbox" 
               formControlName="isActive"
               class="checkbox-input">
-            <span class="checkbox-text">Usuario activo</span>
+            <span class="checkbox-text text-sm sm:text-base">Usuario activo</span>
           </label>
         </div>
       </form>
 
-      <div class="modal-footer">
+      <div class="modal-footer flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
         <button 
           type="button" 
           (click)="closeCreateModal()" 
-          class="btn btn-secondary">
+          class="btn btn-secondary text-sm sm:text-base px-3 sm:px-4 py-2 w-full sm:w-auto">
           Cancelar
         </button>
         <button 
           type="button" 
           (click)="createUser()" 
           [disabled]="userForm.invalid || loading"
-          class="btn btn-primary">
+          class="btn btn-primary text-sm sm:text-base px-3 sm:px-4 py-2 w-full sm:w-auto">
           <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
           <i class="fas fa-save" *ngIf="!loading"></i>
           {{ loading ? 'Creando...' : 'Crear Usuario' }}
@@ -364,11 +369,12 @@
 
   <!-- Modal de Gestión de Permisos -->
   <div class="modal-overlay" *ngIf="showPermissionModal" (click)="closePermissionModal()">
-    <div class="modal-content large-modal" (click)="$event.stopPropagation()">
+    <div class="modal-content large-modal w-full sm:w-auto max-w-[95vw] sm:max-w-4xl mx-2 sm:mx-auto max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3 class="modal-title">
+        <h3 class="modal-title text-base sm:text-lg break-words">
           <i class="fas fa-key"></i>
-          Gestionar Permisos - {{ selectedUser?.fullName }}
+          <span class="hidden sm:inline">Gestionar Permisos - {{ selectedUser?.fullName }}</span>
+          <span class="sm:hidden">Permisos - {{ selectedUser?.fullName }}</span>
         </h3>
         <button (click)="closePermissionModal()" class="btn-close">
           <i class="fas fa-times"></i>
@@ -377,39 +383,39 @@
 
       <div class="modal-body">
         <form [formGroup]="permissionForm" class="permissions-form">
-          <div class="permissions-grid" formArrayName="permissions">
+          <div class="permissions-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" formArrayName="permissions">
             <div 
               *ngFor="let module of getPermissionControls(); let i = index"
               class="permission-module"
               [formGroupName]="i">
               
               <div class="module-header">
-                <h4 class="module-name">{{ modules[i].name | titlecase }}</h4>
-                <p class="module-description">{{ modules[i].description }}</p>
+                <h4 class="module-name text-sm sm:text-base">{{ modules[i].name | titlecase }}</h4>
+                <p class="module-description text-xs sm:text-sm">{{ modules[i].description }}</p>
               </div>
 
-              <div class="permissions-row" formGroupName="permissions">
-                <label class="permission-checkbox">
+              <div class="permissions-row flex flex-wrap gap-2 sm:gap-3" formGroupName="permissions">
+                <label class="permission-checkbox text-xs sm:text-sm">
                   <input type="checkbox" formControlName="read">
                   <span class="permission-label">Leer</span>
                 </label>
                 
-                <label class="permission-checkbox">
+                <label class="permission-checkbox text-xs sm:text-sm">
                   <input type="checkbox" formControlName="create">
                   <span class="permission-label">Crear</span>
                 </label>
                 
-                <label class="permission-checkbox">
+                <label class="permission-checkbox text-xs sm:text-sm">
                   <input type="checkbox" formControlName="update">
                   <span class="permission-label">Actualizar</span>
                 </label>
                 
-                <label class="permission-checkbox">
+                <label class="permission-checkbox text-xs sm:text-sm">
                   <input type="checkbox" formControlName="delete">
                   <span class="permission-label">Eliminar</span>
                 </label>
                 
-                <label class="permission-checkbox">
+                <label class="permission-checkbox text-xs sm:text-sm">
                   <input type="checkbox" formControlName="manage">
                   <span class="permission-label">Gestionar</span>
                 </label>
@@ -419,18 +425,18 @@
         </form>
       </div>
 
-      <div class="modal-footer">
+      <div class="modal-footer flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
         <button 
           type="button" 
           (click)="closePermissionModal()" 
-          class="btn btn-secondary">
+          class="btn btn-secondary text-sm sm:text-base px-3 sm:px-4 py-2 w-full sm:w-auto">
           Cancelar
         </button>
         <button 
           type="button" 
           (click)="savePermissions()" 
           [disabled]="loading"
-          class="btn btn-primary">
+          class="btn btn-primary text-sm sm:text-base px-3 sm:px-4 py-2 w-full sm:w-auto">
           <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
           <i class="fas fa-save" *ngIf="!loading"></i>
           {{ loading ? 'Guardando...' : 'Guardar Permisos' }}

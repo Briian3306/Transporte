@@ -241,7 +241,7 @@
                 <div class="radio-container">
                   <label>
                     <input type="radio" 
-                           [name]="item.id" 
+                           [name]="'mobile_' + item.id" 
                            value="si"
                            [checked]="respuestas[item.id] && respuestas[item.id].valor === 'si'"
                            [disabled]="esFinalizado"
@@ -253,7 +253,7 @@
                 <div class="radio-container">
                   <label>
                     <input type="radio" 
-                           [name]="item.id" 
+                           [name]="'mobile_' + item.id" 
                            value="no"
                            [checked]="respuestas[item.id] && respuestas[item.id].valor === 'no'"
                            [disabled]="esFinalizado"
@@ -269,7 +269,7 @@
                 <div class="radio-container">
                   <label>
                     <input type="radio" 
-                           [name]="item.id" 
+                           [name]="'mobile_' + item.id" 
                            value="si"
                            [checked]="respuestas[item.id] && respuestas[item.id].valor === 'si'"
                            [disabled]="esFinalizado"
@@ -281,7 +281,7 @@
                 <div class="radio-container">
                   <label>
                     <input type="radio" 
-                           [name]="item.id" 
+                           [name]="'mobile_' + item.id" 
                            value="no"
                            [checked]="respuestas[item.id] && respuestas[item.id].valor === 'no'"
                            [disabled]="esFinalizado"
@@ -293,7 +293,7 @@
                 <div class="radio-container">
                   <label>
                     <input type="radio" 
-                           [name]="item.id" 
+                           [name]="'mobile_' + item.id" 
                            value="na"
                            [checked]="respuestas[item.id] && respuestas[item.id].valor === 'na'"
                            [disabled]="esFinalizado"
@@ -309,9 +309,10 @@
                 <div class="radio-container">
                   <label>
                     <input type="radio" 
-                           [name]="item.id" 
+                           [name]="'mobile_' + item.id" 
                            value="bueno"
                            [checked]="respuestas[item.id] && respuestas[item.id].valor === 'bueno'"
+                           [disabled]="esFinalizado"
                            (change)="onItemChange(item.id, 'bueno')"
                            class="text-green-600 focus:ring-green-500">
                     <span>Bueno</span>
@@ -320,9 +321,10 @@
                 <div class="radio-container">
                   <label>
                     <input type="radio" 
-                           [name]="item.id" 
+                           [name]="'mobile_' + item.id" 
                            value="regular"
                            [checked]="respuestas[item.id] && respuestas[item.id].valor === 'regular'"
+                           [disabled]="esFinalizado"
                            (change)="onItemChange(item.id, 'regular')"
                            class="text-yellow-600 focus:ring-yellow-500">
                     <span>Regular</span>
@@ -331,9 +333,10 @@
                 <div class="radio-container">
                   <label>
                     <input type="radio" 
-                           [name]="item.id" 
+                           [name]="'mobile_' + item.id" 
                            value="malo"
                            [checked]="respuestas[item.id] && respuestas[item.id].valor === 'malo'"
+                           [disabled]="esFinalizado"
                            (change)="onItemChange(item.id, 'malo')"
                            class="text-red-600 focus:ring-red-500">
                     <span>Malo</span>
@@ -416,9 +419,10 @@
                     <div class="radio-container">
                       <label>
                         <input type="radio" 
-                               [name]="item.id" 
+                               [name]="'desktop_' + item.id" 
                                value="si"
                                [checked]="respuestas[item.id] && respuestas[item.id].valor === 'si'"
+                               [disabled]="esFinalizado"
                                (change)="onItemChange(item.id, 'si')"
                                class="text-blue-600 focus:ring-blue-500">
                         <span>Sí</span>
@@ -427,9 +431,10 @@
                     <div class="radio-container">
                       <label>
                         <input type="radio" 
-                               [name]="item.id" 
+                               [name]="'desktop_' + item.id" 
                                value="no"
                                [checked]="respuestas[item.id] && respuestas[item.id].valor === 'no'"
+                               [disabled]="esFinalizado"
                                (change)="onItemChange(item.id, 'no')"
                                class="text-blue-600 focus:ring-blue-500">
                         <span>No</span>
@@ -442,9 +447,10 @@
                     <div class="radio-container">
                       <label>
                         <input type="radio" 
-                               [name]="item.id" 
+                               [name]="'desktop_' + item.id" 
                                value="si"
                                [checked]="respuestas[item.id] && respuestas[item.id].valor === 'si'"
+                               [disabled]="esFinalizado"
                                (change)="onItemChange(item.id, 'si')"
                                class="text-blue-600 focus:ring-blue-500">
                         <span>Sí</span>
@@ -453,9 +459,10 @@
                     <div class="radio-container">
                       <label>
                         <input type="radio" 
-                               [name]="item.id" 
+                               [name]="'desktop_' + item.id" 
                                value="no"
                                [checked]="respuestas[item.id] && respuestas[item.id].valor === 'no'"
+                               [disabled]="esFinalizado"
                                (change)="onItemChange(item.id, 'no')"
                                class="text-blue-600 focus:ring-blue-500">
                         <span>No</span>
@@ -464,9 +471,10 @@
                     <div class="radio-container">
                       <label>
                         <input type="radio" 
-                               [name]="item.id" 
+                               [name]="'desktop_' + item.id" 
                                value="na"
                                [checked]="respuestas[item.id] && respuestas[item.id].valor === 'na'"
+                               [disabled]="esFinalizado"
                                (change)="onItemChange(item.id, 'na')"
                                class="text-blue-600 focus:ring-blue-500">
                         <span>N/A</span>
@@ -479,9 +487,10 @@
                     <div class="radio-container">
                       <label>
                         <input type="radio" 
-                               [name]="item.id" 
+                               [name]="'desktop_' + item.id" 
                                value="bueno"
                                [checked]="respuestas[item.id] && respuestas[item.id].valor === 'bueno'"
+                               [disabled]="esFinalizado"
                                (change)="onItemChange(item.id, 'bueno')"
                                class="text-green-600 focus:ring-green-500">
                         <span>Bueno</span>
@@ -490,9 +499,10 @@
                     <div class="radio-container">
                       <label>
                         <input type="radio" 
-                               [name]="item.id" 
+                               [name]="'desktop_' + item.id" 
                                value="regular"
                                [checked]="respuestas[item.id] && respuestas[item.id].valor === 'regular'"
+                               [disabled]="esFinalizado"
                                (change)="onItemChange(item.id, 'regular')"
                                class="text-yellow-600 focus:ring-yellow-500">
                         <span>Regular</span>
@@ -501,9 +511,10 @@
                     <div class="radio-container">
                       <label>
                         <input type="radio" 
-                               [name]="item.id" 
+                               [name]="'desktop_' + item.id" 
                                value="malo"
                                [checked]="respuestas[item.id] && respuestas[item.id].valor === 'malo'"
+                               [disabled]="esFinalizado"
                                (change)="onItemChange(item.id, 'malo')"
                                class="text-red-600 focus:ring-red-500">
                         <span>Malo</span>

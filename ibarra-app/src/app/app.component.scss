@@ -2,6 +2,9 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .app-header {
@@ -18,6 +21,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
+    box-sizing: border-box;
 
     .header-left {
       display: flex;
@@ -396,6 +401,9 @@
   flex: 1;
   background: #f8f9fa;
   min-height: calc(100vh - 140px);
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .app-footer {
@@ -414,7 +422,13 @@
 // Responsive Design
 @media (max-width: 768px) {
   .app-header {
+    width: 100%;
+    max-width: 100vw;
+    
     .header-content {
+      padding: 0 16px;
+      max-width: 100%;
+      
       .desktop-only {
         display: none;
       }
@@ -427,10 +441,15 @@
 
         h1 {
           font-size: 1.3rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: calc(100% - 50px);
         }
 
         .mobile-menu-toggle {
           display: flex;
+          flex-shrink: 0;
         }
       }
     }

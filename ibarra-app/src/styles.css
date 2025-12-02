@@ -4,9 +4,15 @@
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -36,6 +42,18 @@ input, textarea, select {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Prevenir overflow horizontal en todos los elementos */
+* {
+  max-width: 100%;
+}
+
+img, video, iframe {
+  max-width: 100%;
+  height: auto;
 }
 
 .text-center {
@@ -214,6 +232,7 @@ input, textarea, select {
 @media (max-width: 640px) {
   .container {
     padding: 1rem;
+    max-width: 100%;
   }
   
   .grid {
@@ -232,6 +251,33 @@ input, textarea, select {
   .space-x-4 > * + * {
     margin-left: 0;
     margin-top: 0.5rem;
+  }
+}
+
+/* Prevenir overflow horizontal en móviles */
+@media (max-width: 768px) {
+  body, html {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  * {
+    max-width: 100%;
+  }
+  
+  /* Asegurar que las tablas no causen overflow */
+  table {
+    width: 100%;
+    max-width: 100%;
+    table-layout: auto;
+  }
+  
+  /* Contenedores con padding deben usar box-sizing */
+  [class*="container"],
+  [class*="wrapper"],
+  [class*="section"] {
+    box-sizing: border-box;
+    max-width: 100%;
   }
 }
 

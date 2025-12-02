@@ -1,6 +1,9 @@
 .flota-container {
   min-height: 100vh;
   background-color: #f9fafb;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 // Header
@@ -301,6 +304,8 @@
 // Table
 .table-container {
   overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 .data-table {

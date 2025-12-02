@@ -3,6 +3,8 @@
   margin: 0 auto;
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .header-section {
@@ -190,6 +192,8 @@
 
   .table-container {
     overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
 
     .users-table {
       width: 100%;
@@ -475,6 +479,8 @@
 @media (max-width: 768px) {
   .user-management-container {
     padding: 16px;
+    max-width: 100%;
+    width: 100%;
   }
 
   .filters-section .filters-row {

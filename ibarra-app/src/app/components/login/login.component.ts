@@ -38,7 +38,7 @@ export class LoginComponent implements OnInit {
       const session = await this.supabaseService.getCurrentSession();
       
       if (session) {
-        this.router.navigate(['/templates']);
+        this.router.navigate(['/dashboard']);
       }
     } catch (error) {
       console.error('Error verificando estado de autenticación:', error);
@@ -58,7 +58,7 @@ export class LoginComponent implements OnInit {
           this.errorMessage = this.getErrorMessage(result.error.message);
         } else if (result.data.user) {
           // Login exitoso
-          this.router.navigate(['/templates']);
+          this.router.navigate(['/dashboard']);
         }
       } catch (error: any) {
         this.errorMessage = 'Error inesperado. Intente nuevamente.';
@@ -71,63 +71,6 @@ export class LoginComponent implements OnInit {
     }
   }
 
-  async signUp(): Promise<void> {
-    if (this.loginForm.valid && !this.isLoading) {
-      this.isLoading = true;
-      this.errorMessage = '';
-
-      try {
-        const { email, password } = this.loginForm.value;
-        const result = await this.supabaseService.signUp(email, password);
-
-        if (result.error) {
-          this.errorMessage = this.getErrorMessage(result.error.message);
-        } else if (result.data.user) {
-          this.errorMessage = 'Usuario creado exitosamente. Verifique su email para confirmar la cuenta.';
-        }
-      } catch (error: any) {
-        this.errorMessage = 'Error inesperado. Intente nuevamente.';
-        console.error('Error en registro:', error);
-      } finally {
-        this.isLoading = false;
-      }
-    } else {
-      this.markFormGroupTouched();
-    }
-  }
-
-  async resetPassword(): Promise<void> {
-    const email = this.loginForm.get('email')?.value;
-    
-    if (!email) {
-      this.errorMessage = 'Ingrese su email para restablecer la contraseña.';
-      return;
-    }
-
-    if (!this.isValidEmail(email)) {
-      this.errorMessage = 'Ingrese un email válido.';
-      return;
-    }
-
-    this.isLoading = true;
-    this.errorMessage = '';
-
-    try {
-      const result = await this.supabaseService.resetPassword(email);
-
-      if (result.error) {
-        this.errorMessage = this.getErrorMessage(result.error.message);
-      } else {
-        this.errorMessage = 'Se ha enviado un enlace de restablecimiento a su email.';
-      }
-    } catch (error: any) {
-      this.errorMessage = 'Error inesperado. Intente nuevamente.';
-      console.error('Error en reset password:', error);
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
   }
@@ -137,11 +80,6 @@ export class LoginComponent implements OnInit {
       const control = this.loginForm.get(key);
       control?.markAsTouched();
     });
-  }
-
-  private isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
   }
 
   private getErrorMessage(errorMessage: string): string {

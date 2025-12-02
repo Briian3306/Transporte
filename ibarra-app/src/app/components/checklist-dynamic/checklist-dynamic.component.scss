@@ -319,6 +319,8 @@
 .table-responsive {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Loading states */

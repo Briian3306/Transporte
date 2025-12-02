@@ -220,36 +220,31 @@
     }
   }
 
-  .login-links {
+  .admin-contact-message {
     text-align: center;
+    margin-top: 20px;
+    padding: 16px;
+    background: #f0f4ff;
+    border-radius: 10px;
+    border: 1px solid #e1e8ff;
 
-    .link-button {
-      background: none;
-      border: none;
+    i {
+      font-size: 1.5rem;
       color: #667eea;
-      cursor: pointer;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    p {
+      margin: 4px 0;
+      color: #4a5568;
       font-size: 0.9rem;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 8px;
-      border-radius: 6px;
-      transition: all 0.3s ease;
+    }
 
-      &:hover:not(:disabled) {
-        background: #f0f4ff;
-        color: #5a67d8;
-      }
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-
-      i {
-        font-size: 0.8rem;
-      }
+    .contact-text {
+      font-weight: 600;
+      color: #667eea;
+      font-size: 0.95rem;
     }
   }
 }
