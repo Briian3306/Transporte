@@ -30,6 +30,14 @@ const ROUTE_PERMISSIONS: { [key: string]: { module: string; action: string } } =
   // Neumáticos
   '/neumaticos/registro': { module: 'neumaticos', action: 'create' },
   
+  // Stock
+  '/stock/dashboard': { module: 'stock', action: 'read' },
+  '/stock/depositos': { module: 'stock', action: 'read' },
+  '/stock/deposito/nuevo': { module: 'stock', action: 'create' },
+  '/stock/entrada': { module: 'stock', action: 'create' },
+  '/stock/salida': { module: 'stock', action: 'create' },
+  '/stock/historial': { module: 'stock', action: 'read' },
+  
   // Usuarios y Roles
   '/users': { module: 'users', action: 'read' },
   '/roles': { module: 'users', action: 'manage' },

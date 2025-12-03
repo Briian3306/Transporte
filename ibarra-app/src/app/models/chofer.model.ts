@@ -39,3 +39,22 @@ export interface ChoferMedium extends ChoferBasic {
   domicilio:    string;
   telefono:     string;
 }
+
+export interface CategoriaInsumo {
+  id: number;
+  nombre: string;
+}
+
+export interface Insumo {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+  codigo?: string;
+  categoria: CategoriaInsumo;
+  unidad_medida: string;
+  stock_actual: number;
+  stock_minimo: number;
+  stock_maximo: number;
+  precio_unitario: number;
+  activo: boolean;
+}

@@ -1,0 +1,177 @@
+<div class="stock-dashboard">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <i class="fas fa-warehouse"></i>
+        Gestión de Stock
+      </h1>
+      <p class="page-subtitle">Panel de control y métricas de inventario</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-success" (click)="navegarA('/stock/entrada')">
+        <i class="fas fa-plus-circle"></i>
+        Nueva Entrada
+      </button>
+      <button class="btn btn-danger" (click)="navegarA('/stock/salida')">
+        <i class="fas fa-minus-circle"></i>
+        Nueva Salida
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando datos del stock...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="error-container">
+    <i class="fas fa-exclamation-circle"></i>
+    <p>{{ error }}</p>
+    <button class="btn btn-primary" (click)="cargarDatos()">Reintentar</button>
+  </div>
+
+  <!-- Contenido -->
+  <div *ngIf="!loading && !error" class="dashboard-content">
+    <!-- Tarjetas de Estadísticas -->
+    <div class="stats-grid">
+      <!-- Total Insumos -->
+      <div class="stat-card" [ngClass]="getCardClass('insumos')">
+        <div class="stat-icon">
+          <i [class]="getCardIcon('insumos')"></i>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-value">{{ estadisticas?.total_insumos || 0 }}</h3>
+          <p class="stat-label">Insumos Diferentes</p>
+          <small class="stat-detail">En {{ estadisticas?.total_depositos || 0 }} depósitos</small>
+        </div>
+      </div>
+
+      <!-- Valor Total -->
+      <div class="stat-card" [ngClass]="getCardClass('valor')">
+        <div class="stat-icon">
+          <i [class]="getCardIcon('valor')"></i>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-value">{{ formatCurrency(estadisticas?.valor_total || 0) }}</h3>
+          <p class="stat-label">Valor del Inventario</p>
+          <small class="stat-detail">Valor estimado total</small>
+        </div>
+      </div>
+
+      <!-- Items Críticos -->
+      <div class="stat-card" [ngClass]="getCardClass('criticos')">
+        <div class="stat-icon">
+          <i [class]="getCardIcon('criticos')"></i>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-value">{{ estadisticas?.items_criticos || 0 }}</h3>
+          <p class="stat-label">Items Críticos</p>
+          <small class="stat-detail">{{ estadisticas?.items_bajo_minimo || 0 }} bajo mínimo</small>
+        </div>
+      </div>
+
+      <!-- Movimientos del Mes -->
+      <div class="stat-card" [ngClass]="getCardClass('movimientos')">
+        <div class="stat-icon">
+          <i [class]="getCardIcon('movimientos')"></i>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-value">{{ estadisticas?.movimientos_mes || 0 }}</h3>
+          <p class="stat-label">Movimientos del Mes</p>
+          <small class="stat-detail">
+            <i class="fas fa-arrow-up text-success"></i> {{ estadisticas?.entradas_mes || 0 }}
+            <i class="fas fa-arrow-down text-danger"></i> {{ estadisticas?.salidas_mes || 0 }}
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertas de Stock -->
+    <div class="alertas-section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="fas fa-bell"></i>
+          Alertas de Stock
+        </h2>
+        <span class="badge badge-danger" *ngIf="alertas.length > 0">
+          {{ alertas.length }}
+        </span>
+      </div>
+
+      <div class="alertas-container" *ngIf="alertasVisibles.length > 0; else noAlertas">
+        <div
+          *ngFor="let alerta of alertasVisibles"
+          class="alert"
+          [ngClass]="getAlertClass(alerta.severidad)"
+        >
+          <div class="alert-icon">
+            <i [class]="getAlertIcon(alerta.severidad)"></i>
+          </div>
+          <div class="alert-content">
+            <h4 class="alert-title">{{ alerta.mensaje }}</h4>
+            <p class="alert-details">
+              <strong>Depósito:</strong> {{ alerta.deposito_nombre }} |
+              <strong>Insumo:</strong> {{ alerta.insumo_nombre }} |
+              <strong>Cantidad:</strong> {{ alerta.cantidad_actual }} / {{ alerta.cantidad_referencia }}
+            </p>
+          </div>
+          <div class="alert-action">
+            <button class="btn btn-sm btn-primary" (click)="navegarA('/stock/entrada')">
+              <i class="fas fa-plus"></i>
+              Reabastecer
+            </button>
+          </div>
+        </div>
+
+        <div class="alertas-footer" *ngIf="alertas.length > maxAlertasVisibles">
+          <button class="btn btn-link" (click)="navegarA('/stock/depositos')">
+            Ver todas las alertas ({{ alertas.length }})
+            <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <ng-template #noAlertas>
+        <div class="no-alertas">
+          <i class="fas fa-check-circle"></i>
+          <p>No hay alertas de stock en este momento</p>
+          <small>Todos los insumos están en niveles óptimos</small>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Accesos Rápidos -->
+    <div class="quick-access-section">
+      <h2 class="section-title">
+        <i class="fas fa-bolt"></i>
+        Accesos Rápidos
+      </h2>
+      
+      <div class="quick-access-grid">
+        <button class="quick-access-card" (click)="navegarA('/stock/depositos')">
+          <i class="fas fa-warehouse"></i>
+          <span>Ver Depósitos</span>
+        </button>
+
+        <button class="quick-access-card" (click)="navegarA('/stock/entrada')">
+          <i class="fas fa-arrow-circle-down"></i>
+          <span>Registrar Entrada</span>
+        </button>
+
+        <button class="quick-access-card" (click)="navegarA('/stock/salida')">
+          <i class="fas fa-arrow-circle-up"></i>
+          <span>Registrar Salida</span>
+        </button>
+
+        <button class="quick-access-card" (click)="navegarA('/stock/historial')">
+          <i class="fas fa-history"></i>
+          <span>Ver Historial</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

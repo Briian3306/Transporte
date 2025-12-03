@@ -1,0 +1,309 @@
+<div class="stock-entrada">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <i class="fas fa-arrow-circle-down"></i>
+        Registro de Entrada de Stock
+      </h1>
+      <p class="page-subtitle">Registrar ingreso de mercadería al depósito</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="cancelar()">
+        <i class="fas fa-arrow-left"></i>
+        Volver
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando datos...</p>
+  </div>
+
+  <!-- Formulario -->
+  <div *ngIf="!loading" class="form-container">
+    <form [formGroup]="entradaForm" (ngSubmit)="onSubmit()" class="entrada-form">
+      <!-- Alertas -->
+      <div *ngIf="error" class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i>
+        {{ error }}
+      </div>
+
+      <div *ngIf="success" class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        {{ success }}
+      </div>
+
+      <!-- Información General -->
+      <div class="form-section">
+        <h2 class="section-title">
+          <i class="fas fa-info-circle"></i>
+          Información General
+        </h2>
+
+        <div class="form-row">
+          <!-- Depósito -->
+          <div class="form-group">
+            <label for="deposito_id" class="form-label">
+              Depósito
+              <span class="required">*</span>
+            </label>
+            <select
+              id="deposito_id"
+              class="form-select"
+              formControlName="deposito_id"
+              [class.error]="hasError(entradaForm, 'deposito_id')"
+            >
+              <option value="">Seleccione un depósito</option>
+              <option *ngFor="let deposito of depositos" [value]="deposito.id">
+                {{ deposito.nombre }} - {{ deposito.ubicacion }}
+              </option>
+            </select>
+            <span class="error-message" *ngIf="hasError(entradaForm, 'deposito_id')">
+              {{ getErrorMessage(entradaForm, 'deposito_id') }}
+            </span>
+          </div>
+
+          <!-- Proveedor -->
+          <div class="form-group">
+            <label for="proveedor" class="form-label">
+              Proveedor
+              <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="proveedor"
+              class="form-input"
+              formControlName="proveedor"
+              [class.error]="hasError(entradaForm, 'proveedor')"
+              placeholder="Nombre del proveedor"
+            />
+            <span class="error-message" *ngIf="hasError(entradaForm, 'proveedor')">
+              {{ getErrorMessage(entradaForm, 'proveedor') }}
+            </span>
+          </div>
+
+          <!-- Número de Factura -->
+          <div class="form-group">
+            <label for="numero_factura" class="form-label">
+              Número de Factura
+              <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="numero_factura"
+              class="form-input"
+              formControlName="numero_factura"
+              [class.error]="hasError(entradaForm, 'numero_factura')"
+              placeholder="F-XXXXX"
+            />
+            <span class="error-message" *ngIf="hasError(entradaForm, 'numero_factura')">
+              {{ getErrorMessage(entradaForm, 'numero_factura') }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Motivo -->
+        <div class="form-group">
+          <label for="motivo" class="form-label">
+            Motivo
+            <span class="required">*</span>
+          </label>
+          <input
+            type="text"
+            id="motivo"
+            class="form-input"
+            formControlName="motivo"
+            [class.error]="hasError(entradaForm, 'motivo')"
+            placeholder="Ej: Reposición de stock, Compra programada, etc."
+          />
+          <span class="error-message" *ngIf="hasError(entradaForm, 'motivo')">
+            {{ getErrorMessage(entradaForm, 'motivo') }}
+          </span>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="form-group">
+          <label for="observaciones" class="form-label">
+            Observaciones
+          </label>
+          <textarea
+            id="observaciones"
+            class="form-textarea"
+            formControlName="observaciones"
+            rows="2"
+            placeholder="Observaciones adicionales (opcional)"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Agregar Insumos -->
+      <div class="form-section">
+        <h2 class="section-title">
+          <i class="fas fa-plus-circle"></i>
+          Agregar Insumos
+        </h2>
+
+        <div [formGroup]="itemForm" class="item-form">
+          <div class="form-row">
+            <!-- Insumo -->
+            <div class="form-group">
+              <label for="insumo_id" class="form-label">
+                Insumo
+                <span class="required">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-input"
+                placeholder="Buscar insumo..."
+                [(ngModel)]="filtroInsumo"
+                [ngModelOptions]="{standalone: true}"
+                (ngModelChange)="filtrarInsumos()"
+              />
+              <select
+                id="insumo_id"
+                class="form-select"
+                formControlName="insumo_id"
+                [class.error]="hasError(itemForm, 'insumo_id')"
+              >
+                <option value="">Seleccione un insumo</option>
+                <option *ngFor="let insumo of insumosFiltrados" [value]="insumo.id">
+                  {{ insumo.nombre }} ({{ insumo.codigo }}) - {{ insumo.categoria.nombre }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Cantidad -->
+            <div class="form-group">
+              <label for="cantidad" class="form-label">
+                Cantidad
+                <span class="required">*</span>
+              </label>
+              <input
+                type="number"
+                id="cantidad"
+                class="form-input"
+                formControlName="cantidad"
+                [class.error]="hasError(itemForm, 'cantidad')"
+                placeholder="0"
+                min="0.01"
+                step="0.01"
+              />
+            </div>
+
+            <!-- Costo Unitario -->
+            <div class="form-group">
+              <label for="costo_unitario" class="form-label">
+                Costo Unitario ($)
+                <span class="required">*</span>
+              </label>
+              <input
+                type="number"
+                id="costo_unitario"
+                class="form-input"
+                formControlName="costo_unitario"
+                [class.error]="hasError(itemForm, 'costo_unitario')"
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <!-- Botón Agregar -->
+            <div class="form-group">
+              <label class="form-label">&nbsp;</label>
+              <button
+                type="button"
+                class="btn btn-success btn-block"
+                (click)="agregarItem()"
+                [disabled]="itemForm.invalid"
+              >
+                <i class="fas fa-plus"></i>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de Items -->
+      <div class="form-section" *ngIf="items.length > 0">
+        <h2 class="section-title">
+          <i class="fas fa-list"></i>
+          Items de Entrada ({{ items.length }})
+        </h2>
+
+        <div class="items-table-container">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Insumo</th>
+                <th class="text-right">Cantidad</th>
+                <th class="text-right">Costo Unit.</th>
+                <th class="text-right">Costo Total</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of items; let i = index">
+                <td><strong>{{ item.insumo_nombre }}</strong></td>
+                <td class="text-right">{{ item.cantidad | number: '1.2-2' }}</td>
+                <td class="text-right">{{ item.costo_unitario | currency: 'ARS' }}</td>
+                <td class="text-right"><strong>{{ getCostoTotalItem(item) | currency: 'ARS' }}</strong></td>
+                <td class="text-center">
+                  <button
+                    type="button"
+                    class="btn-icon btn-danger"
+                    (click)="eliminarItem(i)"
+                    title="Eliminar"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td colspan="3" class="text-right"><strong>TOTAL:</strong></td>
+                <td class="text-right"><strong>{{ costoTotal | currency: 'ARS' }}</strong></td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mensaje si no hay items -->
+      <div class="form-section no-items" *ngIf="items.length === 0">
+        <i class="fas fa-inbox"></i>
+        <p>No hay items agregados. Agregue al menos un insumo para continuar.</p>
+      </div>
+
+      <!-- Acciones -->
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cancelar()"
+          [disabled]="submitting"
+        >
+          <i class="fas fa-times"></i>
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="btn btn-success"
+          [disabled]="submitting || entradaForm.invalid || items.length === 0"
+        >
+          <i class="fas fa-save" *ngIf="!submitting"></i>
+          <i class="fas fa-spinner fa-spin" *ngIf="submitting"></i>
+          {{ submitting ? 'Registrando...' : 'Registrar Entrada' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

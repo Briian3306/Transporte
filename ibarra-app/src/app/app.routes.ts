@@ -18,6 +18,12 @@ import { IncidenteDetailsComponent } from './components/incidente-details/incide
 import { FlotaComponent } from './components/flota/flota.component';
 import { NeumaticosRegistroComponent } from './components/neumaticos-registro/neumaticos-registro.component';
 import { AccessDeniedComponent } from './components/access-denied/access-denied.component';
+import { StockDashboardComponent } from './components/stock-dashboard/stock-dashboard.component';
+import { StockDepositosComponent } from './components/stock-depositos/stock-depositos.component';
+import { StockDepositoFormComponent } from './components/stock-deposito-form/stock-deposito-form.component';
+import { StockEntradaComponent } from './components/stock-entrada/stock-entrada.component';
+import { StockSalidaComponent } from './components/stock-salida/stock-salida.component';
+import { StockHistorialComponent } from './components/stock-historial/stock-historial.component';
 import { AuthGuard, LoginGuard } from './guards/auth.guard';
 import { PermissionGuard } from './guards/permission.guard';
 
@@ -130,6 +136,38 @@ export const routes: Routes = [
   { 
     path: 'neumaticos/registro', 
     component: NeumaticosRegistroComponent,
+    canActivate: [PermissionGuard]
+  },
+  
+  // Rutas de Stock
+  { 
+    path: 'stock/dashboard', 
+    component: StockDashboardComponent,
+    canActivate: [PermissionGuard]
+  },
+  { 
+    path: 'stock/depositos', 
+    component: StockDepositosComponent,
+    canActivate: [PermissionGuard]
+  },
+  { 
+    path: 'stock/deposito/nuevo', 
+    component: StockDepositoFormComponent,
+    canActivate: [PermissionGuard]
+  },
+  { 
+    path: 'stock/entrada', 
+    component: StockEntradaComponent,
+    canActivate: [PermissionGuard]
+  },
+  { 
+    path: 'stock/salida', 
+    component: StockSalidaComponent,
+    canActivate: [PermissionGuard]
+  },
+  { 
+    path: 'stock/historial', 
+    component: StockHistorialComponent,
     canActivate: [PermissionGuard]
   },
   

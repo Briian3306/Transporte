@@ -177,6 +177,15 @@ export class DashboardComponent implements OnInit {
         route: '/flota',
         color: 'info',
         isAvailable: false
+      },
+      {
+        id: 'checklists',
+        name: 'Gestión de Stock',
+        description: 'Administrar inventario, depósitos y movimientos',
+        icon: 'fas fa-warehouse',
+        route: '/stock/dashboard',
+        color: 'warning',
+        isAvailable: false
       }
     ];
   }

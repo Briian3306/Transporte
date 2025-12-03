@@ -1,0 +1,262 @@
+<div class="stock-historial">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <i class="fas fa-history"></i>
+        Historial de Movimientos
+      </h1>
+      <p class="page-subtitle">Registro completo de entradas y salidas de stock</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="navegarA('/stock/dashboard')">
+        <i class="fas fa-arrow-left"></i>
+        Volver al Dashboard
+      </button>
+      <button class="btn btn-success" *ngIf="movimientosFiltrados.length > 0" (click)="exportarCSV()">
+        <i class="fas fa-file-export"></i>
+        Exportar CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- Estadísticas de Filtro -->
+  <div class="stats-bar" *ngIf="!loading">
+    <div class="stat-item">
+      <i class="fas fa-list"></i>
+      <div>
+        <span class="stat-value">{{ movimientosFiltrados.length }}</span>
+        <span class="stat-label">Movimientos</span>
+      </div>
+    </div>
+    <div class="stat-item success">
+      <i class="fas fa-arrow-down"></i>
+      <div>
+        <span class="stat-value">{{ totalEntradas }} ({{ totalCantidadEntradas }})</span>
+        <span class="stat-label">Entradas</span>
+      </div>
+    </div>
+    <div class="stat-item danger">
+      <i class="fas fa-arrow-up"></i>
+      <div>
+        <span class="stat-value">{{ totalSalidas }} ({{ totalCantidadSalidas }})</span>
+        <span class="stat-label">Salidas</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filtros-section" *ngIf="!loading">
+    <div class="filtros-header">
+      <h2 class="section-title">
+        <i class="fas fa-filter"></i>
+        Filtros
+      </h2>
+      <button class="btn btn-sm btn-secondary" (click)="limpiarFiltros()">
+        <i class="fas fa-times"></i>
+        Limpiar
+      </button>
+    </div>
+
+    <div class="filtros-container">
+      <div class="filtro-item">
+        <label for="filtroTipo">Tipo</label>
+        <select
+          id="filtroTipo"
+          class="form-select"
+          [(ngModel)]="filtroTipo"
+          (ngModelChange)="aplicarFiltros()"
+        >
+          <option value="todos">Todos</option>
+          <option value="entrada">Entradas</option>
+          <option value="salida">Salidas</option>
+        </select>
+      </div>
+
+      <div class="filtro-item">
+        <label for="filtroDeposito">Depósito</label>
+        <select
+          id="filtroDeposito"
+          class="form-select"
+          [(ngModel)]="filtroDepositoId"
+          (ngModelChange)="aplicarFiltros()"
+        >
+          <option value="">Todos</option>
+          <option *ngFor="let deposito of depositos" [value]="deposito.id">
+            {{ deposito.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filtro-item">
+        <label for="filtroInsumo">Insumo</label>
+        <select
+          id="filtroInsumo"
+          class="form-select"
+          [(ngModel)]="filtroInsumoId"
+          (ngModelChange)="aplicarFiltros()"
+        >
+          <option value="">Todos</option>
+          <option *ngFor="let insumo of insumos" [value]="insumo.id">
+            {{ insumo.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filtro-item">
+        <label for="filtroFechaDesde">Desde</label>
+        <input
+          type="date"
+          id="filtroFechaDesde"
+          class="form-input"
+          [(ngModel)]="filtroFechaDesde"
+          (ngModelChange)="aplicarFiltros()"
+        />
+      </div>
+
+      <div class="filtro-item">
+        <label for="filtroFechaHasta">Hasta</label>
+        <input
+          type="date"
+          id="filtroFechaHasta"
+          class="form-input"
+          [(ngModel)]="filtroFechaHasta"
+          (ngModelChange)="aplicarFiltros()"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando historial...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="error-container">
+    <i class="fas fa-exclamation-circle"></i>
+    <p>{{ error }}</p>
+    <button class="btn btn-primary" (click)="cargarDatos()">Reintentar</button>
+  </div>
+
+  <!-- Tabla de Movimientos -->
+  <div class="movimientos-table-container" *ngIf="!loading && !error && movimientosPaginados.length > 0">
+    <table class="movimientos-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Depósito</th>
+          <th>Insumo</th>
+          <th class="text-center">Cantidad</th>
+          <th>Usuario</th>
+          <th>Detalles</th>
+          <th>Motivo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let movimiento of movimientosPaginados">
+          <td class="fecha-cell">
+            {{ formatDate(movimiento.fecha) }}
+          </td>
+          <td>
+            <span class="badge" [ngClass]="getTipoClass(movimiento.tipo)">
+              <i [class]="getTipoIcon(movimiento.tipo)"></i>
+              {{ movimiento.tipo === 'entrada' ? 'Entrada' : 'Salida' }}
+            </span>
+          </td>
+          <td>
+            <div class="deposito-cell">
+              <strong>{{ movimiento.deposito_nombre }}</strong>
+            </div>
+          </td>
+          <td>
+            <div class="insumo-cell">
+              <strong>{{ movimiento.insumo_nombre }}</strong>
+            </div>
+          </td>
+          <td class="text-center cantidad-cell">
+            <strong [class.text-success]="movimiento.tipo === 'entrada'"
+                    [class.text-danger]="movimiento.tipo === 'salida'">
+              {{ movimiento.tipo === 'entrada' ? '+' : '-' }}{{ movimiento.cantidad }}
+            </strong>
+          </td>
+          <td>{{ movimiento.usuario_nombre }}</td>
+          <td>
+            <div class="detalles-cell">
+              <!-- Detalles de Entrada -->
+              <div *ngIf="isEntrada(movimiento)">
+                <div class="detalle-item">
+                  <i class="fas fa-truck"></i>
+                  <span>{{ movimiento.proveedor }}</span>
+                </div>
+                <div class="detalle-item">
+                  <i class="fas fa-file-invoice"></i>
+                  <span>{{ movimiento.numero_factura }}</span>
+                </div>
+                <div class="detalle-item">
+                  <i class="fas fa-dollar-sign"></i>
+                  <span>{{ formatCurrency(movimiento.costo_total || 0) }}</span>
+                </div>
+              </div>
+              <!-- Detalles de Salida -->
+              <div *ngIf="isSalida(movimiento)">
+                <div class="detalle-item">
+                  <i class="fas fa-user"></i>
+                  <span>{{ movimiento.solicitante }}</span>
+                </div>
+                <div class="detalle-item" *ngIf="movimiento.recurso_nombre">
+                  <i class="fas fa-link"></i>
+                  <span>{{ movimiento.recurso_nombre }}</span>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="motivo-cell">
+              {{ movimiento.motivo }}
+              <small *ngIf="movimiento.observaciones" class="observaciones">
+                <i class="fas fa-info-circle"></i>
+                {{ movimiento.observaciones }}
+              </small>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Sin Resultados -->
+  <div class="no-results" *ngIf="!loading && !error && movimientosFiltrados.length === 0">
+    <i class="fas fa-inbox"></i>
+    <p>No se encontraron movimientos</p>
+    <button class="btn btn-primary" (click)="limpiarFiltros()">
+      Limpiar Filtros
+    </button>
+  </div>
+
+  <!-- Paginación -->
+  <div class="pagination" *ngIf="!loading && !error && totalPaginas > 1">
+    <button
+      class="pagination-btn"
+      [disabled]="paginaActual === 1"
+      (click)="cambiarPagina(paginaActual - 1)"
+    >
+      <i class="fas fa-chevron-left"></i>
+    </button>
+
+    <span class="pagination-info">
+      Página {{ paginaActual }} de {{ totalPaginas }}
+    </span>
+
+    <button
+      class="pagination-btn"
+      [disabled]="paginaActual === totalPaginas"
+      (click)="cambiarPagina(paginaActual + 1)"
+    >
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
