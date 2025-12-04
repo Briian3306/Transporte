@@ -41,9 +41,11 @@ export class UserManagementComponent implements OnInit {
   // Modal y formularios
   showCreateModal = false;
   showPermissionModal = false;
+  showRoleAssignmentModal = false;
   selectedUser: UserProfileWithRole | null = null;
   userForm!: FormGroup;
   permissionForm!: FormGroup;
+  roleAssignmentForm!: FormGroup;
 
   constructor() {
     this.initializeForms();
@@ -59,7 +61,7 @@ export class UserManagementComponent implements OnInit {
     this.userForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       fullName: ['', [Validators.required, Validators.minLength(2)]],
-      roleId: ['', [Validators.required]],
+      roleIds: this.fb.array([], [Validators.required, this.atLeastOneRoleValidator]),
       isActive: [true],
       password: ['', [Validators.minLength(8)]],
       useCustomPassword: [false]
@@ -80,6 +82,19 @@ export class UserManagementComponent implements OnInit {
     this.permissionForm = this.fb.group({
       permissions: this.fb.array([])
     });
+
+    this.roleAssignmentForm = this.fb.group({
+      roleIds: this.fb.array([], [Validators.required, this.atLeastOneRoleValidator])
+    });
+  }
+
+  // Validador personalizado para asegurar al menos un rol
+  private atLeastOneRoleValidator(control: any) {
+    const roleIds = control.value;
+    if (!roleIds || roleIds.length === 0) {
+      return { atLeastOneRole: true };
+    }
+    return null;
   }
 
   async loadUsers(): Promise<void> {
@@ -139,32 +154,85 @@ export class UserManagementComponent implements OnInit {
     }
   }
 
-  async updateUserRole(user: UserProfileWithRole): Promise<void> {
-    if (!user.roleId) return;
+  // Método para abrir modal de asignación de roles
+  openRoleAssignmentModal(user: UserProfileWithRole): void {
+    this.selectedUser = user;
+    this.showRoleAssignmentModal = true;
+    
+    // Inicializar formulario con roles actuales del usuario
+    const roleIdsArray = this.fb.array([]);
+    user.roleIds?.forEach(roleId => {
+      roleIdsArray.push(this.fb.control(roleId));
+    });
+    
+    this.roleAssignmentForm.setControl('roleIds', roleIdsArray);
+    this.errorMessage = '';
+    this.successMessage = '';
+  }
+
+  closeRoleAssignmentModal(): void {
+    this.showRoleAssignmentModal = false;
+    this.selectedUser = null;
+    this.roleAssignmentForm.reset();
+  }
+
+  async saveUserRoles(): Promise<void> {
+    if (!this.selectedUser || this.roleAssignmentForm.invalid) {
+      if (this.roleAssignmentForm.invalid) {
+        this.errorMessage = 'Debe seleccionar al menos un rol';
+      }
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = '';
 
     try {
-      const supabase = await this.supabaseService.getClient();
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ role_id: user.roleId })
-        .eq('id', user.id);
+      const roleIds = this.roleAssignmentForm.get('roleIds')?.value || [];
+      
+      const result = await this.userManagementService.assignRolesToUser(
+        this.selectedUser.id,
+        roleIds
+      );
 
-      if (error) {
-        this.errorMessage = 'Error al actualizar rol: ' + error.message;
+      if (!result.success) {
+        this.errorMessage = 'Error al actualizar roles: ' + result.error;
         return;
       }
 
-      // Actualizar el rol en la lista local
-      const role = this.roles.find(r => r.id === user.roleId);
-      if (role) {
-        user.role = role;
-      }
+      // Actualizar roles en la lista local
+      const updatedRoles = this.roles.filter(r => roleIds.includes(r.id));
+      this.selectedUser.roleIds = roleIds;
+      this.selectedUser.roles = updatedRoles;
 
-      this.successMessage = 'Rol actualizado correctamente';
+      this.successMessage = 'Roles actualizados correctamente';
       setTimeout(() => this.successMessage = '', 3000);
+      this.closeRoleAssignmentModal();
+      this.loadUsers(); // Recargar para asegurar consistencia
     } catch (error: any) {
       this.errorMessage = 'Error inesperado: ' + error.message;
+    } finally {
+      this.loading = false;
     }
+  }
+
+  // Método helper para manejar checkboxes de roles
+  toggleRoleInForm(roleId: string): void {
+    const roleIdsArray = this.roleAssignmentForm.get('roleIds') as FormArray;
+    const index = roleIdsArray.controls.findIndex(control => control.value === roleId);
+    
+    if (index >= 0) {
+      roleIdsArray.removeAt(index);
+    } else {
+      roleIdsArray.push(this.fb.control(roleId));
+    }
+    
+    this.roleAssignmentForm.updateValueAndValidity();
+  }
+
+  isRoleSelected(roleId: string): boolean {
+    const roleIds = this.roleAssignmentForm.get('roleIds')?.value || [];
+    return roleIds.includes(roleId);
   }
 
   async toggleUserStatus(user: UserProfileWithRole): Promise<void> {
@@ -285,6 +353,8 @@ export class UserManagementComponent implements OnInit {
   // Métodos para creación de usuarios
   openCreateModal(): void {
     this.userForm.reset();
+    const roleIdsArray = this.fb.array([]);
+    this.userForm.setControl('roleIds', roleIdsArray);
     this.userForm.patchValue({
       isActive: true,
       useCustomPassword: false
@@ -310,10 +380,17 @@ export class UserManagementComponent implements OnInit {
 
     try {
       const formValue = this.userForm.value;
+      const roleIds = formValue.roleIds || [];
+      
+      if (roleIds.length === 0) {
+        this.errorMessage = 'Debe seleccionar al menos un rol';
+        return;
+      }
+
       const userData: UserProfileCreate = {
         email: formValue.email,
         fullName: formValue.fullName,
-        roleId: formValue.roleId,
+        roleIds: roleIds,
         isActive: formValue.isActive,
         password: formValue.useCustomPassword ? formValue.password : undefined
       };
@@ -339,6 +416,25 @@ export class UserManagementComponent implements OnInit {
     }
   }
 
+  // Método helper para manejar checkboxes de roles en creación
+  toggleRoleInCreateForm(roleId: string): void {
+    const roleIdsArray = this.userForm.get('roleIds') as FormArray;
+    const index = roleIdsArray.controls.findIndex(control => control.value === roleId);
+    
+    if (index >= 0) {
+      roleIdsArray.removeAt(index);
+    } else {
+      roleIdsArray.push(this.fb.control(roleId));
+    }
+    
+    this.userForm.updateValueAndValidity();
+  }
+
+  isRoleSelectedInCreate(roleId: string): boolean {
+    const roleIds = this.userForm.get('roleIds')?.value || [];
+    return roleIds.includes(roleId);
+  }
+
   // Métodos para gestión de permisos
   openPermissionModal(user: UserProfileWithRole): void {
     this.selectedUser = user;
@@ -353,7 +449,15 @@ export class UserManagementComponent implements OnInit {
 
   async loadUserPermissions(user: UserProfileWithRole): Promise<void> {
     try {
-      const result = await this.userManagementService.getRolePermissions(user.roleId);
+      // Cargar permisos de todos los roles del usuario
+      // Por ahora, cargamos permisos del primer rol (esto se puede mejorar para mostrar permisos combinados)
+      if (!user.roleIds || user.roleIds.length === 0) {
+        console.warn('User has no roles assigned');
+        return;
+      }
+
+      // Cargar permisos del primer rol (la gestión de permisos por rol se mantiene igual)
+      const result = await this.userManagementService.getRolePermissions(user.roleIds[0]);
 
       if (result.error) {
         console.error('Error loading user permissions:', result.error);
@@ -390,7 +494,7 @@ export class UserManagementComponent implements OnInit {
   }
 
   async savePermissions(): Promise<void> {
-    if (!this.selectedUser) return;
+    if (!this.selectedUser || !this.selectedUser.roleIds || this.selectedUser.roleIds.length === 0) return;
 
     this.loading = true;
     this.errorMessage = '';
@@ -407,8 +511,9 @@ export class UserManagementComponent implements OnInit {
         });
       });
 
+      // Actualizar permisos del primer rol (la gestión de permisos por rol se mantiene igual)
       const result = await this.userManagementService.updateRolePermissions(
-        this.selectedUser.roleId, 
+        this.selectedUser.roleIds[0], 
         newPermissions
       );
 

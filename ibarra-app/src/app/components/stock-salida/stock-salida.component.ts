@@ -8,11 +8,12 @@ import { ApiIbarraService } from '../../services/api-ibarra.service';
 import { Deposito, StockDeposito, RegistroSalidaDTO, ItemMovimiento } from '../../models/stock.model';
 import { TemplateResourceType } from '../../models/checklist-template.model';
 import { Insumo } from '../../models/chofer.model';
+import { AutocompleteInsumoComponent } from '../autocomplete-insumo/autocomplete-insumo.component';
 
 @Component({
   selector: 'app-stock-salida',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, AutocompleteInsumoComponent],
   templateUrl: './stock-salida.component.html',
   styleUrl: './stock-salida.component.css'
 })
@@ -32,7 +33,7 @@ export class StockSalidaComponent implements OnInit {
   // Datos
   depositos: Deposito[] = [];
   insumos: Insumo[] = [];
-  insumosFiltrados: Insumo[] = [];
+  insumosDisponibles: Insumo[] = [];
   stockDisponible: StockDeposito[] = [];
   recursos: RecursoSeleccion[] = [];
   items: ItemMovimiento[] = [];
@@ -43,9 +44,6 @@ export class StockSalidaComponent implements OnInit {
   error: string | null = null;
   success: string | null = null;
   asignarRecurso = false;
-
-  // Filtro de insumos
-  filtroInsumo = '';
 
   // Tipos de recursos
   tiposRecurso: { value: TemplateResourceType; label: string }[] = [
@@ -116,7 +114,7 @@ export class StockSalidaComponent implements OnInit {
     this.apiService.getInsumos().subscribe({
       next: (insumos) => {
         this.insumos = insumos;
-        this.insumosFiltrados = insumos;
+        this.insumosDisponibles = insumos;
         this.loading = false;
       },
       error: (err) => {
@@ -136,37 +134,12 @@ export class StockSalidaComponent implements OnInit {
         this.stockDisponible = stock.filter(s => s.cantidad_actual > 0);
         // Filtrar insumos solo con stock disponible
         const insumosConStock = this.stockDisponible.map(s => s.insumo_id);
-        this.insumosFiltrados = this.insumos.filter(i => insumosConStock.includes(i.id));
+        this.insumosDisponibles = this.insumos.filter(i => insumosConStock.includes(i.id));
       },
       error: (err) => {
         console.error('Error al cargar stock:', err);
       }
     });
-  }
-
-  /**
-   * Filtra insumos por texto
-   */
-  filtrarInsumos(): void {
-    const depositoId = this.salidaForm.get('deposito_id')?.value;
-    let insumosBase = this.insumos;
-
-    // Si hay depósito seleccionado, filtrar solo los que tienen stock
-    if (depositoId && this.stockDisponible.length > 0) {
-      const insumosConStock = this.stockDisponible.map(s => s.insumo_id);
-      insumosBase = this.insumos.filter(i => insumosConStock.includes(i.id));
-    }
-
-    const texto = this.filtroInsumo.toLowerCase();
-    if (!texto) {
-      this.insumosFiltrados = insumosBase;
-    } else {
-      this.insumosFiltrados = insumosBase.filter(i =>
-        i.nombre.toLowerCase().includes(texto) ||
-        i.codigo?.toLowerCase().includes(texto) ||
-        i.categoria.nombre.toLowerCase().includes(texto)
-      );
-    }
   }
 
   /**
@@ -185,11 +158,12 @@ export class StockSalidaComponent implements OnInit {
   }
 
   /**
-   * Toggle de asignar recurso
+   * Maneja el cambio del checkbox de asignar recurso
    */
-  toggleAsignarRecurso(): void {
-    this.asignarRecurso = !this.asignarRecurso;
-    if (!this.asignarRecurso) {
+  onAsignarRecursoChange(value: boolean): void {
+    this.asignarRecurso = value;
+    if (!value) {
+      // Limpiar campos cuando se desactiva
       this.salidaForm.patchValue({
         recurso_tipo: '',
         recurso_id: ''
@@ -316,7 +290,7 @@ export class StockSalidaComponent implements OnInit {
           this.items = [];
           this.success = null;
           this.stockDisponible = [];
-          this.insumosFiltrados = this.insumos;
+          this.insumosDisponibles = this.insumos;
         }, 2000);
       },
       error: (err) => {

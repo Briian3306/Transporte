@@ -8,7 +8,6 @@ import { PermissionStateService } from '../services/permission-state.service';
 // Mapeo de rutas a permisos requeridos
 const ROUTE_PERMISSIONS: { [key: string]: { module: string; action: string } } = {
   // Dashboard - siempre accesible si está autenticado
-  '/dashboard': { module: 'checklists', action: 'read' },
   
   // Templates
   '/templates': { module: 'templates', action: 'read' },

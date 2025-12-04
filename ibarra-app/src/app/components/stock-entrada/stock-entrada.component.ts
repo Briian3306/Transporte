@@ -6,11 +6,12 @@ import { StockService } from '../../services/stock.service';
 import { ApiIbarraService } from '../../services/api-ibarra.service';
 import { Deposito, RegistroEntradaDTO, ItemMovimiento } from '../../models/stock.model';
 import { Insumo } from '../../models/chofer.model';
+import { AutocompleteInsumoComponent } from '../autocomplete-insumo/autocomplete-insumo.component';
 
 @Component({
   selector: 'app-stock-entrada',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, AutocompleteInsumoComponent],
   templateUrl: './stock-entrada.component.html',
   styleUrl: './stock-entrada.component.css'
 })
@@ -29,7 +30,6 @@ export class StockEntradaComponent implements OnInit {
   // Datos
   depositos: Deposito[] = [];
   insumos: Insumo[] = [];
-  insumosFiltrados: Insumo[] = [];
   items: ItemMovimiento[] = [];
 
   // Estados
@@ -37,9 +37,6 @@ export class StockEntradaComponent implements OnInit {
   submitting = false;
   error: string | null = null;
   success: string | null = null;
-
-  // Filtro de insumos
-  filtroInsumo = '';
 
   constructor() {
     this.entradaForm = this.fb.group({
@@ -84,7 +81,6 @@ export class StockEntradaComponent implements OnInit {
     this.apiService.getInsumos().subscribe({
       next: (insumos) => {
         this.insumos = insumos;
-        this.insumosFiltrados = insumos;
         this.loading = false;
       },
       error: (err) => {
@@ -93,22 +89,6 @@ export class StockEntradaComponent implements OnInit {
         this.loading = false;
       }
     });
-  }
-
-  /**
-   * Filtra insumos por texto
-   */
-  filtrarInsumos(): void {
-    const texto = this.filtroInsumo.toLowerCase();
-    if (!texto) {
-      this.insumosFiltrados = this.insumos;
-    } else {
-      this.insumosFiltrados = this.insumos.filter(i =>
-        i.nombre.toLowerCase().includes(texto) ||
-        i.codigo?.toLowerCase().includes(texto) ||
-        i.categoria.nombre.toLowerCase().includes(texto)
-      );
-    }
   }
 
   /**

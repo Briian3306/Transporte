@@ -85,12 +85,12 @@ export class RolePermissionsEditComponent implements OnInit {
     this.errorMessage = '';
 
     try {
-      await Promise.all([
-        this.loadRole(roleId),
-        this.loadModules(),
-        this.loadModulePermissions(),
-        this.loadRolePermissions(roleId)
-      ]);
+      // Cargar datos en secuencia para asegurar dependencias
+      await this.loadRole(roleId);
+      await this.loadModules();
+      await this.loadModulePermissions();
+      // Solo cargar permisos del rol después de tener los modulePermissions
+      await this.loadRolePermissions(roleId);
     } catch (error: any) {
       this.errorMessage = 'Error al cargar datos: ' + error.message;
     } finally {
@@ -137,20 +137,47 @@ export class RolePermissionsEditComponent implements OnInit {
       const { data: permissions, error } = await supabase
         .from('module_permissions')
         .select(`
-          *,
-          module:system_modules(*),
-          action:system_actions(*)
+          id,
+          module_id,
+          action_id,
+          system_modules(
+            id,
+            name,
+            description,
+            icon,
+            route,
+            order_index,
+            is_active,
+            created_at
+          ),
+          system_actions(
+            id,
+            name,
+            description,
+            created_at
+          )
         `)
         .order('module_id, action_id');
 
       if (error) {
         console.error('Error loading module permissions:', error);
+        this.errorMessage = 'Error al cargar permisos de módulos: ' + error.message;
         return;
       }
 
-      this.modulePermissions = permissions || [];
+      // Transformar los datos para que coincidan con la interfaz ModulePermission
+      this.modulePermissions = (permissions || []).map((mp: any) => ({
+        id: mp.id,
+        module_id: mp.module_id,
+        action_id: mp.action_id,
+        module: mp.system_modules,
+        action: mp.system_actions
+      }));
+
+      console.log('Module permissions loaded:', this.modulePermissions.length);
     } catch (error) {
       console.error('Error in loadModulePermissions:', error);
+      this.errorMessage = 'Error inesperado al cargar permisos de módulos';
     }
   }
 
@@ -160,31 +187,72 @@ export class RolePermissionsEditComponent implements OnInit {
       const { data: permissions, error } = await supabase
         .from('role_permissions')
         .select(`
-          *,
-          module_permission:module_permissions(
-            *,
-            module:system_modules(*),
-            action:system_actions(*)
+          id,
+          role_id,
+          module_permission_id,
+          module_permissions(
+            id,
+            module_id,
+            action_id,
+            system_modules(
+              id,
+              name,
+              description,
+              icon,
+              route,
+              order_index,
+              is_active,
+              created_at
+            ),
+            system_actions(
+              id,
+              name,
+              description,
+              created_at
+            )
           )
         `)
         .eq('role_id', roleId);
 
       if (error) {
         console.error('Error loading role permissions:', error);
+        this.errorMessage = 'Error al cargar permisos del rol: ' + error.message;
         return;
       }
 
-      this.rolePermissions = permissions || [];
+      // Transformar los datos para que coincidan con la estructura esperada
+      this.rolePermissions = (permissions || [])
+        .filter((rp: any) => rp.module_permissions) // Filtrar solo los que tienen module_permissions
+        .map((rp: any) => ({
+          id: rp.id,
+          role_id: rp.role_id,
+          module_permission_id: rp.module_permission_id,
+          module_permission: {
+            id: rp.module_permissions.id,
+            module_id: rp.module_permissions.module_id,
+            action_id: rp.module_permissions.action_id,
+            module: rp.module_permissions.system_modules,
+            action: rp.module_permissions.system_actions
+          }
+        }));
+
+      console.log('Role permissions loaded:', this.rolePermissions.length);
       this.separatePermissions();
       this.buildPermissionForm();
     } catch (error) {
       console.error('Error in loadRolePermissions:', error);
+      this.errorMessage = 'Error inesperado al cargar permisos';
     }
   }
 
   private separatePermissions(): void {
     // Obtener IDs de permisos asignados al rol
-    const assignedPermissionIds = this.rolePermissions.map(rp => rp.module_permission_id);
+    const assignedPermissionIds = this.rolePermissions
+      .map(rp => rp.module_permission_id)
+      .filter(id => id); // Filtrar valores nulos/undefined
+    
+    console.log('Assigned permission IDs:', assignedPermissionIds);
+    console.log('Module permissions:', this.modulePermissions.length);
     
     // Separar permisos en asignados y disponibles
     this.assignedPermissions = this.modulePermissions.filter(mp => 
@@ -198,7 +266,8 @@ export class RolePermissionsEditComponent implements OnInit {
     console.log('Permissions separated:', {
       total: this.modulePermissions.length,
       assigned: this.assignedPermissions.length,
-      available: this.availablePermissions.length
+      available: this.availablePermissions.length,
+      assignedIds: assignedPermissionIds
     });
   }
 
@@ -210,7 +279,12 @@ export class RolePermissionsEditComponent implements OnInit {
       rolePermissions: this.rolePermissions.length
     });
     
-    this.modulePermissions.forEach(modulePermission => {
+    // Filtrar solo los modulePermissions que tienen module y action válidos
+    const validModulePermissions = this.modulePermissions.filter(mp => 
+      mp.module && mp.action
+    );
+    
+    validModulePermissions.forEach(modulePermission => {
       const isSelected = this.rolePermissions.some(rp => 
         rp.module_permission_id === modulePermission.id
       );
@@ -218,10 +292,10 @@ export class RolePermissionsEditComponent implements OnInit {
       const permissionGroup = this.fb.group({
         modulePermissionId: [modulePermission.id],
         isSelected: [isSelected],
-        moduleName: [modulePermission.module.name],
-        actionName: [modulePermission.action.name],
-        moduleDescription: [modulePermission.module.description],
-        actionDescription: [modulePermission.action.description]
+        moduleName: [modulePermission.module?.name || ''],
+        actionName: [modulePermission.action?.name || ''],
+        moduleDescription: [modulePermission.module?.description || ''],
+        actionDescription: [modulePermission.action?.description || '']
       });
       
       (permissionArray as FormArray).push(permissionGroup);
@@ -237,9 +311,25 @@ export class RolePermissionsEditComponent implements OnInit {
 
     this.loading = true;
     this.errorMessage = '';
+    this.successMessage = '';
 
     try {
       const supabase = await this.supabaseService.getClient();
+      
+      // Verificar si el permiso ya está asignado
+      const { data: existing } = await supabase
+        .from('role_permissions')
+        .select('id')
+        .eq('role_id', this.role.id)
+        .eq('module_permission_id', modulePermission.id)
+        .single();
+
+      if (existing) {
+        this.successMessage = 'El permiso ya está asignado al rol';
+        this.loading = false;
+        return;
+      }
+
       const { error } = await supabase
         .from('role_permissions')
         .insert({
@@ -252,7 +342,76 @@ export class RolePermissionsEditComponent implements OnInit {
         return;
       }
 
-      this.successMessage = `Permiso "${modulePermission.action.name}" agregado exitosamente`;
+      const actionName = modulePermission.action?.name || 'permiso';
+      this.successMessage = `Permiso "${actionName}" agregado exitosamente`;
+      setTimeout(() => this.successMessage = '', 3000);
+      
+      // Recargar permisos para reflejar cambios
+      await this.loadRolePermissions(this.role.id);
+    } catch (error: any) {
+      this.errorMessage = 'Error inesperado: ' + error.message;
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async addAllModulePermissions(moduleId: string): Promise<void> {
+    if (!this.role) return;
+
+    this.loading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    try {
+      // Obtener todos los permisos disponibles del módulo
+      const modulePermissions = this.availablePermissions.filter(
+        mp => mp.module_id === moduleId
+      );
+
+      if (modulePermissions.length === 0) {
+        this.successMessage = 'No hay permisos disponibles para agregar en este módulo';
+        setTimeout(() => this.successMessage = '', 3000);
+        this.loading = false;
+        return;
+      }
+
+      const supabase = await this.supabaseService.getClient();
+      
+      // Obtener permisos ya asignados para evitar duplicados
+      const assignedIds = this.assignedPermissions
+        .filter(mp => mp.module_id === moduleId)
+        .map(mp => mp.id);
+
+      // Filtrar permisos que aún no están asignados
+      const permissionsToAdd = modulePermissions
+        .filter(mp => !assignedIds.includes(mp.id))
+        .map(mp => ({
+          role_id: this.role!.id,
+          module_permission_id: mp.id
+        }));
+
+      if (permissionsToAdd.length === 0) {
+        this.successMessage = 'Todos los permisos de este módulo ya están asignados';
+        setTimeout(() => this.successMessage = '', 3000);
+        this.loading = false;
+        return;
+      }
+
+      // Insertar todos los permisos del módulo
+      const { error } = await supabase
+        .from('role_permissions')
+        .insert(permissionsToAdd);
+
+      if (error) {
+        this.errorMessage = 'Error al agregar permisos: ' + error.message;
+        return;
+      }
+
+      const module = this.modules.find(m => m.id === moduleId);
+      const moduleName = module?.name || 'módulo';
+      this.successMessage = `${permissionsToAdd.length} permiso(s) del módulo "${moduleName}" agregado(s) exitosamente`;
+      setTimeout(() => this.successMessage = '', 5000);
+      
       // Recargar permisos para reflejar cambios
       await this.loadRolePermissions(this.role.id);
     } catch (error: any) {

@@ -4,8 +4,8 @@ export interface UserProfile {
   id: string;
   email: string;
   fullName: string;
-  roleId: string;
-  role?: UserRole;
+  roleIds: string[];
+  roles?: UserRole[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -14,7 +14,7 @@ export interface UserProfile {
 export interface UserProfileCreate {
   email: string;
   fullName: string;
-  roleId: string;
+  roleIds: string[];
   isActive?: boolean;
   password?: string;
 }
@@ -22,10 +22,10 @@ export interface UserProfileCreate {
 export interface UserProfileUpdate {
   email?: string;
   fullName?: string;
-  roleId?: string;
+  roleIds?: string[];
   isActive?: boolean;
 }
 
 export interface UserProfileWithRole extends UserProfile {
-  role: UserRole;
+  roles: UserRole[];
 }

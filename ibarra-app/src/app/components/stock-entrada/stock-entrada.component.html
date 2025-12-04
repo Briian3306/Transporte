@@ -151,29 +151,15 @@
           <div class="form-row">
             <!-- Insumo -->
             <div class="form-group">
-              <label for="insumo_id" class="form-label">
-                Insumo
-                <span class="required">*</span>
-              </label>
-              <input
-                type="text"
-                class="form-input"
-                placeholder="Buscar insumo..."
-                [(ngModel)]="filtroInsumo"
-                [ngModelOptions]="{standalone: true}"
-                (ngModelChange)="filtrarInsumos()"
-              />
-              <select
-                id="insumo_id"
-                class="form-select"
+              <app-autocomplete-insumo
+                [insumos]="insumos"
+                [label]="'Insumo'"
+                [placeholder]="'Buscar insumo...'"
+                [required]="true"
+                [error]="hasError(itemForm, 'insumo_id')"
+                [errorMessage]="getErrorMessage(itemForm, 'insumo_id')"
                 formControlName="insumo_id"
-                [class.error]="hasError(itemForm, 'insumo_id')"
-              >
-                <option value="">Seleccione un insumo</option>
-                <option *ngFor="let insumo of insumosFiltrados" [value]="insumo.id">
-                  {{ insumo.nombre }} ({{ insumo.codigo }}) - {{ insumo.categoria.nombre }}
-                </option>
-              </select>
+              ></app-autocomplete-insumo>
             </div>
 
             <!-- Cantidad -->

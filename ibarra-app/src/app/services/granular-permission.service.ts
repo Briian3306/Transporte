@@ -62,7 +62,10 @@ export class GranularPermissionService {
         .from('user_profiles')
         .select(`
           *,
-          role:user_roles(*)
+          user_profile_roles(
+            role_id,
+            user_roles(*)
+          )
         `)
         .eq('id', user.id)
         .single();
@@ -74,15 +77,24 @@ export class GranularPermissionService {
       }
 
       if (profile) {
-        this.currentUserProfile$.next(profile);
+        // Transformar los roles para que coincidan con el modelo
+        const roles = profile.user_profile_roles?.map((upr: any) => upr.user_roles).filter((r: any) => r) || [];
+        const roleIds = roles.map((r: any) => r.id);
+        
+        const transformedProfile = {
+          ...profile,
+          roleIds: roleIds,
+          roles: roles
+        };
+
+        this.currentUserProfile$.next(transformedProfile);
         this.isProfileLoaded = true;
         
-        // Intentar con ambos nombres de campo
-        const roleId = profile.roleId || profile.role_id;
-        if (roleId) {
-          await this.loadUserPermissions(roleId);
+        // Cargar permisos de todos los roles
+        if (roleIds && roleIds.length > 0) {
+          await this.loadUserPermissions(roleIds);
         } else {
-          console.warn('No roleId found in profile, assigning default permissions');
+          console.warn('No roles found in profile, assigning default permissions');
           this.assignDefaultPermissions();
         }
         await this.loadAccessibleModules();
@@ -96,30 +108,31 @@ export class GranularPermissionService {
   }
 
   /**
-   * Carga los permisos del usuario basado en su rol
+   * Carga los permisos del usuario basado en sus roles (combinación por unión OR)
    */
-  private async loadUserPermissions(roleId: string): Promise<void> {
+  private async loadUserPermissions(roleIds: string[]): Promise<void> {
     try {
       
-      if (!roleId) {
-        console.warn('No roleId provided, skipping permission load');
+      if (!roleIds || roleIds.length === 0) {
+        console.warn('No roleIds provided, skipping permission load');
         this.userPermissions$.next(new Set());
         return;
       }
 
       const supabase = await this.supabaseService.getClient();
       
-      // Consulta simplificada para evitar problemas de tipos
+      // Consulta para obtener permisos de todos los roles (unión OR)
       const { data: permissions, error } = await supabase
         .from('role_permissions')
         .select(`
           module_permission_id,
+          role_id,
           module_permissions(
             system_modules(name),
             system_actions(name)
           )
         `)
-        .eq('role_id', roleId);
+        .in('role_id', roleIds);
 
       if (error) {
         console.error('Error loading user permissions:', error);
@@ -157,6 +170,7 @@ export class GranularPermissionService {
               }
               
               if (module && action) {
+                // Agregar permiso al set (automáticamente elimina duplicados)
                 permissionSet.add(`${module}:${action}`);
               }
             }
@@ -457,7 +471,12 @@ export class GranularPermissionService {
 
   // Métodos de utilidad
   getCurrentRole(): string | null {
-    return this.currentUserProfile$.value?.role?.name || null;
+    const roles = this.currentUserProfile$.value?.roles;
+    if (roles && roles.length > 0) {
+      // Retornar el nombre del primer rol (o se puede cambiar la lógica según necesidad)
+      return roles[0]?.name || null;
+    }
+    return null;
   }
 
   getCurrentUserProfile(): UserProfile | null {
@@ -515,8 +534,8 @@ export class GranularPermissionService {
   async refreshPermissions(): Promise<void> {
     this.isProfileLoaded = false;
     const profile = this.currentUserProfile$.value;
-    if (profile) {
-      await this.loadUserPermissions(profile.roleId);
+    if (profile && profile.roleIds && profile.roleIds.length > 0) {
+      await this.loadUserPermissions(profile.roleIds);
       await this.loadAccessibleModules();
     }
   }

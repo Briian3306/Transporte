@@ -1,0 +1,73 @@
+<div class="autocomplete-insumo">
+  <label *ngIf="label" [for]="'insumo-' + label" class="form-label">
+    {{ label }}
+    <span *ngIf="required" class="required">*</span>
+  </label>
+
+  <div class="autocomplete-wrapper" [class.error]="error" [class.disabled]="disabled">
+    <div class="input-container">
+      <input
+        #inputRef
+        type="text"
+        [id]="'insumo-' + label"
+        class="form-input autocomplete-input"
+        [placeholder]="placeholder"
+        [(ngModel)]="searchText"
+        (ngModelChange)="onInputChange()"
+        (focus)="onInputFocus()"
+        (blur)="onInputBlur()"
+        (keydown)="onKeyDown($event)"
+        [disabled]="disabled"
+        autocomplete="off"
+      />
+      <div class="input-actions">
+        <button
+          *ngIf="selectedInsumo && !disabled"
+          type="button"
+          class="btn-clear"
+          (click)="clearSelection(); $event.stopPropagation()"
+          title="Limpiar selección"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+        <i class="fas fa-chevron-down dropdown-icon" [class.open]="isOpen"></i>
+      </div>
+    </div>
+
+    <div
+      #dropdownRef
+      class="dropdown-menu"
+      [class.show]="isOpen && filteredInsumos.length > 0"
+    >
+      <div
+        *ngFor="let insumo of filteredInsumos; let i = index"
+        class="dropdown-item"
+        [class.highlighted]="i === highlightedIndex"
+        (click)="selectInsumo(insumo)"
+        (mouseenter)="highlightedIndex = i"
+      >
+        <div class="item-content">
+          <div class="item-primary">
+            <strong>{{ insumo.nombre }}</strong>
+            <span *ngIf="insumo.codigo" class="item-code">{{ insumo.codigo }}</span>
+          </div>
+          <div class="item-secondary">
+            <span class="item-category">{{ insumo.categoria.nombre }}</span>
+            <span *ngIf="showStock && getStockCallback" class="item-stock">
+              Stock: {{ getStock(insumo.id) | number: '1.2-2' }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="filteredInsumos.length === 0 && searchText" class="dropdown-empty">
+        <i class="fas fa-search"></i>
+        <p>No se encontraron insumos</p>
+      </div>
+    </div>
+  </div>
+
+  <span *ngIf="error && errorMessage" class="error-message">
+    {{ errorMessage }}
+  </span>
+</div>
+

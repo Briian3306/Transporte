@@ -140,16 +140,25 @@
             </td>
 
             <td class="role-cell min-w-[120px] sm:min-w-0">
-              <select 
-                [(ngModel)]="user.roleId" 
-                (change)="updateUserRole(user)"
-                class="role-select text-xs sm:text-sm"
-                appGranularPermission="users:update"
-                appPermissionAction="show">
-                <option *ngFor="let role of roles" [value]="role.id">
-                  {{ role.name | titlecase }}
-                </option>
-              </select>
+              <div class="roles-container flex flex-wrap gap-1 sm:gap-2 items-center">
+                <span 
+                  *ngFor="let role of user.roles" 
+                  class="role-badge text-xs sm:text-sm px-2 py-1 rounded"
+                  [class]="getRoleBadgeClass((role?.name || '').toLowerCase())">
+                  {{ role?.name | titlecase }}
+                </span>
+                <span *ngIf="!user.roles || user.roles.length === 0" class="text-xs text-gray-500">
+                  Sin roles
+                </span>
+                <button 
+                  (click)="openRoleAssignmentModal(user)"
+                  class="btn btn-sm btn-secondary text-xs px-2 py-1"
+                  title="Gestionar roles"
+                  appGranularPermission="users:update"
+                  appPermissionAction="show">
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div>
             </td>
 
             <td class="status-cell min-w-[100px] sm:min-w-0">
@@ -291,19 +300,25 @@
         </div>
 
         <div class="form-group">
-          <label for="roleId" class="text-sm sm:text-base">Rol *</label>
-          <select 
-            id="roleId"
-            formControlName="roleId"
-            class="form-control text-sm sm:text-base"
-            [class.error]="userForm.get('roleId')?.invalid && userForm.get('roleId')?.touched">
-            <option value="">Seleccionar rol</option>
-            <option *ngFor="let role of roles" [value]="role.id">
-              {{ role.name | titlecase }}
-            </option>
-          </select>
-          <div class="error-message" *ngIf="userForm.get('roleId')?.invalid && userForm.get('roleId')?.touched">
-            <span>Rol es requerido</span>
+          <label class="text-sm sm:text-base">Roles *</label>
+          <div class="roles-checkbox-container">
+            <label 
+              *ngFor="let role of roles" 
+              class="checkbox-label role-checkbox-label">
+              <input 
+                type="checkbox" 
+                [checked]="isRoleSelectedInCreate(role.id)"
+                (change)="toggleRoleInCreateForm(role.id)"
+                class="checkbox-input">
+              <span class="checkbox-text text-sm sm:text-base">{{ role.name | titlecase }}</span>
+            </label>
+          </div>
+          <div class="error-message" *ngIf="userForm.get('roleIds')?.invalid && userForm.get('roleIds')?.touched">
+            <span>Debe seleccionar al menos un rol</span>
+          </div>
+          <div class="help-text text-xs sm:text-sm">
+            <i class="fas fa-info-circle"></i>
+            Seleccione uno o más roles para el usuario. Los permisos se combinarán de todos los roles asignados.
           </div>
         </div>
 
@@ -440,6 +455,70 @@
           <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
           <i class="fas fa-save" *ngIf="!loading"></i>
           {{ loading ? 'Guardando...' : 'Guardar Permisos' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Asignación de Roles -->
+  <div class="modal-overlay" *ngIf="showRoleAssignmentModal" (click)="closeRoleAssignmentModal()">
+    <div class="modal-content w-full sm:w-auto max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title text-base sm:text-lg break-words">
+          <i class="fas fa-user-tag"></i>
+          <span class="hidden sm:inline">Gestionar Roles - {{ selectedUser?.fullName }}</span>
+          <span class="sm:hidden">Roles - {{ selectedUser?.fullName }}</span>
+        </h3>
+        <button (click)="closeRoleAssignmentModal()" class="btn-close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form [formGroup]="roleAssignmentForm" class="roles-form">
+          <div class="form-group">
+            <label class="text-sm sm:text-base">Seleccionar Roles *</label>
+            <div class="roles-checkbox-container">
+              <label 
+                *ngFor="let role of roles" 
+                class="checkbox-label role-checkbox-label">
+                <input 
+                  type="checkbox" 
+                  [checked]="isRoleSelected(role.id)"
+                  (change)="toggleRoleInForm(role.id)"
+                  class="checkbox-input">
+                <span class="checkbox-text text-sm sm:text-base">{{ role.name | titlecase }}</span>
+                <span class="role-description text-xs text-gray-500" *ngIf="role.description">
+                  - {{ role.description }}
+                </span>
+              </label>
+            </div>
+            <div class="error-message" *ngIf="roleAssignmentForm.get('roleIds')?.invalid && roleAssignmentForm.get('roleIds')?.touched">
+              <span>Debe seleccionar al menos un rol</span>
+            </div>
+            <div class="help-text text-xs sm:text-sm">
+              <i class="fas fa-info-circle"></i>
+              Los permisos del usuario se combinarán de todos los roles seleccionados (unión OR).
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
+        <button 
+          type="button" 
+          (click)="closeRoleAssignmentModal()" 
+          class="btn btn-secondary text-sm sm:text-base px-3 sm:px-4 py-2 w-full sm:w-auto">
+          Cancelar
+        </button>
+        <button 
+          type="button" 
+          (click)="saveUserRoles()" 
+          [disabled]="roleAssignmentForm.invalid || loading"
+          class="btn btn-primary text-sm sm:text-base px-3 sm:px-4 py-2 w-full sm:w-auto">
+          <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+          <i class="fas fa-save" *ngIf="!loading"></i>
+          {{ loading ? 'Guardando...' : 'Guardar Roles' }}
         </button>
       </div>
     </div>

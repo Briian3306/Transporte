@@ -322,9 +322,9 @@
 }
 
 .quick-access-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
+  background: white;
+  color: #2c3e50;
+  border: 2px solid #e0e6ed;
   border-radius: 12px;
   padding: 2rem 1rem;
   display: flex;
@@ -332,38 +332,78 @@
   align-items: center;
   gap: 0.75rem;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .quick-access-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-color: #3498db;
 }
 
 .quick-access-card:nth-child(1) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-left: 4px solid #3498db;
+}
+
+.quick-access-card:nth-child(1):hover {
+  background: #f8fbff;
 }
 
 .quick-access-card:nth-child(2) {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border-left: 4px solid #2c3e50;
+}
+
+.quick-access-card:nth-child(2):hover {
+  background: #f8f9fa;
 }
 
 .quick-access-card:nth-child(3) {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border-left: 4px solid #34495e;
+}
+
+.quick-access-card:nth-child(3):hover {
+  background: #f8f9fa;
 }
 
 .quick-access-card:nth-child(4) {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  border-left: 4px solid #7f8c8d;
+}
+
+.quick-access-card:nth-child(4):hover {
+  background: #f8f9fa;
 }
 
 .quick-access-card i {
   font-size: 2.5rem;
+  color: #3498db;
+  transition: color 0.2s;
+}
+
+.quick-access-card:nth-child(1) i {
+  color: #3498db;
+}
+
+.quick-access-card:nth-child(2) i {
+  color: #2c3e50;
+}
+
+.quick-access-card:nth-child(3) i {
+  color: #34495e;
+}
+
+.quick-access-card:nth-child(4) i {
+  color: #7f8c8d;
+}
+
+.quick-access-card:hover i {
+  color: #2980b9;
 }
 
 .quick-access-card span {
   font-size: 1rem;
   font-weight: 600;
+  color: #2c3e50;
 }
 
 /* Botones */

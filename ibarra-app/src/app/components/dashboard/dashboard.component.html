@@ -9,17 +9,7 @@
       <p class="dashboard-subtitle">
         Bienvenido al Sistema de Gestión de Transporte Ibarra
       </p>
-    </div>
-    
-    <div class="user-info" *ngIf="currentUser$ | async as user">
-      <div class="user-details">
-        <span class="user-email">{{ user.email }}</span>
-        <span class="user-role" 
-              [class]="'role-' + (getCurrentRole() | lowercase)">
-          {{ getCurrentRole() | titlecase }}
-        </span>
-      </div>
-    </div>
+    </div> 
   </div>
 
   <!-- Grid de Módulos -->

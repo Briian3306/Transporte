@@ -311,18 +311,57 @@
           }
 
           .role-cell {
-            .role-select {
-              padding: 6px 8px;
-              border: 1px solid #d1d5db;
-              border-radius: 6px;
-              font-size: 0.85rem;
-              background: white;
-              cursor: pointer;
-              min-width: 120px;
+            .roles-container {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 6px;
+              align-items: center;
 
-              &:focus {
-                outline: none;
-                border-color: #3b82f6;
+              .role-badge {
+                padding: 4px 10px;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: capitalize;
+                display: inline-block;
+                white-space: nowrap;
+
+                &.badge-admin,
+                &.badge-administrador {
+                  background: #fef3c7;
+                  color: #92400e;
+                }
+
+                &.badge-operador {
+                  background: #dbeafe;
+                  color: #1e40af;
+                }
+
+                &.badge-visor {
+                  background: #e0e7ff;
+                  color: #3730a3;
+                }
+
+                &.badge-supervisor {
+                  background: #fce7f3;
+                  color: #9f1239;
+                }
+
+                &.badge-tecnico {
+                  background: #d1fae5;
+                  color: #065f46;
+                }
+
+                &.badge-default {
+                  background: #f3f4f6;
+                  color: #374151;
+                }
+              }
+
+              .btn-sm {
+                padding: 4px 8px;
+                font-size: 0.75rem;
+                min-width: auto;
               }
             }
           }
@@ -656,6 +695,45 @@
 
       .checkbox-text {
         color: #374151;
+      }
+    }
+
+    .roles-checkbox-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      max-height: 300px;
+      overflow-y: auto;
+
+      .role-checkbox-label {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 12px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: #f3f4f6;
+          border-color: #3b82f6;
+        }
+
+        .checkbox-input:checked ~ .checkbox-text {
+          color: #3b82f6;
+          font-weight: 600;
+        }
+
+        .role-description {
+          margin-left: 26px;
+          font-style: italic;
+        }
       }
     }
 

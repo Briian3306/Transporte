@@ -146,6 +146,16 @@
                   </h4>
                   <p class="module-description">{{ moduleData.module.description }}</p>
                 </div>
+                <div class="module-actions" *ngIf="moduleData.permissions.length > 0">
+                  <button 
+                    (click)="addAllModulePermissions(moduleData.module.id)"
+                    [disabled]="loading"
+                    class="btn btn-sm btn-success"
+                    title="Agregar todos los permisos de este módulo">
+                    <i class="fas fa-plus-circle"></i>
+                    Agregar Todos
+                  </button>
+                </div>
               </div>
 
               <div class="permissions-grid">

@@ -172,9 +172,6 @@ export class PermissionStateService {
   private getDefaultPermission(module: string, action: string): boolean {
     const defaultPermissions = [
       'dashboard:read',
-      'checklists:read',
-      'templates:read',
-      'incidentes:read'
     ];
     
     const permissionKey = `${module}:${action}`;

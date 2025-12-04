@@ -37,10 +37,6 @@
         <div class="user-info" *ngIf="currentUser$ | async as user">
           <div class="user-details">
             <span class="user-email">{{ user.email }}</span>
-            <span class="user-role" 
-                  [class]="'role-' + (getCurrentRole() | lowercase)">
-              {{ getCurrentRole() | titlecase }}
-            </span>
           </div>
           <button class="btn-logout" (click)="logout()" title="Cerrar sesión">
             <i class="fas fa-sign-out-alt"></i>
@@ -90,10 +86,6 @@
           </div>
           <div class="mobile-user-text">
             <span class="mobile-user-email">{{ user.email }}</span>
-            <span class="mobile-user-role" 
-                  [class]="'role-' + (getCurrentRole() | lowercase)">
-              {{ getCurrentRole() | titlecase }}
-            </span>
           </div>
         </div>
         <button class="mobile-logout-btn" (click)="logout(); closeMobileMenu()">

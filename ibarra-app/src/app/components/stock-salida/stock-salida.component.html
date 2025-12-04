@@ -134,7 +134,7 @@
               type="checkbox"
               [(ngModel)]="asignarRecurso"
               [ngModelOptions]="{standalone: true}"
-              (change)="toggleAsignarRecurso()"
+              (ngModelChange)="onAsignarRecursoChange($event)"
             />
             <span class="toggle-text">¿Asignar esta salida a un recurso específico?</span>
           </label>
@@ -194,29 +194,17 @@
           <div class="form-row">
             <!-- Insumo -->
             <div class="form-group">
-              <label for="insumo_id" class="form-label">
-                Insumo
-                <span class="required">*</span>
-              </label>
-              <input
-                type="text"
-                class="form-input"
-                placeholder="Buscar insumo..."
-                [(ngModel)]="filtroInsumo"
-                [ngModelOptions]="{standalone: true}"
-                (ngModelChange)="filtrarInsumos()"
-              />
-              <select
-                id="insumo_id"
-                class="form-select"
+              <app-autocomplete-insumo
+                [insumos]="insumosDisponibles"
+                [label]="'Insumo'"
+                [placeholder]="'Buscar insumo...'"
+                [required]="true"
+                [error]="hasError(itemForm, 'insumo_id')"
+                [errorMessage]="getErrorMessage(itemForm, 'insumo_id')"
+                [showStock]="true"
+                [getStockCallback]="getStockDisponibleInsumo.bind(this)"
                 formControlName="insumo_id"
-                [class.error]="hasError(itemForm, 'insumo_id')"
-              >
-                <option value="">Seleccione un insumo</option>
-                <option *ngFor="let insumo of insumosFiltrados" [value]="insumo.id">
-                  {{ insumo.nombre }} (Stock: {{ getStockDisponibleInsumo(insumo.id) }})
-                </option>
-              </select>
+              ></app-autocomplete-insumo>
             </div>
 
             <!-- Cantidad -->

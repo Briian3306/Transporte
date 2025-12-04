@@ -98,33 +98,6 @@ export class DashboardComponent implements OnInit {
         isAvailable: false
       },
       {
-        id: 'inventory',
-        name: 'Inventario',
-        description: 'Gestionar inventario de neumáticos',
-        icon: 'fas fa-boxes',
-        route: '/inventory',
-        color: 'warning',
-        isAvailable: false
-      },
-      {
-        id: 'maintenance',
-        name: 'Mantenimiento',
-        description: 'Programar y gestionar mantenimientos',
-        icon: 'fas fa-tools',
-        route: '/maintenance',
-        color: 'danger',
-        isAvailable: false
-      },
-      {
-        id: 'reports',
-        name: 'Reportes',
-        description: 'Generar reportes del sistema',
-        icon: 'fas fa-chart-bar',
-        route: '/reports',
-        color: 'secondary',
-        isAvailable: false
-      },
-      {
         id: 'users',
         name: 'Usuarios',
         description: 'Gestionar usuarios del sistema',
@@ -158,15 +131,6 @@ export class DashboardComponent implements OnInit {
         icon: 'fas fa-history',
         route: '/incidentes/historial',
         color: 'info',
-        isAvailable: false
-      },
-      {
-        id: 'incidentes-config',
-        name: 'Configuración de Incidentes',
-        description: 'Configurar tipos, subtipos y niveles de riesgo',
-        icon: 'fas fa-cog',
-        route: '/incidentes/configuracion',
-        color: 'secondary',
         isAvailable: false
       },
       {
