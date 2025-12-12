@@ -206,6 +206,7 @@ export class StockDepositosComponent implements OnInit {
    * Obtiene la clase CSS para la barra de progreso
    */
   getProgressClass(item: StockDeposito): string {
+    if (item.cantidad_maxima === 0) return 'progress-success';
     const porcentaje = (item.cantidad_actual / item.cantidad_maxima) * 100;
     if (porcentaje <= 25) return 'progress-danger';
     if (porcentaje <= 50) return 'progress-warning';
@@ -286,7 +287,9 @@ export class StockDepositosComponent implements OnInit {
       return;
     }
 
-    if (this.stockEditado.cantidad_minima >= this.stockEditado.cantidad_maxima) {
+    // Solo validar que mínima < máxima si ambos son > 0 (si alguno es 0, no se considera ese estado)
+    if (this.stockEditado.cantidad_minima > 0 && this.stockEditado.cantidad_maxima > 0 && 
+        this.stockEditado.cantidad_minima >= this.stockEditado.cantidad_maxima) {
       alert('La cantidad mínima debe ser menor que la máxima');
       return;
     }

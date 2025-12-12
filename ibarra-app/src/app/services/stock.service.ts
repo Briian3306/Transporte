@@ -32,9 +32,9 @@ export class StockService {
   private calcularEstadoStock(stock: StockDeposito): EstadoStock {
     if (stock.cantidad_actual <= 0) {
       return 'critico';
-    } else if (stock.cantidad_actual < stock.cantidad_minima) {
+    } else if (stock.cantidad_minima > 0 && stock.cantidad_actual < stock.cantidad_minima) {
       return 'bajo';
-    } else if (stock.cantidad_actual > stock.cantidad_maxima) {
+    } else if (stock.cantidad_maxima > 0 && stock.cantidad_actual > stock.cantidad_maxima) {
       return 'excedido';
     }
     return 'normal';
