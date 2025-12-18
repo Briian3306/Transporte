@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ChecklistService } from '../../services/checklist.service';
+import { ChecklistPdfService } from '../../services/checklist-pdf.service';
 import { 
   Checklist, 
   VehicleInformation, 
@@ -27,7 +28,8 @@ export class ChecklistDetailsComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private checklistService: ChecklistService
+    private checklistService: ChecklistService,
+    private checklistPdfService: ChecklistPdfService
   ) {}
 
   ngOnInit() {
@@ -60,6 +62,11 @@ export class ChecklistDetailsComponent implements OnInit {
 
   goBack() {
     this.router.navigate(['/checklist-history']);
+  }
+
+  exportToPdf() {
+    if (!this.checklist) return;
+    this.checklistPdfService.generateChecklistPdf(this.checklist);
   }
 
   getStatusClass(estado: string): string {

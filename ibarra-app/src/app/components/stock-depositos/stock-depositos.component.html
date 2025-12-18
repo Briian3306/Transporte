@@ -24,6 +24,13 @@
       </button>
       <button
         *ngIf="depositoSeleccionado"
+        (click)="exportarPDF()"
+        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors inline-flex items-center">
+        <i class="fas fa-file-pdf mr-2"></i>
+        Exportar PDF
+      </button>
+      <button
+        *ngIf="depositoSeleccionado"
         (click)="exportarCSV()"
         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center">
         <i class="fas fa-file-export mr-2"></i>

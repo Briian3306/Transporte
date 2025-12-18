@@ -10,6 +10,7 @@
 .header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 20px;
   margin-bottom: 30px;
   padding-bottom: 20px;
@@ -37,11 +38,37 @@
   border-color: #9ca3af;
 }
 
+.btn-pdf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #dc2626;
+  border: 1px solid #b91c1c;
+  border-radius: 8px;
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pdf:hover {
+  background: #b91c1c;
+  border-color: #991b1b;
+}
+
+.btn-pdf i {
+  font-size: 16px;
+}
+
 .header h1 {
   margin: 0;
   font-size: 28px;
   font-weight: 600;
   color: #111827;
+  flex: 1;
 }
 
 /* Loading y Error */
@@ -487,6 +514,13 @@
   
   .header h1 {
     font-size: 24px;
+    flex: none;
+  }
+
+  .btn-back,
+  .btn-pdf {
+    width: 100%;
+    justify-content: center;
   }
   
   .info-grid {

@@ -22,6 +22,7 @@
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@supabase/supabase-js": "^2.74.0",
     "date-fns": "^4.1.0",
+    "pdfmake": "^0.2.20",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
@@ -31,6 +32,7 @@
     "@angular/cli": "^19.2.17",
     "@angular/compiler-cli": "^19.2.17",
     "@types/jasmine": "~5.1.0",
+    "@types/pdfmake": "^0.2.12",
     "jasmine-core": "~5.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",

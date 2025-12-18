@@ -6,6 +6,10 @@
       Volver
     </button>
     <h1>Detalles del Checklist</h1>
+    <button class="btn-pdf" (click)="exportToPdf()" *ngIf="checklist">
+      <i class="fas fa-file-pdf"></i>
+      Exportar PDF
+    </button>
   </div>
 
   <!-- Loading -->

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { StockService } from '../../services/stock.service';
+import { StockPdfService } from '../../services/stock-pdf.service';
 import { Deposito, StockDeposito, AlertaStock } from '../../models/stock.model';
 
 @Component({
@@ -14,6 +15,7 @@ import { Deposito, StockDeposito, AlertaStock } from '../../models/stock.model';
 })
 export class StockDepositosComponent implements OnInit {
   private stockService = inject(StockService);
+  private stockPdfService = inject(StockPdfService);
   private router = inject(Router);
 
   // Datos
@@ -253,6 +255,18 @@ export class StockDepositosComponent implements OnInit {
     a.download = `stock-${this.depositoSeleccionado.nombre}-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Exporta a PDF
+   */
+  exportarPDF(): void {
+    if (!this.depositoSeleccionado) return;
+    
+    this.stockPdfService.generateStockDepositoPdf(
+      this.depositoSeleccionado,
+      this.stockFiltrado
+    );
   }
 
   /**

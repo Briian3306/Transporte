@@ -350,7 +350,7 @@ export class ChecklistDynamicComponent implements OnInit {
         break;
       case 'unidad':
         this.checklistForm.patchValue({
-          tractor: recurso.informacion.camion_patente,
+          tractor: recurso.informacion.numero_unidad || recurso.informacion.camion_patente,
           semi: recurso.informacion.semi1_patente
         });
         break;

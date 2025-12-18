@@ -683,7 +683,7 @@
 
 <!-- Modal de Carga de Datos -->
 <div *ngIf="mostrarModalCargaDatos" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-2 sm:p-4">
-  <div class="relative mx-auto w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+  <div class="relative mx-auto w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
     <div class="flex justify-between items-center p-3 sm:p-4 lg:p-6 border-b border-gray-200 flex-shrink-0">
       <h3 class="text-base sm:text-lg lg:text-xl font-medium text-gray-900">
         <i class="fas fa-search mr-2 text-blue-600"></i>
@@ -776,7 +776,7 @@
     </div>
     
     <!-- Tabla de Recursos -->
-    <div *ngIf="!cargandoDatos && !cargandoRecursos && plantillaActual?.tipo" class="flex-1 overflow-y-auto min-h-0">
+    <div *ngIf="!cargandoDatos && !cargandoRecursos && plantillaActual?.tipo" class="overflow-y-auto max-h-[60vh] sm:max-h-[50vh]">
       <!-- Vista móvil: Cards -->
       <div class="block sm:hidden p-3 sm:p-4 space-y-3 sm:space-y-4 pb-4">
         <div *ngIf="recursosFiltrados.length === 0" class="text-center py-8">
@@ -790,7 +790,10 @@
               <p class="text-xs text-gray-500 mt-1 break-words">
                 <span *ngIf="plantillaActual?.tipo === 'vehiculo'">{{ recurso.informacion.marca }} {{ recurso.informacion.modelo }}</span>
                 <span *ngIf="plantillaActual?.tipo === 'chofer'">DNI: {{ recurso.informacion.dni }}</span>
-                <span *ngIf="plantillaActual?.tipo === 'unidad'">Tipo: {{ recurso.informacion.tipo_unidad }}</span>
+                <span *ngIf="plantillaActual?.tipo === 'unidad'">
+                  N° {{ recurso.informacion.numero_unidad }} - {{ recurso.informacion.tipo_unidad }}<br>
+                  Capacidad: {{ recurso.informacion.capacidad }} - Estado: {{ recurso.informacion.estado }}
+                </span>
                 <span *ngIf="plantillaActual?.tipo === 'maquina'">Modelo: {{ recurso.informacion.modelo }}</span>
                 <span *ngIf="plantillaActual?.tipo === 'sector'">Tipo: {{ recurso.informacion.tipo_area }}</span>
               </p>
@@ -825,6 +828,7 @@
               <!-- Columnas para unidades -->
               <th *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidad</th>
               <th *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+              <th *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacidad</th>
               <th *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
               
               <!-- Columnas para máquinas -->
@@ -868,6 +872,9 @@
               </td>
               <td *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-4 whitespace-nowrap">
                 <div class="text-sm text-gray-900">{{ recurso.informacion.tipo_unidad }}</div>
+              </td>
+              <td *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ recurso.informacion.capacidad }}</div>
               </td>
               <td *ngIf="plantillaActual?.tipo === 'unidad'" class="px-4 py-4 whitespace-nowrap">
                 <div class="text-sm text-gray-900">{{ recurso.informacion.estado }}</div>

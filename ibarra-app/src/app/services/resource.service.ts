@@ -118,9 +118,13 @@ export class ResourceService {
           chofer_nombre: `${l.chofer.apellido}, ${l.chofer.nombre}`,
           chofer_dni: l.chofer.dni,
           vehiculo_id: l.conjunto_veh.camiones.id,
+          camion_id: l.conjunto_veh.camiones.id,
+          semi_id: l.conjunto_veh.semi1?.id,
           camion_patente: l.conjunto_veh.camiones.patente,
           semi1_patente: l.conjunto_veh.semi1.patente || '',
+          numero_unidad: l.conjunto_veh.camiones.patente,
           tipo_unidad: l.conjunto_veh.categoria.nombre,
+          capacidad: l.conjunto_veh.categoria.cap_max,
           estado: l.disponible ? 'activa' : 'mantenimiento',
         }
       })))
