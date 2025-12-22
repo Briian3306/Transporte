@@ -683,7 +683,7 @@
 
 <!-- Modal de Carga de Datos -->
 <div *ngIf="mostrarModalCargaDatos" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-2 sm:p-4">
-  <div class="relative mx-auto w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+  <div class="relative mx-auto w-full max-w-4xl shadow-lg rounded-md bg-white max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
     <div class="flex justify-between items-center p-3 sm:p-4 lg:p-6 border-b border-gray-200 flex-shrink-0">
       <h3 class="text-base sm:text-lg lg:text-xl font-medium text-gray-900">
         <i class="fas fa-search mr-2 text-blue-600"></i>
@@ -783,28 +783,63 @@
           <i class="fas fa-search text-3xl text-gray-300 mb-3"></i>
           <p class="text-sm text-gray-500">No se encontraron resultados</p>
         </div>
-        <div *ngFor="let recurso of recursosFiltrados" class="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div class="flex-1 min-w-0">
-              <h4 class="text-sm font-medium text-gray-900 break-words">{{ recurso.nombre }}</h4>
-              <p class="text-xs text-gray-500 mt-1 break-words">
-                <span *ngIf="plantillaActual?.tipo === 'vehiculo'">{{ recurso.informacion.marca }} {{ recurso.informacion.modelo }}</span>
-                <span *ngIf="plantillaActual?.tipo === 'chofer'">DNI: {{ recurso.informacion.dni }}</span>
-                <span *ngIf="plantillaActual?.tipo === 'unidad'">
-                  N° {{ recurso.informacion.numero_unidad }} - {{ recurso.informacion.tipo_unidad }}<br>
-                  Capacidad: {{ recurso.informacion.capacidad }} - Estado: {{ recurso.informacion.estado }}
-                </span>
-                <span *ngIf="plantillaActual?.tipo === 'maquina'">Modelo: {{ recurso.informacion.modelo }}</span>
-                <span *ngIf="plantillaActual?.tipo === 'sector'">Tipo: {{ recurso.informacion.tipo_area }}</span>
-              </p>
+        
+        <!-- Cards para unidades (diseño mejorado) -->
+        <ng-container *ngIf="plantillaActual?.tipo === 'unidad'">
+          <div *ngFor="let recurso of recursosFiltrados" 
+               class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div class="flex flex-col gap-3">
+              <div class="flex items-start justify-between">
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-base font-semibold text-gray-900 mb-2">
+                    <i class="fas fa-truck text-blue-600 mr-2"></i>
+                    {{ recurso.informacion.numero_unidad }}
+                  </h4>
+                </div>
+              </div>
+              
+              <div class="space-y-2">
+                <div class="flex items-center text-sm">
+                  <span class="text-gray-600 font-medium w-24 flex-shrink-0">Chofer:</span>
+                  <span class="text-gray-900 flex-1">{{ recurso.informacion.chofer_nombre }}</span>
+                </div>
+                <div class="flex items-center text-sm">
+                  <span class="text-gray-600 font-medium w-24 flex-shrink-0">Tipo:</span>
+                  <span class="text-gray-900 flex-1">{{ recurso.informacion.tipo_unidad }}</span>
+                </div>
+              </div>
+              
+              <button (click)="seleccionarRecurso(recurso)" 
+                      class="w-full btn-touch bg-blue-500 text-white hover:bg-blue-600 text-sm font-medium px-4 py-2.5 rounded-md mt-2 flex items-center justify-center">
+                <i class="fas fa-check mr-2"></i>
+                Seleccionar
+              </button>
             </div>
-            <button (click)="seleccionarRecurso(recurso)" 
-                    class="btn-touch bg-blue-500 text-white hover:bg-blue-600 text-sm px-4 py-2 rounded-md whitespace-nowrap flex-shrink-0">
-              <i class="fas fa-check mr-1"></i>
-              Seleccionar
-            </button>
           </div>
-        </div>
+        </ng-container>
+        
+        <!-- Cards para otros tipos (vehículos, choferes, máquinas, sectores) -->
+        <ng-container *ngIf="plantillaActual?.tipo !== 'unidad'">
+          <div *ngFor="let recurso of recursosFiltrados" 
+               class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div class="flex flex-col gap-3">
+              <div class="flex-1 min-w-0">
+                <h4 class="text-base font-semibold text-gray-900 mb-2 break-words">{{ recurso.nombre }}</h4>
+                <div class="text-sm text-gray-600">
+                  <span *ngIf="plantillaActual?.tipo === 'vehiculo'">{{ recurso.informacion.marca }} {{ recurso.informacion.modelo }}</span>
+                  <span *ngIf="plantillaActual?.tipo === 'chofer'">DNI: {{ recurso.informacion.dni }}</span>
+                  <span *ngIf="plantillaActual?.tipo === 'maquina'">Modelo: {{ recurso.informacion.modelo }}</span>
+                  <span *ngIf="plantillaActual?.tipo === 'sector'">Tipo: {{ recurso.informacion.tipo_area }}</span>
+                </div>
+              </div>
+              <button (click)="seleccionarRecurso(recurso)" 
+                      class="w-full btn-touch bg-blue-500 text-white hover:bg-blue-600 text-sm font-medium px-4 py-2.5 rounded-md flex items-center justify-center">
+                <i class="fas fa-check mr-2"></i>
+                Seleccionar
+              </button>
+            </div>
+          </div>
+        </ng-container>
       </div>
       
       <!-- Vista desktop: Tabla -->
