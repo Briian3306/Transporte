@@ -800,18 +800,12 @@
               
               <div class="space-y-2">
                 <div class="flex items-center text-sm">
-                  <span class="text-gray-600 font-medium w-24 flex-shrink-0">Chofer:</span>
-                  <span class="text-gray-900 flex-1">{{ recurso.informacion.chofer_nombre }}</span>
-                </div>
-                <div class="flex items-center text-sm">
-                  <span class="text-gray-600 font-medium w-24 flex-shrink-0">Tipo:</span>
-                  <span class="text-gray-900 flex-1">{{ recurso.informacion.tipo_unidad }}</span>
+                  <span class="text-gray-900 flex-1">{{ recurso.informacion.chofer_nombre  }}</span>
                 </div>
               </div>
-              
               <button (click)="seleccionarRecurso(recurso)" 
-                      class="w-full btn-touch bg-blue-500 text-white hover:bg-blue-600 text-sm font-medium px-4 py-2.5 rounded-md mt-2 flex items-center justify-center">
-                <i class="fas fa-check mr-2"></i>
+                      class="btn-touch bg-blue-500 text-white hover:bg-blue-600 text-sm  rounded-md flex items-center justify-center">
+                <i class="fas fa-check mr-1"></i>
                 Seleccionar
               </button>
             </div>
