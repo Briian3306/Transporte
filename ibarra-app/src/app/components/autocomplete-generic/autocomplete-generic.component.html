@@ -1,0 +1,63 @@
+<div class="autocomplete-generic">
+  <label *ngIf="label" [for]="'autocomplete-' + label" class="form-label">
+    {{ label }}
+    <span *ngIf="required" class="required">*</span>
+  </label>
+
+  <div class="autocomplete-wrapper" [class.error]="error" [class.disabled]="disabled">
+    <div class="input-container">
+      <input
+        #inputRef
+        type="text"
+        [id]="'autocomplete-' + label"
+        class="form-input autocomplete-input"
+        [placeholder]="placeholder"
+        [(ngModel)]="searchText"
+        (ngModelChange)="onInputChange()"
+        (focus)="onInputFocus()"
+        (blur)="onInputBlur()"
+        (keydown)="onKeyDown($event)"
+        [disabled]="disabled"
+        autocomplete="off"
+      />
+      <div class="input-actions">
+        <button
+          *ngIf="selectedItem && !disabled"
+          type="button"
+          class="btn-clear"
+          (click)="clearSelection(); $event.stopPropagation()"
+          title="Limpiar selección"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+        <i class="fas fa-chevron-down dropdown-icon" [class.open]="isOpen"></i>
+      </div>
+    </div>
+
+    <div
+      #dropdownRef
+      class="dropdown-menu"
+      [class.show]="isOpen && filteredItems.length > 0"
+    >
+      <div
+        *ngFor="let item of filteredItems; let i = index"
+        class="dropdown-item"
+        [class.highlighted]="i === highlightedIndex"
+        (click)="selectItem(item)"
+        (mouseenter)="highlightedIndex = i"
+      >
+        <div class="item-content">
+          <span class="item-primary">{{ getDisplayValue(item) }}</span>
+        </div>
+      </div>
+      <div *ngIf="filteredItems.length === 0 && searchText" class="dropdown-empty">
+        <i class="fas fa-search"></i>
+        <p>{{ emptyMessage }}</p>
+      </div>
+    </div>
+  </div>
+
+  <span *ngIf="error && errorMessage" class="error-message">
+    {{ errorMessage }}
+  </span>
+</div>

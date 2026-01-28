@@ -147,37 +147,28 @@
           <div class="form-row">
             <!-- Tipo de Recurso -->
             <div class="form-group">
-              <label for="recurso_tipo" class="form-label">
-                Tipo de Recurso
-              </label>
-              <select
-                id="recurso_tipo"
-                class="form-select"
+              <app-autocomplete-generic
+                [items]="tiposRecurso"
+                displayField="label"
+                valueField="value"
+                placeholder="Seleccione un tipo"
+                label="Tipo de Recurso"
                 formControlName="recurso_tipo"
-              >
-                <option value="">Seleccione un tipo</option>
-                <option *ngFor="let tipo of tiposRecurso" [value]="tipo.value">
-                  {{ tipo.label }}
-                </option>
-              </select>
+              ></app-autocomplete-generic>
             </div>
 
             <!-- Recurso -->
             <div class="form-group">
-              <label for="recurso_id" class="form-label">
-                Recurso
-              </label>
-              <select
-                id="recurso_id"
-                class="form-select"
-                formControlName="recurso_id"
+              <app-autocomplete-generic
+                [items]="recursos"
+                displayField="nombre"
+                valueField="id"
+                placeholder="Seleccione un recurso"
+                label="Recurso"
                 [disabled]="!salidaForm.get('recurso_tipo')?.value"
-              >
-                <option value="">Seleccione un recurso</option>
-                <option *ngFor="let recurso of recursos" [value]="recurso.id">
-                  {{ recurso.nombre }}
-                </option>
-              </select>
+                formControlName="recurso_id"
+                emptyMessage="No se encontraron recursos"
+              ></app-autocomplete-generic>
             </div>
           </div>
         </div>

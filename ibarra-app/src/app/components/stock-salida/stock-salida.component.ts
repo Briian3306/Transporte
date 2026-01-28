@@ -9,11 +9,12 @@ import { Deposito, StockDeposito, RegistroSalidaDTO, ItemMovimiento } from '../.
 import { TemplateResourceType } from '../../models/checklist-template.model';
 import { Insumo } from '../../models/chofer.model';
 import { AutocompleteInsumoComponent } from '../autocomplete-insumo/autocomplete-insumo.component';
+import { AutocompleteGenericComponent } from '../autocomplete-generic/autocomplete-generic.component';
 
 @Component({
   selector: 'app-stock-salida',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, AutocompleteInsumoComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, AutocompleteInsumoComponent, AutocompleteGenericComponent],
   templateUrl: './stock-salida.component.html',
   styleUrl: './stock-salida.component.css'
 })
