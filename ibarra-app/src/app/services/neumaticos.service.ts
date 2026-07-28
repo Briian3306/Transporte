@@ -12,8 +12,8 @@ export class NeumaticosService {
 
   constructor() { }
 
-  registrarCambio(datos: RegistroCambioNeumaticos): Observable<any> {
-    return this.http.post(this.webhookUrl, datos);
+  registrarCambio(datos: RegistroCambioNeumaticos): Observable<string> {
+    return this.http.post(this.webhookUrl, datos, { responseType: 'text' });
   }
 }
 
