@@ -34,6 +34,74 @@ El MVP estará enfocado en ofrecer un flujo de trabajo sencillo, guiado y compre
 
 El sistema deberá reducir las tareas manuales relacionadas con la limpieza, transformación y carga de información, sin eliminar la posibilidad de que el usuario revise y confirme los datos antes de almacenarlos.
 
+### 1.1 Configuración mínima del proyecto existente
+
+El módulo de Peajes se incorporará al proyecto Angular/Supabase existente de Transporte Ibarra como un **módulo funcional independiente**. En este proyecto se utiliza Angular standalone, por lo que “módulo independiente” no implica crear un `NgModule`: implica separar componentes, rutas, modelos, servicios y permisos del dominio de Peajes.
+
+#### Contexto técnico de integración
+
+| Elemento | Configuración mínima para Peajes |
+|---|---|
+| Aplicación anfitriona | `ibarra-app/` |
+| Frontend | Angular 19, componentes standalone, RxJS y SCSS/CSS existente |
+| Persistencia | Supabase/PostgreSQL mediante `SupabaseService` y migraciones nuevas |
+| Entrada principal | Dashboard existente en `ibarra-app/src/app/components/dashboard/` |
+| Identificador del dashboard | `peajes` |
+| Ruta base propuesta | `/peajes` |
+| Permiso base | Módulo `peajes`, acción `read` |
+| Textos de interfaz | Español |
+| Plantillas de Peajes | Propias del procesamiento de Excel; no reutilizan `checklist_templates` |
+
+#### Integración mínima con el Dashboard
+
+El dashboard deberá incorporar un nuevo elemento `DashboardModule` con esta configuración funcional:
+
+```ts
+{
+  id: 'peajes',
+  name: 'Peajes',
+  description: 'Procesar pasadas, configuraciones y facturas de peajes',
+  route: '/peajes'
+}
+```
+
+El `id: 'peajes'` deberá coincidir con el nombre del módulo usado por el sistema de permisos (`system_modules.name`) para que la disponibilidad del acceso se resuelva de forma consistente. La tarjeta deberá estar visible o habilitada según el permiso `peajes:read`, siguiendo el patrón actual de `GranularPermissionService`.
+
+La integración deberá incluir:
+
+* Una ruta padre `/peajes` protegida por autenticación y permisos.
+* Componentes hijos del dominio Peajes, ubicados bajo una carpeta propia, por ejemplo `src/app/components/peajes/`.
+* Servicios propios para plantillas, algoritmos, cargas, validación y persistencia.
+* Modelos propios para `PlantillaConfiguracion`, `ConfiguracionPlantilla`, `AlgoritmoCombinado` y `AlgoritmoCombinadoPaso`.
+* Entrada en `app.routes.ts` y en el mapa de permisos del `PermissionGuard` cuando se creen las pantallas.
+
+#### Separación respecto de Checklists
+
+Las plantillas de Peajes y las plantillas de Checklists son conceptos distintos:
+
+| Aspecto | Checklists | Peajes |
+|---|---|---|
+| Propósito | Definir inspecciones y respuestas operativas | Definir transformaciones y mapeos de archivos Excel |
+| Tabla principal | `checklist_templates` | `plantillas_configuracion` |
+| Detalle | Ítems, tipos de respuesta y validaciones de checklist | Columnas, orden, algoritmos y parámetros |
+| Ejecución | Captura manual de un checklist | Pipeline de transformación de registros |
+| Ruta | `/checklist`, `/templates` | `/peajes` |
+| Permiso | `checklists` / `templates` | `peajes` |
+
+No se deberán reutilizar `ChecklistTemplateService`, `checklist_templates` ni los modelos de checklist para guardar configuraciones de transformación de Peajes. Podrán reutilizarse únicamente servicios transversales ya existentes, como autenticación, permisos, manejo de sesión y acceso común a Supabase.
+
+#### Alcance de la primera integración
+
+La primera entrega de integración deberá limitarse a:
+
+1. Registrar el módulo `peajes` en el dashboard.
+2. Crear la ruta base `/peajes` con una pantalla inicial del módulo.
+3. Definir el permiso de lectura `peajes:read` y dejar preparados los permisos de creación/gestión para las pantallas posteriores.
+4. Mantener aislados los modelos y servicios de Peajes.
+5. No modificar el comportamiento de Checklists, Stock, Incidentes, Flota ni Neumáticos.
+
+La carga completa de archivos, el wizard, las plantillas y el motor de transformación forman parte del alcance funcional del módulo, pero podrán entregarse por iteraciones sin convertir Peajes en una dependencia de los módulos existentes.
+
 ---
 
 ## 2. Objetivo del producto
@@ -444,11 +512,54 @@ Cada plantilla podrá contener:
 * Relaciones de columnas.
 * Relaciones con peajes.
 * Reglas de validación.
-* Versión.
 * Fecha de creación.
 * Fecha de modificación.
 
 Para la construcción dinámica de plantillas se recomienda utilizar el patrón **Builder**.
+
+#### 7.4.1 Modelo de configuración persistente
+
+La plantilla se guardará como una definición editable y sus pasos ordenados. En el MVP, una edición actualizará la configuración existente y podrá sobrescribir la definición anterior.
+
+Cada plantilla deberá guardar como mínimo:
+
+* `nombre`, `descripcion` y `empresa_id`.
+* `estado` (`borrador`, `activa`, `archivada`).
+* Proveedor o estrategia de origen, cuando corresponda.
+* Fecha de creación y actualización.
+* Usuario que la creó o publicó, cuando exista autenticación.
+
+Cada configuración de una plantilla deberá vincular `nombre_columna`, campo estandarizado de destino, `orden` de ejecución, tipo de configuración, parámetros declarativos en `jsonb`, obligatoriedad y comportamiento ante error. Podrá referenciar un `algoritmo_combinado_id` cuando el paso utilice una secuencia reutilizable.
+
+El orden persistido es parte del contrato funcional: el motor deberá ejecutar los pasos ascendentemente por `orden`. Nunca se deberá inferir el orden por el nombre, la fecha de creación o el orden accidental de una consulta.
+
+#### 7.4.2 Algoritmos combinados
+
+Un **algoritmo combinado** es una definición reutilizable de pasos elementales. Por ejemplo, `NORMALIZAR_PATENTE` puede estar compuesto por `BORRAR_ESPACIOS`, `ELIMINAR_GUIONES` y `CONVERTIR_MAYUSCULAS`.
+
+Cada algoritmo combinado deberá guardar nombre, descripción, empresa propietaria o indicador de algoritmo global, estado y una lista ordenada de pasos elementales con sus parámetros. Los pasos se identificarán mediante códigos estables como `BORRAR_ESPACIOS`, `COMBINAR_COLUMNAS`, `FORMATEAR_FECHA_HORA` o `CALCULAR_IMPORTE_NETO`; el código no dependerá del texto visible en la interfaz.
+
+#### 7.4.3 Builder + Strategy
+
+Se utilizará una combinación de patrones:
+
+* **Builder:** construirá una plantilla o pipeline válido de forma incremental. Validará campos obligatorios, asignará el orden, agregará configuraciones, mapeos y algoritmos combinados, y producirá una definición lista para persistir o ejecutar.
+* **Strategy:** el motor seleccionará en tiempo de ejecución una estrategia de proveedor o de algoritmo elemental. Cada estrategia encapsulará una forma concreta de transformar, normalizar, validar o resolver una columna bajo un contrato común.
+
+El Builder define **qué pipeline** se ejecutará; Strategy define **cómo se ejecuta cada operación**. La base de datos guarda la definición declarativa y el código de la aplicación mantiene el registro seguro de estrategias permitidas. No se ejecutará código ni SQL recibido desde `jsonb`.
+
+Flujo esperado:
+
+```text
+Plantilla + Configuraciones ordenadas
+        → Builder
+        → Pipeline de ejecución
+        → StrategyRegistry
+        → Transformación por fila/columna
+        → Resultado + trazabilidad + errores
+```
+
+Una plantilla aplicada a una carga deberá conservar el `plantilla_id`, los algoritmos combinados utilizados y los parámetros efectivos de la ejecución. El versionado histórico de plantillas y algoritmos queda fuera del MVP y se planifica para una fase futura.
 
 ### 7.5 Catálogo de peajes
 
@@ -578,6 +689,38 @@ El sistema deberá conservar la configuración entre pasos.
 ### RF-26 — Registrar la carga
 
 El sistema deberá registrar el archivo, fecha, resultados y plantilla utilizada.
+
+### RF-27 — Crear plantilla de configuración
+
+El usuario autorizado deberá poder crear una plantilla con nombre, descripción, empresa, estrategia de proveedor y configuraciones ordenadas.
+
+### RF-28 — Editar y sobrescribir plantillas
+
+El usuario deberá poder modificar una plantilla existente. En el MVP, la nueva configuración reemplazará la configuración anterior de la plantilla mediante una operación transaccional.
+
+### RF-29 — Crear algoritmos combinados
+
+El sistema deberá permitir definir un algoritmo combinado como una lista ordenada de algoritmos elementales y parámetros. Deberá impedir referencias a códigos de algoritmos no registrados.
+
+### RF-30 — Aplicar algoritmos combinados
+
+Una configuración de columna podrá referenciar un algoritmo combinado. El sistema deberá expandirlo en el orden guardado y mostrar los pasos efectivos antes de confirmar la carga.
+
+### RF-31 — Validar definiciones antes de publicar
+
+El sistema deberá validar que no existan órdenes duplicados, columnas obligatorias ausentes, referencias rotas o parámetros incompatibles con la estrategia seleccionada.
+
+### RF-32 — Auditar la ejecución
+
+El sistema deberá guardar para cada carga la plantilla, algoritmos combinados, parámetros efectivos, cantidad de filas procesadas y errores por paso.
+
+### RF-33 — Integrar Peajes con el proyecto existente
+
+El sistema deberá incorporar el módulo funcional `peajes` al dashboard existente, con ruta base `/peajes`, permiso `peajes:read` y componentes, servicios y modelos propios del dominio.
+
+### RF-34 — Mantener separación de plantillas
+
+El sistema deberá guardar las configuraciones de transformación de Peajes en sus propias tablas y servicios. No deberá utilizar las plantillas ni los servicios de Checklists para representar configuraciones de archivos Excel.
 
 ---
 
@@ -1041,18 +1184,63 @@ La incorporación de esta clave técnica no modifica la definición de negocio p
 El siguiente modelo representa una posible implementación técnica normalizada.
 
 ```mermaid
+
 erDiagram
     FACTURAS {
         uuid id PK
         string factura
         string cuenta
-        string empresa
+        string empresa_id
         date fecha_factura
         decimal importe_sin_iva
         decimal importe_total
         datetime created_at
     }
 
+    PLANTILLAS_CONFIGURACION {
+        uuid id PK
+        string nombre
+        string descripcion
+        uuid empresa_id FK
+        string estrategia_codigo
+        string estado
+        datetime created_at
+        datetime updated_at
+    }
+
+    CONFIGURACIONES_PLANTILLA {
+        uuid id PK
+        uuid plantilla_id FK
+        string nombre_columna
+        string columna_destino
+        integer orden
+        string tipo
+        uuid algoritmo_combinado_id FK
+        jsonb configuracion
+        boolean obligatoria
+    }
+
+    ALGORITMOS_COMBINADOS {
+        uuid id PK
+        string nombre
+        string descripcion
+        uuid empresa_id FK
+        string estado
+        datetime created_at
+        datetime updated_at
+    }
+
+    ALGORITMO_COMBINADO_PASOS {
+        uuid id PK
+        uuid algoritmo_combinado_id FK
+        integer orden
+        string algoritmo_codigo
+        jsonb parametros
+    }
+    EMPRESA {
+        uuid id PK
+        nombre string
+    }
     PATENTES {
         uuid id PK
         string patente UK
@@ -1072,6 +1260,7 @@ erDiagram
         string nombre
         string ubicacion
         string descripcion
+        string empresa_id
         datetime created_at
     }
 
@@ -1089,11 +1278,18 @@ erDiagram
         datetime created_at
     }
 
+    FACTURAS ||--o{ EMPRESA : "contiene"
     FACTURAS ||--o{ PASADAS : "contiene"
     PATENTES ||--o{ PASES : "tiene"
     PATENTES ||--o{ PASADAS : "realiza"
     PASES ||--o{ PASADAS : "registra"
     PEAJES ||--o{ PASADAS : "recibe"
+    PEAJES ||--o{ EMPRESA : "continee"
+    EMPRESA ||--o{ PLANTILLAS_CONFIGURACION : "posee"
+    PLANTILLAS_CONFIGURACION ||--o{ CONFIGURACIONES_PLANTILLA : "contiene"
+    ALGORITMOS_COMBINADOS ||--o{ ALGORITMO_COMBINADO_PASOS : "compone"
+    ALGORITMOS_COMBINADOS ||--o{ CONFIGURACIONES_PLANTILLA : "reutiliza"
+
 ```
 
 ### 14.1 Equivalencias entre el modelo de negocio y el modelo físico
@@ -1112,6 +1308,47 @@ erDiagram
 | `PASE_ID`        | `pase_id`                 |
 
 El modelo físico utiliza nombres sin espacios y en formato `snake_case` para facilitar la implementación en PostgreSQL.
+
+### 14.2 Tablas de plantillas y algoritmos
+
+La implementación de Supabase deberá crear las tablas anteriores mediante una migración nueva, sin editar migraciones ya aplicadas.
+
+Reglas mínimas de integridad:
+
+* `configuraciones_plantilla` tendrá una restricción única sobre (`plantilla_id`, `nombre_columna`, `orden`).
+* `algoritmo_combinado_pasos` tendrá una restricción única sobre (`algoritmo_combinado_id`, `orden`).
+* `algoritmos_combinados` tendrá una restricción única sobre (`nombre`, `empresa_id`).
+* Los `jsonb` solo contendrán parámetros declarativos validados por el registro de estrategias.
+* La actualización de una plantilla deberá reemplazar sus configuraciones dentro de una transacción para evitar estados parciales.
+* El versionado histórico de plantillas y algoritmos combinados queda fuera del MVP y se implementará mediante una evolución posterior del modelo.
+
+Ejemplo conceptual de persistencia:
+
+```json
+{
+  "plantilla": {
+    "nombre": "Proveedor Demo - Pasadas",
+    "descripcion": "Normaliza archivos con FECHA y HORA separadas",
+    "empresa_id": "empresa-demo"
+  },
+  "configuraciones": [
+    {
+      "nombre_columna": "FECHA_HORA",
+      "orden": 10,
+      "tipo": "transformacion",
+      "algoritmo_combinado": "COMBINAR_FECHA_HORA",
+      "configuracion": {"columnas": ["FECHA", "HORA"], "formato_hora": "HHMMSS"}
+    },
+    {
+      "nombre_columna": "DOMINIO",
+      "orden": 20,
+      "tipo": "transformacion",
+      "algoritmo_combinado": "NORMALIZAR_PATENTE",
+      "configuracion": {"mayusculas": true}
+    }
+  ]
+}
+```
 
 ---
 
@@ -1244,8 +1481,42 @@ Una posible clave de negocio será:
 ```text
 PASE_ID + FECHA_HORA + ESTACION_ID + PATENTE_ID
 ```
-
 Esta combinación deberá validarse durante el diseño técnico.
+
+### RN-17 — Validaciones factura con pasadas
+El importe neto toal de las facturas tiene que ser igual al importe neto de la factura, para que se pueda guardar
+
+### RN-18 — Orden determinista de configuración
+
+Los pasos se ejecutarán por `orden` ascendente. No se permitirá publicar una plantilla con órdenes duplicados dentro de la misma columna o pipeline.
+
+### RN-19 — Sobrescritura controlada de configuraciones
+
+En el MVP, una plantilla o algoritmo combinado podrá editarse y sobrescribir su definición actual. La actualización deberá validar la configuración completa antes de reemplazarla.
+
+### RN-20 — Referencias seguras a algoritmos
+
+La base de datos guardará identificadores/códigos y parámetros, pero nunca código ejecutable. El motor solo resolverá estrategias registradas en un catálogo interno permitido.
+
+### RN-21 — Compatibilidad antes de ejecutar
+
+Antes de aplicar una plantilla, el sistema deberá verificar columnas requeridas, tipos esperados, parámetros y disponibilidad de las estrategias. Una incompatibilidad bloqueará la ejecución y mostrará el motivo.
+
+### RN-22 — Reutilización controlada
+
+Un algoritmo combinado podrá reutilizarse en varias plantillas. Si se modifica, el cambio aplicará a las plantillas que lo referencien en las ejecuciones posteriores.
+
+### RN-23 — Alcance por empresa
+
+Una plantilla o algoritmo combinado de una empresa no podrá aplicarse a otra empresa salvo que se marque explícitamente como recurso global del sistema.
+
+### RN-24 — Trazabilidad por paso
+
+Ante un error o rechazo, el sistema deberá informar fila, columna, orden, algoritmo, mensaje y valor recibido, sin exponer secretos ni código interno.
+
+### RN-25 — Actualización transaccional
+
+La plantilla, sus configuraciones y los pasos de sus algoritmos combinados deberán actualizarse en una operación transaccional. No podrá quedar una definición parcialmente sobrescrita.
 
 ## 16. Criterios de aceptación del MVP
 
@@ -1259,6 +1530,15 @@ El MVP será considerado terminado cuando:
 * El sistema muestre el resultado transformado.
 * El usuario pueda guardar una plantilla.
 * El usuario pueda aplicar una plantilla.
+* El dashboard muestre el módulo independiente `peajes` con ruta `/peajes`.
+* El acceso al módulo se resuelva mediante el permiso `peajes:read`.
+* Las plantillas de Peajes se almacenen separadas de `checklist_templates`.
+* La plantilla guardada incluya nombre, descripción, empresa y estado.
+* Cada configuración persista `nombre_columna`, parámetros y `orden` determinista.
+* El usuario pueda crear, editar y reutilizar algoritmos combinados.
+* El sistema rechace referencias a estrategias o algoritmos inexistentes.
+* El usuario pueda editar una plantilla y sobrescribir su configuración de forma transaccional.
+* El sistema muestre la trazabilidad de los pasos ejecutados y de los errores por fila.
 * El usuario pueda relacionar columnas con `Pasada-Columns`.
 * El sistema valide los campos obligatorios.
 * El usuario pueda relacionar cada valor de peaje con un registro de `Peaje`.
@@ -1350,7 +1630,8 @@ flowchart LR
 
 * Guardar configuraciones.
 * Aplicar plantillas.
-* Versionar plantillas.
+* Editar y sobrescribir plantillas.
+* Dejar documentado el versionado como evolución futura.
 * Validar compatibilidad.
 
 ### Fase 6 — Facturación y persistencia
@@ -1381,7 +1662,7 @@ flowchart LR
 | Los archivos son demasiado grandes.                       |    Alto | Procesar en backend y limitar la vista previa.                                          |
 | Se crean registros duplicados.                            |    Alto | Definir una clave de negocio e idempotencia.                                            |
 | El total de la factura no coincide.                       |   Medio | Comparar la suma de pasadas con la factura.                                             |
-| Una plantilla deja de ser compatible.                     |   Medio | Versionar y validar columnas requeridas.                                                |
+| Una plantilla deja de ser compatible.                     |   Medio | Validar columnas requeridas y permitir editar/sobrescribir la configuración; versionado futuro. |
 | `PASE_ID` tiene un significado ambiguo.                   |    Alto | Confirmar si representa un pase reutilizable o una transacción.                         |
 | No existe relación directa con factura en Structure Goal. |    Alto | Incorporar `factura_id` en el modelo físico.                                            |
 | La patente se repite innecesariamente.                    |   Medio | Mantener un catálogo único y utilizar claves foráneas.                                  |

@@ -92,6 +92,15 @@
     .file-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px; background: #e9f4ec; color: var(--green); font-weight: 900; font-size: 11px; }
     .file-name { font-weight: 800; font-size: 14px; }
     .file-meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .template-box { margin-top: 20px; padding: 16px; border: 1px solid #c8dcf7; border-radius: 12px; background: #f3f8ff; }
+    .template-box-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 11px; }
+    .template-box-head strong { color: var(--blue-dark); }
+    .template-box p { color: #637b98; font-size: 12px; line-height: 1.45; margin: 4px 0 0; }
+    .select-control { width: 100%; border: 1px solid #b8cfe9; border-radius: 8px; padding: 10px 11px; color: var(--ink); background: white; outline: none; }
+    .select-control:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+    .config-strip { display: flex; align-items: center; gap: 11px; padding: 11px 13px; border: 1px solid #c8dcf7; border-radius: 10px; color: #4f6b8a; background: #f4f8ff; font-size: 12px; }
+    .config-strip strong { color: var(--blue-dark); }
+    .config-strip .config-mark { width: 23px; height: 23px; display: grid; place-items: center; border-radius: 7px; color: var(--blue); background: #dceaff; font-weight: 900; }
     .stat-list { display: grid; gap: 15px; margin: 19px 0; }
     .stat-line { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
     .stat-line span:first-child { color: var(--muted); }
@@ -116,9 +125,15 @@
     .column-chip { border: 1px solid #c9ddfa; border-radius: 99px; padding: 6px 10px; font-size: 11px; color: var(--blue-dark); background: #f2f7ff; }
     .column-chip.off { color: #8392a5; background: #f7f8fa; border-color: #e1e5ea; text-decoration: line-through; }
     .transform-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    .transform-card { border: 1px solid var(--line); border-radius: 13px; padding: 17px; background: #fbfcfe; }
+    .transform-card { border: 1px solid var(--line); border-radius: 13px; padding: 17px; background: #fbfcfe; cursor: pointer; transition: .2s ease; }
+    .transform-card:hover { border-color: #a9c8ed; box-shadow: 0 8px 18px #1e4d7b10; transform: translateY(-1px); }
+    .transform-card.selected { border-color: #6fa7ed; background: #f4f8ff; box-shadow: 0 0 0 3px #e4efff; }
     .transform-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 13px; }
     .transform-title strong { font-family: var(--mono); color: var(--blue-dark); font-size: 13px; }
+    .transform-title-actions { display: flex; align-items: center; gap: 7px; }
+    .edit-link { padding: 4px 7px; border: 1px solid #c7d8ec; border-radius: 6px; color: var(--blue-dark); background: white; font-size: 10px; font-weight: 800; }
+    .edit-link:hover { border-color: var(--blue); background: var(--blue-soft); }
+    .selected-hint { margin-top: 12px; color: var(--blue-dark); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; }
     .transform-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
     .transform-list li { display: flex; gap: 8px; color: #54677e; font-size: 12px; line-height: 1.35; }
     .transform-list li::before { content: "✓"; color: var(--teal); font-weight: 900; }
@@ -128,9 +143,34 @@
     .compare-col { padding: 17px; }
     .compare-col + .compare-col { border-left: 1px solid var(--line); background: #fcfffd; }
     .compare-col h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    .preview-table td:last-child { color: var(--green); font-family: var(--mono); font-weight: 800; background: #fbfffc; }
+    .preview-table th:last-child { color: var(--green); background: #eff9f2; }
+    .preview-table-note { margin: 12px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
     .code-line { font-family: var(--mono); color: #42566e; font-size: 12px; line-height: 1.8; }
     .code-line strong { color: var(--ink); }
     .mapping-table td:last-child { color: var(--blue-dark); font-weight: 800; }
+    .mapping-table tbody tr { cursor: pointer; }
+    .mapping-table tbody tr.mapping-selected td { background: #eef5ff; }
+    .mapping-layout { display: grid; grid-template-columns: 1.28fr .72fr; gap: 18px; align-items: start; }
+    .mapping-detail { border: 1px solid #c8dcf7; border-radius: 13px; padding: 18px; background: linear-gradient(150deg, #f3f8ff, #fbfdff); position: sticky; top: 18px; }
+    .mapping-detail h3 { color: var(--blue-dark); margin-bottom: 4px; }
+    .mapping-detail > p { color: var(--muted); font-size: 12px; line-height: 1.45; margin-bottom: 16px; }
+    .pipeline { display: grid; gap: 7px; margin: 15px 0 17px; }
+    .pipeline-step { display: flex; gap: 9px; align-items: flex-start; padding: 9px; border: 1px solid #d8e5f5; border-radius: 8px; background: white; color: #536b86; font-size: 11px; line-height: 1.35; }
+    .pipeline-step .pipeline-num { flex: 0 0 20px; height: 20px; display: grid; place-items: center; border-radius: 6px; color: var(--blue); background: var(--blue-soft); font-weight: 900; }
+    .preview-result { padding: 13px; border: 1px solid #bfe0ce; border-radius: 9px; background: #f2fbf5; }
+    .preview-result .result-label { color: var(--green); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .8px; }
+    .preview-result .result-value { color: #145d3d; font-family: var(--mono); font-size: 12px; font-weight: 800; margin-top: 6px; }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 20px; background: #122b46a8; backdrop-filter: blur(3px); }
+    .modal { width: min(520px, 100%); border: 1px solid var(--line); border-radius: 16px; background: white; box-shadow: 0 25px 70px #102b4b40; overflow: hidden; }
+    .modal-head { padding: 20px 22px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 14px; }
+    .modal-head h3 { margin: 0; font-size: 18px; }
+    .modal-body { padding: 20px 22px; }
+    .modal-body p { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .modal-steps { display: grid; gap: 8px; margin: 16px 0; }
+    .modal-step { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; color: #50647b; font-size: 12px; }
+    .modal-step button { border: 0; color: var(--red); background: transparent; font-size: 11px; font-weight: 800; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 9px; padding: 15px 22px; border-top: 1px solid var(--line); background: #fbfcfe; }
     .relation-layout { display: grid; grid-template-columns: .78fr 1.22fr; gap: 21px; }
     .catalog-card, .relation-card, .validation-card { border: 1px solid var(--line); border-radius: 14px; padding: 19px; background: #fbfcfe; }
     .catalog-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
@@ -186,6 +226,8 @@
       .footer-actions { padding: 14px 18px; }
       .upload-layout, .relation-layout, .invoice-layout { grid-template-columns: 1fr; }
       .transform-grid, .compare-body { grid-template-columns: 1fr; }
+      .mapping-layout { grid-template-columns: 1fr; }
+      .mapping-detail { position: static; }
       .compare-col + .compare-col { border-left: 0; border-top: 1px solid var(--line); }
       .metrics { grid-template-columns: 1fr 1fr; }
     }
@@ -219,6 +261,7 @@
       <nav class="stepper" aria-label="Progreso de carga"><div class="steps" id="steps"></div></nav>
       <section class="content-card" id="screen"></section>
     </main>
+    <div id="modal-root"></div>
   </div>
   <script>
     const sourceRows = [
@@ -236,13 +279,39 @@
     const columns = ['FECHA','HORA','ESTACION','VIA','DISPOSITIVOT','DISPOSITIVON','DOMINIO','CATEGORIA','TARIFA','BONIFICACION'];
     const steps = ['Cargar archivo','Previsualizar columnas','Aplicar transformaciones','Mapear columnas','Relacionar estaciones','Ingresar factura','Revisar y confirmar'];
     let current = 0;
+    let selectedTemplate = 'Corredores Viales Demo SA · Excel junio 2026';
+    let selectedTransform = 'FECHA_HORA';
+    const templateOptions = [
+      { name: 'Corredores Viales Demo SA · Excel junio 2026', meta: '8 mapeos · 5 transformaciones · compatible', state: 'compatible' },
+      { name: 'Autopistas del Sur · formato A', meta: '6 mapeos · 4 transformaciones · otra estructura', state: 'revisar' },
+      { name: 'Sin plantilla', meta: 'Configurar manualmente desde cero', state: 'manual' }
+    ];
+    const transformSpecs = {
+      FECHA_HORA: { steps: ['Completar HORA con seis caracteres (PASO 1)','Tomar FECHA (columna 1) y HORA (columna 2)','Interpretar HORA como HHMMSS','Combinar y convertir a YYYY-MM-DD HH:mm:ss'], before: ['FECHA = 25/06/2026','HORA = 205005'], after: '2026-06-25 20:50:05', source: 'FECHA + HORA', target: 'FECHA_HORA', description: 'Normaliza fecha y hora del proveedor en un único campo datetime.' },
+      PATENTE_ID: { steps: ['Tomar DOMINIO (columna 7)','Eliminar espacios iniciales y finales','Eliminar guiones','Convertir a mayúsculas'], before: ['DOMINIO = " ad-625-qb "'], after: 'AD625QB', source: 'DOMINIO', target: 'PATENTE_ID', description: 'Limpia el dominio para usarlo como identificador de patente.' },
+      PASE_ID: { steps: ['Tomar DISPOSITIVON (columna 6)','Convertir a texto','Eliminar espacios','Conservar como identificador reutilizable'], before: ['DISPOSITIVON = 98702170'], after: '98702170', source: 'DISPOSITIVON', target: 'PASE_ID', description: 'Conserva el dispositivo como pase, permitiendo que se repita en varias pasadas.' },
+      IMPORTE_NETO: { steps: ['Tomar TARIFA (columna 9)','Tomar BONIFICACION (columna 10)','Restar BONIFICACION a TARIFA','Aplicar fórmula TARIFA - BONIFICACION'], before: ['TARIFA = 17400','BONIFICACION = 5220'], after: '12180', source: 'TARIFA - BONIFICACION', target: 'IMPORTE_NETO', description: 'Calcula el valor neto de cada pasada antes de asociarla a la factura.' },
+      QUANTITY: { steps: ['Generar un valor constante','Asignar el valor 1','Aplicar a cada fila del archivo'], before: ['Valor de origen = —'], after: '1', source: 'Valor generado', target: 'QUANTITY', description: 'Representa una pasada individual por cada fila procesada.' }
+    };
     const money = value => Number(value).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const status = (label, type = 'valid') => `<span class="status ${type}"><span class="dot"></span>${label}</span>`;
     const button = (label, action, cls = '') => `<button class="btn ${cls}" data-action="${action}">${label}</button>`;
     const footer = (back = true, next = 'Continuar', nextClass = 'primary') => `<div class="footer-actions"><div class="footer-hint">Todos los datos mostrados son ficticios para la demo del MVP.</div><div class="btn-group">${back ? button('Volver','back') : ''}${button(next, next === 'Confirmar carga' ? 'finish' : 'next', nextClass)}</div></div>`;
     const renderSteps = () => { document.getElementById('steps').innerHTML = steps.map((label, i) => `<button class="step ${i === current ? 'active' : ''} ${i < current ? 'done' : ''}" data-step="${i}"><span class="step-row"><span class="step-num">${i < current ? '✓' : i + 1}</span><span class="step-label">${label}</span></span></button>`).join(''); };
     const sourceTable = () => `<div class="table-wrap"><table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${sourceRows.map(row => `<tr>${row.map((v, i) => `<td class="${[0,1,2,5,6,8,9].includes(i) ? 'selected' : 'ignored'} ${i === 5 || i === 8 || i === 9 ? 'mono' : ''}">${v}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-    const transformCard = (name, stepsText, tag = 'Automática') => `<article class="transform-card"><div class="transform-title"><strong>${name}</strong>${status(tag, 'valid')}</div><ol class="transform-list">${stepsText.map(s => `<li>${s}</li>`).join('')}</ol></article>`;
+    const templateSelect = (id, label = 'Configuración automática') => `<label>${label}<select class="select-control" id="${id}">${templateOptions.map(t => `<option value="${t.name}" ${t.name === selectedTemplate ? 'selected' : ''}>${t.name}</option>`).join('')}</select></label>`;
+    const configStrip = () => { const option = templateOptions.find(t => t.name === selectedTemplate) || templateOptions[0]; return `<div class="config-strip"><span class="config-mark">↗</span><span>Plantilla aplicada: <strong>${option.name}</strong> · ${option.meta}</span>${option.state === 'compatible' ? status('Compatible','valid') : status(option.state === 'manual' ? 'Manual' : 'Revisar','warn')}</div>`; };
+    const transformCard = (name, tag = 'Automática') => { const spec = transformSpecs[name]; return `<article class="transform-card ${selectedTransform === name ? 'selected' : ''}" data-transform="${name}"><div class="transform-title"><strong>${name}</strong><span class="transform-title-actions">${status(tag, 'valid')}<button class="edit-link" data-action="edit-transform" data-transform="${name}">Editar</button></span></div><ol class="transform-list">${spec.steps.map(s => `<li>${s}</li>`).join('')}</ol>${selectedTransform === name ? '<div class="selected-hint">Seleccionada · ver previsualización abajo</div>' : ''}</article>`; };
+    const transformInputs = { FECHA_HORA: ['FECHA','HORA'], PATENTE_ID: ['DOMINIO'], PASE_ID: ['DISPOSITIVON'], IMPORTE_NETO: ['TARIFA','BONIFICACION'], QUANTITY: ['—'] };
+    const transformValues = (key, row) => {
+      if (key === 'FECHA_HORA') { const date = row[0].split('/'); const time = String(row[1]).padStart(6, '0'); return `${date[2]}-${date[1]}-${date[0]} ${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}`; }
+      if (key === 'PATENTE_ID') return row[6].replace(/[\s-]/g, '').toUpperCase();
+      if (key === 'PASE_ID') return String(row[5]).replace(/\s/g, '');
+      if (key === 'IMPORTE_NETO') return String(Number(row[8]) - Number(row[9]));
+      return '1';
+    };
+    const transformationPreview = () => { const spec = transformSpecs[selectedTransform]; const inputs = transformInputs[selectedTransform]; return `<div class="compare"><div class="compare-head"><span>Datos de entrada y salida</span><span class="mono">${spec.target} · 10 registros</span></div><div class="content-body" style="padding:16px"><p class="preview-table-note"><strong>${selectedTemplate}</strong> aplica ${spec.steps.length} pasos sobre ${inputs.join(' + ')} para producir <strong>${spec.target}</strong>. Revisá las 10 filas antes de continuar.</p><div class="table-wrap" style="margin-top:13px"><table class="preview-table"><thead><tr><th>#</th>${inputs.map(input => `<th>Entrada · ${input}</th>`).join('')}<th>Salida · ${spec.target}</th><th>Estado</th></tr></thead><tbody>${sourceRows.map((row, i) => { const inputValues = selectedTransform === 'FECHA_HORA' ? [row[0], row[1]] : selectedTransform === 'PATENTE_ID' ? [row[6]] : selectedTransform === 'PASE_ID' ? [row[5]] : selectedTransform === 'IMPORTE_NETO' ? [row[8], row[9]] : ['—']; return `<tr><td class="mono">${String(i + 1).padStart(2, '0')}</td>${inputValues.map(value => `<td class="mono">${value}</td>`).join('')}<td>${transformValues(selectedTransform, row)}</td><td>${status('Válido','valid')}</td></tr>`; }).join('')}</tbody></table></div></div></div>`; };
+    const mappingDetail = () => { const spec = transformSpecs[selectedTransform]; return `<aside class="mapping-detail"><div class="eyebrow">Configuración seleccionada</div><h3>${spec.target}</h3><p>${spec.description}</p><div class="catalog-label">Pipeline aplicado por la plantilla</div><div class="pipeline">${spec.steps.map((step, i) => `<div class="pipeline-step"><span class="pipeline-num">${i + 1}</span><span>${step}</span></div>`).join('')}</div><div class="preview-result"><div class="result-label">Resultado previsualizado</div><div class="result-value">${spec.target} = ${spec.after}</div></div></aside>`; };
     const standardized = [
       ['PAS-0001','2026-06-25 20:50:05','98702170','AD625QB','EST-096','Monte Grande','Corredores Viales Demo SA','17400','5220','1','12180'],
       ['PAS-0002','2026-06-25 08:55:57','99837024','AB456CU','EST-096','Monte Grande','Corredores Viales Demo SA','17400','5220','1','12180'],
@@ -264,14 +333,32 @@
       () => `<div class="content-head"><div><div class="eyebrow">Paso 06 · asociación contable</div><h2>Ingresar factura</h2><p>Asocia el lote con una factura y valida que el importe sin IVA coincida con las pasadas.</p></div><div class="head-actions">${status('Pendiente de confirmación','warn')}</div></div><div class="content-body"><div class="invoice-layout"><div class="form-card"><h3>Datos de la factura</h3><div class="form-grid"><label>Factura<input value="F-A-0001-00004567" readonly></label><label>Cuenta<input value="CTA-001" readonly></label><label>Empresa<input value="Corredores Viales Demo SA" readonly></label><label>Fecha de factura<input value="15/07/2026" readonly></label><label>Importe sin IVA<input value="102060.00" readonly></label><label>Importe total<input value="123492.60" readonly></label></div></div><div class="validation-card"><div class="validation-title"><h3>Validación de importes</h3>${status('Coincidencia correcta','valid')}</div><div class="validation-list"><div class="validation-line"><span>Suma de importes netos</span><strong>$ 102060.00</strong></div><div class="validation-line"><span>Importe de factura sin IVA</span><strong>$ 102060.00</strong></div><div class="validation-line validation-total"><span>Diferencia</span><strong style="color:var(--green)">$ 0.00</strong></div></div></div></div></div>${footer()}</div>`,
       () => `<div class="content-head"><div><div class="eyebrow">Paso 07 · control final</div><h2>Revisar y confirmar carga</h2><p>Todo está listo. Revisa el resultado estandarizado antes de guardarlo.</p></div><div class="head-actions">${status('Listo para confirmar','valid')}</div></div><div class="content-body"><div class="metrics"><div class="metric"><div class="metric-label">Registros procesados</div><div class="metric-value blue">10</div></div><div class="metric"><div class="metric-label">Registros válidos</div><div class="metric-value green">10</div></div><div class="metric"><div class="metric-label">Registros rechazados</div><div class="metric-value red">0</div></div><div class="metric"><div class="metric-label">Importe neto total</div><div class="metric-value money">$ 102060.00</div></div></div><div class="review-note"><strong>Validación completa</strong><span>10/10 filas listas · 4/4 estaciones · diferencia factura $ 0.00</span></div><div class="table-wrap"><table><thead><tr>${['PASADA_ID','FECHA_HORA','PASE_ID','PATENTE_ID','ESTACION_ID','ESTACION','PEAJE','PRECIO','BONIFICACION','QUANTITY','IMPORTE_NETO','ESTADO'].map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${standardized.map(r => `<tr>${r.map((v, i) => `<td class="${[0,1,2,3,4,7,8,9,10].includes(i) ? 'mono' : ''}">${v}</td>`).join('')}<td>${status('Válido','valid')}</td></tr>`).join('')}</tbody></table></div></div><div class="footer-actions"><div class="footer-hint"><strong>Importante:</strong> confirmar guardará las 10 pasadas asociadas a la factura ficticia.</div><div class="btn-group">${button('Volver','back')}${button('Guardar como plantilla','noop','ghost')}${button('Confirmar carga','finish','success')}</div></div></div>`
     ];
+    screens[0] = () => `<div class="content-head"><div><div class="eyebrow">Paso 01 · origen y configuración</div><h2>Cargar archivo de pasadas</h2><p>Sube el Excel y define qué plantilla debe aplicar automáticamente sus filtros, transformaciones y mapeos.</p></div><div class="head-actions">${status('Archivo listo','valid')}</div></div><div class="content-body"><div class="upload-layout"><div class="drop-zone"><div><div class="upload-icon">↥</div><h3>Arrastra tu archivo aquí</h3><p>o selecciona un archivo .xlsx desde tu equipo<br>El MVP limita la vista previa a 10 registros.</p>${button('Seleccionar archivo','noop','ghost')}</div></div><div class="file-card"><div><div class="file-row"><div class="file-icon">XLSX</div><div><div class="file-name">pasadas_junio_2026.xlsx</div><div class="file-meta">Archivo de origen · actualizado hoy</div></div></div><div class="stat-list"><div class="stat-line"><span>Registros detectados</span><strong>10</strong></div><div class="stat-line"><span>Tamaño del archivo</span><strong>24 KB</strong></div><div class="stat-line"><span>Formato</span><strong>Excel Workbook</strong></div><div class="stat-line"><span>Estado de lectura</span>${status('Correcto','valid')}</div></div><div class="template-box"><div class="template-box-head"><div><strong>¿Qué configuración aplicar?</strong><p>La plantilla cargará automáticamente sus filtros en los pasos 3 y 4.</p></div>${status('Requerido','warn')}</div>${templateSelect('template-select-step-1')}</div></div>${button('Reemplazar archivo','noop','small')}</div></div></div>${footer(false)}</div>`;
+    screens[2] = () => `<div class="content-head"><div><div class="eyebrow">Paso 03 · reglas de limpieza</div><h2>Aplicar transformaciones</h2><p>La plantilla <strong>${selectedTemplate}</strong> propone estas secuencias. Selecciona una tarjeta para inspeccionar su resultado o edítala para agregar filtros.</p></div><div class="head-actions">${button('Guardar como plantilla','noop','ghost')}</div></div><div class="content-body">${configStrip()}<div class="transform-grid" style="margin-top:18px">${transformCard('FECHA_HORA')}${transformCard('PATENTE_ID')}${transformCard('PASE_ID')}${transformCard('IMPORTE_NETO')}${transformCard('QUANTITY','Valor generado')}</div>${transformationPreview()}</div>${footer()}</div>`;
+    screens[3] = () => `<div class="content-head"><div><div class="eyebrow">Paso 04 · plantilla y estructura destino</div><h2>Mapear columnas</h2><p>Selecciona una configuración, revisa su compatibilidad y visualiza cómo cada columna de origen se transforma en el campo destino.</p></div><div class="head-actions">${status('Mapeo completo','valid')}</div></div><div class="content-body"><div class="template-box" style="margin-top:0;margin-bottom:18px"><div class="template-box-head"><div><strong>Configuración aplicada al mapeo</strong><p>Podés cambiar la plantilla y revisar el impacto antes de continuar.</p></div>${status('8 mapeos','valid')}</div>${templateSelect('template-select-step-4')}</div><div class="mapping-layout"><div class="table-wrap"><table class="mapping-table"><thead><tr><th>Columna de origen</th><th>Transformación aplicada</th><th>Campo de destino</th><th>Estado</th></tr></thead><tbody>${[['FECHA + HORA','Completar HORA · combinar columnas','FECHA_HORA'],['DISPOSITIVON','Convertir a texto · limpiar','PASE_ID'],['DOMINIO','Eliminar guiones · mayúsculas','PATENTE_ID'],['ESTACION','Buscar catálogo interno','ESTACION_ID'],['TARIFA','Número decimal','PRECIO'],['BONIFICACION','Número decimal','BONIFICACION'],['Valor generado','Asignar 1','QUANTITY'],['TARIFA - BONIFICACION','Calcular diferencia','IMPORTE_NETO']].map(r => `<tr class="${selectedTransform === r[2] ? 'mapping-selected' : ''}" data-map="${r[2]}"><td class="mono">${r[0]}</td><td>${r[1]}</td><td class="mono">${r[2]}</td><td>${status('Listo','valid')}</td></tr>`).join('')}</tbody></table></div>${mappingDetail()}</div><div class="review-note" style="margin-top:18px"><strong>Vista de control:</strong> seleccioná una fila del mapeo para comprobar el pipeline y el valor resultante del primer registro.</div></div>${footer()}</div>`;
+    const originalReviewScreen = screens[6];
+    screens[6] = () => originalReviewScreen().replace('<div class="content-body">', `<div class="content-body">${configStrip()}`);
+    const openEditor = key => { const spec = transformSpecs[key]; document.getElementById('modal-root').innerHTML = `<div class="modal-backdrop"><div class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div><div class="eyebrow">Editar plantilla · ${key}</div><h3>Configurar transformación</h3></div><button class="edit-link" data-action="close-modal">Cerrar</button></div><div class="modal-body"><p>Podés alterar el orden y agregar un filtro adicional. La edición queda simulada dentro de esta demo.</p><div class="modal-steps">${spec.steps.map((step, i) => `<div class="modal-step"><span>${i + 1}. ${step}</span><button data-action="remove-filter" data-transform="${key}" data-index="${i}">Quitar</button></div>`).join('')}</div><label>Agregar filtro o paso<input id="new-filter" placeholder="Ej.: Convertir fecha al formato local"></label></div><div class="modal-footer">${button('Cancelar','close-modal')}${button('Guardar configuración','save-transform','primary')}</div></div></div>`; };
+    const closeEditor = () => { document.getElementById('modal-root').innerHTML = ''; };
     const render = () => { renderSteps(); document.getElementById('screen').innerHTML = screens[current](); window.scrollTo({ top: 0, behavior: 'smooth' }); };
     document.addEventListener('click', e => {
       const step = e.target.closest('[data-step]');
       if (step) { current = Number(step.dataset.step); render(); return; }
+      const transform = e.target.closest('[data-transform]');
+      if (transform && !e.target.closest('[data-action]')) { selectedTransform = transform.dataset.transform; render(); return; }
+      const map = e.target.closest('[data-map]');
+      if (map) { selectedTransform = map.dataset.map; render(); return; }
       const action = e.target.closest('[data-action]')?.dataset.action;
+      if (action === 'edit-transform') { openEditor(e.target.closest('[data-transform]').dataset.transform); return; }
+      if (action === 'close-modal') { closeEditor(); return; }
+      if (action === 'remove-filter') { const key = e.target.dataset.transform; transformSpecs[key].steps.splice(Number(e.target.dataset.index), 1); openEditor(key); return; }
+      if (action === 'save-transform') { const key = document.querySelector('.modal [data-transform]')?.dataset.transform || selectedTransform; const newFilter = document.getElementById('new-filter')?.value.trim(); if (newFilter) transformSpecs[key].steps.push(newFilter); closeEditor(); render(); return; }
       if (action === 'next') { current = Math.min(6, current + 1); render(); }
       if (action === 'back') { current = Math.max(0, current - 1); render(); }
       if (action === 'finish') { alert('Demo completada: la carga ficticia fue confirmada.'); }
+    });
+    document.addEventListener('change', e => {
+      if (e.target.matches('#template-select-step-1, #template-select-step-4')) { selectedTemplate = e.target.value; render(); }
     });
     render();
   </script>

@@ -200,6 +200,72 @@ IMPORTE_NETO = 17400 - 5220
 IMPORTE_NETO = 12180
 ```
 
+### 5.6 Plantilla de configuración persistida
+
+Para no repetir manualmente estas reglas en cada carga, el usuario guarda la siguiente plantilla en Supabase:
+
+| Campo | Valor |
+|---|---|
+| `nombre` | `Proveedor Demo - Pasadas` |
+| `descripcion` | `Normaliza fecha/hora, patente y valores monetarios.` |
+| `empresa_id` | `EMP-DEMO-001` |
+| `estado` | `activa` |
+| `estrategia_codigo` | `PROVEEDOR_DEMO` |
+
+La plantilla contiene configuraciones ordenadas. El `orden` es explícito y no depende del orden en que PostgreSQL devuelva las filas:
+
+| Orden | `nombre_columna` | Tipo | Algoritmo combinado | Parámetros |
+|---:|---|---|---|---|
+| 10 | `FECHA_HORA` | transformación | `COMBINAR_FECHA_HORA@1` | `FECHA`, `HORA`, formato `HHMMSS` |
+| 20 | `PATENTE_ID` | transformación | `NORMALIZAR_PATENTE@1` | mayúsculas, eliminar guiones y espacios |
+| 30 | `PASE_ID` | transformación | `NORMALIZAR_PASE@1` | convertir a texto, quitar espacios |
+| 40 | `ESTACION_ID` | mapeo | `RESOLVER_ESTACION@1` | catálogo de equivalencias del proveedor |
+| 50 | `IMPORTE_NETO` | cálculo | `CALCULAR_IMPORTE_NETO@1` | `TARIFA - BONIFICACION` |
+
+La persistencia conceptual de los algoritmos combinados es:
+
+```json
+{
+  "nombre": "NORMALIZAR_PATENTE",
+  "pasos": [
+    {"orden": 10, "algoritmo_codigo": "BORRAR_ESPACIOS", "parametros": {"inicio_fin": true}},
+    {"orden": 20, "algoritmo_codigo": "ELIMINAR_GUIONES", "parametros": {}},
+    {"orden": 30, "algoritmo_codigo": "CONVERTIR_MAYUSCULAS", "parametros": {}}
+  ]
+}
+```
+
+### 5.7 Ejecución con Builder y Strategy
+
+El Builder recibe la plantilla vigente y construye un pipeline de ejecución con los pasos 10, 20, 30, 40 y 50. Antes de ejecutar, valida que existan `FECHA`, `HORA`, `DOMINIO`, `DISPOSITIVON`, `ESTACION`, `TARIFA` y `BONIFICACION`.
+
+Luego, el motor usa Strategy para resolver cada código:
+
+```text
+COMBINAR_FECHA_HORA
+  → NormalizarHoraStrategy
+  → ParsearFechaStrategy
+  → CombinarFechaHoraStrategy
+
+NORMALIZAR_PATENTE
+  → BorrarEspaciosStrategy
+  → EliminarGuionesStrategy
+  → MayusculasStrategy
+
+CALCULAR_IMPORTE_NETO
+  → CalcularImporteNetoStrategy
+```
+
+El resultado de la ejecución deberá registrar, como mínimo:
+
+* `plantilla_id = PLT-DEMO-001`.
+* `algoritmo_combinado_id` y definición efectiva de cada algoritmo.
+* Orden ejecutado.
+* Cantidad de filas procesadas, válidas y rechazadas.
+* Fila, columna y algoritmo que originó cada error.
+
+Si el usuario modifica la plantilla o un algoritmo combinado, la definición vigente se sobrescribirá y se utilizará en las ejecuciones posteriores. El versionado histórico queda fuera del MVP.
+
 ---
 
 ## 6. Catálogo ficticio de peajes
