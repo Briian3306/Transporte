@@ -46,6 +46,13 @@ F00–F05 `passing` (F05-1…F05-3).
 
 ## Registro de sesiones
 
+### 2026-07-30 — Fix Admin acceso denegado Peajes
+
+- **Causa raíz:** `PermissionGuard` exige `peajes:read`; F01 omitía `system_modules` peajes en CLI vacío y el alta **nunca se aplicó** a DESARROLLO → Admin tiene rol pero no `peajes:read` → `/access-denied` con “Tu rol actual: Admin”.
+- **Fix:** migración repair `20260730150000_peajes_system_module_admin_permissions.sql` (idempotente; asigna peajes read/create/manage a roles `admin`/`administrador` case-insensitive; no-op si host RBAC ausente).
+- CLI: `migration up --local` OK (NOTICE omit en CLI vacío). Frontend/guards ya alineados (`peajes` + `read`).
+- **Para desbloquear UI en DESARROLLO:** aplicar esa migración (o `db push --linked` autorizado). Luego **re-login o refrescar permisos** (caché de permisos).
+
 ### 2026-07-30 — Fase 3 Agente 05 Integrador/QA
 
 - Merge rutas: wizard + catalogos + plantillas en `peajes.routes.ts`.
@@ -79,10 +86,9 @@ F00–F05 `passing` (F05-1…F05-3).
 
 ## Bloqueos y riesgos
 
-- `system_modules` peajes solo si existe host RBAC (DESARROLLO); CLI vacío lo omite — anotar para push autorizado.
 - Schema Peajes **no** está en DESARROLLO remoto hasta `db push --linked` autorizado.
 - `init.sh` no ejecutable en este host Windows sin bash/WSL (evidencia F05-3).
 
 ## Próximo paso
 
-Autorización del usuario para: (1) push rama `feature/peajes-mvp`, (2) `db push --linked` a DESARROLLO, (3) merge a `main` cuando corresponda.
+Autorización del usuario para: (1) push rama `feature/peajes-mvp`, (2) `db push --linked` a DESARROLLO (incluye repair RBAC peajes), (3) merge a `main` cuando corresponda.

@@ -359,10 +359,16 @@ npx supabase test db → PASS 30/30
 init.sh → BLOCKED (sin bash/WSL en host Windows)
 ```
 
+### Bugfix (2026-07-30) — Admin “acceso denegado” en Peajes
+
+- **Causa:** falta `system_modules.name = peajes` + `role_permissions` Admin en DESARROLLO (F01 condicional omitido en CLI vacío; sin `db push`).
+- **Migración:** `supabase/migrations/20260730150000_peajes_system_module_admin_permissions.sql`.
+- **Verificar tras aplicar en DESARROLLO:** login Admin → `/peajes` (y wizard/catálogos/plantillas) sin `/access-denied`; dashboard tarjeta Peajes “Acceder”. Re-login o refresh de permisos.
+
 ### Pendiente (requiere autorización del usuario)
 
 1. Push remoto de `feature/peajes-mvp` (por defecto no).
-2. `npx supabase db push --linked` a DESARROLLO `kfffigvyvtzyczeiadxh` (incluye `system_modules` peajes si host RBAC existe).
+2. `npx supabase db push --linked` a DESARROLLO `kfffigvyvtzyczeiadxh` (schema Peajes + repair `system_modules`/Admin).
 3. Merge a `main` — no hacerlo sin OK explícito.
 
 ### SHA / rama (F05)

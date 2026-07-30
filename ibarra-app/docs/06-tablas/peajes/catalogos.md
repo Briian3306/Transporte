@@ -86,7 +86,7 @@ Dispositivos/pases reutilizables (RN-02).
 
 ## system_modules
 
-La misma migración intenta insertar `system_modules.name = 'peajes'` + acción `read` (patrón stock) **solo si** existen las tablas host RBAC. En `db reset` CLI vacío se omite con NOTICE. **Pendiente en DESARROLLO** tras `db push --linked` autorizado (Agente 05 / ops).
+La misma migración intenta insertar `system_modules.name = 'peajes'` + acción `read` (patrón stock) **solo si** existen las tablas host RBAC. En `db reset` CLI vacío se omite con NOTICE. Repair idempotente: `20260730150000_peajes_system_module_admin_permissions.sql` (módulo + read/create/manage → roles admin/administrador). Aplicar en DESARROLLO con `db push --linked` autorizado.
 
 ---
 

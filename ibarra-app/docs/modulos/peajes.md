@@ -71,7 +71,7 @@ Tests SQL: `supabase/tests/peajes_f01_test.sql`
 | `peajes:read` en `ROUTE_PERMISSIONS` | OK (Fase 0) |
 | Tarjeta dashboard `id: 'peajes'` | OK |
 | Subrutas wizard/catalogos/plantillas | **Pendiente merge 05** |
-| `system_modules` peajes en DESARROLLO | **Pendiente** (condicional; omitido en CLI vacío) |
+| `system_modules` peajes en DESARROLLO | Repair `20260730150000_…admin_permissions.sql` en repo; **aplicar** con `db push --linked` autorizado |
 | Links reales en home (“Próximamente”) | **Pendiente 05** |
 
 ---
