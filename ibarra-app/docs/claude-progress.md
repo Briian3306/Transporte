@@ -46,12 +46,21 @@ F00–F05 `passing` (F05-1…F05-3).
 
 ## Registro de sesiones
 
+### 2026-07-30 — DESARROLLO: sync historial + db push Peajes
+
+- **Causa drift:** remoto `kfffigvyvtzyczeiadxh` tenía 6 versiones aplicadas (maquinas/sectores/stock/user_profile_roles) ausentes en `supabase/migrations/` local → `db push --linked` bloqueaba con “Remote migration versions not found”.
+- **Estrategia A falló:** no había SQL hermano con esos timestamps (solo existían en `schema_migrations` remoto).
+- **Acción segura:** `pnpm supabase migration fetch --linked` → recuperó los 6 SQL con los mismos version IDs. **No** se usó `migration repair --status reverted`.
+- **Push:** `pnpm supabase db push --linked --yes` aplicó las 7 migraciones Peajes (`20260730125513`…`20260730150000`). Warning post-apply de cache pg-delta (timeout) — no falló el apply.
+- **Verificación MCP** (`list_migrations` + `execute_sql`): 13 migraciones en remoto; `system_modules.name='peajes'` activo; roles `admin` y `administrador` tienen `peajes:read` (+ create/manage y resto de acciones del módulo); tablas peajes/estaciones/pasadas/plantillas/algoritmos presentes.
+- **Next usuario:** cerrar sesión en la app / hard refresh y volver a entrar para refrescar caché de permisos JWT/UI.
+
 ### 2026-07-30 — Fix Admin acceso denegado Peajes
 
 - **Causa raíz:** `PermissionGuard` exige `peajes:read`; F01 omitía `system_modules` peajes en CLI vacío y el alta **nunca se aplicó** a DESARROLLO → Admin tiene rol pero no `peajes:read` → `/access-denied` con “Tu rol actual: Admin”.
 - **Fix:** migración repair `20260730150000_peajes_system_module_admin_permissions.sql` (idempotente; asigna peajes read/create/manage a roles `admin`/`administrador` case-insensitive; no-op si host RBAC ausente).
 - CLI: `migration up --local` OK (NOTICE omit en CLI vacío). Frontend/guards ya alineados (`peajes` + `read`).
-- **Para desbloquear UI en DESARROLLO:** aplicar esa migración (o `db push --linked` autorizado). Luego **re-login o refrescar permisos** (caché de permisos).
+- **DESARROLLO:** aplicado vía `db push --linked` (sesión sync historial). Re-login app obligatorio.
 
 ### 2026-07-30 — Fase 3 Agente 05 Integrador/QA
 

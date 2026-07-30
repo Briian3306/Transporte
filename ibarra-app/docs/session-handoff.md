@@ -363,33 +363,27 @@ init.sh → BLOCKED (sin bash/WSL en host Windows)
 
 - **Causa:** falta `system_modules.name = peajes` + `role_permissions` Admin en DESARROLLO (F01 condicional omitido en CLI vacío; sin `db push`).
 - **Migración:** `supabase/migrations/20260730150000_peajes_system_module_admin_permissions.sql`.
-- **Verificar tras aplicar en DESARROLLO:** login Admin → `/peajes` (y wizard/catálogos/plantillas) sin `/access-denied`; dashboard tarjeta Peajes “Acceder”. Re-login o refresh de permisos.
+- **Estado DESARROLLO:** aplicado. Verificado: `system_modules.peajes` activo; `admin`/`administrador` tienen `peajes:read` (+ create/manage).
+- **Usuario:** cerrar sesión en la app o hard refresh → re-login Admin → `/peajes`.
 
 ### Pendiente
 
-1. ~~Autorización `db push --linked`~~ — **autorizado**, pero **BLOCKED por ACL** (403 login role). Ver abajo.
+1. ~~`db push --linked` a DESARROLLO~~ — **DONE** (2026-07-30).
 2. Merge a `main` — no hacerlo sin OK explícito.
 
-### 2026-07-30 — `db push --linked` DESARROLLO: BLOCKED
+### 2026-07-30 — `db push --linked` DESARROLLO: OK
 
 | Check | Resultado |
 |-------|-----------|
 | Rama | `feature/peajes-mvp` |
-| Migraciones peajes en repo | Sí (7), incl. `20260730150000_…admin_permissions.sql` |
+| Drift historial | Resuelto con `migration fetch --linked` (6 SQL remotos recuperados; sin `repair reverted`) |
 | `project-ref` linked | `kfffigvyvtzyczeiadxh` (DESARROLLO / “Check-list”) |
-| Refs OrdenCompra usadas | No |
-| `npx supabase db push --linked` | **FAIL 403** — cuenta CLI sin privilegios al endpoint de DB del proyecto |
-| Verificación `system_modules` / Admin peajes en remoto | No ejecutada (sin acceso) |
+| `pnpm supabase db push --linked --yes` | **OK** — 7 migraciones Peajes aplicadas |
+| MCP `list_migrations` | 13 versiones (6 host + 7 peajes) |
+| `system_modules` peajes | activo, route `/peajes` |
+| Admin `peajes:read` | **sí** (también create/manage) |
 
-**Qué debe hacer el usuario**
-
-1. En Supabase Dashboard: confirmar que la cuenta usada en CLI es miembro de la org del proyecto DESARROLLO (`kfffigvyvtzyczeiadxh`), rol Developer o superior.
-2. O bien: `npx supabase login` con esa cuenta, luego desde `ibarra-app`:
-   ```powershell
-   Get-Content supabase\.temp\project-ref   # debe ser kfffigvyvtzyczeiadxh
-   npx supabase db push --linked
-   ```
-3. Tras push OK: cerrar sesión en la app (o hard refresh), volver a entrar como Admin, abrir `/peajes`.
+**Nota:** el warning de cache pg-delta post-push es cosmético; el apply terminó bien.
 
 ### SHA / rama (F05)
 
