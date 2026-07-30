@@ -1,0 +1,115 @@
+import { Component, Inject, inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import {
+  PEAJES_CARGA_SERVICE,
+  PEAJES_CATALOGO_SERVICE,
+  PeajesCargaService,
+  PeajesCatalogoService,
+} from '../models';
+import { PeajesWizardStateService, WizardPasoId } from './services/peajes-wizard-state.service';
+import { Paso1CargaComponent } from './paso1-carga/paso1-carga.component';
+import { Paso2PreviewComponent } from './paso2-preview/paso2-preview.component';
+import { Paso3TransformacionesComponent } from './paso3-transformaciones/paso3-transformaciones.component';
+import { Paso4PlantillaComponent } from './paso4-plantilla/paso4-plantilla.component';
+import { Paso5MapeoComponent } from './paso5-mapeo/paso5-mapeo.component';
+import { Paso6EstacionesComponent } from './paso6-estaciones/paso6-estaciones.component';
+import { Paso7FacturaComponent } from './paso7-factura/paso7-factura.component';
+import { Paso8ValidacionComponent } from './paso8-validacion/paso8-validacion.component';
+import { Paso9RevisionComponent } from './paso9-revision/paso9-revision.component';
+import { PeajesCatalogoMockService } from './mocks/peajes-catalogo.mock';
+import { PeajesCargaMockService } from './mocks/peajes-carga.mock';
+
+interface PasoMeta {
+  id: WizardPasoId;
+  label: string;
+  owner?: string;
+}
+
+const PASOS: PasoMeta[] = [
+  { id: 1, label: 'Carga' },
+  { id: 2, label: 'Preview' },
+  { id: 3, label: 'Transformaciones', owner: '03' },
+  { id: 4, label: 'Plantilla', owner: '03' },
+  { id: 5, label: 'Mapeo' },
+  { id: 6, label: 'Estaciones' },
+  { id: 7, label: 'Factura' },
+  { id: 8, label: 'Validación' },
+  { id: 9, label: 'Revisión' },
+];
+
+@Component({
+  selector: 'app-peajes-wizard',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterLink,
+    Paso1CargaComponent,
+    Paso2PreviewComponent,
+    Paso3TransformacionesComponent,
+    Paso4PlantillaComponent,
+    Paso5MapeoComponent,
+    Paso6EstacionesComponent,
+    Paso7FacturaComponent,
+    Paso8ValidacionComponent,
+    Paso9RevisionComponent,
+  ],
+  providers: [
+    { provide: PEAJES_CATALOGO_SERVICE, useClass: PeajesCatalogoMockService },
+    { provide: PEAJES_CARGA_SERVICE, useClass: PeajesCargaMockService },
+  ],
+  templateUrl: './peajes-wizard.component.html',
+  styleUrl: './peajes-wizard.component.css',
+})
+export class PeajesWizardComponent implements OnInit {
+  readonly state = inject(PeajesWizardStateService);
+  readonly pasos = PASOS;
+
+  /** DI tipada contra contratos Fase 0 (mock hasta F01). */
+  constructor(
+    @Inject(PEAJES_CATALOGO_SERVICE) readonly catalogo: PeajesCatalogoService,
+    @Inject(PEAJES_CARGA_SERVICE) readonly carga: PeajesCargaService
+  ) {}
+
+  ngOnInit(): void {
+    // Estado ya hidratado desde el servicio (RF-25).
+  }
+
+  get pasoActual(): WizardPasoId {
+    return this.state.pasoActual;
+  }
+
+  irA(paso: WizardPasoId): void {
+    if (paso < this.pasoActual || this.puedeAvanzarA(paso)) {
+      this.state.setPaso(paso);
+    }
+  }
+
+  siguiente(): void {
+    const next = Math.min(9, this.pasoActual + 1) as WizardPasoId;
+    if (this.puedeAvanzarA(next)) {
+      this.state.setPaso(next);
+    }
+  }
+
+  atras(): void {
+    if (this.pasoActual > 1) {
+      this.state.setPaso((this.pasoActual - 1) as WizardPasoId);
+    }
+  }
+
+  puedeAvanzarA(paso: WizardPasoId): boolean {
+    const s = this.state.snapshot();
+    if (paso >= 2 && !s.preview) {
+      return false;
+    }
+    if (paso >= 5 && s.columnasIncluidas.length === 0) {
+      return false;
+    }
+    return true;
+  }
+
+  reiniciar(): void {
+    this.state.reiniciar();
+  }
+}

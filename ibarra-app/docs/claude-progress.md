@@ -39,9 +39,18 @@ Decisiones vigentes:
 
 ## Features
 
-F00-1…F00-4 `passing`. **F03-1…F03-8 `passing`** (Agente 03, 2026-07-30). Persistencia vía mock tipado hasta F01-3/4/7/8.
+F00-1…F00-4 `passing`. **F02-1…F02-9 `passing`** (Agente 02; mocks tipados; catalogos `fb` fix). **F03-1…F03-8 `passing`** (Agente 03). Persistencia real pendiente F01.
 
 ## Registro de sesiones
+
+### 2026-07-30 — Fase 1 Agente 02 Wizard & Tablas
+
+- Scope: `wizard/**`, `catalogos/**`. Dep `xlsx`.
+- Fix TS `fb used before initialization` en catálogos → `inject(FormBuilder)` (desbloquea `ng test`).
+- Wizard pasos 1–9; 3–4 consumen `PeajesMotorTransformacion` / mock plantillas 03 (sin Strategy duplicada).
+- Catálogos peajes/estaciones/patentes/pases + mocks contratos 00.
+- Rutas fragmento para 05 (`wizard.routes` + `catalogos.routes`); conflicto de merge anotado en handoff (sin overlap de path con plantillas).
+- Evidencia: `ng build` OK; `ng test` wizard+catalogos → 12 SUCCESS.
 
 ### 2026-07-30 — Fase 1 Agente 03 Plantillas & Motor
 
@@ -50,7 +59,7 @@ F00-1…F00-4 `passing`. **F03-1…F03-8 `passing`** (Agente 03, 2026-07-30). Pe
 - UI: home/builder/aplicar/algoritmos; validaciones publicar + alcance empresa.
 - Mock `PeajesPlantillasMockService` (contratos 00); seed demo §21 + NORMALIZAR_PATENTE.
 - Evidencia: `npm run build` OK; `npx tsx …/motor.verify.ts` PASS (§21).
-- `ng test` bloqueado por errores TS en `catalogos/**` (02) — anotado en handoff.
+- `ng test` catalogos (`fb` before init) → **corregido por Agente 02** (`inject(FormBuilder)`).
 - Pedido a 05: merge rutas desde `plantillas.routes.ts`. Pedido a 01: servicio real.
 
 ### 2026-07-30 — Fase 0 Orquestador/Setup
@@ -73,8 +82,9 @@ F00-1…F00-4 `passing`. **F03-1…F03-8 `passing`** (Agente 03, 2026-07-30). Pe
 - Tarjeta Peajes queda `disabled` hasta que 01 inserte `system_modules` name=`peajes` y asigne permisos.
 - `.claude/agents/` no presentes (no bloquea skills).
 - Root `.agents/skills/` es legacy; canónico = `ibarra-app/.agents/skills/`.
-- **Agente 03:** `ng test` no corre mientras `catalogos/**` tenga errores TS (`fb` before init). Rutas plantillas pendientes de merge 05. Mock hasta F01.
+- Rutas wizard/catalogos/plantillas pendientes de merge 05 (sin overlap de path; unificar estilo de declaración).
+- Mocks frontend hasta F01 servicios reales.
 
 ## Próximo paso
 
-Agentes 01/02 continúan en paralelo; 05 integra rutas plantillas + sustituye mocks cuando F01 pase.
+Agente 01 backend; 05 integra rutas (wizard + catalogos + plantillas) y home links.

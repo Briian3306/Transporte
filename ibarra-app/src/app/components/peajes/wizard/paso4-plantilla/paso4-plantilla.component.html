@@ -1,0 +1,35 @@
+<div class="paso4">
+  <h2>Paso 4 — Plantilla</h2>
+  <p class="paso4__hint">
+    Lista plantillas del mock 03 y aplica el pipeline con <code>PeajesMotorTransformacion</code>.
+  </p>
+
+  <div class="pw__field">
+    <label for="plantilla">Plantilla</label>
+    <select id="plantilla" [(ngModel)]="plantillaId">
+      <option value="">— Continuar sin plantilla —</option>
+      <option *ngFor="let p of plantillas" [value]="p.id">{{ p.nombre }} ({{ p.estado }})</option>
+    </select>
+  </div>
+
+  <div class="pw__alert pw__alert--info" *ngIf="info">{{ info }}</div>
+  <div class="pw__alert pw__alert--error" *ngIf="errores.length" role="alert">
+    <div *ngFor="let e of errores">{{ e }}</div>
+  </div>
+
+  <div class="pw__actions">
+    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      Atrás
+    </button>
+    <div class="paso4__right">
+      <button type="button" class="pw__btn pw__btn--ghost" (click)="continuarSinPlantilla()">
+        Sin plantilla
+      </button>
+      <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">
+        Continuar
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+</div>

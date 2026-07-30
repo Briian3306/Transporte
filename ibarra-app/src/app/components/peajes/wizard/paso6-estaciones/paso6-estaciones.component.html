@@ -1,0 +1,85 @@
+<div class="paso6">
+  <h2>Paso 6 — Relacionar estaciones y peajes</h2>
+  <p class="paso6__hint">
+    La pasada referencia <code>estacion_id</code>; el peaje se deriva de la estación (no se guarda peaje_id en la pasada).
+  </p>
+
+  <div class="pw__table-wrap">
+    <table class="pw__table">
+      <thead>
+        <tr>
+          <th>Código proveedor</th>
+          <th>Estación interna</th>
+          <th>Peaje derivado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of relaciones">
+          <td>{{ r.valorProveedor }}</td>
+          <td>
+            <select
+              [ngModel]="r.estacionId || ''"
+              (ngModelChange)="seleccionar(r.valorProveedor, $event)"
+            >
+              <option value="">— Seleccionar —</option>
+              <option *ngFor="let e of estaciones" [value]="e.id">
+                {{ e.nombre }} ({{ e.id }})
+              </option>
+            </select>
+            <div class="paso6__sug" *ngIf="sugerencias[r.valorProveedor]?.length">
+              Sugerencias:
+              <button
+                type="button"
+                class="paso6__chip"
+                *ngFor="let s of sugerencias[r.valorProveedor]"
+                (click)="seleccionar(r.valorProveedor, s.id)"
+              >
+                {{ s.nombre }}
+              </button>
+            </div>
+          </td>
+          <td>{{ peajeDe(r.estacionId) }}</td>
+          <td>
+            <button type="button" class="pw__btn pw__btn--ghost" (click)="abrirCrear(r.valorProveedor)">
+              Nueva
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="paso6__crear" *ngIf="creandoPara">
+    <h3>Crear estación para código «{{ creandoPara }}»</h3>
+    <div class="pw__form-grid">
+      <div class="pw__field">
+        <label>Nombre</label>
+        <input [(ngModel)]="nuevaEstacionNombre" />
+      </div>
+      <div class="pw__field">
+        <label>Peaje</label>
+        <select [(ngModel)]="nuevaEstacionPeajeId">
+          <option *ngFor="let p of peajesUnicos" [value]="p.id">{{ p.nombre }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="pw__actions">
+      <button type="button" class="pw__btn pw__btn--ghost" (click)="creandoPara = null">Cancelar</button>
+      <button type="button" class="pw__btn pw__btn--primary" (click)="crearEstacion()">Crear y relacionar</button>
+    </div>
+  </div>
+
+  <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+
+  <div class="pw__actions">
+    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      Atrás
+    </button>
+    <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">
+      Continuar
+      <i class="fas fa-arrow-right" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>

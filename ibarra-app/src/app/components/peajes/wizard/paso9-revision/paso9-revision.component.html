@@ -1,0 +1,68 @@
+<div class="paso9">
+  <h2>Paso 9 — Revisión y confirmación</h2>
+  <p class="paso9__hint">Revisá el resumen antes de guardar la carga.</p>
+
+  <div class="paso9__cards">
+    <article>
+      <h3>Archivo</h3>
+      <p>{{ snap.preview?.nombreArchivo || '—' }}</p>
+      <p>{{ snap.preview?.totalFilas || 0 }} filas · {{ snap.preview?.tamanioBytes || 0 }} bytes</p>
+    </article>
+    <article>
+      <h3>Mapeo</h3>
+      <ul>
+        <li *ngFor="let m of snap.mapeos">
+          <ng-container *ngIf="!m.excluida && m.columnaDestino">
+            {{ m.columnaOrigen }} → {{ m.columnaDestino }}
+          </ng-container>
+        </li>
+      </ul>
+    </article>
+    <article>
+      <h3>Estaciones</h3>
+      <ul>
+        <li *ngFor="let r of snap.relacionesEstacion">
+          {{ r.valorProveedor }} → {{ r.estacionId }} (peaje {{ r.peajeIdDerivado || '—' }})
+        </li>
+      </ul>
+    </article>
+    <article>
+      <h3>Factura</h3>
+      <p>{{ snap.factura.factura }} · {{ snap.factura.cuenta }}</p>
+      <p>Empresa {{ snap.factura.empresa_id }} · {{ snap.factura.fecha_factura }}</p>
+      <p>
+        Sin IVA: {{ snap.factura.importe_sin_iva | number: '1.2-2' }} ·
+        Total: {{ snap.factura.importe_total | number: '1.2-2' }}
+      </p>
+    </article>
+  </div>
+
+  <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+
+  <div class="pw__alert pw__alert--ok" *ngIf="resultado as res">
+    Carga confirmada. Factura {{ res.factura.id }} · {{ res.pasadas.length }} pasadas ·
+    registro {{ res.registro.id }} (mock hasta F01-2/9).
+  </div>
+
+  <div class="pw__actions">
+    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()" [disabled]="!!resultado">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      Atrás
+    </button>
+    <div class="paso9__right">
+      <button type="button" class="pw__btn pw__btn--ghost" *ngIf="resultado" (click)="reiniciar.emit()">
+        Nueva carga
+      </button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--primary"
+        *ngIf="!resultado"
+        [disabled]="guardando"
+        (click)="confirmar()"
+      >
+        <i class="fas fa-check" aria-hidden="true"></i>
+        Confirmar carga
+      </button>
+    </div>
+  </div>
+</div>

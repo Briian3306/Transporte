@@ -1,0 +1,51 @@
+<div class="pw">
+  <header class="pw__header">
+    <div>
+      <p class="pw__eyebrow">Módulo Peajes</p>
+      <h1 class="pw__title">
+        <i class="fas fa-file-excel" aria-hidden="true"></i>
+        Asistente de carga
+      </h1>
+      <p class="pw__subtitle">
+        Cargá el Excel, previsualizá, mapeá columnas, asociá estaciones y confirmá la factura.
+      </p>
+    </div>
+    <div class="pw__header-actions">
+      <button type="button" class="pw__btn pw__btn--ghost" (click)="reiniciar()">
+        <i class="fas fa-undo" aria-hidden="true"></i>
+        Reiniciar
+      </button>
+      <a routerLink="/peajes" class="pw__btn pw__btn--ghost">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Volver
+      </a>
+    </div>
+  </header>
+
+  <nav class="pw__steps" aria-label="Pasos del asistente">
+    <button
+      type="button"
+      class="pw__step"
+      *ngFor="let p of pasos"
+      [class.pw__step--active]="p.id === pasoActual"
+      [class.pw__step--done]="p.id < pasoActual"
+      [disabled]="p.id > pasoActual && !puedeAvanzarA(p.id)"
+      (click)="irA(p.id)"
+    >
+      <span class="pw__step-num">{{ p.id }}</span>
+      <span class="pw__step-label">{{ p.label }}</span>
+    </button>
+  </nav>
+
+  <section class="pw__body fade-in" [attr.data-paso]="pasoActual">
+    <app-paso1-carga *ngIf="pasoActual === 1" (completado)="siguiente()" />
+    <app-paso2-preview *ngIf="pasoActual === 2" (completado)="siguiente()" (atras)="atras()" />
+    <app-paso3-transformaciones *ngIf="pasoActual === 3" (completado)="siguiente()" (atras)="atras()" />
+    <app-paso4-plantilla *ngIf="pasoActual === 4" (completado)="siguiente()" (atras)="atras()" />
+    <app-paso5-mapeo *ngIf="pasoActual === 5" (completado)="siguiente()" (atras)="atras()" />
+    <app-paso6-estaciones *ngIf="pasoActual === 6" (completado)="siguiente()" (atras)="atras()" />
+    <app-paso7-factura *ngIf="pasoActual === 7" (completado)="siguiente()" (atras)="atras()" />
+    <app-paso8-validacion *ngIf="pasoActual === 8" (completado)="siguiente()" (atras)="atras()" />
+    <app-paso9-revision *ngIf="pasoActual === 9" (atras)="atras()" (reiniciar)="reiniciar()" />
+  </section>
+</div>

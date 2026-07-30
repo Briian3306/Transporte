@@ -1,0 +1,45 @@
+<div class="paso2" *ngIf="preview as p">
+  <h2>Paso 2 — Vista previa y selección de columnas</h2>
+  <p class="paso2__hint">
+    Se muestran como máximo <strong>10 filas</strong> (RNF-03). Total de registros: {{ p.totalFilas }}.
+  </p>
+
+  <div class="paso2__cols">
+    <div class="paso2__col" *ngFor="let col of p.columnas">
+      <label>
+        <input type="checkbox" [checked]="incluida(col)" (change)="toggleColumna(col, $any($event.target).checked)" />
+        <span class="paso2__col-name">{{ col }}</span>
+      </label>
+      <span class="paso2__tipo">{{ p.tiposInferidos[col] || '—' }}</span>
+      <span class="paso2__vacios" *ngIf="columnasVacias(col) > 0">{{ columnasVacias(col) }} vacíos en preview</span>
+    </div>
+  </div>
+
+  <div class="pw__table-wrap">
+    <table class="pw__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th *ngFor="let col of p.columnas" [class.paso2__excluded]="!incluida(col)">{{ col }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let fila of filasPreview; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td *ngFor="let col of p.columnas" [class.paso2__excluded]="!incluida(col)">{{ fila[col] }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pw__actions">
+    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      Atrás
+    </button>
+    <button type="button" class="pw__btn pw__btn--primary" [disabled]="!state.snapshot().columnasIncluidas.length" (click)="continuar()">
+      Continuar
+      <i class="fas fa-arrow-right" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>

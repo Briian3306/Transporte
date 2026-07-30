@@ -1,0 +1,46 @@
+<div class="cat">
+  <header class="cat__header">
+    <h1><i class="fas fa-road" aria-hidden="true"></i> Catálogo de peajes</h1>
+    <a routerLink="/peajes/catalogos" class="cat__back">Volver a catálogos</a>
+  </header>
+
+  <div class="cat__layout">
+    <section class="cat__panel">
+      <h2>{{ editandoId ? 'Editar peaje' : 'Nuevo peaje' }}</h2>
+      <form [formGroup]="form" class="cat__form" (ngSubmit)="guardar()">
+        <label>Nombre *<input formControlName="nombre" /></label>
+        <label>Ubicación<input formControlName="ubicacion" /></label>
+        <label>Descripción<input formControlName="descripcion" /></label>
+        <label>Empresa ID<input formControlName="empresa_id" /></label>
+        <div class="cat__actions">
+          <button type="button" (click)="nuevo()">Limpiar</button>
+          <button type="submit" [disabled]="guardando">Guardar</button>
+        </div>
+      </form>
+      <p class="cat__error" *ngIf="error">{{ error }}</p>
+      <p class="cat__note">Usa mock tipado hasta que F01-1 entregue el servicio real.</p>
+    </section>
+
+    <section class="cat__panel">
+      <h2>Listado</h2>
+      <table class="cat__table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Ubicación</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of peajes">
+            <td>{{ p.id }}</td>
+            <td>{{ p.nombre }}</td>
+            <td>{{ p.ubicacion || '—' }}</td>
+            <td><button type="button" (click)="editar(p)">Editar</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,45 @@
+<div class="cat">
+  <header class="cat__header">
+    <h1><i class="fas fa-car" aria-hidden="true"></i> Catálogo de patentes</h1>
+    <a routerLink="/peajes/catalogos" class="cat__back">Volver a catálogos</a>
+  </header>
+
+  <div class="cat__layout">
+    <section class="cat__panel">
+      <h2>Nueva patente</h2>
+      <form [formGroup]="form" class="cat__form" (ngSubmit)="guardar()">
+        <label>Patente *<input formControlName="patente" class="uppercase" /></label>
+        <label>
+          Categoría *
+          <select formControlName="categoria">
+            <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+          </select>
+        </label>
+        <div class="cat__actions">
+          <button type="submit" [disabled]="guardando">Crear</button>
+        </div>
+      </form>
+      <p class="cat__error" *ngIf="error">{{ error }}</p>
+    </section>
+
+    <section class="cat__panel">
+      <h2>Listado</h2>
+      <table class="cat__table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Patente</th>
+            <th>Categoría</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of patentes">
+            <td>{{ p.id }}</td>
+            <td>{{ p.patente }}</td>
+            <td>{{ p.categoria }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</div>

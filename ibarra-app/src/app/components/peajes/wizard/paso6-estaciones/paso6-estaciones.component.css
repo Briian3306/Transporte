@@ -1,0 +1,51 @@
+.paso6 h2 {
+  margin: 0 0 0.35rem;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.paso6__hint {
+  margin: 0 0 1rem;
+  color: #5d6d7e;
+}
+
+.paso6 select {
+  min-width: 14rem;
+  min-height: 38px;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+}
+
+.paso6__sug {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: #5d6d7e;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.paso6__chip {
+  border: 1px solid #aed6f1;
+  background: #eaf4fb;
+  color: #1a5276;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.paso6__crear {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.paso6__crear h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: #2c3e50;
+}

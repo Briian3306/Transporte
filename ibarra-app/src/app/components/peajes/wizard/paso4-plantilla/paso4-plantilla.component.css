@@ -1,0 +1,25 @@
+.paso4 h2 {
+  margin: 0 0 0.35rem;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.paso4__hint {
+  margin: 0 0 1rem;
+  color: #5d6d7e;
+}
+
+.paso4 select {
+  width: 100%;
+  max-width: 28rem;
+  min-height: 42px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+}
+
+.paso4__right {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

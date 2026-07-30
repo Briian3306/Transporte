@@ -1,0 +1,48 @@
+<div class="paso5">
+  <h2>Paso 5 — Mapear columnas</h2>
+  <p class="paso5__hint">Relacioná cada columna del archivo con la estructura estándar (Pasada-Columns).</p>
+
+  <div class="pw__table-wrap">
+    <table class="pw__table">
+      <thead>
+        <tr>
+          <th>Columna origen</th>
+          <th>Destino estándar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let m of mapeos">
+          <td>{{ m.columnaOrigen }}</td>
+          <td>
+            <select
+              [ngModel]="m.columnaDestino || ''"
+              (ngModelChange)="setDestino(m.columnaOrigen, $event)"
+            >
+              <option value="">— Sin mapear —</option>
+              <option
+                *ngFor="let d of destinos"
+                [value]="d"
+                [disabled]="destinoUsado(d, m.columnaOrigen)"
+              >
+                {{ d }}
+              </option>
+            </select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+
+  <div class="pw__actions">
+    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      Atrás
+    </button>
+    <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">
+      Continuar
+      <i class="fas fa-arrow-right" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>

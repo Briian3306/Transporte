@@ -1,0 +1,135 @@
+.cat {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.cat__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.cat__header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cat__header h1 i {
+  color: #2980b9;
+}
+
+.cat__back {
+  text-decoration: none;
+  color: #2c3e50;
+  background: #f4f6f7;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.cat__layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 1rem;
+}
+
+.cat__panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.cat__panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  color: #2c3e50;
+}
+
+.cat__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.cat__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.cat__form input,
+.cat__form select {
+  min-height: 40px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-weight: 400;
+}
+
+.cat__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.cat__actions button,
+.cat__table button {
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #2980b9;
+  color: #fff;
+}
+
+.cat__actions button[type='button'] {
+  background: #f4f6f7;
+  color: #2c3e50;
+}
+
+.cat__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.cat__table th,
+.cat__table td {
+  text-align: left;
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid #eef1f3;
+}
+
+.cat__table th {
+  background: #f8f9fa;
+}
+
+.cat__error {
+  color: #c0392b;
+  margin-top: 0.5rem;
+}
+
+.cat__note {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #7f8c8d;
+}
+
+@media (max-width: 800px) {
+  .cat__layout {
+    grid-template-columns: 1fr;
+  }
+}

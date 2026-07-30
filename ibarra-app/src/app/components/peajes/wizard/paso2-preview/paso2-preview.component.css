@@ -1,0 +1,53 @@
+.paso2 h2 {
+  margin: 0 0 0.35rem;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.paso2__hint {
+  margin: 0 0 1rem;
+  color: #5d6d7e;
+}
+
+.paso2__cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.paso2__col {
+  border: 1px solid #e5e8eb;
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: #fafbfc;
+}
+
+.paso2__col label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.88rem;
+}
+
+.paso2__tipo {
+  font-size: 0.75rem;
+  color: #2980b9;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.paso2__vacios {
+  font-size: 0.72rem;
+  color: #d68910;
+}
+
+.paso2__excluded {
+  opacity: 0.35;
+  text-decoration: line-through;
+}

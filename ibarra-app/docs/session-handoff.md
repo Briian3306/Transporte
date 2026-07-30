@@ -94,6 +94,68 @@ Regla de dominio: **pasada → estacion_id**; peaje derivado vía estación (no 
 - No editar `peajes.routes.ts` ni modelos; pedir merge a 05 vía este handoff
 - Mocks tipados hasta F01 `passing`
 
+## Estado Fase 1 — Agente 02 Frontend Wizard & Tablas (2026-07-30)
+
+**F02-1…F02-9 → `passing`** (UI + tests; persistencia/catálogo real pendiente de 01).
+
+### Entregado bajo `wizard/**` y `catalogos/**`
+
+| Área | Path |
+|------|------|
+| Wizard shell | `wizard/peajes-wizard.component.*` (pasos 1–9; 3–4 placeholder → 03) |
+| Estado | `wizard/services/peajes-wizard-state.service.ts` (RF-25) |
+| Excel | `wizard/services/peajes-excel.service.ts` + dep `xlsx` |
+| Mocks | `wizard/mocks/peajes-catalogo.mock.ts`, `peajes-carga.mock.ts` |
+| Pasos | `paso1-carga` … `paso9-revision` (+ `paso-placeholder` 3/4) |
+| Catálogos | `catalogos/{peajes,estaciones,patentes,pases}` + home |
+| Rutas fragmento | `wizard/wizard.routes.ts`, `catalogos/catalogos.routes.ts` |
+
+### Contratos esperados de agente 01 (reemplazar mocks)
+
+Implementar servicios reales de `peajes-services.contracts.ts`:
+
+**`PeajesCatalogoService`** (`PEAJES_CATALOGO_SERVICE`):
+- `listarPeajes` / `obtenerPeaje` / `crearPeaje` / `actualizarPeaje`
+- `listarEstaciones(peajeId?)` / `crearEstacion` / `actualizarEstacion` / `sugerirEstacion(valorProveedor)`
+- `listarPatentes` / `crearPatente` / `listarPases(patenteId?)` / `crearPase`
+
+**`PeajesCargaService`** (`PEAJES_CARGA_SERVICE`):
+- `validarCarga(pasadas, factura)` → `ResultadoValidacionCarga` con `ErrorValidacionPasada` (fila, columna, valor, motivo)
+- `detectarDuplicados(pasadas)` clave PASE_ID+FECHA_HORA+ESTACION_ID+PATENTE_ID
+- `confirmarCarga(ConfirmacionCargaInput)` → factura + pasadas + `RegistroCargaPeajes`
+
+Sustituir providers mock en `PeajesWizardComponent` y `PEAJES_CATALOGOS_MOCK_PROVIDERS` cuando F01-* esté `passing`.
+
+### Contratos para agente 05 (merge rutas)
+
+No se editó `peajes.routes.ts` ni `peajes-home`. Fusionar **sin choques**:
+
+| Origen | Export / paths | Nota |
+|--------|----------------|------|
+| Agente 02 | `wizard/wizard.routes.ts` → `PEAJES_WIZARD_ROUTES` | `/peajes/wizard` |
+| Agente 02 | `catalogos/catalogos.routes.ts` → `PEAJES_CATALOGOS_ROUTES` | `/peajes/catalogos…` |
+| Agente 03 | `plantillas/plantillas.routes.ts` → `PLANTILLAS_ROUTES_DECLARATION` / `PLANTILLAS_ROUTE_PATHS` | `/peajes/plantillas…` |
+
+**Conflicto a resolver por 05:** tres fragmentos independientes; no hay overlap de path (`wizard` / `catalogos` / `plantillas`), pero hay que unificar estilo (`Routes[]` tipado vs string declaration de 03) y providers mock vs servicios reales de 01 (`peajes/services/*` ya existen).
+
+Actualizar tarjetas de `peajes-home` (Asistente + Catálogos + Plantillas) para links reales (hoy “Próximamente”).
+
+### Integración con agente 03
+
+Pasos 3–4 consumen solo `PeajesMotorTransformacionService` + `PeajesPlantillasMockService` (sin Strategy duplicada en `wizard/**`).
+
+### Bloqueo resuelto
+
+- Error TS `fb used before initialization` en catálogos → corregido con `inject(FormBuilder)`.
+- Suite peajes wizard+catalogos: **12 SUCCESS**.
+
+### Verificación ejecutada
+
+```text
+ng build --configuration=development → OK
+ng test --watch=false --browsers=ChromeHeadless --include="**/peajes/wizard/**/*.spec.ts" --include="**/peajes/catalogos/**/*.spec.ts" → 12 SUCCESS
+```
+
 ## Estado Fase 1 — Agente 03 Frontend Plantillas & Motor (2026-07-30)
 
 **F03-1…F03-8 → `passing`** (motor + UI + mocks; persistencia real pendiente de 01).
@@ -140,8 +202,8 @@ No duplicar lógica Strategy en `wizard/**`.
 
 ### Bloqueos
 
-1. **`ng test`**: falla la compilación del suite por errores TS en `catalogos/**` (agente 02: `fb` used before initialization en `catalogo-peajes` / `catalogo-estaciones`). Evidencia F03 vía `motor.verify.ts` + build.
-2. **F01-3/4/7/8** aún no `passing`: persistencia es mock tipado; sustituir por servicio 01 sin cambiar UI.
+1. **`ng test` (parcial)**: el bloqueo de catálogos `fb` before init fue corregido por agente 02; suite wizard+catalogos 12 SUCCESS. Evidencia F03 vía `motor.verify.ts` + build.
+2. ~~**F01-3/4/7/8** aún no `passing`~~ → **resuelto por Agente 01** (ver sección siguiente). Sustituir mock UI por `PeajesPlantillasSupabaseService` (03/05).
 3. Rutas plantillas no cableadas hasta merge 05.
 
 ### Verificación ejecutada
@@ -149,6 +211,50 @@ No duplicar lógica Strategy en `wizard/**`.
 ```text
 npm run build -- --configuration=development  → OK
 npx tsx src/app/components/peajes/plantillas/motor.verify.ts → PASS
+```
+
+## Estado Fase 1 — Agente 01 Backend Supabase (2026-07-30)
+
+**F01-1…F01-9 → `passing`** (CLI local). Persistencia real lista; UI 03 sigue con mock hasta cableado.
+
+### Entregado (alcance 01)
+
+| Área | Path |
+|------|------|
+| Migraciones | `supabase/migrations/20260730*_peajes_*.sql` (5) |
+| pgTAP | `supabase/tests/peajes_f01_test.sql` (30 tests) |
+| Docs SQL | `docs/08-sql/peajes/F01-schema`, `docs/08-sql/peajes/F01-rpc` |
+| Servicios | `src/app/components/peajes/services/*` — `PeajesCatalogoSupabaseService`, `PeajesCargaSupabaseService`, `PeajesPlantillasSupabaseService` |
+
+### Contrato plantillas / global (alineado a 03)
+
+- Recurso global: **`empresa_id === '__global__'`** (constante servicio: `PEAJES_GLOBAL_EMPRESA_ID`; mismo valor que `GLOBAL_EMPRESA_ID` del mock).
+- Columnas `empresa_id` en BD: **text** (no uuid) en plantillas, algoritmos, facturas y peajes.
+- `listarPlantillas(empresaId)` / `listarAlgoritmos(empresaId)` filtran `empresa_id = empresaId OR empresa_id = '__global__'`.
+- RPC `peajes_sobrescribir_configuraciones_plantilla`, `peajes_guardar_algoritmo_combinado`, `peajes_expandir_algoritmo`, `peajes_confirmar_carga` disponibles.
+
+### Cómo reemplazar el mock (03 / 05 — no tocar `plantillas/**` desde 01)
+
+```ts
+// providers: reemplazar PeajesPlantillasMockService por
+{ provide: PEAJES_PLANTILLAS_SERVICE, useExisting: PeajesPlantillasSupabaseService }
+// o inject directo de PeajesPlantillasSupabaseService
+```
+
+`PeajesPlantillasService` (contrato Fase 0) es la interfaz; la implementación real está en `services/peajes-plantillas.service.ts`.
+
+### Pendiente / no bloqueante F01
+
+- **Wire UI**: 03 aún inyecta `PeajesPlantillasMockService` — F01 plantillas **no** está pendiente de schema/RPC; solo falta swap de provider en `plantillas/**` (dueño 03) o Integrador 05.
+- **`system_modules` peajes**: en `db reset` CLI vacío se omite (NOTICE). En DESARROLLO (host con tablas RBAC) el insert aplica al `db push --linked` autorizado.
+- **DESARROLLO**: no push en esta sesión.
+- **Rutas**: merge 05 de `plantillas.routes.ts` / `wizard` / `catalogos`.
+
+### Verificación CLI
+
+```text
+npx supabase db reset --local --no-seed → OK (5 migraciones)
+npx supabase test db → PASS (peajes_f01_test.sql)
 ```
 
 ### Skills presentes
@@ -168,4 +274,5 @@ No encontrados en este repo en Fase 0. No bloquea 01/02/03 (usan skills + AGENTS
 - Rama: `feature/peajes-mvp` (no `main`)
 - Commit Fase 0: `47e0a3fdacd677235bce8ca7fc81c3d32d4e9c45`
 - Commit Agente 03 (F03): `67d2078` — motor Builder/Strategy y editor de plantillas
+- Commit Agente 01 (F01): pendiente al cierre de esta sesión
 - Sin push. `main` sin cambios de Peajes Fase 1.

@@ -1,0 +1,58 @@
+<div class="paso8">
+  <h2>Paso 8 — Validación</h2>
+  <p class="paso8__hint">Se validan campos, importes, duplicados y diferencia con la factura (RNF-08).</p>
+
+  <div class="pw__alert pw__alert--info" *ngIf="cargando">Validando…</div>
+  <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+
+  <ng-container *ngIf="resultado as r">
+    <div class="pw__meta">
+      <span><strong>Válidas:</strong> {{ r.validas.length }}</span>
+      <span><strong>Errores:</strong> {{ r.errores.length }}</span>
+      <span><strong>Dif. factura:</strong> {{ r.diferenciaFactura | number: '1.2-2' }}</span>
+      <span>
+        <strong>Tolerancia:</strong>
+        {{ r.dentroTolerancia ? 'OK' : 'Fuera de tolerancia' }}
+      </span>
+    </div>
+
+    <div class="pw__alert pw__alert--ok" *ngIf="puedeContinuar">Sin errores bloqueantes. Podés continuar.</div>
+
+    <div class="pw__table-wrap" *ngIf="r.errores.length">
+      <table class="pw__table">
+        <thead>
+          <tr>
+            <th>Fila</th>
+            <th>Columna</th>
+            <th>Valor</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of r.errores">
+            <td>{{ e.fila || '—' }}</td>
+            <td>{{ e.columna }}</td>
+            <td>{{ e.valor }}</td>
+            <td>{{ e.motivo }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+  <div class="pw__actions">
+    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      Atrás
+    </button>
+    <div class="paso8__right">
+      <button type="button" class="pw__btn pw__btn--ghost" (click)="validar()" [disabled]="cargando">
+        Revalidar
+      </button>
+      <button type="button" class="pw__btn pw__btn--primary" [disabled]="!puedeContinuar" (click)="continuar()">
+        Continuar
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+</div>

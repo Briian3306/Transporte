@@ -1,0 +1,65 @@
+<div class="cat">
+  <header class="cat__header">
+    <h1><i class="fas fa-map-pin" aria-hidden="true"></i> Catálogo de estaciones</h1>
+    <a routerLink="/peajes/catalogos" class="cat__back">Volver a catálogos</a>
+  </header>
+
+  <div class="cat__layout">
+    <section class="cat__panel">
+      <h2>Nueva estación</h2>
+      <form [formGroup]="form" class="cat__form" (ngSubmit)="guardar()">
+        <label>
+          Peaje *
+          <select formControlName="peaje_id">
+            <option value="">Seleccionar…</option>
+            <option *ngFor="let p of peajes" [value]="p.id">{{ p.nombre }}</option>
+          </select>
+        </label>
+        <label>Nombre *<input formControlName="nombre" /></label>
+        <label>Ubicación<input formControlName="ubicacion" /></label>
+        <label>Descripción<input formControlName="descripcion" /></label>
+        <label>Códigos proveedor (coma)<input formControlName="codigos_proveedor" placeholder="3, EST-3" /></label>
+        <div class="cat__actions">
+          <button type="submit" [disabled]="guardando">Crear</button>
+        </div>
+      </form>
+      <p class="cat__error" *ngIf="error">{{ error }}</p>
+
+      <h2 style="margin-top: 1.25rem">Sugerir por código/nombre</h2>
+      <div class="cat__form">
+        <label>
+          Búsqueda
+          <input [(ngModel)]="busqueda" name="busqueda" (keyup.enter)="sugerir()" />
+        </label>
+        <div class="cat__actions">
+          <button type="button" (click)="sugerir()">Buscar</button>
+        </div>
+      </div>
+      <ul *ngIf="sugeridas.length">
+        <li *ngFor="let s of sugeridas">{{ s.nombre }} ({{ s.id }}) — peaje {{ s.peaje_id }}</li>
+      </ul>
+    </section>
+
+    <section class="cat__panel">
+      <h2>Listado</h2>
+      <table class="cat__table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Peaje</th>
+            <th>Códigos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of estaciones">
+            <td>{{ e.id }}</td>
+            <td>{{ e.nombre }}</td>
+            <td>{{ e.peaje?.nombre || e.peaje_id }}</td>
+            <td>{{ (e.codigos_proveedor || []).join(', ') || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</div>
