@@ -675,11 +675,13 @@
         "F01-3",
         "F01-4"
       ],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "docs/06-tablas/peajes/*.md existen y están enlazados en INDEX.md"
       ],
-      "evidence": []
+      "evidence": [
+        "2026-07-30: docs/06-tablas/peajes/{INDEX,modelo-datos,catalogos,facturas-pasadas,plantillas-algoritmos,auditoria-y-rpcs}.md + docs/06-tablas/INDEX.md enlazan peajes/"
+      ]
     },
     {
       "id": "F04-2",
@@ -699,11 +701,13 @@
         "F02-8",
         "F02-9"
       ],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "docs/06-components/peajes/*.md existen y están enlazados en INDEX.md"
       ],
-      "evidence": []
+      "evidence": [
+        "2026-07-30: docs/06-components/peajes/{INDEX,wizard,catalogos,servicios-y-providers}.md + docs/06-components/INDEX.md enlazan peajes/"
+      ]
     },
     {
       "id": "F04-3",
@@ -721,11 +725,13 @@
         "F03-6",
         "F03-7"
       ],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "docs/06-components/peajes/plantillas-y-algoritmos.md existe"
       ],
-      "evidence": []
+      "evidence": [
+        "2026-07-30: docs/06-components/peajes/plantillas-y-algoritmos.md (motor Builder/Strategy, UI, verify §21, gap códigos SQL↔TS)"
+      ]
     },
     {
       "id": "F04-4",
@@ -735,11 +741,13 @@
       ],
       "agent_owner": "04-documentador",
       "depends_on": [],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "docs/modulos/peajes.md existe y enlaza a los docs de tablas/componentes"
       ],
-      "evidence": []
+      "evidence": [
+        "2026-07-30: docs/modulos/peajes.md + docs/modulos/INDEX.md + docs/INDEX.md enlazan 06-tablas/peajes y 06-components/peajes"
+      ]
     },
     {
       "id": "F05-1",

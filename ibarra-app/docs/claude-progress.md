@@ -10,7 +10,7 @@
 
 ## Estado actual
 
-Fecha: 2026-07-30 — **Fase 1 Agentes 01 + 02 + 03 en entrega**
+Fecha: 2026-07-30 — **Fase 2 Agente 04 Documentador completada**. Listo para Agente 05 (Integrador/QA).
 
 ### Rama Git (contrato)
 
@@ -26,7 +26,7 @@ Fecha: 2026-07-30 — **Fase 1 Agentes 01 + 02 + 03 en entrega**
 | **Supabase CLI** (local) | Testing / verificación obligatoria |
 | **DESARROLLO** (`kfffigvyvtzyczeiadxh`) | Remoto de desarrollo |
 
-No hay staging/prod separados. No reutilizar refs OrdenCompra (`edxoqshrzdqpnldktpzy`, `uurlssweuhshbwpxxatw`). Agentes 01+ validan SQL contra CLI.
+No hay staging/prod separados. No reutilizar refs OrdenCompra (`edxoqshrzdqpnldktpzy`, `uurlssweuhshbwpxxatw`).
 
 Decisiones vigentes:
 
@@ -40,9 +40,19 @@ Decisiones vigentes:
 
 ## Features
 
-F00-1…F00-4 `passing`. **F01-1…F01-9 `passing`** (Agente 01, CLI). **F03-1…F03-8 `passing`** (Agente 03). Wire mock→servicio real pendiente en UI 03/05.
+F00–F03 `passing`. **F04-1…F04-4 `passing`** (Agente 04). F05-* `not_started`.
 
 ## Registro de sesiones
+
+### 2026-07-30 — Fase 2 Agente 04 Documentador
+
+- Docs canónicas alineadas a implementación F01/F02/F03:
+  - `docs/06-tablas/peajes/**` (modelo, catálogos, facturas/pasadas, plantillas, RPCs)
+  - `docs/06-components/peajes/**` (wizard, catálogos, plantillas-y-algoritmos, servicios)
+  - `docs/modulos/peajes.md` + índices (`docs/INDEX.md`, `06-*`, `modulos/`)
+- Documentado gap códigos SQL catálogo ↔ `StrategyRegistry` (no inventado como resuelto).
+- Checklist explícito para 05: merge rutas, swap mocks→Supabase, E2E §21, `system_modules` DESARROLLO.
+- Sin cambios de código de producto.
 
 ### 2026-07-30 — Fase 1 Agente 01 Backend Supabase
 
@@ -60,6 +70,11 @@ F00-1…F00-4 `passing`. **F01-1…F01-9 `passing`** (Agente 01, CLI). **F03-1�
 - Evidencia: build OK; `motor.verify.ts` PASS.
 - Pedido a 01 servicio real → **entregado** (swap provider pendiente 03/05).
 
+### 2026-07-30 — Fase 1 Agente 02 Wizard & Tablas
+
+- Wizard pasos 1–9 + catálogos; mocks tipados; fragmentos de rutas.
+- Evidencia: build OK; ng test wizard+catalogos 12 SUCCESS.
+
 ### 2026-07-30 — Fase 0 Orquestador/Setup
 
 - Rama `feature/peajes-mvp`; contratos, rutas home, skills, handoff.
@@ -71,9 +86,10 @@ F00-1…F00-4 `passing`. **F01-1…F01-9 `passing`** (Agente 01, CLI). **F03-1�
 ## Bloqueos y riesgos
 
 - `system_modules` peajes solo si existe host RBAC (DESARROLLO); CLI vacío lo omite.
-- Wire UI: reemplazar mocks por servicios 01 (`PeajesPlantillasSupabaseService`, catálogo, carga).
+- Wire UI: reemplazar mocks por servicios 01.
 - Rutas wizard/catalogos/plantillas pendientes de merge 05.
+- Gap códigos algoritmos SQL vs motor TS (documentado; resolver en integración).
 
 ## Próximo paso
 
-Agente 05: merge rutas + providers reales. Push DESARROLLO solo con autorización.
+**Agente 05 Integrador/QA:** merge rutas + providers reales + E2E §21 + evidencia F05. Push DESARROLLO solo con autorización.

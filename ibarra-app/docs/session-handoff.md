@@ -298,3 +298,42 @@ npx supabase test db → PASS 30/30 (peajes_f01_test.sql)
 - Commit Agente 02 (F02): `0b15952`
 - Commit Agente 01 (F01): `76fe6943197695511cb9fa9c8df21ee397541189`
 - Sin push. `main` sin cambios de Peajes Fase 1.
+
+## Estado Fase 2 — Agente 04 Documentador (2026-07-30)
+
+**F04-1…F04-4 → `passing`**. Documentación alineada solo a F00–F03 implementados. Sin cambios de código de producto.
+
+### Docs creadas
+
+| Área | Paths |
+|------|-------|
+| Tablas | `docs/06-tablas/peajes/{INDEX,modelo-datos,catalogos,facturas-pasadas,plantillas-algoritmos,auditoria-y-rpcs}.md` |
+| Componentes | `docs/06-components/peajes/{INDEX,wizard,catalogos,plantillas-y-algoritmos,servicios-y-providers}.md` |
+| Módulo + índices | `docs/modulos/peajes.md`, `docs/modulos/INDEX.md`, `docs/INDEX.md`, `docs/06-{components,tablas}/INDEX.md` |
+| Bitácora | `docs/claude-progress.md` (esta sesión) |
+
+### Hallazgo documentado (no resuelto)
+
+- Catálogo SQL (`TRIM`, `UPPER`, …) ≠ códigos motor TS (`BORRAR_ESPACIOS`, `CONVERTIR_MAYUSCULAS`, …). Alinear o mapear en integración antes de persistir algoritmos desde UI real.
+
+### Checklist obligatorio — Agente 05 Integrador/QA
+
+1. **Merge rutas** en `peajes.routes.ts`:
+   - `PEAJES_WIZARD_ROUTES` (`wizard/wizard.routes.ts`)
+   - `PEAJES_CATALOGOS_ROUTES` (`catalogos/catalogos.routes.ts`)
+   - Rutas plantillas (`plantillas/plantillas.routes.ts` — unificar a `Routes[]` tipado)
+   - Sin overlap de path (`wizard` / `catalogos` / `plantillas`)
+2. **Swap mocks → servicios reales** (providers wizard/catalogos/plantillas):
+   - `PeajesCatalogoSupabaseService` / `PeajesCargaSupabaseService` / `PeajesPlantillasSupabaseService`
+   - Ver `docs/06-components/peajes/servicios-y-providers.md`
+3. Actualizar **peajes-home**: quitar “Próximamente”; links a wizard/catálogos/plantillas.
+4. **E2E PRD §21** (`F05-1`) con archivo de ejemplo.
+5. **`system_modules` peajes** en DESARROLLO: tras `db push --linked` autorizado (omitido en CLI vacío).
+6. Resolver/registrar gap códigos algoritmos SQL ↔ TS.
+7. Actualizar `feature_list.json` F05-* + evidencia; **sin push a `main`**; push feature/DESARROLLO solo con OK del usuario.
+
+### Docs de lectura para 05
+
+- `docs/modulos/peajes.md` (sección Pendiente Agente 05)
+- `docs/06-components/peajes/servicios-y-providers.md`
+- Este handoff (Fase 1 01/02/03 + Fase 2 04)
