@@ -167,4 +167,5 @@ No encontrados en este repo en Fase 0. No bloquea 01/02/03 (usan skills + AGENTS
 
 - Rama: `feature/peajes-mvp` (no `main`)
 - Commit Fase 0: `47e0a3fdacd677235bce8ca7fc81c3d32d4e9c45`
-- `main` permanece en `82a2802` (sin commit ni push de Fase 0)
+- Commit Agente 03 (F03): `67d2078` — motor Builder/Strategy y editor de plantillas
+- Sin push. `main` sin cambios de Peajes Fase 1.
