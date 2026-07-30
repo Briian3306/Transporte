@@ -296,5 +296,5 @@ npx supabase test db → PASS 30/30 (peajes_f01_test.sql)
 - Commit Fase 0: `47e0a3f`
 - Commit Agente 03 (F03): `67d2078`
 - Commit Agente 02 (F02): `0b15952`
-- Commit Agente 01 (F01): se anota tras este commit
+- Commit Agente 01 (F01): `76fe6943197695511cb9fa9c8df21ee397541189`
 - Sin push. `main` sin cambios de Peajes Fase 1.
