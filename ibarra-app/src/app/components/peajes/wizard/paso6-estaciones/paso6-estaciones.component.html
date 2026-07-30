@@ -1,85 +1,131 @@
 <div class="paso6">
-  <h2>Paso 6 — Relacionar estaciones y peajes</h2>
-  <p class="paso6__hint">
-    La pasada referencia <code>estacion_id</code>; el peaje se deriva de la estación (no se guarda peaje_id en la pasada).
-  </p>
-
-  <div class="pw__table-wrap">
-    <table class="pw__table">
-      <thead>
-        <tr>
-          <th>Código proveedor</th>
-          <th>Estación interna</th>
-          <th>Peaje derivado</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let r of relaciones">
-          <td>{{ r.valorProveedor }}</td>
-          <td>
-            <select
-              [ngModel]="r.estacionId || ''"
-              (ngModelChange)="seleccionar(r.valorProveedor, $event)"
-            >
-              <option value="">— Seleccionar —</option>
-              <option *ngFor="let e of estaciones" [value]="e.id">
-                {{ e.nombre }} ({{ e.id }})
-              </option>
-            </select>
-            <div class="paso6__sug" *ngIf="sugerencias[r.valorProveedor]?.length">
-              Sugerencias:
-              <button
-                type="button"
-                class="paso6__chip"
-                *ngFor="let s of sugerencias[r.valorProveedor]"
-                (click)="seleccionar(r.valorProveedor, s.id)"
-              >
-                {{ s.nombre }}
-              </button>
-            </div>
-          </td>
-          <td>{{ peajeDe(r.estacionId) }}</td>
-          <td>
-            <button type="button" class="pw__btn pw__btn--ghost" (click)="abrirCrear(r.valorProveedor)">
-              Nueva
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="pw__head">
+    <div>
+      <div class="pw__eyebrow">Paso 06 · catálogo maestro</div>
+      <h2>Relacionar estaciones</h2>
+      <p>Vinculá los códigos del proveedor con estaciones internas y obtené el peaje asociado.</p>
+    </div>
+    <span
+      class="pw__status"
+      [class.pw__status--valid]="!sinRelacion().length"
+      [class.pw__status--warn]="!!sinRelacion().length"
+    >
+      {{ relaciones.length - sinRelacion().length }} de {{ relaciones.length }} relacionadas
+    </span>
   </div>
 
-  <div class="paso6__crear" *ngIf="creandoPara">
-    <h3>Crear estación para código «{{ creandoPara }}»</h3>
-    <div class="pw__form-grid">
-      <div class="pw__field">
-        <label>Nombre</label>
-        <input [(ngModel)]="nuevaEstacionNombre" />
-      </div>
-      <div class="pw__field">
-        <label>Peaje</label>
-        <select [(ngModel)]="nuevaEstacionPeajeId">
-          <option *ngFor="let p of peajesUnicos" [value]="p.id">{{ p.nombre }}</option>
-        </select>
+  <div class="pw__body">
+    <div class="paso6__layout">
+      <aside class="paso6__catalog" *ngIf="peajePrincipal as peaje">
+        <h3>Peaje relacionado</h3>
+        <div class="paso6__label">ID</div>
+        <div class="paso6__value pw__mono">{{ peaje.id }}</div>
+        <div class="paso6__label">Nombre</div>
+        <div class="paso6__value">{{ peaje.nombre }}</div>
+        <div class="paso6__label">Ubicación</div>
+        <div class="paso6__value">{{ peaje.ubicacion || '—' }}</div>
+        <div class="paso6__label">Descripción</div>
+        <div class="paso6__value paso6__value--muted">{{ peaje.descripcion || '—' }}</div>
+      </aside>
+
+      <div class="paso6__relation">
+        <div class="paso6__hero">
+          <div class="paso6__link-icon"><i class="fas fa-link" aria-hidden="true"></i></div>
+          <div>
+            <strong>Relación confirmada para el archivo</strong>
+            <span>El valor recibido se traduce al catálogo interno y hereda su peaje.</span>
+          </div>
+        </div>
+
+        <div class="pw__table-wrap">
+          <table class="pw__table">
+            <thead>
+              <tr>
+                <th>Código proveedor</th>
+                <th>Estación interna</th>
+                <th>Peaje derivado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of relaciones">
+                <td class="pw__mono">{{ r.valorProveedor }}</td>
+                <td>
+                  <select
+                    class="pw__select"
+                    [ngModel]="r.estacionId || ''"
+                    (ngModelChange)="seleccionar(r.valorProveedor, $event)"
+                  >
+                    <option value="">— Seleccionar —</option>
+                    <option *ngFor="let e of estaciones" [value]="e.id">
+                      {{ e.nombre }} ({{ e.id }})
+                    </option>
+                  </select>
+                  <div class="paso6__sug" *ngIf="sugerencias[r.valorProveedor]?.length">
+                    <button
+                      type="button"
+                      class="pw__chip"
+                      *ngFor="let s of sugerencias[r.valorProveedor]"
+                      (click)="seleccionar(r.valorProveedor, s.id)"
+                    >
+                      {{ s.nombre }}
+                    </button>
+                  </div>
+                </td>
+                <td>{{ peajeDe(r.estacionId) }}</td>
+                <td>
+                  <button type="button" class="pw__btn pw__btn--small pw__btn--ghost" (click)="abrirCrear(r.valorProveedor)">
+                    Nueva
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="paso6__path" *ngIf="ejemploResolucion as ej">
+          <div class="paso6__label">Ejemplo de resolución</div>
+          <div class="paso6__pills">
+            <span class="paso6__pill pw__mono">ESTACION = {{ ej.codigo }}</span>
+            <span class="paso6__arrow">→</span>
+            <span class="paso6__pill paso6__pill--em pw__mono">{{ ej.id }}</span>
+            <span class="paso6__arrow">→</span>
+            <span class="paso6__pill paso6__pill--em">{{ ej.nombre }}</span>
+            <span class="paso6__arrow">→</span>
+            <span class="paso6__pill">{{ ej.peaje }}</span>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="pw__actions">
-      <button type="button" class="pw__btn pw__btn--ghost" (click)="creandoPara = null">Cancelar</button>
-      <button type="button" class="pw__btn pw__btn--primary" (click)="crearEstacion()">Crear y relacionar</button>
+
+    <div class="paso6__crear" *ngIf="creandoPara">
+      <h3>Crear estación para código «{{ creandoPara }}»</h3>
+      <div class="pw__form-grid">
+        <div class="pw__field">
+          <label>Nombre</label>
+          <input [(ngModel)]="nuevaEstacionNombre" />
+        </div>
+        <div class="pw__field">
+          <label>Peaje</label>
+          <select class="pw__select" [(ngModel)]="nuevaEstacionPeajeId">
+            <option *ngFor="let p of peajesUnicos" [value]="p.id">{{ p.nombre }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="pw__actions">
+        <button type="button" class="pw__btn" (click)="creandoPara = null">Cancelar</button>
+        <button type="button" class="pw__btn pw__btn--primary" (click)="crearEstacion()">Crear y relacionar</button>
+      </div>
     </div>
+
+    <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
   </div>
 
-  <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
-
-  <div class="pw__actions">
-    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()">
-      <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      Atrás
-    </button>
-    <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">
-      Continuar
-      <i class="fas fa-arrow-right" aria-hidden="true"></i>
-    </button>
+  <div class="pw__footer">
+    <div class="pw__footer-hint">La pasada guarda estacion_id; el peaje se deriva de la estación.</div>
+    <div class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
+      <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>
+    </div>
   </div>
 </div>

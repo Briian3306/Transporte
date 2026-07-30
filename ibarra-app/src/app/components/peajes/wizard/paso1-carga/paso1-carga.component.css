@@ -1,10 +1,117 @@
-.paso1 h2 {
-  margin: 0 0 0.35rem;
-  color: #2c3e50;
-  font-size: 1.2rem;
+.paso1__layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 1.35rem;
+  align-items: stretch;
 }
 
-.paso1__hint {
+.paso1__layout .pw__drop h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.paso1__layout .pw__drop p {
+  color: var(--pw-muted, #6f8197);
+  line-height: 1.5;
   margin: 0 0 1rem;
-  color: #5d6d7e;
+}
+
+.paso1__file-card {
+  border: 1px solid var(--pw-line, #dce5ee);
+  border-radius: 14px;
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: #fbfcfe;
+}
+
+.paso1__file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--pw-line, #dce5ee);
+}
+
+.paso1__file-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #e9f4ec;
+  color: var(--pw-green, #238657);
+  font-weight: 900;
+  font-size: 0.65rem;
+}
+
+.paso1__file-icon--empty {
+  background: #eef1f5;
+  color: #8392a5;
+}
+
+.paso1__file-name {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.paso1__file-meta {
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
+}
+
+.paso1__stats {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.paso1__stat {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.paso1__stat span:first-child {
+  color: var(--pw-muted, #6f8197);
+}
+
+.paso1__template-box {
+  padding: 1rem;
+  border: 1px solid #c8dcf7;
+  border-radius: 12px;
+  background: #f3f8ff;
+}
+
+.paso1__template-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.paso1__template-head strong {
+  color: var(--pw-blue-dark, #0d4da9);
+}
+
+.paso1__template-head p {
+  color: #637b98;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  margin: 0.25rem 0 0;
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+@media (max-width: 900px) {
+  .paso1__layout {
+    grid-template-columns: 1fr;
+  }
 }

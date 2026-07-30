@@ -1,34 +1,121 @@
 <div class="paso1">
-  <h2>Paso 1 — Cargar archivo Excel</h2>
-  <p class="paso1__hint">Arrastrá o seleccioná un archivo <strong>.xlsx</strong> con pasadas históricas.</p>
-
-  <label
-    class="pw__drop"
-    [class.pw__drop--active]="dragOver"
-    (drop)="onDrop($event)"
-    (dragover)="onDragOver($event)"
-    (dragleave)="onDragLeave()"
-  >
-    <div class="pw__drop-icon"><i class="fas fa-cloud-upload-alt" aria-hidden="true"></i></div>
-    <p>Soltá el archivo aquí o hacé clic para elegir</p>
-    <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="onFileInput($event)" />
-  </label>
-
-  <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
-  <div class="pw__alert pw__alert--info" *ngIf="cargando">Procesando archivo…</div>
-
-  <div class="pw__meta" *ngIf="meta">
-    <span><strong>Archivo:</strong> {{ meta.nombreArchivo }}</span>
-    <span><strong>Tamaño:</strong> {{ meta.tamanioBytes | number }} bytes</span>
-    <span><strong>Filas:</strong> {{ meta.totalFilas }}</span>
-    <span><strong>Columnas:</strong> {{ meta.columnas.length }}</span>
+  <div class="pw__head">
+    <div>
+      <div class="pw__eyebrow">Paso 01 · origen y configuración</div>
+      <h2>Cargar archivo de pasadas</h2>
+      <p>Subí el Excel y, si coincide con el ejemplo MVP, se preseleccionan columnas y mapeos.</p>
+    </div>
+    <div class="head-actions">
+      <span class="pw__status pw__status--valid" *ngIf="meta">Archivo listo</span>
+      <span class="pw__status pw__status--warn" *ngIf="!meta">Pendiente</span>
+    </div>
   </div>
 
-  <div class="pw__actions">
-    <span></span>
-    <button type="button" class="pw__btn pw__btn--primary" [disabled]="!meta || cargando" (click)="continuar()">
-      Continuar
-      <i class="fas fa-arrow-right" aria-hidden="true"></i>
-    </button>
+  <div class="pw__body">
+    <div class="paso1__layout">
+      <label
+        class="pw__drop"
+        [class.pw__drop--active]="dragOver"
+        (drop)="onDrop($event)"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave()"
+      >
+        <div>
+          <div class="pw__drop-icon"><i class="fas fa-cloud-upload-alt" aria-hidden="true"></i></div>
+          <h3>Arrastrá tu archivo aquí</h3>
+          <p>
+            o seleccioná un archivo <strong>.xlsx</strong> desde tu equipo<br />
+            El MVP limita la vista previa a 10 registros.
+          </p>
+          <span class="pw__btn pw__btn--ghost">Seleccionar archivo</span>
+          <input
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            (change)="onFileInput($event)"
+          />
+        </div>
+      </label>
+
+      <aside class="paso1__file-card">
+        <ng-container *ngIf="meta; else emptyFile">
+          <div class="paso1__file-row">
+            <div class="paso1__file-icon">XLSX</div>
+            <div>
+              <div class="paso1__file-name">{{ meta.nombreArchivo }}</div>
+              <div class="paso1__file-meta">Archivo de origen · {{ meta.tamanioBytes | number }} bytes</div>
+            </div>
+          </div>
+          <div class="paso1__stats">
+            <div class="paso1__stat"><span>Registros detectados</span><strong>{{ meta.totalFilas }}</strong></div>
+            <div class="paso1__stat"><span>Columnas</span><strong>{{ meta.columnas.length }}</strong></div>
+            <div class="paso1__stat"><span>Formato</span><strong>Excel Workbook</strong></div>
+            <div class="paso1__stat">
+              <span>Estado de lectura</span>
+              <span class="pw__status pw__status--valid">Correcto</span>
+            </div>
+          </div>
+          <div class="paso1__template-box">
+            <div class="paso1__template-head">
+              <div>
+                <strong>¿Cómo seguir?</strong>
+                <p>Podés usar el fixture del ejemplo MVP o tu propio Excel de <code>docs/plan/csv</code>.</p>
+              </div>
+              <span class="pw__status pw__status--valid" *ngIf="esEjemploMvp">Ejemplo MVP</span>
+            </div>
+          </div>
+          <button type="button" class="pw__btn pw__btn--small" (click)="fileInput.click()">
+            Reemplazar archivo
+          </button>
+        </ng-container>
+        <ng-template #emptyFile>
+          <div class="paso1__file-row">
+            <div class="paso1__file-icon paso1__file-icon--empty">—</div>
+            <div>
+              <div class="paso1__file-name">Sin archivo</div>
+              <div class="paso1__file-meta">Cargá un .xlsx o el ejemplo MVP</div>
+            </div>
+          </div>
+          <div class="paso1__template-box">
+            <div class="paso1__template-head">
+              <div>
+                <strong>Fixture del ejemplo</strong>
+                <p>
+                  10 filas de <em>pasadas_junio_2026</em> con total factura $102.060 (sin IVA).
+                </p>
+              </div>
+              <span class="pw__status pw__status--warn">Recomendado</span>
+            </div>
+            <button type="button" class="pw__btn pw__btn--primary" (click)="cargarEjemploMvp()" style="width: 100%">
+              <i class="fas fa-flask" aria-hidden="true"></i>
+              Cargar ejemplo MVP
+            </button>
+          </div>
+        </ng-template>
+      </aside>
+    </div>
+
+    <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+    <div class="pw__alert pw__alert--info" *ngIf="cargando">Procesando archivo…</div>
   </div>
+
+  <div class="pw__footer">
+    <div class="pw__footer-hint">Solo se aceptan archivos .xlsx. Fixture: docs/plan/ejemplo-mvp-procesamiento-pasadas.md</div>
+    <div class="pw__footer-actions">
+      <button type="button" class="pw__btn pw__btn--ghost" *ngIf="!meta" (click)="cargarEjemploMvp()">
+        Usar ejemplo MVP
+      </button>
+      <button type="button" class="pw__btn pw__btn--primary" [disabled]="!meta || cargando" (click)="continuar()">
+        Continuar
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <input
+    #fileInput
+    type="file"
+    hidden
+    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    (change)="onFileInput($event)"
+  />
 </div>

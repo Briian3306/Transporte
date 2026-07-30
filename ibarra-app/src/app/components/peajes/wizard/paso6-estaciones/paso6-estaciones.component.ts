@@ -90,6 +90,35 @@ export class Paso6EstacionesComponent implements OnInit {
     return est?.peaje?.nombre ?? est?.peaje_id ?? '—';
   }
 
+  get peajePrincipal(): Peaje | null {
+    const peajeId =
+      this.relaciones.find((r) => r.peajeIdDerivado)?.peajeIdDerivado ??
+      this.estaciones[0]?.peaje_id ??
+      this.peajesUnicos[0]?.id ??
+      null;
+    if (!peajeId) {
+      return null;
+    }
+    return this.peajesUnicos.find((p) => p.id === peajeId) ?? this.estaciones.find((e) => e.peaje_id === peajeId)?.peaje ?? null;
+  }
+
+  get ejemploResolucion(): { codigo: string; id: string; nombre: string; peaje: string } | null {
+    const conMatch = this.relaciones.find((r) => r.estacionId);
+    if (!conMatch?.estacionId) {
+      return null;
+    }
+    const est = this.estaciones.find((e) => e.id === conMatch.estacionId);
+    if (!est) {
+      return null;
+    }
+    return {
+      codigo: conMatch.valorProveedor,
+      id: est.id,
+      nombre: est.nombre,
+      peaje: est.peaje?.nombre ?? est.peaje_id,
+    };
+  }
+
   seleccionar(valorProveedor: string, estacionId: string): void {
     const est = this.estaciones.find((e) => e.id === estacionId) ?? null;
     this.relaciones = this.relaciones.map((r) =>

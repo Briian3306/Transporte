@@ -1,6 +1,7 @@
 import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MVP_FACTURA } from '../fixtures/mvp-ejemplo.fixture';
 import { PeajesWizardStateService, WizardFacturaForm } from '../services/peajes-wizard-state.service';
 
 @Component({
@@ -29,6 +30,18 @@ export class Paso7FacturaComponent implements OnInit {
   ngOnInit(): void {
     const f = this.state.snapshot().factura;
     this.form.patchValue(f);
+  }
+
+  get sumaNetos(): number {
+    const pasadas =
+      this.state.snapshot().pasadasEstandarizadas.length > 0
+        ? this.state.snapshot().pasadasEstandarizadas
+        : this.state.construirPasadasDesdeMapeo();
+    return pasadas.reduce((acc, p) => acc + Number(p.IMPORTE_NETO ?? 0), 0);
+  }
+
+  cargarFacturaMvp(): void {
+    this.form.patchValue({ ...MVP_FACTURA });
   }
 
   continuar(): void {

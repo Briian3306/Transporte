@@ -1,16 +1,17 @@
 <div class="pw">
-  <header class="pw__header">
+  <div class="pw__intro">
     <div>
-      <p class="pw__eyebrow">Módulo Peajes</p>
-      <h1 class="pw__title">
-        <i class="fas fa-file-excel" aria-hidden="true"></i>
-        Asistente de carga
-      </h1>
-      <p class="pw__subtitle">
-        Cargá el Excel, previsualizá, mapeá columnas, asociá estaciones y confirmá la factura.
+      <p class="pw__eyebrow">Peajes / nueva carga</p>
+      <h1 class="pw__title">Automatiza una carga de pasadas.</h1>
+      <p class="pw__lede">
+        Transformá columnas del proveedor, relacioná estaciones y validá la factura antes de confirmar.
       </p>
     </div>
-    <div class="pw__header-actions">
+    <div class="pw__intro-actions">
+      <div class="pw__run-note" *ngIf="state.snapshot().preview as p">
+        <span class="pw__pulse" aria-hidden="true"></span>
+        {{ p.nombreArchivo }} · {{ p.totalFilas }} registros
+      </div>
       <button type="button" class="pw__btn pw__btn--ghost" (click)="reiniciar()">
         <i class="fas fa-undo" aria-hidden="true"></i>
         Reiniciar
@@ -20,24 +21,31 @@
         Volver
       </a>
     </div>
-  </header>
+  </div>
 
-  <nav class="pw__steps" aria-label="Pasos del asistente">
-    <button
-      type="button"
-      class="pw__step"
-      *ngFor="let p of pasos"
-      [class.pw__step--active]="p.id === pasoActual"
-      [class.pw__step--done]="p.id < pasoActual"
-      [disabled]="p.id > pasoActual && !puedeAvanzarA(p.id)"
-      (click)="irA(p.id)"
-    >
-      <span class="pw__step-num">{{ p.id }}</span>
-      <span class="pw__step-label">{{ p.label }}</span>
-    </button>
+  <nav class="pw__stepper" aria-label="Pasos del asistente">
+    <div class="pw__steps">
+      <button
+        type="button"
+        class="pw__step"
+        *ngFor="let p of pasos"
+        [class.pw__step--active]="p.id === pasoActual"
+        [class.pw__step--done]="p.id < pasoActual"
+        [disabled]="p.id > pasoActual && !puedeAvanzarA(p.id)"
+        (click)="irA(p.id)"
+      >
+        <span class="pw__step-row">
+          <span class="pw__step-num">
+            <ng-container *ngIf="p.id < pasoActual; else num">✓</ng-container>
+            <ng-template #num>{{ p.id }}</ng-template>
+          </span>
+          <span class="pw__step-label">{{ p.label }}</span>
+        </span>
+      </button>
+    </div>
   </nav>
 
-  <section class="pw__body fade-in" [attr.data-paso]="pasoActual">
+  <section class="pw__card fade-in" [attr.data-paso]="pasoActual">
     <app-paso1-carga *ngIf="pasoActual === 1" (completado)="siguiente()" />
     <app-paso2-preview *ngIf="pasoActual === 2" (completado)="siguiente()" (atras)="atras()" />
     <app-paso3-transformaciones *ngIf="pasoActual === 3" (completado)="siguiente()" (atras)="atras()" />

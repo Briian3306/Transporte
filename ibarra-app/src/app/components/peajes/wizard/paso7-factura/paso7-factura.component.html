@@ -1,48 +1,70 @@
 <div class="paso7">
-  <h2>Paso 7 — Información de factura</h2>
-  <p class="paso7__hint">Completá los datos de la factura asociada a esta carga (ingreso manual MVP).</p>
+  <div class="pw__head">
+    <div>
+      <div class="pw__eyebrow">Paso 07 · asociación contable</div>
+      <h2>Ingresar factura</h2>
+      <p>Asociá el lote con una factura. En el siguiente paso se valida el importe sin IVA.</p>
+    </div>
+    <span class="pw__status pw__status--warn">Pendiente de confirmación</span>
+  </div>
 
-  <form [formGroup]="form" class="pw__form-grid" (ngSubmit)="continuar()">
-    <div class="pw__field">
-      <label for="factura">Número de factura *</label>
-      <input id="factura" formControlName="factura" />
-      <div class="pw__field-error" *ngIf="invalid('factura')">Obligatorio</div>
-    </div>
-    <div class="pw__field">
-      <label for="cuenta">Cuenta *</label>
-      <input id="cuenta" formControlName="cuenta" />
-      <div class="pw__field-error" *ngIf="invalid('cuenta')">Obligatorio</div>
-    </div>
-    <div class="pw__field">
-      <label for="empresa_id">Empresa *</label>
-      <input id="empresa_id" formControlName="empresa_id" placeholder="ID empresa" />
-      <div class="pw__field-error" *ngIf="invalid('empresa_id')">Obligatorio</div>
-    </div>
-    <div class="pw__field">
-      <label for="fecha_factura">Fecha de factura *</label>
-      <input id="fecha_factura" type="date" formControlName="fecha_factura" />
-      <div class="pw__field-error" *ngIf="invalid('fecha_factura')">Obligatorio</div>
-    </div>
-    <div class="pw__field">
-      <label for="importe_sin_iva">Importe sin IVA *</label>
-      <input id="importe_sin_iva" type="number" step="0.01" formControlName="importe_sin_iva" />
-      <div class="pw__field-error" *ngIf="invalid('importe_sin_iva')">Obligatorio</div>
-    </div>
-    <div class="pw__field">
-      <label for="importe_total">Importe total *</label>
-      <input id="importe_total" type="number" step="0.01" formControlName="importe_total" />
-      <div class="pw__field-error" *ngIf="invalid('importe_total')">Obligatorio</div>
-    </div>
-  </form>
+  <div class="pw__body">
+    <div class="paso7__layout">
+      <div class="paso7__form-card">
+        <h3>Datos de la factura</h3>
+        <form [formGroup]="form" class="pw__form-grid" (ngSubmit)="continuar()">
+          <div class="pw__field">
+            <label for="factura">Número de factura *</label>
+            <input id="factura" formControlName="factura" autocomplete="off" />
+            <div class="pw__field-error" *ngIf="invalid('factura')">Obligatorio</div>
+          </div>
+          <div class="pw__field">
+            <label for="cuenta">Cuenta *</label>
+            <input id="cuenta" formControlName="cuenta" autocomplete="off" />
+            <div class="pw__field-error" *ngIf="invalid('cuenta')">Obligatorio</div>
+          </div>
+          <div class="pw__field">
+            <label for="empresa_id">Empresa *</label>
+            <input id="empresa_id" formControlName="empresa_id" placeholder="ID o razón social" autocomplete="organization" />
+            <div class="pw__field-error" *ngIf="invalid('empresa_id')">Obligatorio</div>
+          </div>
+          <div class="pw__field">
+            <label for="fecha_factura">Fecha de factura *</label>
+            <input id="fecha_factura" type="date" formControlName="fecha_factura" />
+            <div class="pw__field-error" *ngIf="invalid('fecha_factura')">Obligatorio</div>
+          </div>
+          <div class="pw__field">
+            <label for="importe_sin_iva">Importe sin IVA *</label>
+            <input id="importe_sin_iva" type="number" step="0.01" formControlName="importe_sin_iva" />
+            <div class="pw__field-error" *ngIf="invalid('importe_sin_iva')">Obligatorio</div>
+          </div>
+          <div class="pw__field">
+            <label for="importe_total">Importe total *</label>
+            <input id="importe_total" type="number" step="0.01" formControlName="importe_total" />
+            <div class="pw__field-error" *ngIf="invalid('importe_total')">Obligatorio</div>
+          </div>
+        </form>
+        <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" style="margin-top: 0.85rem" (click)="cargarFacturaMvp()">
+          Prefijar factura del ejemplo MVP
+        </button>
+      </div>
 
-  <div class="pw__actions">
-    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()">
-      <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      Atrás
-    </button>
-    <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">
-      Continuar
-      <i class="fas fa-arrow-right" aria-hidden="true"></i>
-    </button>
+      <aside class="paso7__side">
+        <div class="paso7__label">Suma estimada de importes netos</div>
+        <div class="paso7__money">{{ sumaNetos | number: '1.2-2' }}</div>
+        <p>
+          Al continuar, el paso de validación compara esta suma con el importe sin IVA de la factura
+          (tolerancia 0.01).
+        </p>
+      </aside>
+    </div>
+  </div>
+
+  <div class="pw__footer">
+    <div class="pw__footer-hint">Ejemplo MVP: F-A-0001-00004567 · sin IVA 102060.00</div>
+    <div class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
+      <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>
+    </div>
   </div>
 </div>

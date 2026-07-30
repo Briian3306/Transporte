@@ -41,7 +41,18 @@
     </section>
 
     <section class="cat__panel">
-      <h2>Listado</h2>
+      <div class="cat__list-head">
+        <h2>Listado</h2>
+        <label class="cat__filter">
+          Filtrar
+          <input
+            type="search"
+            [(ngModel)]="filtroLista"
+            name="filtroEstaciones"
+            placeholder="Nombre, código o ID…"
+          />
+        </label>
+      </div>
       <table class="cat__table">
         <thead>
           <tr>
@@ -52,11 +63,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let e of estaciones">
+          <tr *ngFor="let e of estacionesFiltradas">
             <td>{{ e.id }}</td>
             <td>{{ e.nombre }}</td>
             <td>{{ e.peaje?.nombre || e.peaje_id }}</td>
             <td>{{ (e.codigos_proveedor || []).join(', ') || '—' }}</td>
+          </tr>
+          <tr *ngIf="!estacionesFiltradas.length">
+            <td colspan="4" class="cat__empty">Sin resultados para el filtro.</td>
           </tr>
         </tbody>
       </table>

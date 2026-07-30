@@ -46,6 +46,18 @@ F00–F05 `passing` (F05-1…F05-3).
 
 ## Registro de sesiones
 
+### 2026-07-30 — Rediseño wizard Peajes ↔ mockup + ejemplo MVP
+
+- **Objetivo:** alinear UI/UX del wizard al mockup `module-automation-tool-mockup.html` y cablear el caso de `ejemplo-mvp-procesamiento-pasadas.md`.
+- **Hecho:**
+  - Shell + tokens CSS del mockup (stepper, content-card, status, tablas, footer).
+  - Pasos 1–9 rediseñados (upload 2 columnas, chips de columnas, transform cards + preview I/O, mapeo con panel detalle, estaciones relation-layout, factura/validación cards, revisión con métricas + tabla).
+  - Fixture `wizard/fixtures/mvp-ejemplo.fixture.ts` + botón **Cargar ejemplo MVP** (10 filas, selección/mapeo/factura sugeridos, total 102060).
+  - Heurísticas MVP en `construirPasadasDesdeMapeo` (FECHA+HORA, patente, pase, importe neto).
+  - Filtros de listado en catálogos peajes/estaciones (inputs tipo incidente-details).
+- **Verificación:** `npm run build` OK.
+- **Queda:** colapsar 9→7 pasos como el mockup (PRD mantiene plantilla/validación separados); editor modal de filtros del mockup; parse directo de `docs/plan/csv/1947768.xlsx` vía assets (hoy: fixture TS + upload .xlsx manual); polish plantillas F03.
+
 ### 2026-07-30 — DESARROLLO: sync historial + db push Peajes
 
 - **Causa drift:** remoto `kfffigvyvtzyczeiadxh` tenía 6 versiones aplicadas (maquinas/sectores/stock/user_profile_roles) ausentes en `supabase/migrations/` local → `db push --linked` bloqueaba con “Remote migration versions not found”.

@@ -23,6 +23,7 @@ export class CatalogoEstacionesComponent implements OnInit {
   peajes: Peaje[] = [];
   sugeridas: Estacion[] = [];
   busqueda = '';
+  filtroLista = '';
   error: string | null = null;
   guardando = false;
 
@@ -37,6 +38,22 @@ export class CatalogoEstacionesComponent implements OnInit {
   constructor(
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
   ) {}
+
+  get estacionesFiltradas(): Estacion[] {
+    const q = this.filtroLista.trim().toLowerCase();
+    if (!q) {
+      return this.estaciones;
+    }
+    return this.estaciones.filter((e) => {
+      const codigos = (e.codigos_proveedor ?? []).join(' ').toLowerCase();
+      return (
+        e.id.toLowerCase().includes(q) ||
+        e.nombre.toLowerCase().includes(q) ||
+        (e.peaje?.nombre ?? e.peaje_id).toLowerCase().includes(q) ||
+        codigos.includes(q)
+      );
+    });
+  }
 
   async ngOnInit(): Promise<void> {
     this.peajes = await firstValueFrom(this.catalogo.listarPeajes());

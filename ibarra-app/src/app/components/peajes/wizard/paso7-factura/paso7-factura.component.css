@@ -1,10 +1,48 @@
-.paso7 h2 {
-  margin: 0 0 0.35rem;
-  color: #2c3e50;
-  font-size: 1.2rem;
+.paso7__layout {
+  display: grid;
+  grid-template-columns: 1fr 0.92fr;
+  gap: 1.25rem;
 }
 
-.paso7__hint {
+.paso7__form-card,
+.paso7__side {
+  border: 1px solid var(--pw-line, #dce5ee);
+  border-radius: 14px;
+  padding: 1.2rem;
+  background: #fbfcfe;
+}
+
+.paso7__form-card h3 {
   margin: 0 0 1rem;
-  color: #5d6d7e;
+  font-size: 1rem;
+}
+
+.paso7__label {
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+
+.paso7__money {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--pw-teal, #148a83);
+  font-family: var(--pw-mono, monospace);
+  margin-bottom: 0.75rem;
+}
+
+.paso7__side p {
+  margin: 0;
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+  .paso7__layout {
+    grid-template-columns: 1fr;
+  }
 }

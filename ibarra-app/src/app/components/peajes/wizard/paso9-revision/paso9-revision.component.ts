@@ -31,6 +31,26 @@ export class Paso9RevisionComponent {
     return this.state.snapshot();
   }
 
+  get pasadas() {
+    const s = this.snap;
+    if (s.validacion?.validas?.length) {
+      return s.validacion.validas;
+    }
+    return s.pasadasEstandarizadas;
+  }
+
+  get validas(): number {
+    return this.snap.validacion?.validas?.length ?? this.pasadas.length;
+  }
+
+  get rechazados(): number {
+    return this.snap.validacion?.errores?.length ?? 0;
+  }
+
+  get sumaNetos(): number {
+    return this.pasadas.reduce((acc, p) => acc + Number(p.IMPORTE_NETO ?? 0), 0);
+  }
+
   async confirmar(): Promise<void> {
     this.guardando = true;
     this.error = null;

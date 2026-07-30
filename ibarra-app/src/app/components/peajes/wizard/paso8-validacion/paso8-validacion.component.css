@@ -1,16 +1,45 @@
-.paso8 h2 {
-  margin: 0 0 0.35rem;
-  color: #2c3e50;
-  font-size: 1.2rem;
+.paso8__layout {
+  display: grid;
+  gap: 1rem;
 }
 
-.paso8__hint {
-  margin: 0 0 1rem;
-  color: #5d6d7e;
+.paso8__card {
+  border: 1px solid #c9e9d7;
+  border-radius: 14px;
+  padding: 1.15rem;
+  background: #f8fcfa;
 }
 
-.paso8__right {
+.paso8__title {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.paso8__title h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.paso8__lines {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.paso8__line {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.88rem;
+}
+
+.paso8__line span:first-child {
+  color: #62758a;
+}
+
+.paso8__line--total {
+  padding-top: 0.8rem;
+  border-top: 1px solid #cfe4d7;
 }

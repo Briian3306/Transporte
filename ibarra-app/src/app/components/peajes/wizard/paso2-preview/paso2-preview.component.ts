@@ -51,6 +51,11 @@ export class Paso2PreviewComponent {
     return this.filasPreview.filter((r) => r[col] === null || r[col] === undefined || r[col] === '').length;
   }
 
+  esMono(col: string): boolean {
+    const u = col.toUpperCase();
+    return u === 'DISPOSITIVON' || u === 'TARIFA' || u === 'BONIFICACION' || u === 'HORA';
+  }
+
   continuar(): void {
     const s = this.state.snapshot();
     if (!s.preview || s.columnasIncluidas.length === 0) {

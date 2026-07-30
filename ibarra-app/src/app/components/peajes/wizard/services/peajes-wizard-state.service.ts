@@ -9,6 +9,16 @@ import {
   RelacionEstacionProveedor,
   ResultadoValidacionCarga,
 } from '../../models';
+import {
+  MVP_COLUMNAS_EXCLUIDAS,
+  MVP_COLUMNAS_INCLUIDAS,
+  MVP_FACTURA,
+  buildMvpMapeos,
+  buildMvpPreview,
+  combinarFechaHoraMvp,
+  normalizarPaseMvp,
+  normalizarPatenteMvp,
+} from '../fixtures/mvp-ejemplo.fixture';
 
 export type WizardPasoId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -93,6 +103,49 @@ export class PeajesWizardStateService {
     this.state.pasadasEstandarizadas = [];
     this.state.validacion = null;
     this.state.confirmacion = null;
+    this.aplicarSugerenciasSiPareceMvp(preview);
+  }
+
+  /**
+   * Carga el fixture del ejemplo MVP (10 filas + selección/mapeo/factura sugeridos).
+   * Equivale a recorrer el caso de `ejemplo-mvp-procesamiento-pasadas.md`.
+   */
+  cargarEjemploMvp(): void {
+    this.setPreview(buildMvpPreview());
+    this.setSeleccionColumnas([...MVP_COLUMNAS_INCLUIDAS], [...MVP_COLUMNAS_EXCLUIDAS]);
+    this.setMapeos(buildMvpMapeos());
+    this.setFactura({ ...MVP_FACTURA });
+    this.state.plantillaId = null;
+  }
+
+  /** Si el Excel trae las columnas del ejemplo, preselecciona incluidas/excluidas y mapeo. */
+  private aplicarSugerenciasSiPareceMvp(preview: ExcelCargaPreview): void {
+    const colsUpper = new Set(preview.columnas.map((c) => c.toUpperCase()));
+    const requeridas = ['FECHA', 'HORA', 'ESTACION', 'DISPOSITIVON', 'DOMINIO', 'TARIFA', 'BONIFICACION'];
+    if (!requeridas.every((c) => colsUpper.has(c))) {
+      return;
+    }
+
+    const findCol = (name: string): string | undefined =>
+      preview.columnas.find((c) => c.toUpperCase() === name);
+
+    const incluidasNorm = (MVP_COLUMNAS_INCLUIDAS as readonly string[])
+      .map(findCol)
+      .filter((c): c is string => !!c);
+    const excluidasNorm = (MVP_COLUMNAS_EXCLUIDAS as readonly string[])
+      .map(findCol)
+      .filter((c): c is string => !!c);
+
+    if (incluidasNorm.length < 7) {
+      return;
+    }
+
+    this.setSeleccionColumnas(incluidasNorm, excluidasNorm);
+    const mapeos = buildMvpMapeos().map((m) => {
+      const origenReal = findCol(m.columnaOrigen) ?? m.columnaOrigen;
+      return { ...m, columnaOrigen: origenReal };
+    });
+    this.setMapeos(mapeos);
   }
 
   setSeleccionColumnas(incluidas: string[], excluidas: string[]): void {
@@ -174,6 +227,10 @@ export class PeajesWizardStateService {
       this.state.relacionesEstacion.map((r) => [String(r.valorProveedor), r.estacionId])
     );
 
+    const colHora =
+      preview.columnas.find((c) => c.toUpperCase() === 'HORA') ??
+      this.state.columnasIncluidas.find((c) => c.toUpperCase() === 'HORA');
+
     return preview.filasPreview.map((fila) => {
       const out: Partial<Record<PasadaColumnKey, string | number | null>> = {
         PASADA_ID: null,
@@ -194,12 +251,26 @@ export class PeajesWizardStateService {
             ? null
             : (fila[m.columnaOrigen] as string | number);
 
-        if (dest === 'ESTACION_ID' && valor !== null) {
+        if (dest === 'FECHA_HORA') {
+          const horaVal = colHora ? fila[colHora] : null;
+          valor = combinarFechaHoraMvp(valor, horaVal);
+        } else if (dest === 'PATENTE_ID') {
+          valor = normalizarPatenteMvp(valor);
+        } else if (dest === 'PASE_ID') {
+          valor = normalizarPaseMvp(valor);
+        } else if (dest === 'ESTACION_ID' && valor !== null) {
           const mapped = relMap.get(String(valor));
           valor = mapped ?? String(valor);
+        } else if ((dest === 'PRECIO' || dest === 'BONIFICACION') && valor !== null) {
+          const n = Number(String(valor).replace(',', '.'));
+          valor = Number.isFinite(n) ? n : valor;
         }
 
         out[dest] = valor;
+      }
+
+      if (out.QUANTITY === null || out.QUANTITY === undefined) {
+        out.QUANTITY = 1;
       }
 
       if (out.IMPORTE_NETO === null && out.PRECIO !== null) {
@@ -207,7 +278,8 @@ export class PeajesWizardStateService {
         const bonif = Number(out.BONIFICACION ?? 0);
         const qty = Number(out.QUANTITY ?? 1);
         if (Number.isFinite(precio)) {
-          out.IMPORTE_NETO = (precio - (Number.isFinite(bonif) ? bonif : 0)) * (Number.isFinite(qty) ? qty : 1);
+          out.IMPORTE_NETO =
+            (precio - (Number.isFinite(bonif) ? bonif : 0)) * (Number.isFinite(qty) ? qty : 1);
         }
       }
 

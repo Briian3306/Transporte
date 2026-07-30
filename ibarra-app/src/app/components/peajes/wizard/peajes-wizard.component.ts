@@ -26,15 +26,15 @@ interface PasoMeta {
 }
 
 const PASOS: PasoMeta[] = [
-  { id: 1, label: 'Carga' },
-  { id: 2, label: 'Preview' },
-  { id: 3, label: 'Transformaciones', owner: '03' },
-  { id: 4, label: 'Plantilla', owner: '03' },
-  { id: 5, label: 'Mapeo' },
+  { id: 1, label: 'Cargar archivo' },
+  { id: 2, label: 'Previsualizar' },
+  { id: 3, label: 'Transformaciones' },
+  { id: 4, label: 'Plantilla' },
+  { id: 5, label: 'Mapear columnas' },
   { id: 6, label: 'Estaciones' },
   { id: 7, label: 'Factura' },
   { id: 8, label: 'Validación' },
-  { id: 9, label: 'Revisión' },
+  { id: 9, label: 'Revisar' },
 ];
 
 @Component({

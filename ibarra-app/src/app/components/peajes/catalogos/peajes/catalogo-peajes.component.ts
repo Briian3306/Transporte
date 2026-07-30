@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { PEAJES_CATALOGO_SERVICE, Peaje, PeajesCatalogoService } from '../../models';
@@ -8,7 +8,7 @@ import { PEAJES_CATALOGO_SERVICE, Peaje, PeajesCatalogoService } from '../../mod
 @Component({
   selector: 'app-catalogo-peajes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
   templateUrl: './catalogo-peajes.component.html',
   styleUrl: './catalogo-peajes.component.css',
 })
@@ -16,6 +16,7 @@ export class CatalogoPeajesComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   peajes: Peaje[] = [];
+  filtro = '';
   editandoId: string | null = null;
   error: string | null = null;
   guardando = false;
@@ -30,6 +31,19 @@ export class CatalogoPeajesComponent implements OnInit {
   constructor(
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
   ) {}
+
+  get peajesFiltrados(): Peaje[] {
+    const q = this.filtro.trim().toLowerCase();
+    if (!q) {
+      return this.peajes;
+    }
+    return this.peajes.filter(
+      (p) =>
+        p.id.toLowerCase().includes(q) ||
+        p.nombre.toLowerCase().includes(q) ||
+        (p.ubicacion ?? '').toLowerCase().includes(q)
+    );
+  }
 
   async ngOnInit(): Promise<void> {
     await this.cargar();

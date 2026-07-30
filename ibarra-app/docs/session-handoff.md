@@ -370,6 +370,32 @@ init.sh → BLOCKED (sin bash/WSL en host Windows)
 
 1. ~~`db push --linked` a DESARROLLO~~ — **DONE** (2026-07-30).
 2. Merge a `main` — no hacerlo sin OK explícito.
+3. Wizard UI: opcional colapsar 9→7 pasos del mockup; modal editar filtros; asset `1947768.xlsx` en assets.
+
+### 2026-07-30 — Rediseño wizard ↔ mockup + fixture MVP
+
+**Owner:** Frontend wizard/tablas.
+
+| Alineado al mockup | Pendiente / gap |
+|---|---|
+| Stepper + content-card + tokens azul/teal | Mockup tiene 7 pasos; app conserva 9 (plantilla + validación separados por PRD) |
+| Paso 1 upload 2-col + file card + ejemplo MVP | Topbar “Module Automation Tool” del mockup no se replica (host ibarra) |
+| Paso 2 chips columnas + celdas selected/ignored | — |
+| Paso 3 transform cards + tabla I/O 10 filas | Modal “Editar” filtros del mockup no implementado |
+| Paso 5 mapeo + panel detalle | — |
+| Paso 6 relation-layout peaje/estaciones | Depende de catálogo real con códigos 1/2/3/5 |
+| Paso 7–8 factura + validación importes | — |
+| Paso 9 métricas + tabla estandarizada | — |
+| Filtros catálogos peajes/estaciones | Patentes/pases sin filtro aún |
+
+**Cómo probar el ejemplo MVP**
+
+1. App en `/peajes/wizard`.
+2. Click **Cargar ejemplo MVP** (fixture `pasadas_junio_2026.xlsx`, 10 filas).
+3. Avanzar: columnas 7 seleccionadas → transform preview → plantilla opcional → mapeo sugerido → relacionar estaciones (códigos 1/2/3/5) → factura ya prefijada (102060) → validación dif. 0 → confirmar.
+4. Alternativa: subir un `.xlsx` propio con esas columnas (p. ej. convertir `docs/plan/csv/1947768.xlsx`); si coinciden nombres, se auto-sugiere selección/mapeo.
+
+**Verificación:** `npm run build` OK; `ng test --include=**/peajes/**/*.spec.ts` → 27 SUCCESS.
 
 ### 2026-07-30 — `db push --linked` DESARROLLO: OK
 

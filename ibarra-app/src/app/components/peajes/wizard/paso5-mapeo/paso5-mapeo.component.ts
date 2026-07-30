@@ -25,9 +25,42 @@ export class Paso5MapeoComponent {
   readonly obligatorias = PASADA_COLUMNAS_OBLIGATORIAS;
 
   error: string | null = null;
+  seleccionada: string | null = null;
 
   get mapeos(): MapeoColumna[] {
     return this.state.mapeosActivos();
+  }
+
+  get mapeoSeleccionado(): MapeoColumna | null {
+    if (!this.seleccionada) {
+      return this.mapeos[0] ?? null;
+    }
+    return this.mapeos.find((m) => m.columnaOrigen === this.seleccionada) ?? this.mapeos[0] ?? null;
+  }
+
+  etiquetaOrigen(col: string): string {
+    if (col.toUpperCase() === 'FECHA') {
+      return 'FECHA + HORA';
+    }
+    return col;
+  }
+
+  descripcionTransform(m: MapeoColumna): string {
+    const dest = m.columnaDestino;
+    const map: Record<string, string> = {
+      FECHA_HORA: 'Completar HORA · combinar columnas',
+      PASE_ID: 'Convertir a texto · limpiar',
+      PATENTE_ID: 'Eliminar guiones · mayúsculas',
+      ESTACION_ID: 'Buscar catálogo interno',
+      PRECIO: 'Número decimal',
+      BONIFICACION: 'Número decimal',
+      QUANTITY: 'Asignar 1',
+      IMPORTE_NETO: 'Calcular diferencia',
+    };
+    if (dest && map[dest]) {
+      return map[dest];
+    }
+    return dest ? 'Mapear columna' : 'Sin transformación';
   }
 
   setDestino(columnaOrigen: string, destino: string): void {
@@ -54,7 +87,10 @@ export class Paso5MapeoComponent {
     const mapeados = new Set(
       this.mapeos.filter((m) => m.columnaDestino).map((m) => m.columnaDestino!)
     );
-    return this.obligatorias.filter((k) => !mapeados.has(k));
+    // QUANTITY e IMPORTE_NETO se generan al estandarizar
+    return this.obligatorias.filter(
+      (k) => !mapeados.has(k) && k !== 'QUANTITY' && k !== 'IMPORTE_NETO'
+    );
   }
 
   continuar(): void {

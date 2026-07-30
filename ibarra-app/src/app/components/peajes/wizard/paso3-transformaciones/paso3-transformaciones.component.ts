@@ -2,11 +2,15 @@ import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ErrorValidacionPasada } from '../../models';
 import { PeajesMotorTransformacionService } from '../../plantillas/motor/peajes-motor-transformacion.service';
+import {
+  MVP_TRANSFORM_SPECS,
+  aplicarTransformPreview,
+} from '../fixtures/mvp-ejemplo.fixture';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 
 /**
  * Paso 3 — consume PeajesMotorTransformacion (agente 03).
- * No duplica StrategyRegistry ni estrategias atómicas.
+ * UI alineada al mockup: tarjetas de transformación + preview entrada/salida.
  */
 @Component({
   selector: 'app-paso3-transformaciones',
@@ -22,32 +26,41 @@ export class Paso3TransformacionesComponent implements OnInit {
   private readonly motor = inject(PeajesMotorTransformacionService);
   readonly state = inject(PeajesWizardStateService);
 
+  readonly specs = MVP_TRANSFORM_SPECS;
+  selectedKey = 'FECHA_HORA';
+
   errores: ErrorValidacionPasada[] = [];
-  previewFilas: Record<string, unknown>[] = [];
   mensaje = '';
+  filas: Record<string, unknown>[] = [];
 
   ngOnInit(): void {
     this.aplicarSinConfig();
   }
 
-  /** Sin configuraciones de plantilla: el motor no transforma; valida columnas disponibles. */
+  get tieneColumnasMvp(): boolean {
+    const cols = new Set((this.state.snapshot().preview?.columnas ?? []).map((c) => c.toUpperCase()));
+    return ['FECHA', 'HORA', 'DOMINIO', 'DISPOSITIVON', 'TARIFA', 'BONIFICACION'].every((c) =>
+      cols.has(c)
+    );
+  }
+
+  get specActiva() {
+    return this.specs.find((s) => s.key === this.selectedKey) ?? this.specs[0];
+  }
+
   aplicarSinConfig(): void {
     const s = this.state.snapshot();
     const columnas = this.state.columnasParaMapeo();
     this.errores = this.motor.validarDefinicionPlantilla([], columnas);
 
-    const filas = (s.preview?.filasPreview ?? []).map((f) => {
-      const out: Record<string, unknown> = {};
-      for (const c of columnas) {
-        out[c] = f[c];
-      }
-      return out;
-    });
+    this.filas = (s.preview?.filasPreview ?? []).slice(0, 10).map((f) => ({ ...f }));
+    this.mensaje = this.tieneColumnasMvp
+      ? 'Columnas del ejemplo detectadas. Revisá las transformaciones antes de continuar.'
+      : 'Sin plantilla aún. Podés continuar al mapeo o aplicar una plantilla en el paso 4.';
+  }
 
-    // Pipeline vacío vía interfaz del motor (sin Strategy local).
-    this.previewFilas = this.motor.aplicarPipeline(filas, [], []);
-    this.mensaje =
-      'Sin transformaciones de plantilla aún. El motor de 03 está cableado; podés continuar al mapeo o aplicar una plantilla en el paso 4.';
+  salida(key: string, fila: Record<string, unknown>): string {
+    return aplicarTransformPreview(key, fila);
   }
 
   continuar(): void {

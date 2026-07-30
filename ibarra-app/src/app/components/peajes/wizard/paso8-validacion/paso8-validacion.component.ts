@@ -68,6 +68,11 @@ export class Paso8ValidacionComponent implements OnInit {
     return this.resultado.errores.length === 0 && this.resultado.dentroTolerancia;
   }
 
+  get sumaNetos(): number {
+    const pasadas = this.state.snapshot().pasadasEstandarizadas;
+    return pasadas.reduce((acc, p) => acc + Number(p.IMPORTE_NETO ?? 0), 0);
+  }
+
   continuar(): void {
     if (!this.puedeContinuar) {
       return;

@@ -1,45 +1,78 @@
 <div class="paso2" *ngIf="preview as p">
-  <h2>Paso 2 — Vista previa y selección de columnas</h2>
-  <p class="paso2__hint">
-    Se muestran como máximo <strong>10 filas</strong> (RNF-03). Total de registros: {{ p.totalFilas }}.
-  </p>
-
-  <div class="paso2__cols">
-    <div class="paso2__col" *ngFor="let col of p.columnas">
-      <label>
-        <input type="checkbox" [checked]="incluida(col)" (change)="toggleColumna(col, $any($event.target).checked)" />
-        <span class="paso2__col-name">{{ col }}</span>
-      </label>
-      <span class="paso2__tipo">{{ p.tiposInferidos[col] || '—' }}</span>
-      <span class="paso2__vacios" *ngIf="columnasVacias(col) > 0">{{ columnasVacias(col) }} vacíos en preview</span>
+  <div class="pw__head">
+    <div>
+      <div class="pw__eyebrow">Paso 02 · datos originales</div>
+      <h2>Previsualizar y seleccionar columnas</h2>
+      <p>Revisá las primeras 10 filas y definí qué campos pasan a la estructura estandarizada.</p>
+    </div>
+    <div class="pw__legend">
+      <span><strong>{{ filasPreview.length }}</strong> en preview</span>
+      <span>·</span>
+      <span><strong>{{ p.columnas.length }}</strong> columnas</span>
     </div>
   </div>
 
-  <div class="pw__table-wrap">
-    <table class="pw__table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th *ngFor="let col of p.columnas" [class.paso2__excluded]="!incluida(col)">{{ col }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let fila of filasPreview; let i = index">
-          <td>{{ i + 1 }}</td>
-          <td *ngFor="let col of p.columnas" [class.paso2__excluded]="!incluida(col)">{{ fila[col] }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="pw__body">
+    <div class="paso2__toolbar">
+      <div>
+        <strong>Vista previa del archivo</strong>
+        <div class="pw__chips">
+          <button
+            type="button"
+            class="pw__chip"
+            *ngFor="let col of p.columnas"
+            [class.pw__chip--off]="!incluida(col)"
+            (click)="toggleColumna(col, !incluida(col))"
+          >
+            {{ incluida(col) ? '✓' : '—' }} {{ col }}
+          </button>
+        </div>
+      </div>
+      <span class="pw__status pw__status--valid">{{ state.snapshot().columnasIncluidas.length }} seleccionadas</span>
+    </div>
+
+    <div class="pw__table-wrap">
+      <table class="pw__table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th *ngFor="let col of p.columnas">{{ col }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let fila of filasPreview; let i = index">
+            <td class="pw__mono">{{ (i + 1) | number: '2.0-0' }}</td>
+            <td
+              *ngFor="let col of p.columnas"
+              [class.pw__selected]="incluida(col)"
+              [class.pw__ignored]="!incluida(col)"
+              [class.pw__mono]="esMono(col)"
+            >
+              {{ fila[col] }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pw__note" *ngIf="state.snapshot().columnasExcluidas.length">
+      <strong>Ignoradas:</strong>
+      {{ state.snapshot().columnasExcluidas.join(', ') }} (no entran al mapeo estándar del MVP).
+    </div>
   </div>
 
-  <div class="pw__actions">
-    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()">
-      <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      Atrás
-    </button>
-    <button type="button" class="pw__btn pw__btn--primary" [disabled]="!state.snapshot().columnasIncluidas.length" (click)="continuar()">
-      Continuar
-      <i class="fas fa-arrow-right" aria-hidden="true"></i>
-    </button>
+  <div class="pw__footer">
+    <div class="pw__footer-hint">Máximo 10 filas en preview (RNF-03). Total archivo: {{ p.totalFilas }}.</div>
+    <div class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--primary"
+        [disabled]="!state.snapshot().columnasIncluidas.length"
+        (click)="continuar()"
+      >
+        Continuar
+      </button>
+    </div>
   </div>
 </div>

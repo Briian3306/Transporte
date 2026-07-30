@@ -1,48 +1,91 @@
 <div class="paso5">
-  <h2>Paso 5 — Mapear columnas</h2>
-  <p class="paso5__hint">Relacioná cada columna del archivo con la estructura estándar (Pasada-Columns).</p>
-
-  <div class="pw__table-wrap">
-    <table class="pw__table">
-      <thead>
-        <tr>
-          <th>Columna origen</th>
-          <th>Destino estándar</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let m of mapeos">
-          <td>{{ m.columnaOrigen }}</td>
-          <td>
-            <select
-              [ngModel]="m.columnaDestino || ''"
-              (ngModelChange)="setDestino(m.columnaOrigen, $event)"
-            >
-              <option value="">— Sin mapear —</option>
-              <option
-                *ngFor="let d of destinos"
-                [value]="d"
-                [disabled]="destinoUsado(d, m.columnaOrigen)"
-              >
-                {{ d }}
-              </option>
-            </select>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="pw__head">
+    <div>
+      <div class="pw__eyebrow">Paso 05 · estructura destino</div>
+      <h2>Mapear columnas</h2>
+      <p>Confirmá cómo cada columna del archivo alimenta el modelo estándar de pasadas.</p>
+    </div>
+    <span class="pw__status" [class.pw__status--valid]="!faltantes().length" [class.pw__status--warn]="!!faltantes().length">
+      {{ faltantes().length ? 'Mapeo incompleto' : 'Mapeo completo' }}
+    </span>
   </div>
 
-  <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+  <div class="pw__body">
+    <div class="paso5__layout">
+      <div class="pw__table-wrap">
+        <table class="pw__table paso5__table">
+          <thead>
+            <tr>
+              <th>Columna de origen</th>
+              <th>Transformación</th>
+              <th>Campo de destino</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let m of mapeos"
+              [class.paso5__row--selected]="seleccionada === m.columnaOrigen"
+              (click)="seleccionada = m.columnaOrigen"
+            >
+              <td class="pw__mono">{{ etiquetaOrigen(m.columnaOrigen) }}</td>
+              <td>{{ descripcionTransform(m) }}</td>
+              <td (click)="$event.stopPropagation()">
+                <select
+                  class="pw__select"
+                  [ngModel]="m.columnaDestino || ''"
+                  (ngModelChange)="setDestino(m.columnaOrigen, $event)"
+                >
+                  <option value="">— Sin mapear —</option>
+                  <option
+                    *ngFor="let d of destinos"
+                    [value]="d"
+                    [disabled]="destinoUsado(d, m.columnaOrigen)"
+                  >
+                    {{ d }}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <span
+                  class="pw__status"
+                  [class.pw__status--valid]="!!m.columnaDestino"
+                  [class.pw__status--warn]="!m.columnaDestino"
+                >
+                  {{ m.columnaDestino ? 'Listo' : 'Pendiente' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-  <div class="pw__actions">
-    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()">
-      <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      Atrás
-    </button>
-    <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">
-      Continuar
-      <i class="fas fa-arrow-right" aria-hidden="true"></i>
-    </button>
+      <aside class="paso5__detail" *ngIf="mapeoSeleccionado as m">
+        <div class="pw__eyebrow">Fila seleccionada</div>
+        <h3>{{ m.columnaDestino || 'Sin destino' }}</h3>
+        <p>{{ descripcionTransform(m) }}</p>
+        <div class="paso5__catalog-label">Origen</div>
+        <div class="paso5__catalog-value pw__mono">{{ etiquetaOrigen(m.columnaOrigen) }}</div>
+        <div class="paso5__result" *ngIf="m.columnaDestino">
+          <div class="paso5__result-label">Destino estándar</div>
+          <div class="paso5__result-value">{{ m.columnaDestino }}</div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="pw__note">
+      <strong>Nota de modelo:</strong>
+      PASADA_ID lo genera el sistema. QUANTITY e IMPORTE_NETO se completan al estandarizar si faltan.
+    </div>
+
+    <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+  </div>
+
+  <div class="pw__footer">
+    <div class="pw__footer-hint">Obligatorias: {{ obligatorias.join(', ') }}</div>
+    <div class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
+      <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>
+    </div>
   </div>
 </div>

@@ -1,66 +1,99 @@
 <div class="paso9">
-  <h2>Paso 9 — Revisión y confirmación</h2>
-  <p class="paso9__hint">Revisá el resumen antes de guardar la carga.</p>
-
-  <div class="paso9__cards">
-    <article>
-      <h3>Archivo</h3>
-      <p>{{ snap.preview?.nombreArchivo || '—' }}</p>
-      <p>{{ snap.preview?.totalFilas || 0 }} filas · {{ snap.preview?.tamanioBytes || 0 }} bytes</p>
-    </article>
-    <article>
-      <h3>Mapeo</h3>
-      <ul>
-        <li *ngFor="let m of snap.mapeos">
-          <ng-container *ngIf="!m.excluida && m.columnaDestino">
-            {{ m.columnaOrigen }} → {{ m.columnaDestino }}
-          </ng-container>
-        </li>
-      </ul>
-    </article>
-    <article>
-      <h3>Estaciones</h3>
-      <ul>
-        <li *ngFor="let r of snap.relacionesEstacion">
-          {{ r.valorProveedor }} → {{ r.estacionId }} (peaje {{ r.peajeIdDerivado || '—' }})
-        </li>
-      </ul>
-    </article>
-    <article>
-      <h3>Factura</h3>
-      <p>{{ snap.factura.factura }} · {{ snap.factura.cuenta }}</p>
-      <p>Empresa {{ snap.factura.empresa_id }} · {{ snap.factura.fecha_factura }}</p>
-      <p>
-        Sin IVA: {{ snap.factura.importe_sin_iva | number: '1.2-2' }} ·
-        Total: {{ snap.factura.importe_total | number: '1.2-2' }}
-      </p>
-    </article>
+  <div class="pw__head">
+    <div>
+      <div class="pw__eyebrow">Paso 09 · control final</div>
+      <h2>Revisar y confirmar carga</h2>
+      <p>Todo está listo. Revisá el resultado estandarizado antes de guardarlo.</p>
+    </div>
+    <span class="pw__status pw__status--valid">
+      {{ resultado ? 'Carga confirmada' : 'Listo para confirmar' }}
+    </span>
   </div>
 
-  <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+  <div class="pw__body">
+    <div class="pw__metrics">
+      <div class="pw__metric">
+        <div class="pw__metric-label">Registros procesados</div>
+        <div class="pw__metric-value pw__metric-value--blue">{{ pasadas.length }}</div>
+      </div>
+      <div class="pw__metric">
+        <div class="pw__metric-label">Registros válidos</div>
+        <div class="pw__metric-value pw__metric-value--green">{{ validas }}</div>
+      </div>
+      <div class="pw__metric">
+        <div class="pw__metric-label">Registros rechazados</div>
+        <div class="pw__metric-value pw__metric-value--red">{{ rechazados }}</div>
+      </div>
+      <div class="pw__metric">
+        <div class="pw__metric-label">Importe neto total</div>
+        <div class="pw__metric-value pw__metric-value--money">$ {{ sumaNetos | number: '1.2-2' }}</div>
+      </div>
+    </div>
 
-  <div class="pw__alert pw__alert--ok" *ngIf="resultado as res">
-    Carga confirmada. Factura {{ res.factura.id }} · {{ res.pasadas.length }} pasadas ·
-    registro {{ res.registro.id }} (mock hasta F01-2/9).
+    <div class="pw__note">
+      <strong>Validación completa</strong>
+      <span style="margin-left: auto; font-family: var(--pw-mono, monospace); font-weight: 800">
+        {{ validas }}/{{ pasadas.length }} filas · {{ snap.relacionesEstacion.length }} estaciones ·
+        dif. factura $ {{ (snap.validacion?.diferenciaFactura ?? 0) | number: '1.2-2' }}
+      </span>
+    </div>
+
+    <div class="pw__table-wrap" style="margin-top: 1rem">
+      <table class="pw__table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>FECHA_HORA</th>
+            <th>PASE_ID</th>
+            <th>PATENTE_ID</th>
+            <th>ESTACION_ID</th>
+            <th>PRECIO</th>
+            <th>BONIFICACION</th>
+            <th>QTY</th>
+            <th>IMPORTE_NETO</th>
+            <th>ESTADO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of pasadas; let i = index">
+            <td class="pw__mono">{{ i + 1 }}</td>
+            <td class="pw__mono">{{ p.FECHA_HORA }}</td>
+            <td class="pw__mono">{{ p.PASE_ID }}</td>
+            <td class="pw__mono">{{ p.PATENTE_ID }}</td>
+            <td class="pw__mono pw__selected">{{ p.ESTACION_ID }}</td>
+            <td class="pw__mono">{{ p.PRECIO }}</td>
+            <td class="pw__mono">{{ p.BONIFICACION }}</td>
+            <td class="pw__mono">{{ p.QUANTITY }}</td>
+            <td class="pw__mono">{{ p.IMPORTE_NETO }}</td>
+            <td><span class="pw__status pw__status--valid">Válido</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+    <div class="pw__alert pw__alert--ok" *ngIf="resultado as res">
+      Carga confirmada. Factura {{ res.factura.id }} · {{ res.pasadas.length }} pasadas ·
+      registro {{ res.registro.id }}.
+    </div>
   </div>
 
-  <div class="pw__actions">
-    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()" [disabled]="!!resultado">
-      <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      Atrás
-    </button>
-    <div class="paso9__right">
+  <div class="pw__footer">
+    <div class="pw__footer-hint">
+      <strong>Importante:</strong> confirmar guardará las pasadas asociadas a la factura.
+    </div>
+    <div class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="atras.emit()" [disabled]="!!resultado">Volver</button>
       <button type="button" class="pw__btn pw__btn--ghost" *ngIf="resultado" (click)="reiniciar.emit()">
         Nueva carga
       </button>
       <button
         type="button"
-        class="pw__btn pw__btn--primary"
+        class="pw__btn pw__btn--success"
         *ngIf="!resultado"
         [disabled]="guardando"
         (click)="confirmar()"
       >
-        <i class="fas fa-check" aria-hidden="true"></i>
         Confirmar carga
       </button>
     </div>

@@ -1,40 +1,94 @@
 <div class="paso3">
-  <h2>Paso 3 — Transformaciones</h2>
-  <p class="paso3__hint">
-    Se consume <code>PeajesMotorTransformacion</code> (agente 03). No hay Strategy duplicada en el wizard.
-  </p>
-
-  <div class="pw__alert pw__alert--info">{{ mensaje }}</div>
-
-  <div class="pw__alert pw__alert--error" *ngIf="errores.length" role="alert">
-    <div *ngFor="let e of errores">{{ e.columna }}: {{ e.motivo }}</div>
+  <div class="pw__head">
+    <div>
+      <div class="pw__eyebrow">Paso 03 · reglas de limpieza</div>
+      <h2>Aplicar transformaciones</h2>
+      <p>
+        Revisá las secuencias del ejemplo MVP. Seleccioná una tarjeta para inspeccionar entrada/salida
+        sobre las 10 filas de preview.
+      </p>
+    </div>
   </div>
 
-  <div class="pw__table-wrap" *ngIf="previewFilas.length">
-    <table class="pw__table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th *ngFor="let col of state.columnasParaMapeo()">{{ col }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let fila of previewFilas; let i = index">
-          <td>{{ i + 1 }}</td>
-          <td *ngFor="let col of state.columnasParaMapeo()">{{ fila[col] }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="pw__body">
+    <div class="paso3__strip" *ngIf="tieneColumnasMvp">
+      <span class="paso3__mark">↗</span>
+      <span>
+        Transformaciones del ejemplo ·
+        <strong>Proveedor Demo - Pasadas</strong>
+        · 5 reglas · compatible con columnas detectadas
+      </span>
+      <span class="pw__status pw__status--valid">Compatible</span>
+    </div>
+
+    <div class="pw__alert pw__alert--info" *ngIf="!tieneColumnasMvp">
+      {{ mensaje }}
+    </div>
+
+    <div class="pw__alert pw__alert--error" *ngIf="errores.length" role="alert">
+      <div *ngFor="let e of errores">{{ e.columna }}: {{ e.motivo }}</div>
+    </div>
+
+    <div class="paso3__grid">
+      <article
+        class="paso3__card"
+        *ngFor="let spec of specs"
+        [class.paso3__card--selected]="selectedKey === spec.key"
+        (click)="selectedKey = spec.key"
+      >
+        <div class="paso3__card-title">
+          <strong class="pw__mono">{{ spec.target }}</strong>
+          <span class="pw__status pw__status--valid">{{ spec.tag }}</span>
+        </div>
+        <ul class="paso3__list">
+          <li *ngFor="let s of spec.steps">{{ s }}</li>
+        </ul>
+        <div class="paso3__hint" *ngIf="selectedKey === spec.key">Seleccionada · ver preview abajo</div>
+      </article>
+    </div>
+
+    <div class="paso3__compare" *ngIf="specActiva as spec">
+      <div class="paso3__compare-head">
+        <span>Datos de entrada y salida</span>
+        <span class="pw__mono">{{ spec.target }} · {{ filas.length }} registros</span>
+      </div>
+      <div class="paso3__compare-body">
+        <p class="paso3__note-text">
+          Aplica {{ spec.steps.length }} pasos sobre
+          <strong>{{ spec.inputs.join(' + ') }}</strong> para producir
+          <strong>{{ spec.target }}</strong>.
+        </p>
+        <div class="pw__table-wrap">
+          <table class="pw__table paso3__preview-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th *ngFor="let input of spec.inputs">Entrada · {{ input }}</th>
+                <th>Salida · {{ spec.target }}</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let fila of filas; let i = index">
+                <td class="pw__mono">{{ i + 1 }}</td>
+                <td class="pw__mono" *ngFor="let input of spec.inputs">
+                  {{ input === '—' ? '—' : fila[input] }}
+                </td>
+                <td class="paso3__out">{{ salida(spec.key, fila) }}</td>
+                <td><span class="pw__status pw__status--valid">Válido</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="pw__actions">
-    <button type="button" class="pw__btn pw__btn--ghost" (click)="atras.emit()">
-      <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      Atrás
-    </button>
-    <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">
-      Continuar
-      <i class="fas fa-arrow-right" aria-hidden="true"></i>
-    </button>
+  <div class="pw__footer">
+    <div class="pw__footer-hint">El motor Builder/Strategy se aplica al elegir plantilla (paso 4).</div>
+    <div class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
+      <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>
+    </div>
   </div>
 </div>

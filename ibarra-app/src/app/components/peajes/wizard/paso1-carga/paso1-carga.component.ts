@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MVP_EJEMPLO_NOMBRE_ARCHIVO } from '../fixtures/mvp-ejemplo.fixture';
 import { PeajesExcelService } from '../services/peajes-excel.service';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 
@@ -22,6 +23,10 @@ export class Paso1CargaComponent {
 
   get meta() {
     return this.state.snapshot().preview;
+  }
+
+  get esEjemploMvp(): boolean {
+    return this.meta?.nombreArchivo === MVP_EJEMPLO_NOMBRE_ARCHIVO;
   }
 
   onFileInput(event: Event): void {
@@ -49,6 +54,11 @@ export class Paso1CargaComponent {
 
   onDragLeave(): void {
     this.dragOver = false;
+  }
+
+  cargarEjemploMvp(): void {
+    this.error = null;
+    this.state.cargarEjemploMvp();
   }
 
   async procesar(file: File): Promise<void> {
