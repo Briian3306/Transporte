@@ -1,0 +1,74 @@
+<div class="plt">
+  <header class="plt__header">
+    <div>
+      <p class="plt__eyebrow">Módulo Peajes</p>
+      <h1 class="plt__title">
+        <i class="fas fa-cogs" aria-hidden="true"></i>
+        Plantillas y algoritmos
+      </h1>
+      <p class="plt__subtitle">
+        Motor Builder + Strategy, configuración de plantillas y algoritmos combinados.
+      </p>
+    </div>
+    <div class="plt__actions">
+      <button type="button" class="plt__btn" [class.plt__btn--primary]="vista === 'lista'" (click)="mostrar('lista')">
+        Listado
+      </button>
+      <button type="button" class="plt__btn" [class.plt__btn--primary]="vista === 'builder'" (click)="mostrar('builder')">
+        Builder
+      </button>
+      <button type="button" class="plt__btn" [class.plt__btn--primary]="vista === 'aplicar'" (click)="mostrar('aplicar')">
+        Aplicar
+      </button>
+      <button
+        type="button"
+        class="plt__btn"
+        [class.plt__btn--primary]="vista === 'algoritmos'"
+        (click)="mostrar('algoritmos')"
+      >
+        Algoritmos
+      </button>
+    </div>
+  </header>
+
+  @if (vista === 'lista') {
+    <section class="plt__panel">
+      <h2>Estrategias registradas</h2>
+      <p class="plt__muted">{{ estrategias.join(' · ') }}</p>
+    </section>
+
+    <div class="plt__grid">
+      @for (p of plantillas; track p.id) {
+        <article class="plt__card">
+          <span
+            class="plt__badge"
+            [class.plt__badge--borrador]="p.estado === 'borrador'"
+            [class.plt__badge--inactiva]="p.estado === 'inactiva'"
+            >{{ p.estado }}</span
+          >
+          <h3>{{ p.nombre }}</h3>
+          <p>{{ p.descripcion || 'Sin descripción' }}</p>
+          <p class="plt__muted">Empresa: {{ p.empresa_id }} · {{ p.configuraciones?.length || 0 }} pasos</p>
+        </article>
+      }
+      @for (a of algoritmos; track a.id) {
+        <article class="plt__card">
+          <span class="plt__badge">algoritmo</span>
+          <h3>{{ a.nombre }}</h3>
+          <p>{{ a.descripcion || 'Sin descripción' }}</p>
+          <p class="plt__muted">{{ a.pasos?.length || 0 }} pasos elementales</p>
+        </article>
+      }
+    </div>
+  }
+
+  @if (vista === 'builder') {
+    <app-plantilla-builder />
+  }
+  @if (vista === 'aplicar') {
+    <app-aplicar-plantilla />
+  }
+  @if (vista === 'algoritmos') {
+    <app-algoritmo-builder />
+  }
+</div>

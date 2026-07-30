@@ -1,0 +1,154 @@
+<div class="plt">
+  <header class="plt__header">
+    <div>
+      <p class="plt__eyebrow">Peajes · Plantillas</p>
+      <h1 class="plt__title">
+        <i class="fas fa-cogs" aria-hidden="true"></i>
+        {{ plantillaId ? 'Editar plantilla' : 'Nueva plantilla' }}
+      </h1>
+      <p class="plt__subtitle">
+        Configurá nombre, empresa, estado y el pipeline de transformaciones (Builder + Strategy).
+      </p>
+    </div>
+    <div class="plt__actions">
+      <button type="button" class="plt__btn" (click)="cargarDemo()">Cargar demo §21</button>
+      <button type="button" class="plt__btn" (click)="previsualizar()">Preview</button>
+      <button
+        type="button"
+        class="plt__btn plt__btn--primary"
+        [disabled]="guardando"
+        (click)="guardar()"
+      >
+        {{ guardando ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="plt__alert plt__alert--error" role="alert">{{ error }}</div>
+  }
+  @if (mensaje) {
+    <div class="plt__alert plt__alert--ok">{{ mensaje }}</div>
+  }
+  @if (erroresValidacion.length) {
+    <div class="plt__alert plt__alert--warn">
+      <ul>
+        @for (e of erroresValidacion; track e) {
+          <li>{{ e }}</li>
+        }
+      </ul>
+    </div>
+  }
+
+  <section class="plt__panel">
+    <h2>Datos de la plantilla</h2>
+    <div class="plt__form">
+      <div class="plt__field">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" name="nombre" [(ngModel)]="nombre" required />
+      </div>
+      <div class="plt__field">
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" name="descripcion" [(ngModel)]="descripcion"></textarea>
+      </div>
+      <div class="plt__field">
+        <label for="empresa">Empresa ID</label>
+        <input id="empresa" name="empresa" [(ngModel)]="empresaId" />
+      </div>
+      <div class="plt__field">
+        <label for="estado">Estado</label>
+        <select id="estado" name="estado" [(ngModel)]="estado">
+          <option value="borrador">Borrador</option>
+          <option value="activa">Activa</option>
+          <option value="inactiva">Inactiva</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="plt__panel">
+    <div class="plt__actions" style="justify-content: space-between; margin-bottom: 0.75rem">
+      <h2 style="margin: 0">Configuraciones (orden determinista)</h2>
+      <button type="button" class="plt__btn" (click)="agregarConfig()">
+        <i class="fas fa-plus" aria-hidden="true"></i> Agregar paso
+      </button>
+    </div>
+    <div class="plt__preview">
+      <table class="plt__table">
+        <thead>
+          <tr>
+            <th>Orden</th>
+            <th>Columna origen</th>
+            <th>Destino</th>
+            <th>Tipo</th>
+            <th>Algoritmo</th>
+            <th>Combinado</th>
+            <th>Oblig.</th>
+            <th>Params JSON</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of configs; track $index; let i = $index) {
+            <tr>
+              <td><input type="number" [(ngModel)]="c.orden" name="orden{{ i }}" /></td>
+              <td><input [(ngModel)]="c.nombre_columna" name="col{{ i }}" list="colsDemo" /></td>
+              <td>
+                <select [(ngModel)]="c.columna_destino" name="dest{{ i }}">
+                  <option value="">—</option>
+                  @for (d of columnasDestino; track d) {
+                    <option [value]="d">{{ d }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <select [(ngModel)]="c.tipo" name="tipo{{ i }}">
+                  <option value="transformacion">transformacion</option>
+                  <option value="mapeo">mapeo</option>
+                  <option value="validacion">validacion</option>
+                </select>
+              </td>
+              <td>
+                <select [(ngModel)]="c.algoritmo_codigo" name="alg{{ i }}">
+                  <option value="">—</option>
+                  @for (cod of codigosDisponibles; track cod) {
+                    <option [value]="cod">{{ cod }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <select [(ngModel)]="c.algoritmo_combinado_id" name="comb{{ i }}">
+                  <option value="">—</option>
+                  @for (a of algoritmos; track a.id) {
+                    <option [value]="a.id">{{ a.nombre }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <input type="checkbox" [(ngModel)]="c.obligatoria" name="obl{{ i }}" />
+              </td>
+              <td><input [(ngModel)]="c.parametrosJson" name="json{{ i }}" /></td>
+              <td>
+                <button type="button" class="plt__btn" (click)="quitarConfig(i)" title="Quitar">
+                  <i class="fas fa-trash" aria-hidden="true"></i>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <datalist id="colsDemo">
+      @for (col of columnasDemo; track col) {
+        <option [value]="col"></option>
+      }
+    </datalist>
+  </section>
+
+  @if (previewResultado) {
+    <section class="plt__panel">
+      <h2>Preview (fila §21)</h2>
+      <pre class="plt__muted">{{ previewResultado | json }}</pre>
+    </section>
+  }
+</div>

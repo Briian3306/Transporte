@@ -1,0 +1,139 @@
+<div class="plt">
+  <header class="plt__header">
+    <div>
+      <p class="plt__eyebrow">Peajes · Algoritmos</p>
+      <h1 class="plt__title">
+        <i class="fas fa-project-diagram" aria-hidden="true"></i>
+        Algoritmos combinados
+      </h1>
+      <p class="plt__subtitle">
+        Definí secuencias reutilizables (p. ej. NORMALIZAR_PATENTE). Solo códigos del StrategyRegistry.
+      </p>
+    </div>
+    <div class="plt__actions">
+      <button type="button" class="plt__btn" (click)="expandir()">Expandir pasos</button>
+      <button
+        type="button"
+        class="plt__btn plt__btn--primary"
+        [disabled]="guardando"
+        (click)="guardar()"
+      >
+        {{ guardando ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </header>
+
+  @if (error) {
+    <div class="plt__alert plt__alert--error" role="alert">{{ error }}</div>
+  }
+  @if (mensaje) {
+    <div class="plt__alert plt__alert--ok">{{ mensaje }}</div>
+  }
+  @if (errores.length) {
+    <div class="plt__alert plt__alert--warn">
+      <ul>
+        @for (e of errores; track e) {
+          <li>{{ e }}</li>
+        }
+      </ul>
+    </div>
+  }
+
+  <section class="plt__panel">
+    <h2>Algoritmos existentes</h2>
+    <div class="plt__actions" style="flex-wrap: wrap">
+      @for (a of algoritmos; track a.id) {
+        <button type="button" class="plt__btn" (click)="seleccionar(a.id)">
+          {{ a.nombre }}
+          <span class="plt__badge">{{ a.estado }}</span>
+        </button>
+      }
+    </div>
+  </section>
+
+  <section class="plt__panel">
+    <h2>Definición</h2>
+    <div class="plt__form">
+      <div class="plt__field">
+        <label for="nombreAlg">Nombre</label>
+        <input id="nombreAlg" name="nombreAlg" [(ngModel)]="nombre" />
+      </div>
+      <div class="plt__field">
+        <label for="descAlg">Descripción</label>
+        <textarea id="descAlg" name="descAlg" [(ngModel)]="descripcion"></textarea>
+      </div>
+      <div class="plt__field">
+        <label for="empAlg">Empresa ID</label>
+        <input id="empAlg" name="empAlg" [(ngModel)]="empresaId" [disabled]="esGlobal" />
+      </div>
+      <div class="plt__field">
+        <label>
+          <input type="checkbox" [(ngModel)]="esGlobal" name="esGlobal" />
+          Recurso global (reutilizable entre empresas)
+        </label>
+      </div>
+      <div class="plt__field">
+        <label for="estadoAlg">Estado</label>
+        <select id="estadoAlg" name="estadoAlg" [(ngModel)]="estado">
+          <option value="borrador">Borrador</option>
+          <option value="activa">Activa</option>
+          <option value="inactiva">Inactiva</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="plt__panel">
+    <div class="plt__actions" style="justify-content: space-between; margin-bottom: 0.75rem">
+      <h2 style="margin: 0">Pasos elementales</h2>
+      <button type="button" class="plt__btn" (click)="agregarPaso()">
+        <i class="fas fa-plus" aria-hidden="true"></i> Paso
+      </button>
+    </div>
+    <table class="plt__table">
+      <thead>
+        <tr>
+          <th>Orden</th>
+          <th>Código</th>
+          <th>Parámetros JSON</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of pasos; track $index; let i = $index) {
+          <tr>
+            <td><input type="number" [(ngModel)]="p.orden" name="porden{{ i }}" /></td>
+            <td>
+              <select [(ngModel)]="p.algoritmo_codigo" name="pcod{{ i }}">
+                <option value="">—</option>
+                @for (c of codigosDisponibles; track c) {
+                  <option [value]="c">{{ c }}</option>
+                }
+              </select>
+            </td>
+            <td><input [(ngModel)]="p.parametrosJson" name="pjson{{ i }}" /></td>
+            <td>
+              <button type="button" class="plt__btn" (click)="quitarPaso(i)">
+                <i class="fas fa-trash" aria-hidden="true"></i>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  @if (pasosEfectivos.length) {
+    <section class="plt__panel">
+      <h2>Pasos efectivos (expansión RF-30)</h2>
+      <ol>
+        @for (p of pasosEfectivos; track p.orden) {
+          <li>
+            <strong>{{ p.algoritmoCodigo }}</strong>
+            <span class="plt__muted"> · orden {{ p.orden }}</span>
+          </li>
+        }
+      </ol>
+    </section>
+  }
+</div>

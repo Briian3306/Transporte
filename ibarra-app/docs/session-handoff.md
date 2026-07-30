@@ -94,6 +94,63 @@ Regla de dominio: **pasada → estacion_id**; peaje derivado vía estación (no 
 - No editar `peajes.routes.ts` ni modelos; pedir merge a 05 vía este handoff
 - Mocks tipados hasta F01 `passing`
 
+## Estado Fase 1 — Agente 03 Frontend Plantillas & Motor (2026-07-30)
+
+**F03-1…F03-8 → `passing`** (motor + UI + mocks; persistencia real pendiente de 01).
+
+### Entregado bajo `plantillas/**`
+
+| Área | Path |
+|------|------|
+| Motor | `motor/` — StrategyRegistry, estrategias atómicas, PipelineBuilder, `PeajesMotorTransformacionService` |
+| Mocks | `mocks/peajes-plantillas.mock.ts` implementa `PeajesPlantillasService` |
+| Validación | `validacion/plantillas-validacion.ts` (publicar, alcance empresa) |
+| UI | `plantillas-home`, `plantilla-builder`, `aplicar-plantilla`, `algoritmo-builder` |
+| Specs | `motor.spec.ts`, `builder.spec.ts`, `aplicar.spec.ts`, `algoritmos.spec.ts` |
+| Verify | `motor.verify.ts` (`npx tsx …` → PASS §21) |
+
+### Contratos para agente 01 (reemplazar mock)
+
+Implementar `PeajesPlantillasService` real (`peajes-services.contracts.ts`):
+
+- `guardarPlantilla` / `sobrescribirConfiguraciones` (transaccional F01-7 / RN-19)
+- `guardarAlgoritmo` / `expandirAlgoritmo` / listados por `empresa_id`
+- Recurso global: mock usa `empresa_id === '__global__'` (`GLOBAL_EMPRESA_ID`); 01 puede mapear a flag `es_global` o empresa nula — documentar en migración
+
+Token sugerido: `PEAJES_PLANTILLAS_SERVICE` / `PEAJES_MOTOR_TRANSFORMACION`.
+
+### Contratos para agente 05 (merge rutas)
+
+No se editó `peajes.routes.ts`. Fusionar rutas declaradas en `plantillas/plantillas.routes.ts`:
+
+- `plantillas` → `PlantillasHomeComponent`
+- (opcional) vistas builder/aplicar/algoritmos ya embebidas en el home por tabs
+
+Actualizar tarjeta “Plantillas y algoritmos” en `peajes-home` para dejar de mostrar “Próximamente”.
+
+### Contratos para agente 02 (wizard)
+
+Consumir solo `PeajesMotorTransformacion` / `PeajesMotorTransformacionService`:
+
+- `aplicarPipeline(filas, configuraciones, algoritmos)`
+- `validarDefinicionPlantilla` / `validarCompatibilidad`
+- `expandirAlgoritmo` para preview de pasos RF-30
+
+No duplicar lógica Strategy en `wizard/**`.
+
+### Bloqueos
+
+1. **`ng test`**: falla la compilación del suite por errores TS en `catalogos/**` (agente 02: `fb` used before initialization en `catalogo-peajes` / `catalogo-estaciones`). Evidencia F03 vía `motor.verify.ts` + build.
+2. **F01-3/4/7/8** aún no `passing`: persistencia es mock tipado; sustituir por servicio 01 sin cambiar UI.
+3. Rutas plantillas no cableadas hasta merge 05.
+
+### Verificación ejecutada
+
+```text
+npm run build -- --configuration=development  → OK
+npx tsx src/app/components/peajes/plantillas/motor.verify.ts → PASS
+```
+
 ### Skills presentes
 
 - `peajes-wizard-tablas`, `peajes-plantillas-builder` (nuevas)

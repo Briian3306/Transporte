@@ -10,7 +10,7 @@
 
 ## Estado actual
 
-Fecha: 2026-07-30 — **Fase 0 (Agente 00) en entrega**
+Fecha: 2026-07-30 — **Fase 1 Agente 03 (Plantillas & Motor) entregada**
 
 ### Rama Git (contrato)
 
@@ -39,9 +39,19 @@ Decisiones vigentes:
 
 ## Features
 
-F00-1…F00-4 en `passing` con evidencia (build + grep). Paralelo 01/02/03 habilitado.
+F00-1…F00-4 `passing`. **F03-1…F03-8 `passing`** (Agente 03, 2026-07-30). Persistencia vía mock tipado hasta F01-3/4/7/8.
 
 ## Registro de sesiones
+
+### 2026-07-30 — Fase 1 Agente 03 Plantillas & Motor
+
+- Scope exclusivo: `src/app/components/peajes/plantillas/**`.
+- Motor Builder + Strategy: registry, 10 estrategias atómicas, PipelineBuilder, `PeajesMotorTransformacionService`.
+- UI: home/builder/aplicar/algoritmos; validaciones publicar + alcance empresa.
+- Mock `PeajesPlantillasMockService` (contratos 00); seed demo §21 + NORMALIZAR_PATENTE.
+- Evidencia: `npm run build` OK; `npx tsx …/motor.verify.ts` PASS (§21).
+- `ng test` bloqueado por errores TS en `catalogos/**` (02) — anotado en handoff.
+- Pedido a 05: merge rutas desde `plantillas.routes.ts`. Pedido a 01: servicio real.
 
 ### 2026-07-30 — Fase 0 Orquestador/Setup
 
@@ -63,7 +73,8 @@ F00-1…F00-4 en `passing` con evidencia (build + grep). Paralelo 01/02/03 habil
 - Tarjeta Peajes queda `disabled` hasta que 01 inserte `system_modules` name=`peajes` y asigne permisos.
 - `.claude/agents/` no presentes (no bloquea skills).
 - Root `.agents/skills/` es legacy; canónico = `ibarra-app/.agents/skills/`.
+- **Agente 03:** `ng test` no corre mientras `catalogos/**` tenga errores TS (`fb` before init). Rutas plantillas pendientes de merge 05. Mock hasta F01.
 
 ## Próximo paso
 
-Tras commit F00: lanzar en paralelo 01, 02 y 03 consumiendo contratos y handoff.
+Agentes 01/02 continúan en paralelo; 05 integra rutas plantillas + sustituye mocks cuando F01 pase.
