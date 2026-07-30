@@ -86,9 +86,21 @@ F00–F05 `passing` (F05-1…F05-3).
 
 ## Bloqueos y riesgos
 
-- Schema Peajes **no** está en DESARROLLO remoto hasta `db push --linked` autorizado.
+- Schema Peajes **no** está en DESARROLLO remoto: `db push --linked` autorizado pero **bloqueado por ACL**.
 - `init.sh` no ejecutable en este host Windows sin bash/WSL (evidencia F05-3).
+
+### 2026-07-30 — Intento `db push --linked` DESARROLLO (BLOCKED)
+
+- Rama: `feature/peajes-mvp`; migraciones peajes presentes (incl. `20260730150000_peajes_system_module_admin_permissions.sql`).
+- Link local OK: `supabase/.temp/project-ref` = `kfffigvyvtzyczeiadxh` (proyecto “Check-list”).
+- App apunta a DESARROLLO (`environment.ts`).
+- **No** se usaron refs OrdenCompra.
+- `npx supabase db push --linked` → **403** `LegacyDbConfigLoginRoleStatusError` (cuenta CLI sin privilegios sobre el proyecto).
+- CLI/MCP listan solo proyectos OrdenCompra de otras orgs; no aparece DESARROLLO en la cuenta activa.
+- Verificación SQL/MCP de `system_modules` peajes: **no posible** sin acceso.
+- **Acción requerida del usuario:** login CLI (`npx supabase login`) con cuenta miembro de la org del proyecto Check-list / DESARROLLO, o invitar la cuenta actual con rol Developer+; luego reintentar `npx supabase db push --linked` desde `ibarra-app`. Tras éxito: re-login app + `/peajes`.
 
 ## Próximo paso
 
-Autorización del usuario para: (1) push rama `feature/peajes-mvp`, (2) `db push --linked` a DESARROLLO (incluye repair RBAC peajes), (3) merge a `main` cuando corresponda.
+1. Desbloquear ACL Supabase DESARROLLO y reintentar `db push --linked`.
+2. Merge a `main` solo con OK explícito del usuario.

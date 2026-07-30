@@ -365,14 +365,35 @@ init.sh → BLOCKED (sin bash/WSL en host Windows)
 - **Migración:** `supabase/migrations/20260730150000_peajes_system_module_admin_permissions.sql`.
 - **Verificar tras aplicar en DESARROLLO:** login Admin → `/peajes` (y wizard/catálogos/plantillas) sin `/access-denied`; dashboard tarjeta Peajes “Acceder”. Re-login o refresh de permisos.
 
-### Pendiente (requiere autorización del usuario)
+### Pendiente
 
-1. Push remoto de `feature/peajes-mvp` (por defecto no).
-2. `npx supabase db push --linked` a DESARROLLO `kfffigvyvtzyczeiadxh` (schema Peajes + repair `system_modules`/Admin).
-3. Merge a `main` — no hacerlo sin OK explícito.
+1. ~~Autorización `db push --linked`~~ — **autorizado**, pero **BLOCKED por ACL** (403 login role). Ver abajo.
+2. Merge a `main` — no hacerlo sin OK explícito.
+
+### 2026-07-30 — `db push --linked` DESARROLLO: BLOCKED
+
+| Check | Resultado |
+|-------|-----------|
+| Rama | `feature/peajes-mvp` |
+| Migraciones peajes en repo | Sí (7), incl. `20260730150000_…admin_permissions.sql` |
+| `project-ref` linked | `kfffigvyvtzyczeiadxh` (DESARROLLO / “Check-list”) |
+| Refs OrdenCompra usadas | No |
+| `npx supabase db push --linked` | **FAIL 403** — cuenta CLI sin privilegios al endpoint de DB del proyecto |
+| Verificación `system_modules` / Admin peajes en remoto | No ejecutada (sin acceso) |
+
+**Qué debe hacer el usuario**
+
+1. En Supabase Dashboard: confirmar que la cuenta usada en CLI es miembro de la org del proyecto DESARROLLO (`kfffigvyvtzyczeiadxh`), rol Developer o superior.
+2. O bien: `npx supabase login` con esa cuenta, luego desde `ibarra-app`:
+   ```powershell
+   Get-Content supabase\.temp\project-ref   # debe ser kfffigvyvtzyczeiadxh
+   npx supabase db push --linked
+   ```
+3. Tras push OK: cerrar sesión en la app (o hard refresh), volver a entrar como Admin, abrir `/peajes`.
 
 ### SHA / rama (F05)
 
 - Rama: `feature/peajes-mvp`
 - Commit Agente 05 (F05): `fa26ab8`
-- Sin push. `main` sin cambios de Peajes.
+- Repair RBAC: `e6f7239`
+- `main` sin merge de Peajes.
