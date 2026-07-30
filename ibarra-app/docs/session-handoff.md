@@ -109,4 +109,5 @@ No encontrados en este repo en Fase 0. No bloquea 01/02/03 (usan skills + AGENTS
 ### SHA / rama
 
 - Rama: `feature/peajes-mvp` (no `main`)
-- Commit Fase 0: ver `git log -1` en esa rama tras el commit de entrega.
+- Commit Fase 0: `47e0a3fdacd677235bce8ca7fc81c3d32d4e9c45`
+- `main` permanece en `82a2802` (sin commit ni push de Fase 0)
