@@ -39,6 +39,13 @@ const ROUTE_PERMISSIONS: { [key: string]: { module: string; action: string } } =
 
   // Peajes (módulo aislado; create/manage se agregarán con pantallas posteriores)
   '/peajes': { module: 'peajes', action: 'read' },
+  '/peajes/wizard': { module: 'peajes', action: 'read' },
+  '/peajes/catalogos': { module: 'peajes', action: 'read' },
+  '/peajes/catalogos/peajes': { module: 'peajes', action: 'read' },
+  '/peajes/catalogos/estaciones': { module: 'peajes', action: 'read' },
+  '/peajes/catalogos/patentes': { module: 'peajes', action: 'read' },
+  '/peajes/catalogos/pases': { module: 'peajes', action: 'read' },
+  '/peajes/plantillas': { module: 'peajes', action: 'read' },
   
   // Usuarios y Roles
   '/users': { module: 'users', action: 'read' },
@@ -131,10 +138,19 @@ export class PermissionGuard implements CanActivate {
   private checkRoutePermission(url: string, route: ActivatedRouteSnapshot): boolean {
     // Obtener la ruta base sin parámetros
     const routePath = this.getRoutePath(url, route);
-    
-    // Buscar permisos requeridos para esta ruta
-    const requiredPermission = ROUTE_PERMISSIONS[routePath];
-    
+    const urlPath = url.split('?')[0];
+
+    // Exacto, luego prefijo más largo (p.ej. /peajes/wizard → /peajes/wizard o /peajes)
+    let requiredPermission = ROUTE_PERMISSIONS[routePath] ?? ROUTE_PERMISSIONS[urlPath];
+    if (!requiredPermission) {
+      const prefix = Object.keys(ROUTE_PERMISSIONS)
+        .filter((r) => !r.includes(':') && (urlPath === r || urlPath.startsWith(r + '/')))
+        .sort((a, b) => b.length - a.length)[0];
+      if (prefix) {
+        requiredPermission = ROUTE_PERMISSIONS[prefix];
+      }
+    }
+
     if (!requiredPermission) {
       // Si no hay permisos definidos, permitir acceso (para rutas nuevas o especiales)
       return true;
@@ -142,7 +158,7 @@ export class PermissionGuard implements CanActivate {
 
     // Verificar si el usuario tiene el permiso requerido
     const hasPermission = this.permissionStateService.hasPermission(
-      requiredPermission.module, 
+      requiredPermission.module,
       requiredPermission.action
     );
 

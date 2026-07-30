@@ -4,13 +4,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { PEAJES_CATALOGO_SERVICE, Peaje, PeajesCatalogoService } from '../../models';
-import { PEAJES_CATALOGOS_MOCK_PROVIDERS } from '../catalogos.providers';
 
 @Component({
   selector: 'app-catalogo-peajes',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
-  providers: PEAJES_CATALOGOS_MOCK_PROVIDERS,
   templateUrl: './catalogo-peajes.component.html',
   styleUrl: './catalogo-peajes.component.css',
 })

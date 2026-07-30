@@ -1,12 +1,19 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AlgoritmoCombinado, AlgoritmoCombinadoPaso } from '../models/peajes.models';
+import {
+  AlgoritmoCombinado,
+  AlgoritmoCombinadoPaso,
+  PEAJES_PLANTILLAS_SERVICE,
+  PeajesPlantillasService,
+} from '../models';
 import { EstadoRecursoPeaje } from '../models/peajes.types';
 import { PeajesMotorTransformacionService } from './motor/peajes-motor-transformacion.service';
-import { GLOBAL_EMPRESA_ID, PeajesPlantillasMockService } from './mocks/peajes-plantillas.mock';
+import { PEAJES_GLOBAL_EMPRESA_ID } from '../services';
 import { validarPublicacionAlgoritmo } from './validacion/plantillas-validacion';
 import { PasoEjecucion } from './motor/strategy.types';
+
+const GLOBAL_EMPRESA_ID = PEAJES_GLOBAL_EMPRESA_ID;
 
 interface PasoDraft {
   orden: number;
@@ -25,8 +32,11 @@ interface PasoDraft {
   styleUrl: './plantillas-shared.css',
 })
 export class AlgoritmoBuilderComponent implements OnInit {
-  private readonly plantillasSvc = inject(PeajesPlantillasMockService);
   private readonly motor = inject(PeajesMotorTransformacionService);
+
+  constructor(
+    @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService
+  ) {}
 
   algoritmos: AlgoritmoCombinado[] = [];
   algoritmoId: string | null = null;

@@ -17,25 +17,25 @@
   </header>
 
   <section class="peajes-home__grid" aria-label="Secciones del módulo">
-    <article class="peajes-home__card peajes-home__card--pending">
+    <a routerLink="/peajes/wizard" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-file-excel" aria-hidden="true"></i></div>
       <h2>Asistente de carga</h2>
-      <p>Wizard de carga, preview, mapeo, factura y validación. Disponible cuando el agente 02 lo entregue.</p>
-      <span class="peajes-home__badge">Próximamente</span>
-    </article>
+      <p>Wizard de carga, preview, transformaciones, mapeo, factura y validación.</p>
+      <span class="peajes-home__link">Abrir asistente</span>
+    </a>
 
-    <article class="peajes-home__card peajes-home__card--pending">
+    <a routerLink="/peajes/catalogos" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-map-marker-alt" aria-hidden="true"></i></div>
       <h2>Catálogos</h2>
-      <p>Peajes, estaciones, patentes y pases. Carpeta reservada: <code>catalogos/</code>.</p>
-      <span class="peajes-home__badge">Próximamente</span>
-    </article>
+      <p>Peajes, estaciones, patentes y pases.</p>
+      <span class="peajes-home__link">Gestionar catálogos</span>
+    </a>
 
-    <article class="peajes-home__card peajes-home__card--pending">
+    <a routerLink="/peajes/plantillas" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-cogs" aria-hidden="true"></i></div>
       <h2>Plantillas y algoritmos</h2>
-      <p>Builder + Strategy y algoritmos combinados. Carpeta reservada: <code>plantillas/</code>.</p>
-      <span class="peajes-home__badge">Próximamente</span>
-    </article>
+      <p>Builder de plantillas, algoritmos combinados y motor Strategy.</p>
+      <span class="peajes-home__link">Abrir plantillas</span>
+    </a>
   </section>
 </div>

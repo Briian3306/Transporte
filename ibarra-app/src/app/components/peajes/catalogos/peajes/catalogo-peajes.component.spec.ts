@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CatalogoPeajesComponent } from './catalogo-peajes.component';
 import { provideRouter } from '@angular/router';
+import { PEAJES_CATALOGOS_MOCK_PROVIDERS } from '../catalogos.providers';
 
 describe('CatalogoPeajesComponent', () => {
   let fixture: ComponentFixture<CatalogoPeajesComponent>;
@@ -9,7 +10,7 @@ describe('CatalogoPeajesComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [CatalogoPeajesComponent],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), ...PEAJES_CATALOGOS_MOCK_PROVIDERS],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CatalogoPeajesComponent);

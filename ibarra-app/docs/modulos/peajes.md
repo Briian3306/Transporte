@@ -97,36 +97,31 @@ Tests SQL: `supabase/tests/peajes_f01_test.sql`
 | F01 Backend Supabase | `passing` (CLI 30/30) |
 | F02 Wizard & catálogos | `passing` (mocks) |
 | F03 Plantillas & motor | `passing` (mocks persistencia) |
-| F04 Documentación | `passing` (esta entrega) |
-| F05 Integrador/QA | `not_started` |
+| F04 Documentación | `passing` |
+| F05 Integrador/QA | `passing` (F05-1…F05-3) |
 
 ---
 
-## Pendiente Agente 05
+## Pendiente post-F05 (autorización usuario)
 
-1. Merge de fragmentos de rutas en `peajes.routes.ts` (wizard + catalogos + plantillas) sin duplicados.
-2. Swap mocks → `Peajes*SupabaseService` en providers.
-3. Actualizar `peajes-home` con links reales.
-4. E2E PRD §21 (`F05-1`).
-5. Alinear códigos catálogo SQL ↔ `StrategyRegistry` si se persisten algoritmos desde UI.
-6. `system_modules` peajes en DESARROLLO tras `db push --linked` autorizado.
-7. **Sin push a `main`**; push feature/DESARROLLO solo con autorización.
+1. ~~Merge rutas / swap mocks / peajes-home / E2E §21 / catálogo SQL↔TS~~ → **hecho F05**.
+2. `system_modules` peajes en DESARROLLO tras `db push --linked` autorizado.
+3. **Sin push a `main`**; push feature/DESARROLLO solo con autorización.
 
 ---
 
 ## Verificación
 
-Documentada por agentes 01–03 (no re-ejecutada por 04 salvo existencia de archivos):
+Agente 05 (2026-07-30):
 
 ```text
-npx supabase db reset --local --no-seed → OK
-npx supabase test db → PASS 30/30
-ng build --configuration=development → OK
-ng test peajes wizard+catalogos → 12 SUCCESS
+npm run build -- --configuration=development → OK
+npx tsx …/e2e-prd21.verify.ts → PASS (total 102060)
 npx tsx …/plantillas/motor.verify.ts → PASS
+ng test --include="**/peajes/**/*.spec.ts" → 27 SUCCESS
+npx supabase db reset --local --no-seed → OK (6 migraciones)
+npx supabase test db → PASS 30/30
 ```
-
-F04: existencia y enlaces de docs en índices (ver evidencia en `feature_list.json`).
 
 ---
 

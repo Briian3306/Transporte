@@ -318,19 +318,7 @@ npx supabase test db → PASS 30/30 (peajes_f01_test.sql)
 
 ### Checklist obligatorio — Agente 05 Integrador/QA
 
-1. **Merge rutas** en `peajes.routes.ts`:
-   - `PEAJES_WIZARD_ROUTES` (`wizard/wizard.routes.ts`)
-   - `PEAJES_CATALOGOS_ROUTES` (`catalogos/catalogos.routes.ts`)
-   - Rutas plantillas (`plantillas/plantillas.routes.ts` — unificar a `Routes[]` tipado)
-   - Sin overlap de path (`wizard` / `catalogos` / `plantillas`)
-2. **Swap mocks → servicios reales** (providers wizard/catalogos/plantillas):
-   - `PeajesCatalogoSupabaseService` / `PeajesCargaSupabaseService` / `PeajesPlantillasSupabaseService`
-   - Ver `docs/06-components/peajes/servicios-y-providers.md`
-3. Actualizar **peajes-home**: quitar “Próximamente”; links a wizard/catálogos/plantillas.
-4. **E2E PRD §21** (`F05-1`) con archivo de ejemplo.
-5. **`system_modules` peajes** en DESARROLLO: tras `db push --linked` autorizado (omitido en CLI vacío).
-6. Resolver/registrar gap códigos algoritmos SQL ↔ TS.
-7. Actualizar `feature_list.json` F05-* + evidencia; **sin push a `main`**; push feature/DESARROLLO solo con OK del usuario.
+**Completado 2026-07-30** (ver sección Fase 3 abajo).
 
 ### Docs de lectura para 05
 
@@ -343,3 +331,42 @@ npx supabase test db → PASS 30/30 (peajes_f01_test.sql)
 - Rama: `feature/peajes-mvp`
 - Commit Agente 04 (F04): `ffdb0f1`
 - Sin push.
+
+## Estado Fase 3 — Agente 05 Integrador/QA (2026-07-30)
+
+**F05-1…F05-3 → `passing`**.
+
+### Entregado
+
+| Ítem | Resultado |
+|------|-----------|
+| Merge rutas | `peajes.routes.ts` → wizard + catalogos + plantillas + `PEAJES_SUPABASE_PROVIDERS` |
+| Swap mocks | Catalogo/Carga/Plantillas → servicios Supabase reales |
+| peajes-home | Links `/peajes/wizard`, `/catalogos`, `/plantillas` |
+| Códigos SQL↔TS | Migración `20260730140000_peajes_algoritmos_catalogo_align.sql` |
+| PermissionGuard | Rutas hijas peajes + match por prefijo |
+| E2E §21 | `e2e-prd21.verify.ts` PASS (total 102060) |
+
+### Verificación
+
+```text
+npm run build -- --configuration=development → OK
+npx tsx src/app/components/peajes/e2e-prd21.verify.ts → PASS
+npx tsx src/app/components/peajes/plantillas/motor.verify.ts → PASS
+ng test --include="**/peajes/**/*.spec.ts" → 27 SUCCESS
+npx supabase db reset --local --no-seed → OK (6 migraciones)
+npx supabase test db → PASS 30/30
+init.sh → BLOCKED (sin bash/WSL en host Windows)
+```
+
+### Pendiente (requiere autorización del usuario)
+
+1. Push remoto de `feature/peajes-mvp` (por defecto no).
+2. `npx supabase db push --linked` a DESARROLLO `kfffigvyvtzyczeiadxh` (incluye `system_modules` peajes si host RBAC existe).
+3. Merge a `main` — no hacerlo sin OK explícito.
+
+### SHA / rama (F05)
+
+- Rama: `feature/peajes-mvp`
+- Commit Agente 05: (ver git log tras commit de esta sesión)
+- Sin push. `main` sin cambios de Peajes.

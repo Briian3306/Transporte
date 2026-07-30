@@ -17,8 +17,7 @@ import { Paso6EstacionesComponent } from './paso6-estaciones/paso6-estaciones.co
 import { Paso7FacturaComponent } from './paso7-factura/paso7-factura.component';
 import { Paso8ValidacionComponent } from './paso8-validacion/paso8-validacion.component';
 import { Paso9RevisionComponent } from './paso9-revision/paso9-revision.component';
-import { PeajesCatalogoMockService } from './mocks/peajes-catalogo.mock';
-import { PeajesCargaMockService } from './mocks/peajes-carga.mock';
+import { PEAJES_SUPABASE_PROVIDERS } from '../peajes.providers';
 
 interface PasoMeta {
   id: WizardPasoId;
@@ -54,10 +53,7 @@ const PASOS: PasoMeta[] = [
     Paso8ValidacionComponent,
     Paso9RevisionComponent,
   ],
-  providers: [
-    { provide: PEAJES_CATALOGO_SERVICE, useClass: PeajesCatalogoMockService },
-    { provide: PEAJES_CARGA_SERVICE, useClass: PeajesCargaMockService },
-  ],
+  providers: PEAJES_SUPABASE_PROVIDERS,
   templateUrl: './peajes-wizard.component.html',
   styleUrl: './peajes-wizard.component.css',
 })
@@ -65,7 +61,7 @@ export class PeajesWizardComponent implements OnInit {
   readonly state = inject(PeajesWizardStateService);
   readonly pasos = PASOS;
 
-  /** DI tipada contra contratos Fase 0 (mock hasta F01). */
+  /** DI tipada contra contratos Fase 0 (servicios Supabase F01). */
   constructor(
     @Inject(PEAJES_CATALOGO_SERVICE) readonly catalogo: PeajesCatalogoService,
     @Inject(PEAJES_CARGA_SERVICE) readonly carga: PeajesCargaService

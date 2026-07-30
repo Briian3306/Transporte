@@ -1,23 +1,22 @@
+import { Routes } from '@angular/router';
+import { PlantillasHomeComponent } from './plantillas-home.component';
+import { PEAJES_PLANTILLAS_PROVIDERS } from '../peajes.providers';
+
 export const PLANTILLAS_ROUTE_PATHS = {
   home: 'plantillas',
-  nueva: 'plantillas/nueva',
-  editar: 'plantillas/:id',
-  aplicar: 'plantillas/aplicar',
-  algoritmos: 'plantillas/algoritmos',
-  algoritmoNuevo: 'plantillas/algoritmos/nuevo',
-  algoritmoEditar: 'plantillas/algoritmos/:id',
 } as const;
 
 /**
- * Rutas propuestas para merge por agente 05 (NO editar peajes.routes.ts aquí).
- *
- * import { PLANTILLAS_ROUTES } from './plantillas/plantillas.routes';
- * ...spread into PEAJES_ROUTES
+ * Rutas de plantillas — fusionadas en peajes.routes.ts (agente 05).
+ * Builder / aplicar / algoritmos viven como tabs en PlantillasHomeComponent.
  */
-export const PLANTILLAS_ROUTES_DECLARATION = `
-  { path: 'plantillas', loadComponent: () => import('./plantillas/plantillas-home.component').then(m => m.PlantillasHomeComponent) },
-  { path: 'plantillas/nueva', loadComponent: () => import('./plantillas/plantilla-builder.component').then(m => m.PlantillaBuilderComponent) },
-  { path: 'plantillas/:id', loadComponent: () => import('./plantillas/plantilla-builder.component').then(m => m.PlantillaBuilderComponent) },
-  { path: 'plantillas-aplicar', loadComponent: () => import('./plantillas/aplicar-plantilla.component').then(m => m.AplicarPlantillaComponent) },
-  { path: 'plantillas/algoritmos', loadComponent: () => import('./plantillas/algoritmo-builder.component').then(m => m.AlgoritmoBuilderComponent) },
-`;
+export const PEAJES_PLANTILLAS_ROUTES: Routes = [
+  {
+    path: 'plantillas',
+    component: PlantillasHomeComponent,
+    providers: PEAJES_PLANTILLAS_PROVIDERS,
+  },
+];
+
+/** @deprecated Usar PEAJES_PLANTILLAS_ROUTES */
+export const PLANTILLAS_ROUTES_DECLARATION = PEAJES_PLANTILLAS_ROUTES;

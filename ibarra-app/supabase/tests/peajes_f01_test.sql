@@ -147,7 +147,7 @@ SELECT throws_ok(
 
 SELECT throws_ok(
   $$SELECT public.peajes_validar_algoritmo_combinado(
-      '[{"orden":1,"algoritmo_codigo":"TRIM"},{"orden":1,"algoritmo_codigo":"UPPER"}]'::jsonb
+      '[{"orden":1,"algoritmo_codigo":"BORRAR_ESPACIOS"},{"orden":1,"algoritmo_codigo":"CONVERTIR_MAYUSCULAS"}]'::jsonb
     )$$,
   'P0001',
   'Orden duplicado dentro del algoritmo: 1 (RN-18)',
@@ -236,7 +236,7 @@ SELECT lives_ok(
       ),
       '77777777-7777-7777-7777-777777777777',
       '{"fuente":"test"}'::jsonb,
-      '[{"codigo":"TRIM"}]'::jsonb,
+      '[{"codigo":"BORRAR_ESPACIOS"}]'::jsonb,
       '[]'::jsonb,
       'archivo-test.xlsx'
     )$$,

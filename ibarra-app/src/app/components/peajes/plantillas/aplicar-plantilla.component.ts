@@ -1,16 +1,17 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   AlgoritmoCombinado,
   ErrorValidacionPasada,
   PlantillaConfiguracion,
-} from '../models/peajes.models';
+  PEAJES_PLANTILLAS_SERVICE,
+  PeajesPlantillasService,
+} from '../models';
 import { PeajesMotorTransformacionService } from './motor/peajes-motor-transformacion.service';
 import {
   COLUMNAS_ARCHIVO_DEMO,
   FILA_EJEMPLO_PRD_21,
-  PeajesPlantillasMockService,
 } from './mocks/peajes-plantillas.mock';
 import { puedeAplicarRecurso } from './validacion/plantillas-validacion';
 
@@ -26,8 +27,11 @@ import { puedeAplicarRecurso } from './validacion/plantillas-validacion';
   styleUrl: './plantillas-shared.css',
 })
 export class AplicarPlantillaComponent implements OnInit {
-  private readonly plantillasSvc = inject(PeajesPlantillasMockService);
   private readonly motor = inject(PeajesMotorTransformacionService);
+
+  constructor(
+    @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService
+  ) {}
 
   empresaActiva = 'empresa-demo';
   plantillas: PlantillaConfiguracion[] = [];

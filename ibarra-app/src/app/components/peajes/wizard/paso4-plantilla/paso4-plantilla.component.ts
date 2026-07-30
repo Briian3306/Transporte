@@ -1,14 +1,17 @@
-import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Inject, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { PlantillaConfiguracion } from '../../models';
+import {
+  PEAJES_PLANTILLAS_SERVICE,
+  PlantillaConfiguracion,
+  PeajesPlantillasService,
+} from '../../models';
 import { PeajesMotorTransformacionService } from '../../plantillas/motor/peajes-motor-transformacion.service';
-import { PeajesPlantillasMockService } from '../../plantillas/mocks/peajes-plantillas.mock';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 
 /**
- * Paso 4 — selecciona/aplica plantilla vía mock 03 + motor (sin duplicar Strategy).
+ * Paso 4 — selecciona/aplica plantilla vía PeajesPlantillasService + motor.
  */
 @Component({
   selector: 'app-paso4-plantilla',
@@ -21,9 +24,12 @@ export class Paso4PlantillaComponent implements OnInit {
   @Output() completado = new EventEmitter<void>();
   @Output() atras = new EventEmitter<void>();
 
-  private readonly plantillasSvc = inject(PeajesPlantillasMockService);
   private readonly motor = inject(PeajesMotorTransformacionService);
   readonly state = inject(PeajesWizardStateService);
+
+  constructor(
+    @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService
+  ) {}
 
   plantillas: PlantillaConfiguracion[] = [];
   plantillaId = '';

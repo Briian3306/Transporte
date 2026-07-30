@@ -1,17 +1,26 @@
 import { Routes } from '@angular/router';
 import { PeajesHomeComponent } from './peajes-home.component';
+import { PEAJES_WIZARD_ROUTES } from './wizard/wizard.routes';
+import { PEAJES_CATALOGOS_ROUTES } from './catalogos/catalogos.routes';
+import { PEAJES_PLANTILLAS_ROUTES } from './plantillas/plantillas.routes';
+import { PEAJES_SUPABASE_PROVIDERS } from './peajes.providers';
 
 /**
- * Rutas hijas del módulo Peajes.
- * Agentes 02/03 no editan este archivo: solicitan merge al agente 05 vía session-handoff.
- * Puntos de extensión previstos:
- * - wizard → /peajes/wizard
- * - catalogos → /peajes/catalogos/...
- * - plantillas → /peajes/plantillas/...
+ * Rutas hijas del módulo Peajes (merge Agente 05).
+ * Paths sin overlap: '' | wizard | catalogos/* | plantillas
  */
 export const PEAJES_ROUTES: Routes = [
   {
     path: '',
-    component: PeajesHomeComponent,
+    providers: PEAJES_SUPABASE_PROVIDERS,
+    children: [
+      {
+        path: '',
+        component: PeajesHomeComponent,
+      },
+      ...PEAJES_WIZARD_ROUTES,
+      ...PEAJES_CATALOGOS_ROUTES,
+      ...PEAJES_PLANTILLAS_ROUTES,
+    ],
   },
 ];

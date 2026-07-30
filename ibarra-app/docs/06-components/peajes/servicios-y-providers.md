@@ -46,7 +46,7 @@ Acceso Supabase: solo vía `SupabaseService.getClient()` / `executeWithRetry` (s
 
 ## Swap recomendado
 
-En `wizard.routes.ts`, `PeajesWizardComponent.providers`, `catalogos.routes.ts` y providers de plantillas:
+**Aplicado por Agente 05.** Providers en `peajes.providers.ts` + rutas:
 
 ```ts
 import {
@@ -60,9 +60,7 @@ import {
 { provide: PEAJES_PLANTILLAS_SERVICE, useExisting: PeajesPlantillasSupabaseService }
 ```
 
-Quitar `PEAJES_CATALOGOS_MOCK_PROVIDERS` / `useClass: *MockService`.
-
-**Ownership:** Agente 04 no edita esos archivos; el cambio lo hace 05 (o 02/03 bajo coordinación).
+Mocks tipados quedan solo para unit tests (`PEAJES_CATALOGOS_MOCK_PROVIDERS`, specs de plantillas).
 
 ---
 

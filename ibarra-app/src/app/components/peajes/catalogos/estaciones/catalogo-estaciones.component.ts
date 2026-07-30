@@ -9,13 +9,10 @@ import {
   Peaje,
   PeajesCatalogoService,
 } from '../../models';
-import { PEAJES_CATALOGOS_MOCK_PROVIDERS } from '../catalogos.providers';
-
 @Component({
   selector: 'app-catalogo-estaciones',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
-  providers: PEAJES_CATALOGOS_MOCK_PROVIDERS,
   templateUrl: './catalogo-estaciones.component.html',
   styleUrl: '../peajes/catalogo-peajes.component.css',
 })

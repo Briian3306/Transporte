@@ -1,17 +1,18 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   AlgoritmoCombinado,
   ConfiguracionPlantilla,
   PlantillaConfiguracion,
-} from '../models/peajes.models';
+  PEAJES_PLANTILLAS_SERVICE,
+  PeajesPlantillasService,
+} from '../models';
 import { EstadoRecursoPeaje, PASADA_COLUMN_KEYS } from '../models/peajes.types';
 import { PeajesMotorTransformacionService } from './motor/peajes-motor-transformacion.service';
 import {
   COLUMNAS_ARCHIVO_DEMO,
   FILA_EJEMPLO_PRD_21,
-  PeajesPlantillasMockService,
 } from './mocks/peajes-plantillas.mock';
 import { validarPublicacionPlantilla } from './validacion/plantillas-validacion';
 
@@ -28,7 +29,7 @@ interface ConfigDraft {
 
 /**
  * Builder / editor de plantillas (F03-2, F03-3).
- * Persistencia vía mock hasta F01-3/F01-7.
+ * Persistencia v?a PeajesPlantillasService (Supabase F01).
  */
 @Component({
   selector: 'app-plantilla-builder',
@@ -38,8 +39,11 @@ interface ConfigDraft {
   styleUrl: './plantillas-shared.css',
 })
 export class PlantillaBuilderComponent implements OnInit {
-  private readonly plantillasSvc = inject(PeajesPlantillasMockService);
   private readonly motor = inject(PeajesMotorTransformacionService);
+
+  constructor(
+    @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService
+  ) {}
 
   plantillaId: string | null = null;
   nombre = '';
@@ -81,13 +85,13 @@ export class PlantillaBuilderComponent implements OnInit {
     });
   }
 
-  /** Carga demo §21 para edición rápida. */
+  /** Carga demo ?21 para edici?n r?pida. */
   cargarDemo(): void {
     this.plantillasSvc.obtenerPlantilla('plt-demo-pasadas').subscribe((p) => {
       if (p) {
         this.plantillaId = p.id;
         this.aplicarPlantilla(p);
-        this.mensaje = 'Plantilla demo §21 cargada';
+        this.mensaje = 'Plantilla demo ?21 cargada';
       }
     });
   }
@@ -129,7 +133,7 @@ export class PlantillaBuilderComponent implements OnInit {
         algoritmos
       );
       this.previewResultado = rows[0] ?? null;
-      this.mensaje = 'Preview generado con fila §21';
+      this.mensaje = 'Preview generado con fila ?21';
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Error en preview';
       this.previewResultado = null;
@@ -148,7 +152,7 @@ export class PlantillaBuilderComponent implements OnInit {
       configs = built.configs;
       algoritmos = built.algoritmos;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Definición inválida';
+      this.error = e instanceof Error ? e.message : 'Definici?n inv?lida';
       return;
     }
 
@@ -160,7 +164,7 @@ export class PlantillaBuilderComponent implements OnInit {
     );
     if (!validacion.ok) {
       this.erroresValidacion = validacion.errores.map((e) => e.motivo);
-      this.error = 'No se puede guardar: hay errores de validación';
+      this.error = 'No se puede guardar: hay errores de validaci?n';
       return;
     }
 
@@ -176,7 +180,7 @@ export class PlantillaBuilderComponent implements OnInit {
     const configsOmit = configs.map(({ id: _id, plantilla_id: _p, ...rest }) => rest);
 
     if (this.plantillaId) {
-      // F03-3: sobrescritura controlada en una sola operación
+      // F03-3: sobrescritura controlada en una sola operaci?n
       this.plantillasSvc
         .guardarPlantilla(meta, configsOmit)
         .subscribe({
@@ -188,7 +192,7 @@ export class PlantillaBuilderComponent implements OnInit {
                   this.plantillaId = saved.id;
                   this.guardando = false;
                   this.mensaje =
-                    'Plantilla actualizada: configuraciones sobrescritas en una operación';
+                    'Plantilla actualizada: configuraciones sobrescritas en una operaci?n';
                 },
                 error: (err) => {
                   this.guardando = false;
@@ -225,7 +229,7 @@ export class PlantillaBuilderComponent implements OnInit {
       try {
         params = d.parametrosJson ? JSON.parse(d.parametrosJson) : {};
       } catch {
-        throw new Error(`JSON de parámetros inválido en fila ${i + 1}`);
+        throw new Error(`JSON de par?metros inv?lido en fila ${i + 1}`);
       }
       if (d.algoritmo_codigo && !d.algoritmo_combinado_id) {
         params = { ...params, algoritmo_codigo: d.algoritmo_codigo };

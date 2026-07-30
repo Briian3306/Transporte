@@ -4,21 +4,16 @@ import { CatalogoPeajesComponent } from './peajes/catalogo-peajes.component';
 import { CatalogoEstacionesComponent } from './estaciones/catalogo-estaciones.component';
 import { CatalogoPatentesComponent } from './patentes/catalogo-patentes.component';
 import { CatalogoPasesComponent } from './pases/catalogo-pases.component';
-import {
-  PEAJES_CATALOGO_SERVICE,
-} from '../models';
-import { PeajesCatalogoMockService } from '../wizard/mocks/peajes-catalogo.mock';
+import { PEAJES_CATALOGO_PROVIDERS } from '../peajes.providers';
 
 /**
- * Fragmento de rutas de catálogos — mergear en peajes.routes.ts (agente 05).
- * Paths esperados: /peajes/catalogos, /peajes/catalogos/peajes, etc.
+ * Fragmento de rutas de catálogos — fusionado en peajes.routes.ts (agente 05).
+ * Paths: /peajes/catalogos, /peajes/catalogos/peajes, etc.
  */
 export const PEAJES_CATALOGOS_ROUTES: Routes = [
   {
     path: 'catalogos',
-    providers: [
-      { provide: PEAJES_CATALOGO_SERVICE, useClass: PeajesCatalogoMockService },
-    ],
+    providers: PEAJES_CATALOGO_PROVIDERS,
     children: [
       { path: '', component: PeajesCatalogosHomeComponent },
       { path: 'peajes', component: CatalogoPeajesComponent },

@@ -90,11 +90,13 @@ RLS: SELECT para `authenticated` (catálogo de solo lectura).
 
 ## Nota: códigos SQL vs motor TS
 
-El motor frontend (`StrategyRegistry`, F03) registra códigos distintos, alineados al PRD de transformaciones UI:
+**Resuelto en F05** (migración `20260730140000_peajes_algoritmos_catalogo_align.sql`):
+
+Catálogo activo alineado a `StrategyRegistry`:
 
 `BORRAR_ESPACIOS`, `ELIMINAR_GUIONES`, `CONVERTIR_MAYUSCULAS`, `COMBINAR_COLUMNAS`, `FORMATEAR_FECHA_HORA`, `CALCULAR_IMPORTE_NETO`, `CONVERTIR_NUMERO`, `CONVERTIR_TEXTO`, `ASIGNAR_VALOR`, `COPIAR_COLUMNA`
 
-**Gap conocido para Agente 05 / follow-up:** alinear catálogo SQL ↔ códigos del motor (o capa de mapeo) antes de persistir algoritmos desde la UI real. Documentado; no inventado como “ya resuelto”.
+Códigos legacy (`TRIM`, `UPPER`, `COMBINAR_FECHA_HORA` como atómico, etc.) quedan con `activo = false`. Los nombres `COMBINAR_FECHA_HORA` / `NORMALIZAR_PATENTE` son algoritmos combinados (filas en `algoritmos_combinados`), no códigos de paso.
 
 ---
 
