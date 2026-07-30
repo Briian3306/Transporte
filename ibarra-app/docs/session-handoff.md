@@ -337,3 +337,9 @@ npx supabase test db → PASS 30/30 (peajes_f01_test.sql)
 - `docs/modulos/peajes.md` (sección Pendiente Agente 05)
 - `docs/06-components/peajes/servicios-y-providers.md`
 - Este handoff (Fase 1 01/02/03 + Fase 2 04)
+
+### SHA / rama (F04)
+
+- Rama: `feature/peajes-mvp`
+- Commit Agente 04 (F04): `ffdb0f1`
+- Sin push.
