@@ -151,7 +151,8 @@
       "evidence": [
         "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
         "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
-        "pgTAP: UK (plantilla_id, nombre_columna, orden)"
+        "pgTAP: UK (plantilla_id, nombre_columna, orden)",
+        "2026-07-30: empresa_id text + __global__ (pgTAP 30/30 PASS tras ajuste contrato 03)"
       ]
     },
     {
@@ -174,7 +175,8 @@
       "evidence": [
         "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
         "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
-        "pgTAP: UK (algoritmo_combinado_id, orden) y (nombre, empresa_id)"
+        "pgTAP: UK (algoritmo_combinado_id, orden) y (nombre, empresa_id)",
+        "2026-07-30: empresa_id text + __global__ (pgTAP 30/30 PASS tras ajuste contrato 03)"
       ]
     },
     {
@@ -241,7 +243,8 @@
       "evidence": [
         "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
         "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
-        "pgTAP: sobrescritura invalida no deja parciales; replace a 2 configs ok"
+        "pgTAP: sobrescritura invalida no deja parciales; replace a 2 configs ok",
+        "2026-07-30: empresa_id text + __global__ (pgTAP 30/30 PASS tras ajuste contrato 03)"
       ]
     },
     {
@@ -266,7 +269,8 @@
       "evidence": [
         "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
         "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
-        "pgTAP: algoritmo_codigo inexistente y orden duplicado → error"
+        "pgTAP: algoritmo_codigo inexistente y orden duplicado → error",
+        "2026-07-30: empresa_id text + __global__ (pgTAP 30/30 PASS tras ajuste contrato 03)"
       ]
     },
     {

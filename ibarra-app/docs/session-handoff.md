@@ -221,7 +221,7 @@ npx tsx src/app/components/peajes/plantillas/motor.verify.ts → PASS
 
 ## Estado Fase 1 — Agente 01 Backend Supabase (2026-07-30)
 
-**F01-1…F01-9 → `passing`** (CLI local). Persistencia real lista; UI 03 sigue con mock hasta cableado.
+**F01-1…F01-9 → `passing`** (CLI local). Persistencia y servicios reales listos; UI 02/03 siguen con mocks hasta swap de providers (03/05).
 
 ### Entregado (alcance 01)
 
@@ -230,55 +230,71 @@ npx tsx src/app/components/peajes/plantillas/motor.verify.ts → PASS
 | Migraciones | `supabase/migrations/20260730*_peajes_*.sql` (5) |
 | pgTAP | `supabase/tests/peajes_f01_test.sql` (30 tests) |
 | Docs SQL | `docs/08-sql/peajes/F01-schema`, `docs/08-sql/peajes/F01-rpc` |
-| Servicios | `src/app/components/peajes/services/*` — `PeajesCatalogoSupabaseService`, `PeajesCargaSupabaseService`, `PeajesPlantillasSupabaseService` |
+| Servicios | `src/app/components/peajes/services/*` |
 
-### Contrato plantillas / global (alineado a 03)
+### Servicios reales para Agente 02 (reemplazan mocks wizard/catálogos)
 
-- Recurso global: **`empresa_id === '__global__'`** (constante servicio: `PEAJES_GLOBAL_EMPRESA_ID`; mismo valor que `GLOBAL_EMPRESA_ID` del mock).
-- Columnas `empresa_id` en BD: **text** (no uuid) en plantillas, algoritmos, facturas y peajes.
-- `listarPlantillas(empresaId)` / `listarAlgoritmos(empresaId)` filtran `empresa_id = empresaId OR empresa_id = '__global__'`.
-- RPC `peajes_sobrescribir_configuraciones_plantilla`, `peajes_guardar_algoritmo_combinado`, `peajes_expandir_algoritmo`, `peajes_confirmar_carga` disponibles.
+| Contrato | Implementación | RPCs / tablas |
+|----------|----------------|---------------|
+| `PeajesCatalogoService` | `PeajesCatalogoSupabaseService` | `.from(peajes\|estaciones\|patentes\|pases)` |
+| `PeajesCargaService` | `PeajesCargaSupabaseService` | `peajes_calcular_importe_neto`, `peajes_validar_factura_pasadas`, `peajes_detectar_duplicados`, `peajes_confirmar_carga` |
 
-### Cómo reemplazar el mock (03 / 05 — no tocar `plantillas/**` desde 01)
+Swap sugerido (05 / 02 — **01 no edita** `wizard/**` ni `catalogos/**`):
 
 ```ts
-// providers: reemplazar PeajesPlantillasMockService por
-{ provide: PEAJES_PLANTILLAS_SERVICE, useExisting: PeajesPlantillasSupabaseService }
-// o inject directo de PeajesPlantillasSupabaseService
+{ provide: PEAJES_CATALOGO_SERVICE, useExisting: PeajesCatalogoSupabaseService }
+{ provide: PEAJES_CARGA_SERVICE, useExisting: PeajesCargaSupabaseService }
+// quitar PEAJES_CATALOGOS_MOCK_PROVIDERS / mocks de PeajesWizardComponent
 ```
 
-`PeajesPlantillasService` (contrato Fase 0) es la interfaz; la implementación real está en `services/peajes-plantillas.service.ts`.
+### Servicios reales para Agente 03 (reemplazan mock plantillas)
+
+| Contrato | Implementación |
+|----------|----------------|
+| `PeajesPlantillasService` | `PeajesPlantillasSupabaseService` |
+
+- Global: **`empresa_id === '__global__'`** (`PEAJES_GLOBAL_EMPRESA_ID`, alineado a `GLOBAL_EMPRESA_ID` del mock).
+- BD: `empresa_id` es **text** (no uuid).
+- Listados: empresa activa **OR** `__global__`.
+- RPCs: `peajes_sobrescribir_configuraciones_plantilla`, `peajes_guardar_algoritmo_combinado`, `peajes_expandir_algoritmo`, `peajes_validar_algoritmo_combinado`.
+
+```ts
+{ provide: PEAJES_PLANTILLAS_SERVICE, useExisting: PeajesPlantillasSupabaseService }
+```
+
+### RPCs expuestos (CLI verificados)
+
+| RPC | Feature |
+|-----|---------|
+| `peajes_calcular_importe_neto` | F01-5 |
+| `peajes_validar_factura_pasadas` / `peajes_validar_factura_id` | F01-5 |
+| `peajes_detectar_duplicados` | F01-6 |
+| `peajes_sobrescribir_configuraciones_plantilla` | F01-7 |
+| `peajes_validar_algoritmo_combinado` / `peajes_expandir_algoritmo` / `peajes_guardar_algoritmo_combinado` | F01-8 |
+| `peajes_confirmar_carga` (+ tabla `registros_carga_peajes`) | F01-9 |
+
+### Rutas
+
+**No fusionadas por 01.** Fragmentos de 02 (`wizard.routes.ts`, `catalogos.routes.ts`) y 03 (`plantillas.routes.ts`) → merge exclusivo Agente 05.
 
 ### Pendiente / no bloqueante F01
 
-- **Wire UI**: 03 aún inyecta `PeajesPlantillasMockService` — F01 plantillas **no** está pendiente de schema/RPC; solo falta swap de provider en `plantillas/**` (dueño 03) o Integrador 05.
-- **`system_modules` peajes**: en `db reset` CLI vacío se omite (NOTICE). En DESARROLLO (host con tablas RBAC) el insert aplica al `db push --linked` autorizado.
-- **DESARROLLO**: no push en esta sesión.
-- **Rutas**: merge 05 de `plantillas.routes.ts` / `wizard` / `catalogos`.
+- **Wire UI**: swap mocks → servicios reales (02/03/05). Schema/RPC **no** pendientes.
+- **`system_modules` peajes**: omitido en `db reset` CLI vacío (NOTICE); aplica en DESARROLLO con host RBAC al `db push --linked` autorizado.
+- **DESARROLLO / main**: sin push.
 
 ### Verificación CLI
 
 ```text
 npx supabase db reset --local --no-seed → OK (5 migraciones)
-npx supabase test db → PASS (peajes_f01_test.sql)
+npx supabase test db → PASS 30/30 (peajes_f01_test.sql)
 ```
-
-### Skills presentes
-
-- `peajes-wizard-tablas`, `peajes-plantillas-builder` (nuevas)
-- `backend-supabase-write` (adaptada Peajes + entornos CLI/DESARROLLO)
-- `backend-tester` (adaptada)
-- `backend-documenter`, `supabase`, `supabase-postgres-best-practices` (portadas / ya en repo)
-- `documentacion-proyecto` (baseline)
-
-### Subagentes `.claude/agents/`
-
-No encontrados en este repo en Fase 0. No bloquea 01/02/03 (usan skills + AGENTS.md). Registrar si se agregan después.
 
 ### SHA / rama
 
 - Rama: `feature/peajes-mvp` (no `main`)
-- Commit Fase 0: `47e0a3fdacd677235bce8ca7fc81c3d32d4e9c45`
-- Commit Agente 03 (F03): `67d2078` — motor Builder/Strategy y editor de plantillas
-- Commit Agente 01 (F01): pendiente al cierre de esta sesión
+- Commit Fase 0: `47e0a3f`
+- Commit Agente 03 (F03): `67d2078`
+- Commit Agente 02 (F02): `0b15952`
+- Commit Agente 01 (F01): se anota tras este commit
 - Sin push. `main` sin cambios de Peajes Fase 1.
