@@ -36,6 +36,9 @@ const ROUTE_PERMISSIONS: { [key: string]: { module: string; action: string } } =
   '/stock/entrada': { module: 'stock', action: 'create' },
   '/stock/salida': { module: 'stock', action: 'create' },
   '/stock/historial': { module: 'stock', action: 'read' },
+
+  // Peajes (módulo aislado; create/manage se agregarán con pantallas posteriores)
+  '/peajes': { module: 'peajes', action: 'read' },
   
   // Usuarios y Roles
   '/users': { module: 'users', action: 'read' },

@@ -150,6 +150,15 @@ export class DashboardComponent implements OnInit {
         route: '/stock/dashboard',
         color: 'warning',
         isAvailable: false
+      },
+      {
+        id: 'peajes',
+        name: 'Peajes',
+        description: 'Procesar pasadas, configuraciones y facturas de peajes',
+        icon: 'fas fa-road',
+        route: '/peajes',
+        color: 'primary',
+        isAvailable: false
       }
     ];
   }

@@ -170,6 +170,14 @@ export const routes: Routes = [
     component: StockHistorialComponent,
     canActivate: [PermissionGuard]
   },
+
+  // Peajes (módulo aislado — rutas hijas en peajes.routes.ts)
+  {
+    path: 'peajes',
+    canActivate: [PermissionGuard],
+    loadChildren: () =>
+      import('./components/peajes/peajes.routes').then((m) => m.PEAJES_ROUTES),
+  },
   
   // Ruta de acceso denegado
   { 

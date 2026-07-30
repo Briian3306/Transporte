@@ -6,56 +6,64 @@
 - Ejemplo operativo: `docs/plan/ejemplo-mvp-procesamiento-pasadas.md`
 - Estado de features: `feature_list.json`
 - Guía de agentes: `AGENTS.md`
+- Handoff: `docs/session-handoff.md`
 
 ## Estado actual
 
-Fecha de preparación: 2026-07-29
+Fecha: 2026-07-30 — **Fase 0 (Agente 00) en entrega**
 
-El proyecto Transporte Ibarra ya existe y contiene módulos funcionales de Checklists, Incidentes, Flota, Neumáticos, Stock y RBAC. Peajes se incorporará como un módulo funcional independiente dentro de la aplicación Angular existente.
+### Rama Git (contrato)
+
+- Trabajo Peajes solo en **`feature/peajes-mvp`**.
+- **No** commits ni push a `main`/`master`/`principal`.
+- **No** merge a `main` sin autorización explícita del usuario.
+- Push de la feature branch: solo si el usuario lo pide (por defecto no).
+
+### Entornos Supabase (contrato)
+
+| Entorno | Rol |
+|---------|-----|
+| **Supabase CLI** (local) | Testing / verificación obligatoria |
+| **DESARROLLO** (`kfffigvyvtzyczeiadxh`) | Remoto de desarrollo |
+
+No hay staging/prod separados. No reutilizar refs OrdenCompra (`edxoqshrzdqpnldktpzy`, `uurlssweuhshbwpxxatw`). Agentes 01+ validan SQL contra CLI.
 
 Decisiones vigentes:
 
-1. La entrada de dashboard será `id: 'peajes'`.
-2. La ruta base del módulo será `/peajes`.
-3. El permiso base será `peajes:read`.
-4. Las plantillas de Peajes no reutilizarán `checklist_templates` ni `ChecklistTemplateService`.
-5. El MVP permite sobrescribir la configuración vigente; el versionado histórico es futuro.
-6. El PRD en español es la fuente de verdad funcional.
-7. Supabase se modifica únicamente mediante migraciones nuevas y validación local antes de cualquier entorno remoto.
+1. Dashboard `id: 'peajes'`, ruta `/peajes`, permiso `peajes:read`.
+2. Carpetas: `src/app/components/peajes/{models,wizard,catalogos,plantillas}`.
+3. UI kit: CSS/SCSS + Font Awesome (patrón host).
+4. Plantillas Peajes ≠ Checklists.
+5. Pasada referencia `estacion_id`; peaje derivado.
+6. Coordinación canónica solo en `ibarra-app/`.
 
 ## Features
 
-Consultar `feature_list.json`. No iniciar una feature que tenga dependencias incompletas.
-
-## Orden de ejecución recomendado
-
-1. Integración base del módulo y permisos.
-2. Persistencia de plantillas y algoritmos combinados.
-3. Motor Builder + Strategy.
-4. Editor frontend de plantillas y algoritmos.
-5. Wizard de carga y procesamiento.
-6. QA, regresión y entrega.
-
-Los pasos 3 y 4 pueden ejecutarse en paralelo después de completar la persistencia, siempre que el motor y la UI no editen los mismos archivos.
+F00-1…F00-4 en `passing` con evidencia (build + grep). Paralelo 01/02/03 habilitado.
 
 ## Registro de sesiones
 
+### 2026-07-30 — Fase 0 Orquestador/Setup
+
+- Rama creada: `feature/peajes-mvp` (sin commits en `main`; sin push).
+- Resueltas preguntas abiertas (carpetas, UI, permisos, refs Supabase, SupabaseService).
+- Registrado contrato entornos: CLI = testing, DESARROLLO = remoto.
+- Skills: creadas `peajes-wizard-tablas` y `peajes-plantillas-builder`; adaptadas `backend-supabase-write` / `backend-tester` / `entornos.md`; portadas `supabase`, `backend-documenter`, `backend-tester`; baseline `documentacion-proyecto`.
+- Scaffold: home, rutas, permiso, tarjeta dashboard, modelos y contratos.
+- Handoff: `docs/session-handoff.md`.
+- Pendiente 01: migración `system_modules` peajes + tablas dominio (validar en CLI).
+
 ### 2026-07-29 — Preparación multiagente
 
-- Verificado que el repositorio ya tiene `AGENTS.md` específico para Transporte Ibarra.
-- Añadido protocolo multiagente, ownership de archivos y matriz de responsabilidades a `AGENTS.md`.
-- Creado `feature_list.json` con dependencias, actores, alcance y verificaciones.
-- Definida la separación entre las plantillas de Peajes y las plantillas de Checklists.
-- No se ha implementado código del módulo Peajes en esta preparación.
-- No se han ejecutado migraciones ni cambios remotos de Supabase.
+- Protocolo multiagente y `feature_list.json` iniciales.
+- Sin código de producto Peajes en esa preparación.
 
 ## Bloqueos y riesgos
 
-- El módulo Peajes aún no tiene componentes, rutas ni migraciones implementados.
-- Antes de crear tablas se debe confirmar el diseño final con el PRD y preparar la migración local.
-- La existencia o nomenclatura exacta de permisos en Supabase debe validarse antes de habilitar el dashboard.
-- No marcar features como `passing` sin evidencia de comandos ejecutados.
+- Tarjeta Peajes queda `disabled` hasta que 01 inserte `system_modules` name=`peajes` y asigne permisos.
+- `.claude/agents/` no presentes (no bloquea skills).
+- Root `.agents/skills/` es legacy; canónico = `ibarra-app/.agents/skills/`.
 
 ## Próximo paso
 
-Implementar `peajes-project-context`: registrar la ruta base, el elemento `peajes` en el dashboard y el permiso correspondiente, sin modificar el comportamiento de los módulos existentes.
+Tras commit F00: lanzar en paralelo 01, 02 y 03 consumiendo contratos y handoff.

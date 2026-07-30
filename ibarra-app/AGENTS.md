@@ -117,35 +117,15 @@ Si falta algo, la feature queda `in_progress`/`blocked` — nunca `passing`.
 
 
 
-## Preguntas abiertas a resolver en Fase 0 (Agente 00)
+## Preguntas abiertas — resueltas en Fase 0 (Agente 00)
 
-El PRD (§20) y esta plantilla se escribieron antes de inspeccionar el repo real
-de `ibarra-app`. Confirmar antes de scaffolding:
+Detalle y handoff: `docs/session-handoff.md`.
 
-- [ ] Convención real de carpetas: `src/app/components/...` (según PRD §1.1) vs
-  ```
-  `src/app/features/...` (según plantilla de proyecto hermano) — **seguir
-  la convención que ya use el dashboard/otros módulos existentes**, no
-  asumir.
-  ```
-- [ ] Librería de UI real (¿PrimeNG? ¿Angular Material? ¿Bootstrap?) y tokens de
-  ```
-  diseño en `src/styles.css`.
-  ```
-- [ ] Forma exacta de `GranularPermissionService` y cómo las tarjetas del
-  ```
-  `DashboardModule` leen permisos.
-  ```
-- [ ] Project refs reales de Supabase (Local CLI / DEV / PROD) para
-  ```
-  `ibarra-app` — **no reutilizar** los refs de OrdenCompra Ibarra
-  (`edxoqshrzdqpnldktpzy` / `uurlssweuhshbwpxxatw`), pertenecen a otro
-  proyecto.
-  ```
-- [ ] Si `SupabaseService` ya expone un wrapper genérico de query/RPC que los
-  ```
-  servicios de Peajes deberían reutilizar.
-  ```
+- [x] Carpetas: `src/app/components/...` (host). Peajes en `components/peajes/`.
+- [x] UI: CSS/SCSS custom + Font Awesome; sin PrimeNG/Material/Bootstrap como kit.
+- [x] Permisos: `accessibleModules` ↔ `system_modules.name` / `id` de tarjeta; guard con `ROUTE_PERMISSIONS` (`peajes:read`).
+- [x] Supabase: **CLI = testing**, **DESARROLLO = `kfffigvyvtzyczeiadxh`**. Sin staging/prod separados. No refs OrdenCompra.
+- [x] `SupabaseService`: `getClient()` + auth; sin wrapper tipado de query/RPC — 01 encapsula en servicios de dominio.
 
 
 

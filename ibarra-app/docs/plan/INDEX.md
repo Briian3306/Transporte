@@ -23,7 +23,14 @@ La aplicación y el paquete de coordinación están centralizados en `ibarra-app
 
 ## Entornos Supabase
 
-El alcance real disponible es **Local CLI → Producción**. No existe Testing ni PreDEV/DEV para este proyecto. Cada agente debe validar con Local CLI; ningún agente debe enlazar, hacer `db push`, desplegar funciones ni alterar Producción. Esas acciones requieren una autorización explícita posterior del usuario y las realiza únicamente quien designe el usuario.
+Solo hay **dos** entornos en este flujo:
+
+| Entorno | Rol |
+|---------|-----|
+| **Supabase CLI** (local) | Testing / verificación obligatoria de migraciones y SQL |
+| **DESARROLLO** (remoto `kfffigvyvtzyczeiadxh`) | Desarrollo remoto |
+
+No hay staging/prod separados. Todo testing SQL se hace contra **Supabase CLI**; no usar MCP remoto como fuente de verdad de testing. **No** reutilizar project refs de OrdenCompra (`edxoqshrzdqpnldktpzy`, `uurlssweuhshbwpxxatw`). Push a DESARROLLO requiere CLI verde y autorización explícita del usuario cuando corresponda. Detalle: `.agents/skills/backend-supabase-write/entornos.md`.
 
 ## Reglas de coordinación
 

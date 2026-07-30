@@ -1,86 +1,67 @@
-# Supabase environments — Local, DEV, Production
+# Entornos Supabase — Peajes / Transporte Ibarra
 
-Both `backend-supabase-write` and `backend-tester` follow the canonical workflow documented in `docs/backend/supabase/`:
+## Contrato vigente (Fase 0+)
 
-```text
-Local CLI  -> Producción (ID1)
-```
-
-Production receives changes only after Local and DEV validation **and explicit user authorization**.
-
-## Projects
-
-| Environment | Role | Project ref | API URL | CLI link |
-|-------------|------|-------------|---------|----------|
-| **Local CLI** | Development, destructive rebuilds, pgTAP | Docker + Supabase CLI | `http://127.0.0.1:54321` | No remote link required |
-| **Producción (ID1)** | Production database | `kfffigvyvtzyczeiadxh` | `https://kfffigvyvtzyczeiadxh.supabase.co` | Only after DEV passed and user authorized |
-
-> Old testing ref `thpgpquawvweodrkuusc` is retired (July 2026).
-
-Angular `environments.ts` may point at production URL for deployed builds — that does **not** authorize backend writes to production.
-
-## CLI setup — local and DEV
-
-Run from repo root. Always use `pnpm supabase`.
-
-```powershell
-pnpm supabase login
-pnpm supabase init          # skip if supabase/ already exists
-pnpm supabase db reset --local --no-seed
-pnpm supabase test db
-```
-
-Before any remote command with `--linked`, confirm the linked project:
-
-```powershell
-Get-Content supabase\.temp\project-ref
-```
-
-Link DEV for remote validation:
-
-```powershell
-pnpm supabase link --project-ref edxoqshrzdqpnldktpzy
-Get-Content supabase\.temp\project-ref
-# Must output: edxoqshrzdqpnldktpzy
-```
-
-## CLI setup — production (reference only)
-
-Production is reference-only for agents. Use it only after Local and DEV validation passed **and** the user explicitly authorized the production action:
-
-```powershell
-pnpm supabase link --project-ref kfffigvyvtzyczeiadxh
-Get-Content supabase\.temp\project-ref
-# Must output: kfffigvyvtzyczeiadxh
-pnpm supabase db push --linked --dry-run
-```
-
-Never run:
-
-```powershell
-pnpm supabase db reset --linked
-```
-
-when linked to `kfffigvyvtzyczeiadxh`.
-
-## Mandatory flow
+Solo existen **dos** entornos para este proyecto:
 
 ```text
-1. Read feature_list.json → id = {task}
-2. Read docs/backend/supabase/backend-workflow.md
-3. Implement structural changes in supabase/migrations/
-4. Rebuild local schema and run tests
-5. Link and push to DEV (dry-run first)
-6. Validate app/API against https://edxoqshrzdqpnldktpzy.supabase.co
-7. Write docs/08-sql/{task}/*.md with exact SQL / migration notes
-8. backend-documenter → docs/backend/
-9. backend-tester → evidence in feature_list.json and docs/claude-progress.md
-10. Production push only after DEV passed and the user explicitly authorized it
+Supabase CLI (local)  =  testing / verificación
+DESARROLLO (remoto)   =  desarrollo remoto
+```
+
+**No hay** staging ni producción separados en este flujo. No inventar un tercer entorno.
+
+| Entorno | Rol | Project ref | API URL |
+|---------|-----|-------------|---------|
+| **Supabase CLI** | Testing y verificación obligatoria (rebuild, migraciones, pgTAP) | Docker + Supabase CLI | `http://127.0.0.1:54321` |
+| **DESARROLLO** | Remoto de desarrollo (app Angular / validación remota) | `kfffigvyvtzyczeiadxh` | `https://kfffigvyvtzyczeiadxh.supabase.co` |
+
+`environment.ts` apunta a DESARROLLO. Eso **no** autoriza usar DESARROLLO como sustituto del testing: todo test SQL/migración se hace contra **Supabase CLI**.
+
+## Prohibido — refs de OrdenCompra Ibarra
+
+**Nunca** reutilizar project refs del repo hermano OrdenCompra:
+
+| Ref prohibido | Motivo |
+|---------------|--------|
+| `edxoqshrzdqpnldktpzy` | OrdenCompra (DEV hermano) — otro proyecto |
+| `uurlssweuhshbwpxxatw` | OrdenCompra (PROD hermano) — otro proyecto |
+
+Si un skill o doc heredado menciona esos refs, ignorarlos y usar la tabla de arriba.
+
+## CLI — testing (obligatorio)
+
+Desde `ibarra-app/` (este repo usa `npm` + `npx supabase`):
+
+```powershell
+npx supabase start
+npx supabase db reset --local --no-seed
+npx supabase test db
+```
+
+Aplicar migraciones con CLI local (`db reset`, `migration up`, o el flujo local del repo). **No** usar MCP remoto como fuente de verdad de testing.
+
+Antes de cualquier comando `--linked` contra DESARROLLO:
+
+```powershell
+Get-Content supabase\.temp\project-ref
+# Esperado para DESARROLLO: kfffigvyvtzyczeiadxh
+```
+
+## Flujo obligatorio para agentes 01+
+
+```text
+1. Implementar en supabase/migrations/
+2. Validar SQL contra Supabase CLI (testing)
+3. Registrar evidencia en feature_list.json
+4. Push / link a DESARROLLO solo tras CLI verde y con autorización explícita del usuario cuando corresponda
+5. Documentar en docs/08-sql/{task}/
 ```
 
 ## Forbidden
 
-- Pushing or deploying to production without explicit user authorization in the current conversation
-- `db reset --linked` on production
-- Hardcoding production URLs, Bearer tokens, or `service_role` keys in migrations
-- Committing sensitive `supabase/seed.sql`
+- Tratar DESARROLLO como entorno de testing SQL
+- Reutilizar refs de OrdenCompra
+- Hardcodear `service_role`, Bearer tokens o secrets en migraciones/docs
+- `db reset --linked` contra el remoto DESARROLLO
+- Asumir staging/prod separados

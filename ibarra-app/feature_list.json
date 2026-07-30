@@ -1,6 +1,6 @@
 {
   "project": "peajes-module-automation-tool",
-  "source_of_truth": "docs/PRD-Peajes.md",
+  "source_of_truth": "docs/plan/peaje-prd-es.md",
   "single_active_feature_per_agent": true,
   "agents": [
     "00-orquestador-setup",
@@ -17,12 +17,15 @@
       "prd_refs": ["RF-33", "criterios-mvp"],
       "agent_owner": "00-orquestador-setup",
       "depends_on": [],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "El dashboard muestra la tarjeta 'Peajes' con id 'peajes' y ruta '/peajes'",
         "La tarjeta se oculta/deshabilita si el usuario no tiene 'peajes:read'"
       ],
-      "evidence": []
+      "evidence": [
+        "2026-07-30: dashboard.component.ts incluye id 'peajes', route '/peajes'; disponibilidad vía accessibleModules (system_modules) → isAvailable false sin peajes:read",
+        "npm run build (ibarra-app) EXIT 0; lazy chunk peajes-routes generado"
+      ]
     },
     {
       "id": "F00-2",
@@ -30,12 +33,16 @@
       "prd_refs": ["RF-33"],
       "agent_owner": "00-orquestador-setup",
       "depends_on": [],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "Navegar a /peajes sin permiso redirige o bloquea",
         "Navegar a /peajes con permiso 'peajes:read' carga la pantalla inicial del módulo"
       ],
-      "evidence": []
+      "evidence": [
+        "ROUTE_PERMISSIONS['/peajes'] = { module: 'peajes', action: 'read' } en permission.guard.ts → access-denied si falla",
+        "app.routes.ts loadChildren peajes.routes.ts; PeajesHomeComponent en path ''",
+        "npm run build EXIT 0"
+      ]
     },
     {
       "id": "F00-3",
@@ -43,12 +50,15 @@
       "prd_refs": ["§11 Structure Goal", "§14 modelo físico"],
       "agent_owner": "00-orquestador-setup",
       "depends_on": [],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "ng build compila con los modelos: Pasada, Peaje, Estacion, Patente, Pase, Factura, PlantillaConfiguracion, ConfiguracionPlantilla, AlgoritmoCombinado, AlgoritmoCombinadoPaso",
         "Los servicios 02 y 03 pueden importar las interfaces sin errores"
       ],
-      "evidence": []
+      "evidence": [
+        "Modelos/contratos en src/app/components/peajes/models/* exportados vía index.ts",
+        "npm run build EXIT 0 (incluye tipos del dominio)"
+      ]
     },
     {
       "id": "F00-4",
@@ -56,12 +66,15 @@
       "prd_refs": ["RF-34"],
       "agent_owner": "00-orquestador-setup",
       "depends_on": [],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "grep -R \"ChecklistTemplateService\" src/app/components/peajes → sin resultados",
         "grep -R \"checklist_templates\" supabase/migrations/*peajes* → sin resultados"
       ],
-      "evidence": []
+      "evidence": [
+        "rg ChecklistTemplateService|checklist_templates en src/app/components/peajes → sin matches",
+        "Sin migraciones *peajes* aún (Fase 0 no crea SQL); separación documentada en AGENTS/handoff"
+      ]
     },
     {
       "id": "F01-1",

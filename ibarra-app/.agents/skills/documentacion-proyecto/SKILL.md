@@ -2,15 +2,17 @@
 name: documentacion-proyecto
 description: >-
   Metodologia experta para crear, refactorizar y mantener documentacion tecnica
-  en orden_compra_ibarra. Usar cuando el usuario pida documentar, reorganizar,
-  dividir, normalizar o actualizar docs sin duplicados, y cuando haya que
-  vincular modulos, componentes, tablas, tests, SQL o arquitectura.
+  en Transporte Ibarra / módulo Peajes (ibarra-app). Usar cuando el usuario pida
+  documentar, reorganizar, dividir, normalizar o actualizar docs sin duplicados,
+  y cuando haya que vincular modulos, componentes, tablas, tests, SQL o
+  arquitectura. Coordinacion canónica: AGENTS.md, feature_list.json,
+  docs/claude-progress.md, docs/session-handoff.md.
 ---
 
 # Documentación del proyecto
 
 Usar esta skill para transformar documentación desordenada en un sistema
-consistente, trazable y fácil de actualizar.
+consistente, trazable y fácil de actualizar en **ibarra-app** (Peajes y módulos host).
 
 ## Objetivo
 
@@ -36,25 +38,18 @@ Usar una organización por capas:
 
 ```text
 docs/
-├── README.md
+├── plan/                 # PRD y planes de agentes (peajes)
+├── session-handoff.md
+├── claude-progress.md
 ├── modulos/
-│   ├── ordenes-compra/
-│   ├── pedidos/
-│   ├── proveedores/
-│   ├── facturas/
-│   ├── productos/
-│   └── ia/
-├── componentes/
-│   ├── tablas/
-│   ├── formularios/
-│   ├── modales/
-│   ├── servicios/
-│   └── shared/
-└── arquitectura/
-    ├── flujo-general.md
-    ├── dependencias.md
-    └── diagramas.md
+│   └── peajes.md
+├── 06-components/peajes/
+├── 06-tablas/peajes/
+├── 08-sql/{task}/
+└── backend/supabase/     # si existe workflow local
 ```
+
+Para Peajes, el agente 04 documenta tras features `passing`. No inventar comportamiento no implementado.
 
 ## Criterio de clasificación
 
