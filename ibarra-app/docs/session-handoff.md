@@ -156,6 +156,12 @@ ng build --configuration=development → OK
 ng test --watch=false --browsers=ChromeHeadless --include="**/peajes/wizard/**/*.spec.ts" --include="**/peajes/catalogos/**/*.spec.ts" → 12 SUCCESS
 ```
 
+### Commit
+
+- Rama: `feature/peajes-mvp`
+- SHA Agente 02: `0b15952`
+- Sin push.
+
 ## Estado Fase 1 — Agente 03 Frontend Plantillas & Motor (2026-07-30)
 
 **F03-1…F03-8 → `passing`** (motor + UI + mocks; persistencia real pendiente de 01).
