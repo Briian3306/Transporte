@@ -2,6 +2,59 @@
 
 Guía para agentes de IA que trabajan en este repositorio. Léelo antes de hacer cambios.
 
+## Protocolo de trabajo multiagente
+
+El trabajo del módulo Peajes se coordina mediante tres artefactos:
+
+- `ibarra-app/docs/plan/peaje-prd-es.md`: fuente de verdad funcional y de alcance.
+- `feature_list.json`: estado canónico de features, dependencias, verificación y evidencia.
+- `ibarra-app/docs/claude-progress.md`: bitácora de sesiones, decisiones y bloqueos.
+
+Antes de implementar, cada agente deberá leer este archivo, el PRD de Peajes y el feature activo que le fue asignado. No deberá inventar alcance fuera del PRD ni modificar silenciosamente los criterios de verificación.
+
+### Orden de inicio
+
+1. Confirmar el directorio de trabajo y consultar `git status --short`.
+2. Leer `AGENTS.md`, `ibarra-app/docs/plan/peaje-prd-es.md` y `feature_list.json`.
+3. Leer `ibarra-app/docs/claude-progress.md` para conocer decisiones y bloqueos.
+4. Revisar el código existente del área que se tocará.
+5. Ejecutar la verificación base disponible desde `ibarra-app` antes de atribuir fallas al feature.
+6. Marcar únicamente el feature asignado como `in_progress` y registrar la evidencia al finalizar.
+
+### Trabajo paralelo permitido
+
+Los agentes pueden trabajar en paralelo solo cuando sus archivos de propiedad no se solapan:
+
+| Actor | Propiedad principal | No debe modificar |
+|---|---|---|
+| PM/arquitectura | PRD, dependencias y criterios | Implementación de UI/SQL sin asignación |
+| Frontend de experiencia | wizard, preview y estados de carga | Migraciones y tablas |
+| Frontend de configuración | editor de plantillas y algoritmos | Dashboard general y esquema SQL |
+| Modelo de datos/Supabase | migraciones, RLS y modelos persistentes | Componentes visuales |
+| Motor de transformación | contratos, Builder, Strategy y validaciones | Dashboard y estilos |
+| QA/integración | pruebas, build y evidencia | Cambios funcionales no acordados |
+| Documentación/handoff | progreso, feature list y documentación técnica | Código de producto salvo corrección documental |
+
+Solo un agente debe ser propietario de cada archivo durante una iteración. Las decisiones que afecten a más de un dominio se registran primero en `ibarra-app/docs/claude-progress.md`.
+
+### Skills y herramientas por tipo de trabajo
+
+Cuando exista una skill instalada equivalente, debe leerse antes de actuar:
+
+| Trabajo | Skill/capacidad recomendada |
+|---|---|
+| UI Angular, wizard, tablas y formularios | `frontend-design` + `browser:control-in-app-browser` para validación visual |
+| Supabase, migraciones, RLS y persistencia | skill local de Supabase del proyecto, si está instalada; si no, seguir este AGENTS y validar localmente |
+| Documentación de arquitectura y PRD | `notion:notion-spec-to-implementation` solo si la fuente está en Notion; para este repo, documentar en `docs/` y usar el PRD |
+| Verificación de hojas Excel | `spreadsheets:Spreadsheets` para artefactos `.xlsx` aislados; no sustituye las pruebas del módulo |
+| Descubrimiento de skills | `find-skills`, únicamente para localizar una skill faltante; no instalarla automáticamente |
+
+La ausencia de una skill no bloquea el trabajo: el contrato del repositorio, el PRD y las pruebas son obligatorios y tienen prioridad.
+
+### Definición de terminado multiagente
+
+Una feature solo puede marcarse como `passing` cuando el comportamiento está implementado, las verificaciones de `feature_list.json` pasaron, la evidencia está registrada en `feature_list.json` y `claude-progress.md`, y la documentación afectada fue actualizada. Si falta una condición, permanece `in_progress` o `blocked`.
+
 ## Qué es este proyecto
 
 Sistema de gestión operativa para **Transporte Ibarra**: aplicación web responsive (PWA) con Angular + Supabase.

@@ -1,0 +1,481 @@
+{
+  "project": "peajes-module-automation-tool",
+  "source_of_truth": "docs/PRD-Peajes.md",
+  "single_active_feature_per_agent": true,
+  "agents": [
+    "00-orquestador-setup",
+    "01-backend-supabase",
+    "02-frontend-wizard-tablas",
+    "03-frontend-plantillas-builder",
+    "04-documentador",
+    "05-integrador-qa"
+  ],
+  "features": [
+    {
+      "id": "F00-1",
+      "title": "Registrar módulo peajes en el dashboard",
+      "prd_refs": ["RF-33", "criterios-mvp"],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": [],
+      "status": "not_started",
+      "verification": [
+        "El dashboard muestra la tarjeta 'Peajes' con id 'peajes' y ruta '/peajes'",
+        "La tarjeta se oculta/deshabilita si el usuario no tiene 'peajes:read'"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F00-2",
+      "title": "Ruta base /peajes + permiso peajes:read + guard",
+      "prd_refs": ["RF-33"],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": [],
+      "status": "not_started",
+      "verification": [
+        "Navegar a /peajes sin permiso redirige o bloquea",
+        "Navegar a /peajes con permiso 'peajes:read' carga la pantalla inicial del módulo"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F00-3",
+      "title": "Modelos base y contratos de servicio del dominio Peajes",
+      "prd_refs": ["§11 Structure Goal", "§14 modelo físico"],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": [],
+      "status": "not_started",
+      "verification": [
+        "ng build compila con los modelos: Pasada, Peaje, Estacion, Patente, Pase, Factura, PlantillaConfiguracion, ConfiguracionPlantilla, AlgoritmoCombinado, AlgoritmoCombinadoPaso",
+        "Los servicios 02 y 03 pueden importar las interfaces sin errores"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F00-4",
+      "title": "Separación verificada respecto de Checklists",
+      "prd_refs": ["RF-34"],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": [],
+      "status": "not_started",
+      "verification": [
+        "grep -R \"ChecklistTemplateService\" src/app/components/peajes → sin resultados",
+        "grep -R \"checklist_templates\" supabase/migrations/*peajes* → sin resultados"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F01-1",
+      "title": "Migraciones de catálogos base: peajes, estaciones, patentes, pases",
+      "prd_refs": ["§14", "RN-04", "RN-05"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F00-3"],
+      "status": "not_started",
+      "verification": [
+        "pnpm supabase db reset --local --no-seed",
+        "estacion.peaje_id referencia peajes.id"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F01-2",
+      "title": "Migración facturas + pasadas + FK factura_id",
+      "prd_refs": ["§13.5", "§14"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F01-1"],
+      "status": "not_started",
+      "verification": [
+        "pnpm supabase db reset --local --no-seed",
+        "pasadas.factura_id referencia facturas.id",
+        "pasadas.estacion_id referencia estaciones.id (no guarda peaje_id directo)"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F01-3",
+      "title": "Migraciones plantillas_configuracion + configuraciones_plantilla",
+      "prd_refs": ["§14.2", "RN-18"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F00-3"],
+      "status": "not_started",
+      "verification": [
+        "pnpm supabase db reset --local --no-seed",
+        "constraint única sobre (plantilla_id, nombre_columna, orden)"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F01-4",
+      "title": "Migraciones algoritmos_combinados + algoritmo_combinado_pasos",
+      "prd_refs": ["§14.2", "RN-20"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F00-3"],
+      "status": "not_started",
+      "verification": [
+        "pnpm supabase db reset --local --no-seed",
+        "constraint única sobre (algoritmo_combinado_id, orden)",
+        "constraint única sobre (nombre, empresa_id)"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F01-5",
+      "title": "RPC cálculo importe_neto + validación factura vs pasadas",
+      "prd_refs": ["RN-10", "RN-11", "RN-13", "RN-17"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F01-2"],
+      "status": "not_started",
+      "verification": [
+        "pnpm supabase test db (pgTAP con casos de diferencia = 0 y diferencia > tolerancia)"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F01-6",
+      "title": "Detección de pasadas duplicadas",
+      "prd_refs": ["RN-16", "RF-24", "RNF-10"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F01-2"],
+      "status": "not_started",
+      "verification": [
+        "pnpm supabase test db con clave PASE_ID+FECHA_HORA+ESTACION_ID+PATENTE_ID repetida → rechazo"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F01-7",
+      "title": "RPC de sobrescritura transaccional de plantilla",
+      "prd_refs": ["RF-28", "RN-19", "RN-25"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F01-3"],
+      "status": "not_started",
+      "verification": [
+        "pnpm supabase test db: una edición fallida no deja configuraciones parciales"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F01-8",
+      "title": "RPC de expansión/validación de algoritmo combinado",
+      "prd_refs": ["RF-29", "RF-30", "RF-31", "RN-18", "RN-20"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F01-4"],
+      "status": "not_started",
+      "verification": [
+        "pnpm supabase test db: referencia a algoritmo_codigo inexistente → error",
+        "pnpm supabase test db: orden duplicado dentro de la misma columna → error"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F01-9",
+      "title": "Registro/auditoría de carga",
+      "prd_refs": ["RF-26", "RF-32", "RNF-05"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F01-2"],
+      "status": "not_started",
+      "verification": [
+        "pnpm supabase test db: cada carga confirmada persiste plantilla, algoritmos, parámetros efectivos, filas procesadas y errores por paso"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F02-1",
+      "title": "Paso 1 — Carga de archivo .xlsx",
+      "prd_refs": ["RF-01", "RF-02"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F00-3"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso1*\"",
+        "Subir .xlsx válido muestra nombre, tamaño y cantidad de filas",
+        "Subir archivo no .xlsx muestra error"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F02-2",
+      "title": "Paso 2 — Preview de columnas, tipos y selección",
+      "prd_refs": ["RF-03", "RF-04", "RF-05", "RF-06", "RNF-03"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-1"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso2*\"",
+        "Vista previa limitada a 10 filas",
+        "Columnas excluidas no llegan al paso de mapeo"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F02-3",
+      "title": "Catálogo CRUD de Peajes",
+      "prd_refs": ["§7.5", "RF-16"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F01-1"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/catalogos/peaje*\"",
+        "Crear/editar peaje persiste vía servicio real (no mock) una vez F01-1 está passing"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F02-4",
+      "title": "Catálogo CRUD de Estaciones + relación código proveedor→estación",
+      "prd_refs": ["§6", "§7.5", "RF-16", "RF-17", "RF-18"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F01-1", "F02-3"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/catalogos/estacion*\"",
+        "Sugerencia de estación por nombre/código funciona con datos reales",
+        "Crear estación nueva cuando no hay coincidencia"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F02-5",
+      "title": "Paso 5/6 — Mapear columnas y relacionar estación/peaje",
+      "prd_refs": ["RF-14", "RF-15", "RF-16", "RF-17", "RF-18", "RN-04", "RN-05"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F00-3", "F02-3", "F02-4"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso5*\" y \"paso6*\"",
+        "No se puede avanzar con columnas obligatorias sin mapear",
+        "No se puede finalizar con estaciones sin relacionar"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F02-6",
+      "title": "Paso 7 — Formulario de factura manual",
+      "prd_refs": ["RF-19"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F00-3"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso7*\"",
+        "Campos obligatorios: factura, cuenta, empresa, fecha, importe sin IVA, importe total"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F02-7",
+      "title": "Paso 8 — Validaciones (campos, importes, duplicados, factura)",
+      "prd_refs": ["RF-20", "RF-23", "§8"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F01-5", "F01-6"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso8*\"",
+        "Fila rechazada muestra fila, columna, valor y motivo (RNF-08)"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F02-8",
+      "title": "Paso 9 — Revisión final, confirmación y guardado",
+      "prd_refs": ["RF-21", "RF-22", "RN-12"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F01-2", "F01-7"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso9*\"",
+        "Confirmar carga guarda pasadas + snapshot de plantilla/algoritmos usados"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F02-9",
+      "title": "Persistencia de estado del wizard entre pasos",
+      "prd_refs": ["RF-25"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-1"],
+      "status": "not_started",
+      "verification": [
+        "Volver a un paso anterior y avanzar de nuevo conserva la configuración"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F03-1",
+      "title": "Paso 3 — Motor de transformaciones (tarjetas, orden, preview)",
+      "prd_refs": ["RF-07", "RF-08", "RF-09", "RF-10"],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": ["F00-3"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/plantillas/motor*\"",
+        "Ejemplo §21 del PRD reproduce FECHA_HORA, PATENTE_ID, PASE_ID, IMPORTE_NETO correctamente"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F03-2",
+      "title": "Builder de plantillas (nombre, descripción, empresa, estado)",
+      "prd_refs": ["RF-11", "RF-27"],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": ["F01-3"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/plantillas/builder*\"",
+        "Guardar plantilla persiste nombre, descripción, empresa_id, estado"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F03-3",
+      "title": "Editor de plantillas — sobrescritura controlada",
+      "prd_refs": ["RF-28", "RN-19"],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": ["F01-7"],
+      "status": "not_started",
+      "verification": [
+        "Editar y guardar reemplaza configuraciones anteriores en una sola operación"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F03-4",
+      "title": "Paso 4 — Aplicar plantilla existente + validar compatibilidad",
+      "prd_refs": ["RF-12", "RF-13", "RN-21"],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": ["F03-2"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/plantillas/aplicar*\"",
+        "Columnas faltantes requeridas por la plantilla se informan antes de aplicarla"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F03-5",
+      "title": "Builder de algoritmos combinados",
+      "prd_refs": ["RF-29"],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": ["F01-4"],
+      "status": "not_started",
+      "verification": [
+        "ng test --include=\"**/peajes/plantillas/algoritmos*\"",
+        "No permite referenciar códigos de algoritmo no registrados en el StrategyRegistry"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F03-6",
+      "title": "Aplicar/expandir algoritmo combinado en una columna",
+      "prd_refs": ["RF-30"],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": ["F03-5", "F01-8"],
+      "status": "not_started",
+      "verification": [
+        "Seleccionar NORMALIZAR_PATENTE expande BORRAR_ESPACIOS + ELIMINAR_GUIONES + CONVERTIR_MAYUSCULAS y muestra los pasos efectivos"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F03-7",
+      "title": "Validaciones antes de publicar plantilla/algoritmo",
+      "prd_refs": ["RF-31", "RN-18", "RN-20"],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": ["F01-8"],
+      "status": "not_started",
+      "verification": [
+        "Orden duplicado, columna obligatoria ausente o referencia rota bloquean la publicación con mensaje claro"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F03-8",
+      "title": "Alcance por empresa / reutilización controlada de algoritmos",
+      "prd_refs": ["RN-22", "RN-23"],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": ["F03-5"],
+      "status": "not_started",
+      "verification": [
+        "Una plantilla de empresa A no puede aplicarse a empresa B salvo recurso marcado global"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F04-1",
+      "title": "Documentar tablas nuevas de Peajes",
+      "prd_refs": ["documentacion-proyecto"],
+      "agent_owner": "04-documentador",
+      "depends_on": ["F01-1", "F01-2", "F01-3", "F01-4"],
+      "status": "not_started",
+      "verification": ["docs/06-tablas/peajes/*.md existen y están enlazados en INDEX.md"],
+      "evidence": []
+    },
+    {
+      "id": "F04-2",
+      "title": "Documentar componentes de wizard/catálogos",
+      "prd_refs": ["documentacion-proyecto"],
+      "agent_owner": "04-documentador",
+      "depends_on": ["F02-1", "F02-2", "F02-3", "F02-4", "F02-5", "F02-6", "F02-7", "F02-8", "F02-9"],
+      "status": "not_started",
+      "verification": ["docs/06-components/peajes/*.md existen y están enlazados en INDEX.md"],
+      "evidence": []
+    },
+    {
+      "id": "F04-3",
+      "title": "Documentar builder de plantillas/algoritmos",
+      "prd_refs": ["documentacion-proyecto"],
+      "agent_owner": "04-documentador",
+      "depends_on": ["F03-1", "F03-2", "F03-3", "F03-4", "F03-5", "F03-6", "F03-7"],
+      "status": "not_started",
+      "verification": ["docs/06-components/peajes/plantillas-y-algoritmos.md existe"],
+      "evidence": []
+    },
+    {
+      "id": "F04-4",
+      "title": "Actualizar docs/modulos/peajes.md e índices",
+      "prd_refs": ["documentacion-proyecto"],
+      "agent_owner": "04-documentador",
+      "depends_on": [],
+      "status": "not_started",
+      "verification": ["docs/modulos/peajes.md existe y enlaza a los docs de tablas/componentes"],
+      "evidence": []
+    },
+    {
+      "id": "F05-1",
+      "title": "Caso de ejemplo end-to-end (PRD §21) reproducido con éxito",
+      "prd_refs": ["§21"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F02-8", "F03-6", "F01-9"],
+      "status": "not_started",
+      "verification": [
+        "Cargar el archivo de ejemplo, aplicar transformaciones, mapear, relacionar estación/peaje, ingresar factura, confirmar",
+        "El resultado estandarizado coincide con §21.3 del PRD"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F05-2",
+      "title": "Resolución de conflictos de rutas/permisos entre agentes 01-03",
+      "prd_refs": ["RF-33"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F02-9", "F03-8", "F01-9"],
+      "status": "not_started",
+      "verification": ["peajes.routes.ts contiene todas las rutas de wizard/catálogos/plantillas sin duplicados"],
+      "evidence": []
+    },
+    {
+      "id": "F05-3",
+      "title": "Verificación completa del módulo",
+      "prd_refs": ["Definition of Done"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F05-1", "F05-2"],
+      "status": "not_started",
+      "verification": [
+        "ng build",
+        "ng test",
+        "pnpm supabase db reset --local --no-seed",
+        "pnpm supabase test db",
+        "./init.sh corre limpio desde un clon nuevo"
+      ],
+      "evidence": []
+    }
+  ]
+}

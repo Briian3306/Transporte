@@ -30,7 +30,7 @@ La aplicación permitirá que los usuarios:
 9. Almacenen la información procesada.
 10. Reutilicen configuraciones mediante plantillas.
 
-El MVP estará enfocado en ofrecer un flujo de trabajo sencillo, guiado y comprensible para usuarios administrativos y analistas.
+El MVP estará enfocado en ofrecer un flujo de trabajo sencillo, guiado y comprensible para usuarios  analistas.
 
 El sistema deberá reducir las tareas manuales relacionadas con la limpieza, transformación y carga de información, sin eliminar la posibilidad de que el usuario revise y confirme los datos antes de almacenarlos.
 
@@ -414,16 +414,8 @@ Responsable de:
 * Validar patentes y peajes.
 * Revisar errores.
 
-### 6.2 Usuario administrativo
 
-Responsable de:
-
-* Ingresar información de factura.
-* Validar importes.
-* Revisar diferencias.
-* Confirmar la carga.
-
-### 6.3 Analista de inteligencia de negocio
+### 6.2 Analista de inteligencia de negocio
 
 Responsable de:
 
