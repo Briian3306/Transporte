@@ -368,5 +368,5 @@ init.sh → BLOCKED (sin bash/WSL en host Windows)
 ### SHA / rama (F05)
 
 - Rama: `feature/peajes-mvp`
-- Commit Agente 05: (ver git log tras commit de esta sesión)
+- Commit Agente 05 (F05): `fa26ab8`
 - Sin push. `main` sin cambios de Peajes.
