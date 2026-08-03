@@ -82,7 +82,8 @@ export class Paso3TransformacionesComponent implements OnInit {
   editObligatoria = true;
 
   readonly destinosEstandar = PASADA_COLUMN_KEYS;
-  readonly formatosFechaHora = FORMATOS_FECHA_HORA;
+  /** Copia mutable: `*ngFor` no acepta el tuple `readonly` de FORMATOS_FECHA_HORA. */
+  readonly formatosFechaHora: string[] = [...FORMATOS_FECHA_HORA];
 
   ngOnInit(): void {
     this.descriptors = this.motor.getAlgorithmDescriptors();
@@ -490,6 +491,11 @@ export class Paso3TransformacionesComponent implements OnInit {
   paramAsString(nombre: string): string {
     const v = this.editParams[nombre];
     return v === undefined || v === null ? '' : String(v);
+  }
+
+  /** Opciones del select enum / formato_hora (siempre `string[]` mutable para `*ngFor`). */
+  opcionesEnum(field: ParametroSchemaField): string[] {
+    return field.opciones?.length ? field.opciones : this.formatosFechaHora;
   }
 
   setSalidaEstandar(destino: string): void {

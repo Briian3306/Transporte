@@ -47,4 +47,34 @@ describe('Paso2PreviewComponent', () => {
     expect(state.columnasParaMapeo()).not.toContain('VIA');
     expect(state.mapeosActivos().map((m) => m.columnaOrigen)).not.toContain('VIA');
   });
+
+  it('F02-11: muestra recomendaciones y Aplicar escribe draft', () => {
+    state.reiniciar();
+    state.setPreview({
+      nombreArchivo: 'ausol.csv',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['FECHA', 'HORA', 'PATENTE', 'ESTACION'],
+      filasPreview: [
+        { FECHA: '2026-01-01', HORA: '08:30:15', PATENTE: 'AB-1', ESTACION: 'E1' },
+      ],
+      filasOrigen: [],
+      tiposInferidos: {},
+    });
+    fixture = TestBed.createComponent(Paso2PreviewComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const rail = fixture.nativeElement.querySelector('.paso2__recos');
+    expect(rail).toBeTruthy();
+    expect(component.pendientesCount).toBeGreaterThan(0);
+
+    component.aplicarRecomendacion('rec-patente');
+    fixture.detectChanges();
+    expect(state.getConfiguracionesDraft().length).toBe(3);
+    expect(
+      fixture.nativeElement.textContent.includes('Aplicada') ||
+        state.snapshot().recomendaciones.find((r) => r.id === 'rec-patente')?.status === 'accepted'
+    ).toBeTrue();
+  });
 });

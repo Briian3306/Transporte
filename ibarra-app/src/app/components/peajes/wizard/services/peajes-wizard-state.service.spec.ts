@@ -136,4 +136,64 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
       expect(after[i].orden).toBeGreaterThan(after[i - 1].orden);
     }
   });
+
+  it('F02-11: setPreview genera recomendaciones pendientes', () => {
+    state.setPreview({
+      nombreArchivo: 'ausol.csv',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['FECHA', 'HORA', 'PATENTE', 'DISPOSITIVO', 'ESTACION', 'TARIFA', 'BONIFICACION'],
+      filasPreview: [
+        {
+          FECHA: '2026-01-01',
+          HORA: '08:30:15',
+          PATENTE: 'AB-123',
+          DISPOSITIVO: '1',
+          ESTACION: 'X',
+          TARIFA: '100',
+          BONIFICACION: '0',
+        },
+      ],
+      filasOrigen: [],
+      tiposInferidos: {},
+    });
+    const pending = state.recomendacionesPendientes();
+    expect(pending.length).toBeGreaterThan(0);
+    expect(pending.map((r) => r.kind)).toContain('patente');
+    expect(state.getConfiguracionesDraft().length).toBe(0);
+  });
+
+  it('F02-11: aceptar recomendación escribe draft y no duplica', () => {
+    state.setPreview({
+      nombreArchivo: 'a.xlsx',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['FECHA', 'HORA', 'PATENTE'],
+      filasPreview: [{ FECHA: '2026-01-01', HORA: '08:00:00', PATENTE: 'ab-1' }],
+      filasOrigen: [],
+      tiposInferidos: {},
+    });
+    expect(state.aceptarRecomendacion('rec-patente')).toBeTrue();
+    const draft = state.getConfiguracionesDraft();
+    expect(draft.length).toBe(3);
+    expect(state.snapshot().recomendaciones.find((r) => r.id === 'rec-patente')?.status).toBe(
+      'accepted'
+    );
+    expect(state.aceptarRecomendacion('rec-patente')).toBeFalse();
+    expect(state.getConfiguracionesDraft().length).toBe(3);
+  });
+
+  it('F02-11: descartar oculta pendiente', () => {
+    state.setPreview({
+      nombreArchivo: 'a.xlsx',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['ESTACION'],
+      filasPreview: [{ ESTACION: 'E1' }],
+      filasOrigen: [],
+      tiposInferidos: {},
+    });
+    expect(state.descartarRecomendacion('rec-estacion')).toBeTrue();
+    expect(state.recomendacionesPendientes().some((r) => r.id === 'rec-estacion')).toBeFalse();
+  });
 });

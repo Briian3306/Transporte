@@ -198,6 +198,45 @@ const DESCRIPTORES: AlgorithmDescriptor[] = [
     },
   },
   {
+    codigo: 'REEMPLAZAR_TEXTO',
+    nombre: 'Reemplazar texto',
+    descripcion: 'Normaliza aliases con reglas ordenadas buscar → reemplazar.',
+    categoria: 'texto',
+    inputs: { arity: 1, required: true },
+    parametrosSchema: [
+      { nombre: 'columna', tipo: 'string', requerido: false, descripcion: 'Columna origen' },
+      {
+        nombre: 'reglas',
+        tipo: 'unknown',
+        requerido: true,
+        descripcion: 'Lista ordenada: [{ buscar, reemplazar, modo?: exacto|contiene }]',
+      },
+    ],
+    outputType: 'string',
+    validar(config) {
+      const col = colUnaria(config);
+      const reglas = config?.['reglas'];
+      if (!col) return [err('columna', null, 'REEMPLAZAR_TEXTO: falta columna de entrada')];
+      if (!Array.isArray(reglas) || reglas.length === 0) {
+        return [err('reglas', reglas ?? null, 'REEMPLAZAR_TEXTO: se requiere al menos una regla')];
+      }
+      const invalid = reglas.some((regla) => {
+        if (!regla || typeof regla !== 'object') return true;
+        const item = regla as Record<string, unknown>;
+        return typeof item['buscar'] !== 'string' || !item['buscar'].trim() ||
+          typeof item['reemplazar'] !== 'string' ||
+          (item['modo'] != null && item['modo'] !== 'exacto' && item['modo'] !== 'contiene');
+      });
+      return invalid
+        ? [err('reglas', reglas, 'REEMPLAZAR_TEXTO: cada regla requiere buscar, reemplazar y modo válido')]
+        : [];
+    },
+    resumen(config) {
+      const reglas = Array.isArray(config?.['reglas']) ? config!['reglas'] as Array<Record<string, unknown>> : [];
+      return `Reemplazar(${reglas.map((r) => `${String(r['buscar'] ?? '?')} → ${String(r['reemplazar'] ?? '?')}`).join(', ') || '?'})`;
+    },
+  },
+  {
     codigo: 'COMBINAR_COLUMNAS',
     nombre: 'Combinar columnas',
     descripcion: 'Concatena columnas con un separador opcional.',
@@ -251,7 +290,14 @@ const DESCRIPTORES: AlgorithmDescriptor[] = [
         tipo: 'enum',
         requerido: true,
         descripcion: 'Formato de entrada de la hora/fecha',
-        opciones: ['HHMMSS', 'HH:MM:SS', 'DD/MM/YY HHMMSS', 'DD/MM/YYYY HH:MM:SS'],
+        opciones: [
+          'HHMMSS',
+          'HH:MM:SS',
+          'YYYY-MM-DD HH:MM:SS',
+          'MM/DD/YY HHMMSS',
+          'DD/MM/YY HHMMSS',
+          'DD/MM/YYYY HH:MM:SS',
+        ],
       },
     ],
     outputType: 'string',

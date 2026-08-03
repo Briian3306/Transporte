@@ -87,7 +87,9 @@
     <div class="pw__footer-hint">Obligatorias: {{ obligatorias.join(', ') }}</div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
-      <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>
+      <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()" [disabled]="resolviendoPatentes">
+        {{ resolviendoPatentes ? 'Resolviendo patentes…' : 'Continuar' }}
+      </button>
     </div>
   </div>
 </div>

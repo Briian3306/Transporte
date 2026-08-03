@@ -67,6 +67,7 @@ export class Paso9RevisionComponent {
           plantillaId: s.plantillaId,
           mapeos: s.mapeos,
           relacionesEstacion: s.relacionesEstacion,
+          nombreArchivo: s.preview?.nombreArchivo ?? null,
           parametrosEfectivos: {
             archivo: s.preview?.nombreArchivo,
             totalFilas: s.preview?.totalFilas,

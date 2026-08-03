@@ -30,7 +30,7 @@
           <span class="pw__btn pw__btn--ghost">Seleccionar archivo</span>
           <input
             type="file"
-            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
             (change)="onFileInput($event)"
           />
         </div>
@@ -159,7 +159,7 @@
     #fileInput
     type="file"
     hidden
-    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
     (change)="onFileInput($event)"
   />
 </div>

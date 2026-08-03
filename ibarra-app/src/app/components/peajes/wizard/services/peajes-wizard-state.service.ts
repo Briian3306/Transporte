@@ -21,6 +21,16 @@ import {
   normalizarPaseMvp,
   normalizarPatenteMvp,
 } from '../fixtures/mvp-ejemplo.fixture';
+import {
+  ColumnRecommendation,
+  buildDemoPipelineSeeds,
+  detectColumnRecommendations,
+  tieneHeadersParaSeedDemo,
+} from './column-recognition';
+import { ConfiguracionPlantillaDraft } from './wizard-draft.types';
+
+export type { ConfiguracionPlantillaDraft } from './wizard-draft.types';
+export type { ColumnRecommendation } from './column-recognition';
 
 export type WizardPasoId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -31,24 +41,6 @@ export interface WizardFacturaForm {
   fecha_factura: string;
   importe_sin_iva: number | null;
   importe_total: number | null;
-}
-
-/** Paso de pipeline editable en el wizard (client-side; no persistir clientId). */
-export interface ConfiguracionPlantillaDraft {
-  clientId: string;
-  orden: number;
-  tipo: 'transformacion' | 'mapeo' | 'validacion' | string;
-  nombre_columna: string;
-  columna_destino?: string | null;
-  algoritmo_combinado_id?: string | null;
-  configuracion: {
-    algoritmo_codigo?: string;
-    columnas_entrada?: string[];
-    parametros?: Record<string, unknown>;
-    habilitado?: boolean;
-    [key: string]: unknown;
-  } | null;
-  obligatoria: boolean;
 }
 
 export interface PlantillaWizardMeta {
@@ -78,6 +70,8 @@ export interface PeajesWizardState {
   plantillaMeta: PlantillaWizardMeta | null;
   /** JSON snapshot de configuracionesDraft al último markPipelineSaved; null = nunca guardado. */
   pipelineSnapshotSaved: string | null;
+  /** Recomendaciones semánticas de columnas (F02-11). */
+  recomendaciones: ColumnRecommendation[];
 }
 
 const FACTURA_VACIA: WizardFacturaForm = {
@@ -88,16 +82,6 @@ const FACTURA_VACIA: WizardFacturaForm = {
   importe_sin_iva: null,
   importe_total: null,
 };
-
-/** Columnas mínimas del ejemplo MVP / §21 para seed de pipeline. */
-const MVP_SEED_HEADERS = [
-  'FECHA',
-  'HORA',
-  'DOMINIO',
-  'DISPOSITIVON',
-  'TARIFA',
-  'BONIFICACION',
-] as const;
 
 function estadoInicial(): PeajesWizardState {
   return {
@@ -116,6 +100,7 @@ function estadoInicial(): PeajesWizardState {
     configuracionesDraft: [],
     plantillaMeta: null,
     pipelineSnapshotSaved: null,
+    recomendaciones: [],
   };
 }
 
@@ -173,6 +158,7 @@ export class PeajesWizardStateService {
     this.state.confirmacion = null;
     this.state.configuracionesDraft = [];
     this.state.pipelineSnapshotSaved = null;
+    this.state.recomendaciones = detectColumnRecommendations(preview);
     this.aplicarSugerenciasSiPareceMvp(preview);
   }
 
@@ -393,134 +379,106 @@ export class PeajesWizardStateService {
   }
 
   /**
-   * Si el draft está vacío y el preview tiene headers MVP (§21), siembra pasos
-   * atómicos (ALGORITMO_CODIGOS) equivalentes a la plantilla demo.
+   * Si el draft está vacío y el preview tiene headers semánticos suficientes
+   * (FECHA/HORA + patente + dispositivo + tarifa + bonificación), siembra pasos
+   * atómicos vía las mismas recetas que F02-11.
    */
   seedDemoPipelineIfEmpty(): boolean {
     if (this.state.configuracionesDraft.length > 0) {
       return false;
     }
-    if (!this.tieneHeadersMvpSeed()) {
+    const preview = this.state.preview;
+    if (!preview || !tieneHeadersParaSeedDemo(preview.columnas)) {
       return false;
     }
 
-    const seeds: ConfiguracionPlantillaDraft[] = [
-      // FECHA_HORA — combine+format (FORMATEAR_FECHA_HORA = semántica §21)
-      {
-        clientId: nuevoClientId(),
-        orden: 10,
-        tipo: 'transformacion',
-        nombre_columna: 'FECHA',
-        columna_destino: 'FECHA_HORA',
-        algoritmo_combinado_id: null,
-        configuracion: {
-          algoritmo_codigo: 'FORMATEAR_FECHA_HORA',
-          columnas_entrada: ['FECHA', 'HORA'],
-          parametros: { columnas: ['FECHA', 'HORA'], formato_hora: 'HHMMSS' },
-          habilitado: true,
-        },
-        obligatoria: true,
-      },
-      // PASE — copy
-      {
-        clientId: nuevoClientId(),
-        orden: 20,
-        tipo: 'transformacion',
-        nombre_columna: 'DISPOSITIVON',
-        columna_destino: 'PASE_ID',
-        algoritmo_combinado_id: null,
-        configuracion: {
-          algoritmo_codigo: 'COPIAR_COLUMNA',
-          columnas_entrada: ['DISPOSITIVON'],
-          parametros: { columna: 'DISPOSITIVON' },
-          habilitado: true,
-        },
-        obligatoria: true,
-      },
-      // PATENTE — normalize as atomic codes
-      {
-        clientId: nuevoClientId(),
-        orden: 30,
-        tipo: 'transformacion',
-        nombre_columna: 'DOMINIO',
-        columna_destino: 'PATENTE_ID',
-        algoritmo_combinado_id: null,
-        configuracion: {
-          algoritmo_codigo: 'BORRAR_ESPACIOS',
-          columnas_entrada: ['DOMINIO'],
-          parametros: { columna: 'DOMINIO' },
-          habilitado: true,
-        },
-        obligatoria: true,
-      },
-      {
-        clientId: nuevoClientId(),
-        orden: 40,
-        tipo: 'transformacion',
-        nombre_columna: 'PATENTE_ID',
-        columna_destino: 'PATENTE_ID',
-        algoritmo_combinado_id: null,
-        configuracion: {
-          algoritmo_codigo: 'ELIMINAR_GUIONES',
-          columnas_entrada: ['PATENTE_ID'],
-          parametros: { columna: 'PATENTE_ID' },
-          habilitado: true,
-        },
-        obligatoria: true,
-      },
-      {
-        clientId: nuevoClientId(),
-        orden: 50,
-        tipo: 'transformacion',
-        nombre_columna: 'PATENTE_ID',
-        columna_destino: 'PATENTE_ID',
-        algoritmo_combinado_id: null,
-        configuracion: {
-          algoritmo_codigo: 'CONVERTIR_MAYUSCULAS',
-          columnas_entrada: ['PATENTE_ID'],
-          parametros: { columna: 'PATENTE_ID' },
-          habilitado: true,
-        },
-        obligatoria: true,
-      },
-      // QUANTITY — assign
-      {
-        clientId: nuevoClientId(),
-        orden: 60,
-        tipo: 'transformacion',
-        nombre_columna: 'QUANTITY',
-        columna_destino: 'QUANTITY',
-        algoritmo_combinado_id: null,
-        configuracion: {
-          algoritmo_codigo: 'ASIGNAR_VALOR',
-          parametros: { valor: 1 },
-          habilitado: true,
-        },
-        obligatoria: true,
-      },
-      // IMPORTE_NETO — calc
-      {
-        clientId: nuevoClientId(),
-        orden: 70,
-        tipo: 'transformacion',
-        nombre_columna: 'IMPORTE_NETO',
-        columna_destino: 'IMPORTE_NETO',
-        algoritmo_combinado_id: null,
-        configuracion: {
-          algoritmo_codigo: 'CALCULAR_IMPORTE_NETO',
-          columnas_entrada: ['TARIFA', 'BONIFICACION'],
-          parametros: {
-            precio_columna: 'TARIFA',
-            bonificacion_columna: 'BONIFICACION',
-          },
-          habilitado: true,
-        },
-        obligatoria: true,
-      },
-    ];
+    const seeds = buildDemoPipelineSeeds(preview);
+    if (seeds.length === 0) {
+      return false;
+    }
 
-    this.state.configuracionesDraft = seeds;
+    this.state.configuracionesDraft = renumerarOrden(seeds);
     return true;
+  }
+
+  /** Recomendaciones pendientes visibles en Paso 2. */
+  recomendacionesPendientes(): ColumnRecommendation[] {
+    return this.state.recomendaciones.filter((r) => r.status === 'pending');
+  }
+
+  aceptarRecomendacion(id: string): boolean {
+    const rec = this.state.recomendaciones.find((r) => r.id === id);
+    if (!rec || rec.status !== 'pending') {
+      return false;
+    }
+
+    this.aplicarSideEffectsRecomendacion(rec);
+    this.mergeDraftSteps(rec.draftSteps);
+    rec.status = 'accepted';
+    return true;
+  }
+
+  descartarRecomendacion(id: string): boolean {
+    const rec = this.state.recomendaciones.find((r) => r.id === id);
+    if (!rec || rec.status !== 'pending') {
+      return false;
+    }
+    rec.status = 'dismissed';
+    return true;
+  }
+
+  aceptarTodasRecomendaciones(): number {
+    const pending = this.recomendacionesPendientes().map((r) => r.id);
+    let n = 0;
+    for (const id of pending) {
+      if (this.aceptarRecomendacion(id)) n += 1;
+    }
+    return n;
+  }
+
+  private aplicarSideEffectsRecomendacion(rec: ColumnRecommendation): void {
+    if (rec.incluirColumnas.length) {
+      const incluidas = new Set(this.state.columnasIncluidas);
+      let excluidas = [...this.state.columnasExcluidas];
+      for (const col of rec.incluirColumnas) {
+        incluidas.add(col);
+        excluidas = excluidas.filter((c) => c !== col);
+      }
+      this.setSeleccionColumnas([...incluidas], excluidas);
+    }
+
+    if (rec.mapeoHints.length) {
+      const byOrigen = new Map(this.state.mapeos.map((m) => [m.columnaOrigen, m]));
+      for (const hint of rec.mapeoHints) {
+        const existing = byOrigen.get(hint.columnaOrigen);
+        if (existing) {
+          existing.columnaDestino = hint.columnaDestino;
+          existing.excluida = false;
+        } else {
+          this.state.mapeos.push({ ...hint });
+        }
+      }
+    }
+  }
+
+  private mergeDraftSteps(steps: ConfiguracionPlantillaDraft[]): void {
+    if (!steps.length) return;
+
+    const existingKeys = new Set(
+      this.state.configuracionesDraft.map(
+        (d) =>
+          `${d.configuracion?.algoritmo_codigo ?? ''}|${d.columna_destino ?? ''}|${d.nombre_columna}`
+      )
+    );
+
+    for (const step of steps) {
+      const key = `${step.configuracion?.algoritmo_codigo ?? ''}|${step.columna_destino ?? ''}|${step.nombre_columna}`;
+      if (existingKeys.has(key)) continue;
+      this.state.configuracionesDraft.push(structuredClone(step));
+      existingKeys.add(key);
+    }
+
+    this.state.configuracionesDraft = renumerarOrden(this.state.configuracionesDraft);
   }
 
   /** Convierte drafts a shape ConfiguracionPlantilla (ids temporales ok). */
@@ -556,10 +514,9 @@ export class PeajesWizardStateService {
   }
 
   private tieneHeadersMvpSeed(): boolean {
-    const cols = new Set(
-      (this.state.preview?.columnas ?? this.state.columnasIncluidas).map((c) => c.toUpperCase())
+    return tieneHeadersParaSeedDemo(
+      this.state.preview?.columnas ?? this.state.columnasIncluidas
     );
-    return MVP_SEED_HEADERS.every((h) => cols.has(h));
   }
 
   /** Columnas activas que llegan al mapeo (excluidas no se incluyen). */
@@ -650,6 +607,40 @@ export class PeajesWizardStateService {
     this.state.columnasExcluidas = excl;
   }
 
+  /**
+   * Una plantilla puede transformar solo una parte del archivo. Conservamos en
+   * Paso 5 las columnas necesarias para completar el Structure Goal aunque no
+   * sean salidas del pipeline (caso Acceso Oeste: PATENTE, TARIFA y BONIFICACION).
+   */
+  asegurarMapeosObligatorios(): void {
+    const candidatos: Partial<Record<PasadaColumnKey, string[]>> = {
+      PATENTE_ID: ['PATENTE', 'DOMINIO', 'PATENTE_ID'],
+      PRECIO: ['PRECIO', 'TARIFA'],
+      BONIFICACION: ['BONIFICACION', 'BONIFICACION_IMPORTE'],
+    };
+    const disponibles = this.state.preview?.columnas ?? this.columnasParaMapeo();
+    const usados = new Set(
+      this.state.mapeos.filter((m) => !m.excluida && m.columnaDestino).map((m) => m.columnaDestino)
+    );
+
+    for (const [destino, nombres] of Object.entries(candidatos) as [PasadaColumnKey, string[]][]) {
+      if (usados.has(destino)) continue;
+      const origen = disponibles.find((columna) =>
+        nombres.includes(columna.trim().toUpperCase())
+      );
+      if (!origen) continue;
+
+      const existente = this.state.mapeos.find((m) => m.columnaOrigen === origen);
+      if (existente) {
+        existente.excluida = false;
+        existente.columnaDestino = destino;
+      } else {
+        this.state.mapeos.push({ columnaOrigen: origen, columnaDestino: destino, excluida: false });
+      }
+      usados.add(destino);
+    }
+  }
+
   mapeosActivos(): MapeoColumna[] {
     return this.state.mapeos.filter((m) => !m.excluida);
   }
@@ -706,6 +697,15 @@ export class PeajesWizardStateService {
               ? null
               : (fila[m.columnaOrigen] as string | number);
 
+          if (
+            dest === 'ESTACION_ID' &&
+            preview.nombreArchivo.toLowerCase() === '387882.csv' &&
+            fila['ESTACION'] != null &&
+            fila['VIA'] != null
+          ) {
+            valor = `${fila['ESTACION']} - ${fila['VIA']}`;
+          }
+
           if (dest === 'ESTACION_ID' && valor !== null) {
             const mapped = relMap.get(String(valor));
             valor = mapped ?? String(valor);
@@ -757,6 +757,15 @@ export class PeajesWizardStateService {
           fila[m.columnaOrigen] === undefined || fila[m.columnaOrigen] === null
             ? null
             : (fila[m.columnaOrigen] as string | number);
+
+        if (
+          dest === 'ESTACION_ID' &&
+          preview.nombreArchivo.toLowerCase() === '387882.csv' &&
+          fila['ESTACION'] != null &&
+          fila['VIA'] != null
+        ) {
+          valor = `${fila['ESTACION']} - ${fila['VIA']}`;
+        }
 
         if (dest === 'FECHA_HORA') {
           const horaVal = colHora ? fila[colHora] : null;

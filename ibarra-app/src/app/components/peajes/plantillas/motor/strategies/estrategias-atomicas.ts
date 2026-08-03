@@ -5,6 +5,8 @@ import { StrategyContext, TransformStrategy } from '../strategy.types';
 export const FORMATOS_FECHA_HORA = [
   'HHMMSS',
   'HH:MM:SS',
+  'YYYY-MM-DD HH:MM:SS',
+  'MM/DD/YY HHMMSS',
   'DD/MM/YY HHMMSS',
   'DD/MM/YYYY HH:MM:SS',
 ] as const;
@@ -67,6 +69,54 @@ export const convertirMayusculasStrategy: TransformStrategy = {
           ? ctx.fila[origen]
           : '';
     return asString(raw).toUpperCase();
+  },
+};
+
+interface ReglaReemplazoTexto {
+  buscar: string;
+  reemplazar: string;
+  /** `exacto` evita sustituir abreviaturas dentro de nombres no relacionados. */
+  modo?: 'exacto' | 'contiene';
+}
+
+function reglasReemplazo(value: unknown): ReglaReemplazoTexto[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (regla): regla is ReglaReemplazoTexto =>
+      !!regla &&
+      typeof regla === 'object' &&
+      typeof (regla as Record<string, unknown>)['buscar'] === 'string' &&
+      typeof (regla as Record<string, unknown>)['reemplazar'] === 'string'
+  );
+}
+
+/**
+ * Normaliza aliases de proveedor mediante reglas declarativas y ordenadas.
+ * No evalúa expresiones ni JSON como código. Por seguridad una regla es exacta
+ * salvo que se configure explícitamente `modo: 'contiene'`.
+ */
+export const reemplazarTextoStrategy: TransformStrategy = {
+  codigo: 'REEMPLAZAR_TEXTO',
+  nombre: 'Reemplazar texto',
+  descripcion: 'Aplica aliases o abreviaturas mediante reglas ordenadas.',
+  ejecutar(ctx: StrategyContext): unknown {
+    const origen =
+      (ctx.parametros?.['columna'] as string | undefined) ??
+      ctx.columnaOrigen ??
+      ctx.columnaDestino ??
+      '';
+    let value = asString(origen in ctx.resultado ? ctx.resultado[origen] : ctx.fila[origen]);
+
+    for (const regla of reglasReemplazo(ctx.parametros?.['reglas'])) {
+      const buscar = regla.buscar;
+      if (!buscar) continue;
+      if (regla.modo === 'contiene') {
+        value = value.replaceAll(buscar, regla.reemplazar);
+      } else if (value.trim().toLocaleUpperCase() === buscar.trim().toLocaleUpperCase()) {
+        value = regla.reemplazar;
+      }
+    }
+    return value;
   },
 };
 
@@ -238,8 +288,19 @@ function normalizarHoraEntrada(horaVal: unknown, fechaVal: unknown): string {
   return '';
 }
 
-function parseFechaDdMmYyyy(fecha: string): string | null {
+function parseFechaDdMmYyyy(fecha: string, formato?: string): string | null {
   const t = fecha.trim();
+  // El ejemplo Demo usa mes/día/año corto. Debe ser explícito para no
+  // interpretar 6/25/26 como día 6, mes 25.
+  if (formato?.startsWith('MM/DD/YY')) {
+    const mdy = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})(?:\s+.*)?$/);
+    if (!mdy) return null;
+    const mm = mdy[1].padStart(2, '0');
+    const dd = mdy[2].padStart(2, '0');
+    const yy = Number(mdy[3]);
+    const yyyy = yy >= 70 ? 1900 + yy : 2000 + yy;
+    return `${yyyy}-${mm}-${dd}`;
+  }
   // dd/mm/yyyy o dd-mm-yyyy
   let m = t.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+.*)?$/);
   if (m) {
@@ -321,13 +382,13 @@ function parseFechaHoraSegunFormato(
     const parts = fechaRaw.trim().split(/\s+/);
     const fechaPart = parts[0] ?? '';
     const horaPart = parts.slice(1).join(' ');
-    const fechaIso = parseFechaDdMmYyyy(fechaPart);
+    const fechaIso = parseFechaDdMmYyyy(fechaPart, formato);
     const hms = parseHoraToHms(horaPart, formato);
     if (!fechaIso || !hms) return null;
     return `${fechaIso} ${hms.hh}:${hms.mm}:${hms.ss}`;
   }
 
-  const fechaIso = parseFechaDdMmYyyy(fechaRaw);
+  const fechaIso = parseFechaDdMmYyyy(fechaRaw, formato);
   if (!fechaIso) return null;
   const hms = parseHoraToHms(horaRaw, formato);
   if (!hms) return null;
@@ -345,6 +406,7 @@ export const ESTRATEGIAS_ATOMICAS: TransformStrategy[] = [
   borrarEspaciosStrategy,
   eliminarGuionesStrategy,
   convertirMayusculasStrategy,
+  reemplazarTextoStrategy,
   convertirTextoStrategy,
   convertirNumeroStrategy,
   asignarValorStrategy,

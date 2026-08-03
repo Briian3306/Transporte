@@ -10,7 +10,13 @@
 
 ## Estado actual
 
-Fecha: 2026-07-31 — **F02-10** y **F03-9** `passing` (pipeline editable Paso 3 + motor descriptors/deps). Baseline F00–F05 sigue `passing`.
+Fecha: 2026-08-03 — **F02-11 passing**: reconocimiento automático de columnas + recomendaciones Paso 2. En paralelo: **F08-1 in_progress** (gestión de pasadas).
+
+Fecha previa: 2026-08-03 — **F02-11 in_progress**: reconocimiento automático de columnas + recomendaciones en Paso 2 (semántica → pipeline drafts). En paralelo: **F08-1 in_progress** (gestión de pasadas).
+
+Fecha previa: 2026-08-03 — **F08-1 in_progress**: gestión de pasadas (audit cols + vista `pasadas_gestion` + RPCs list/CRUD + UI `/peajes/pasadas` + shared `DataTable`). Sin tablas nuevas.
+
+Fecha previa: 2026-07-31 — **F02-10** y **F03-9** `passing` (pipeline editable Paso 3 + motor descriptors/deps). Baseline F00–F05 sigue `passing`.
 
 Fecha previa: 2026-07-30 — **Fase 3 Agente 05 Integrador/QA completada**. Módulo Peajes integrado en `feature/peajes-mvp`.
 
@@ -43,12 +49,32 @@ Decisiones vigentes:
 7. Recurso global plantillas/algoritmos: `empresa_id === '__global__'`.
 8. Providers UI = servicios Supabase reales (F05); mocks solo en unit tests.
 9. Catálogo SQL de algoritmos alineado a `StrategyRegistry` (F05).
-
+10. Reconocimiento de columnas (F02-11) por **semántica/aliases**, no por concesionaria; ESTACION → Paso 6.
 ## Features
 
-F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31).
+F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `passing` (2026-08-03).
 
 ## Registro de sesiones
+
+### 2026-08-03 — F02-11 Reconocimiento automático de columnas (Paso 2)
+
+- **Objetivo:** asistente de importación semántico — detectar columnas comunes (PATENTE/DOMINIO, TARIFA, BONIFICACION, FECHA+HORA, ESTACION, DISPOSITIVO) y recomendar transformaciones reutilizables con un clic en Paso 2.
+- **Decisión:** reconocimiento por **semántica de columna**, no por concesionaria. ESTACION prepara Paso 6 (reconocedor de catálogo); no se inventa Strategy `RESOLVER_ESTACION`.
+- **Hecho:**
+  - `column-recognition.ts` (aliases + recetas) + `PeajesColumnRecognitionService`
+  - State: `recomendaciones`, `aceptarRecomendacion` / `descartar` / `aceptarTodas`; `seedDemoPipelineIfEmpty` comparte recetas
+  - Paso 2 rail «Asistente de importación» (Aplicar / Descartar / Aplicar todas)
+  - Docs: `reconocimiento-columnas.md` + INDEX / wizard / plantillas / testing_plan §10a
+- **Verify:** `ng test` column-recognition + paso2 + wizard-state → **19 SUCCESS**; `ng build --configuration=development` OK
+- **Status:** F02-11 `passing`
+
+### 2026-08-03 — Empresas catalog + algoritmo UX PATENTE + docs
+
+- **Catálogos:** card Empresas (`CATALOGOS_CARDS`), ruta `/peajes/catalogos/empresas`, peajes con dropdown empresa + crear (patrón Paso 1).
+- **Algoritmos UI:** preview filas mock (estilo Paso 3), pasos guiados, botón Ejemplo PATENTE, empresa select, Guardar + plantilla `PATENTE_ID`.
+- **Supabase CLI:** reparada/aplicada F06 (`20260803170620_…`); verificado `NORMALIZAR_PATENTE` (BORRAR → GUIONES → MAYÚSCULAS) y configs `→ PATENTE_ID` para Acceso Oeste y Demo. Fix SQL `UPDATE estaciones` FROM/WHERE.
+- **Docs:** `guia-crear-plantillas.md`, actualización `plantillas-y-algoritmos.md` / `catalogos.md` / INDEX / F06 README.
+- **Verify:** `ng build --configuration=development` OK; specs catalogos+algoritmos **6 SUCCESS**. Remoto MCP `uurlssweuhshbwpxxatw` no es DESARROLLO Peajes (sin tablas peajes) — testing solo CLI.
 
 ### 2026-07-31 — Pipeline editable Paso 3 (F02-10 / F03-9) — multiagente
 
@@ -142,3 +168,18 @@ F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31).
 
 1. Desbloquear ACL Supabase DESARROLLO y reintentar `db push --linked`.
 2. Merge a `main` solo con OK explícito del usuario.
+
+### 2026-08-03 — F07 AUSOL: seed y reconocedor de estaciones (en curso)
+
+- Alcance autorizado: seed idempotente desde `docs/plan/seed/ESTACIONES.xlsx`, campos geográficos de estaciones, aliases por empresa, reconocimiento confirmable y plantilla/pipeline para `docs/plan/csv/557074.csv`.
+- Contrato agregado: `EstacionAliasProveedor` y `ResultadoReconocimientoEstacion`; el Paso 6 resolverá coincidencias exactas automáticamente y exigirá confirmación para sugerencias parciales antes de habilitar una estación nueva.
+- El motor incorporará `REEMPLAZAR_TEXTO` como estrategia registrada, con reglas ordenadas y sin ejecución dinámica.
+- Estado: `F07-1` permanece `in_progress`; no hay evidencia de migración, pruebas Angular ni Supabase CLI todavía.
+
+### 2026-08-03 — F08-1 fix vista `pasadas_con_peaje` (CLI)
+
+- Causa: `CREATE OR REPLACE VIEW` con `p.*` tras `ALTER` de `user_id`/`file_upload_name` → 42P16.
+- Fix en migración pendiente `20260803190348`: `DROP VIEW IF EXISTS` + `CREATE VIEW` (contrato intacto).
+- `npx supabase migration up --local` → aplicada OK.
+- `npx supabase test db`: `peajes_f01_test.sql` ok; fallos en AUSOL/F06 (conteos seed preexistentes: REVIEW 18 vs 14, aliases F06) **no atribuibles a F08**.
+- DESARROLLO no tocado.

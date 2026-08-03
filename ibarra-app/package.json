@@ -9,6 +9,8 @@
     "supabase:start": "npx supabase start",
     "supabase:stop": "npx supabase stop",
     "supabase:status": "npx supabase status",
+    "seed:local": "docker cp supabase/seed_auth.sql supabase_db_ibarra-app:/tmp/seed_auth.sql && docker exec supabase_db_ibarra-app psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/seed_auth.sql && docker cp supabase/seed_rbac.sql supabase_db_ibarra-app:/tmp/seed_rbac.sql && docker exec supabase_db_ibarra-app psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/seed_rbac.sql",
+
     "build": "ng build",
     "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",

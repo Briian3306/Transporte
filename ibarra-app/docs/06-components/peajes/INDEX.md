@@ -9,10 +9,12 @@ Documentación de UI y servicios del módulo Peajes implementados en Fase 1 (F02
 | Documento | Descripción |
 |-----------|-------------|
 | [wizard.md](./wizard.md) | Asistente de carga (pasos 1–9), estado y Excel |
-| [pipeline-editable-paso3.md](./pipeline-editable-paso3.md) | Outline pipeline editable Paso 3 (F02-10 / F03-9) — borrador |
-| [catalogos.md](./catalogos.md) | CRUD UI peajes / estaciones / patentes / pases |
+| [reconocimiento-columnas.md](./reconocimiento-columnas.md) | F02-11 — reconocimiento semántico + recomendaciones Paso 2 |
+| [pipeline-editable-paso3.md](./pipeline-editable-paso3.md) | Outline pipeline editable Paso 3 (F02-10 / F03-9) |
+| [catalogos.md](./catalogos.md) | CRUD UI empresas / peajes / estaciones / patentes / pases |
 | [plantillas-y-algoritmos.md](./plantillas-y-algoritmos.md) | Motor Builder/Strategy + UI plantillas |
-| [servicios-y-providers.md](./servicios-y-providers.md) | Contratos, mocks actuales y swap a Supabase |
+| [guia-crear-plantillas.md](./guia-crear-plantillas.md) | Guía de usuario: crear algoritmos y vincular PATENTE_ID |
+| [servicios-y-providers.md](./servicios-y-providers.md) | Contratos, mocks y swap a Supabase |
 
 ## Verificación UI (evidencia Fase 1)
 
@@ -24,4 +26,4 @@ npx tsx src/app/components/peajes/plantillas/motor.verify.ts → PASS (§21 moto
 
 ---
 
-> Última actualización: julio 2026
+> Última actualización: 2026-08-03 (F02-11 reconocimiento-columnas)

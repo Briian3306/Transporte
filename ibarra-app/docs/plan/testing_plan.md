@@ -21,6 +21,7 @@ Plan de pruebas del MVP Peajes centrado en la **lógica de transformación Excel
 - [Validation scenarios](#8-validation-scenarios)
 - [Expected results](#9-expected-results)
 - [Error scenarios](#10-error-scenarios)
+- [Reconocimiento de columnas (F02-11)](#10a-reconocimiento-de-columnas-f02-11)
 - [Editable pipeline matrices (F02-10 / F03-9)](#10b-editable-pipeline-matrices-f02-10--f03-9)
 - [Acceptance criteria](#11-acceptance-criteria)
 - [Future testing improvements](#12-future-testing-improvements)
@@ -96,6 +97,7 @@ npx supabase test db
 |---------|-----------|-----|
 | `1947768.xlsx` | Demo / Corredores (caso MVP) | Ground truth físico; alineado a `ejemplo-mvp-procesamiento-pasadas.md` |
 | `autopistas_urbanas.csv` | Autopistas Urbanas | Ground truth; primeras 10 filas = preview del ejemplo |
+| `387882.csv` | Acceso Oeste | Caso E2E de 496 filas; protocolo y evidencia en [prueba-workflow-387882-acceso-oeste.md](./prueba-workflow-387882-acceso-oeste.md) |
 
 ### 5.2 Fixtures de código
 
@@ -229,6 +231,18 @@ Detalle: [ejemplo-autopistas-urbanas-pasadas.md](./ejemplo-autopistas-urbanas-pa
 
 ---
 
+## 10a. Reconocimiento de columnas (F02-11)
+
+| ID | Caso | Archivo | Esperado |
+|----|------|---------|----------|
+| U-R01 | Aliases PATENTE/DOMINIO | `column-recognition.spec.ts` | Resuelve alias correcto |
+| U-R02 | HORA HHMMSS vs `:` | idem | `FORMATEAR_FECHA_HORA` vs `COMBINAR_COLUMNAS` |
+| U-R03 | Headers AUSOL sin DOMINIO | idem | Recs patente+fecha_hora+dispositivo |
+| U-R04 | Accept escribe draft | `peajes-wizard-state.service.spec.ts` | `configuracionesDraft` poblado; no duplica |
+| I-R01 | Rail Paso 2 + Aplicar | `paso2-preview.component.spec.ts` | Badge visible; draft tras Aplicar |
+
+---
+
 ## 10b. Editable pipeline matrices (F02-10 / F03-9)
 
 Ground truth inmutable:
@@ -330,6 +344,7 @@ El MVP de transformación/validación se considera **aceptable para testing** cu
 - PRD: [peaje-prd-es.md](./peaje-prd-es.md)
 - Demo: [ejemplo-mvp-procesamiento-pasadas.md](./ejemplo-mvp-procesamiento-pasadas.md)
 - Autopistas: [ejemplo-autopistas-urbanas-pasadas.md](./ejemplo-autopistas-urbanas-pasadas.md)
+- AUSOL: [ejemplo-ausol-procesamiento-pasadas.md](./ejemplo-ausol-procesamiento-pasadas.md) y [prueba-workflow-557074-ausol.md](./prueba-workflow-557074-ausol.md)
 - CSV/XLSX: [csv/](./csv/)
 - Pipeline editable outline: [../06-components/peajes/pipeline-editable-paso3.md](../06-components/peajes/pipeline-editable-paso3.md)
 - Skill testing: `.agents/skills/peajes-testing-transformaciones/`

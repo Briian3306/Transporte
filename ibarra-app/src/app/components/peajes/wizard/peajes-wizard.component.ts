@@ -105,6 +105,22 @@ export class PeajesWizardComponent implements OnInit {
     if (paso >= 5 && s.columnasIncluidas.length === 0) {
       return false;
     }
+    if (paso >= 6 && s.pasadasEstandarizadas.length === 0) {
+      return false;
+    }
+    if (paso >= 7 && (!s.relacionesEstacion.length || s.relacionesEstacion.some((r) => !r.estacionId))) {
+      return false;
+    }
+    if (paso >= 8) {
+      const f = s.factura;
+      if (!f.factura || !f.cuenta || !f.empresa_id || !f.fecha_factura ||
+          f.importe_sin_iva === null || f.importe_total === null) {
+        return false;
+      }
+    }
+    if (paso >= 9 && (!s.validacion || s.validacion.errores.length > 0 || !s.validacion.dentroTolerancia)) {
+      return false;
+    }
     return true;
   }
 

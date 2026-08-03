@@ -167,6 +167,139 @@
   color: #7f8c8d;
 }
 
+.cat__id {
+  font-size: 0.75rem;
+  color: #6f8197;
+}
+
+.cat__empresa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cat__empresa-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.cat__btn-link {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: #1769e0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.15rem 0;
+}
+
+.cat__btn-link:hover {
+  text-decoration: underline;
+}
+
+.cat__btn-ghost {
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f4f6f7;
+  color: #2c3e50;
+}
+
+.cat__eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7f8c8d;
+  font-weight: 600;
+}
+
+.cat__dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 35, 58, 0.48);
+  backdrop-filter: blur(2px);
+}
+
+.cat__dialog {
+  width: min(560px, 100%);
+  padding: 1.35rem;
+  border: 1px solid #dce5ee;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(15, 35, 58, 0.25);
+}
+
+.cat__dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.cat__dialog h3 {
+  margin: 0.25rem 0 0;
+  font-size: 1.15rem;
+  color: #2c3e50;
+}
+
+.cat__dialog > p {
+  margin: 0 0 1rem;
+  color: #6f8197;
+  font-size: 0.85rem;
+}
+
+.cat__dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.cat__dialog-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.cat__dialog-form input {
+  min-height: 42px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #cfdbe7;
+  border-radius: 8px;
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+
+.cat__dialog-form input:focus {
+  outline: none;
+  border-color: #1769e0;
+  box-shadow: 0 0 0 3px #eaf2ff;
+}
+
+.cat__dialog .cat__actions button:last-child:not(:disabled) {
+  background: #1769e0;
+}
+
+.cat__dialog .cat__actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 @media (max-width: 800px) {
   .cat__layout {
     grid-template-columns: 1fr;

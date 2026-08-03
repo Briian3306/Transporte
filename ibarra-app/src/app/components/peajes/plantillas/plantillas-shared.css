@@ -248,6 +248,37 @@
   font-size: 0.88rem;
 }
 
+.plt__pipeline {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #2c3e50;
+}
+
+.plt__json-input {
+  display: block;
+  margin-top: 0.35rem;
+  min-width: 12rem;
+}
+
+.plt__preview-wrap {
+  overflow-x: auto;
+  border: 1px solid #e8eef2;
+  border-radius: 10px;
+}
+
+.plt__table--preview th,
+.plt__table--preview td {
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+
+.plt__th-out,
+.plt__td-out {
+  background: #eaf4fb;
+  font-weight: 600;
+  color: #1a567a;
+}
+
 @media (max-width: 720px) {
   .plt__header {
     flex-direction: column;

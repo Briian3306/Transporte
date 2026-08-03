@@ -1,0 +1,129 @@
+<div class="dt" [class.dt--loading]="loading">
+  <div class="dt__toolbar" *ngIf="exportEnabled || exportLabel">
+    <button
+      type="button"
+      class="dt__export"
+      [disabled]="!exportEnabled"
+      [attr.title]="exportEnabled ? exportLabel : 'Exportación CSV/Excel — próximamente'"
+      (click)="exportEnabled && exportClick.emit()"
+    >
+      <i class="fas fa-download" aria-hidden="true"></i>
+      {{ exportLabel }}
+    </button>
+  </div>
+
+  <div class="dt__frame">
+    <div class="dt__scroll">
+      <table class="dt__table">
+        <thead>
+          <tr>
+            <th *ngIf="selectable" class="dt__th dt__th--check" scope="col">
+              <input
+                type="checkbox"
+                class="dt__check"
+                [checked]="allSelected"
+                [disabled]="!rows.length || loading"
+                (change)="toggleAll($any($event.target).checked)"
+                aria-label="Seleccionar todos"
+              />
+            </th>
+            <th
+              *ngFor="let col of columns"
+              class="dt__th"
+              [class.dt__th--sortable]="col.sortable"
+              [class.dt__th--sorted]="sort?.key === col.key"
+              [style.width]="col.width || null"
+              [style.textAlign]="col.align || 'left'"
+              scope="col"
+              (click)="onSort(col)"
+            >
+              <span class="dt__th-label">{{ col.label }}</span>
+              <i
+                *ngIf="col.sortable"
+                class="fas"
+                [class.fa-sort]="sort?.key !== col.key"
+                [class.fa-sort-up]="sort?.key === col.key && sort?.direction === 'asc'"
+                [class.fa-sort-down]="sort?.key === col.key && sort?.direction === 'desc'"
+                aria-hidden="true"
+              ></i>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="loading" class="dt__state-row">
+            <td [attr.colspan]="columns.length + (selectable ? 1 : 0)">
+              <div class="dt__state">
+                <span class="dt__spinner" aria-hidden="true"></span>
+                Cargando…
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="!loading && !rows.length" class="dt__state-row">
+            <td [attr.colspan]="columns.length + (selectable ? 1 : 0)">
+              <div class="dt__state dt__state--empty">{{ emptyMessage }}</div>
+            </td>
+          </tr>
+          <tr
+            *ngFor="let row of rows; trackBy: trackByRow"
+            class="dt__row"
+            [hidden]="loading"
+            [class.dt__row--selected]="isSelected(row)"
+            (click)="rowClick.emit(row)"
+          >
+            <td *ngIf="selectable" class="dt__td dt__td--check" (click)="$event.stopPropagation()">
+              <input
+                type="checkbox"
+                class="dt__check"
+                [checked]="isSelected(row)"
+                (change)="toggleRow(row, $any($event.target).checked)"
+                [attr.aria-label]="'Seleccionar fila ' + rowId(row)"
+              />
+            </td>
+            <td
+              *ngFor="let col of columns"
+              class="dt__td"
+              [style.textAlign]="col.align || 'left'"
+            >
+              <ng-container *ngIf="templateFor(col.key) as tpl; else plain">
+                <ng-container
+                  *ngTemplateOutlet="tpl.template; context: { $implicit: row, column: col }"
+                ></ng-container>
+              </ng-container>
+              <ng-template #plain>
+                {{ cellValue(row, col.key) }}
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="dt__footer">
+      <span class="dt__range">{{ rangeLabel }}</span>
+      <div class="dt__pager">
+        <label class="dt__size">
+          Filas
+          <select
+            [value]="pageSize"
+            (change)="onPageSizeChange(+$any($event.target).value)"
+            [disabled]="loading"
+          >
+            <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+          </select>
+        </label>
+        <button type="button" class="dt__page-btn" [disabled]="page <= 1 || loading" (click)="goToPage(page - 1)">
+          <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        </button>
+        <span class="dt__page-num">{{ page }} / {{ totalPages }}</span>
+        <button
+          type="button"
+          class="dt__page-btn"
+          [disabled]="page >= totalPages || loading"
+          (click)="goToPage(page + 1)"
+        >
+          <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    </footer>
+  </div>
+</div>

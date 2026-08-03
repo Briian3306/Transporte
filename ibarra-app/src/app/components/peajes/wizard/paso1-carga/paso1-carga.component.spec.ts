@@ -17,7 +17,7 @@ describe('Paso1CargaComponent', () => {
   let state: PeajesWizardStateService;
 
   beforeEach(async () => {
-    excel = jasmine.createSpyObj('PeajesExcelService', ['esXlsxValido', 'parsearArchivo']);
+    excel = jasmine.createSpyObj('PeajesExcelService', ['esArchivoValido', 'parsearArchivo']);
     const plantillasMock = jasmine.createSpyObj<PeajesPlantillasService>('PeajesPlantillasService', [
       'listarPlantillas',
       'obtenerPlantilla',
@@ -51,17 +51,17 @@ describe('Paso1CargaComponent', () => {
     fixture.detectChanges();
   });
 
-  it('muestra error si el archivo no es .xlsx', async () => {
-    excel.esXlsxValido.and.returnValue(false);
+  it('muestra error si el archivo no es .xlsx ni .csv', async () => {
+    excel.esArchivoValido.and.returnValue(false);
     const file = new File(['x'], 'pasadas.csv', { type: 'text/csv' });
     await component.procesar(file);
     fixture.detectChanges();
-    expect(component.error).toContain('.xlsx');
-    expect(fixture.nativeElement.textContent).toContain('.xlsx');
+    expect(component.error).toContain('.csv');
+    expect(fixture.nativeElement.textContent).toContain('.csv');
   });
 
   it('muestra nombre, tamaño y filas con .xlsx válido', async () => {
-    excel.esXlsxValido.and.returnValue(true);
+    excel.esArchivoValido.and.returnValue(true);
     excel.parsearArchivo.and.resolveTo({
       nombreArchivo: 'pasadas_junio_2026.xlsx',
       tamanioBytes: 4096,

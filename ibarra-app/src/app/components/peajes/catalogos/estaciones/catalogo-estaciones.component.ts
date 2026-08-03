@@ -14,7 +14,7 @@ import {
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
   templateUrl: './catalogo-estaciones.component.html',
-  styleUrl: '../peajes/catalogo-peajes.component.css',
+  styleUrl: './catalogo-estaciones.component.css',
 })
 export class CatalogoEstacionesComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
@@ -26,6 +26,7 @@ export class CatalogoEstacionesComponent implements OnInit {
   filtroLista = '';
   error: string | null = null;
   guardando = false;
+  editandoId: string | null = null;
 
   form = this.fb.nonNullable.group({
     peaje_id: ['', Validators.required],
@@ -33,6 +34,9 @@ export class CatalogoEstacionesComponent implements OnInit {
     ubicacion: [''],
     descripcion: [''],
     codigos_proveedor: [''],
+    latitud: [null as number | null],
+    longitud: [null as number | null],
+    camino: [''],
   });
 
   constructor(
@@ -81,27 +85,35 @@ export class CatalogoEstacionesComponent implements OnInit {
         .split(',')
         .map((c) => c.trim())
         .filter(Boolean);
-      await firstValueFrom(
-        this.catalogo.crearEstacion({
+      const data = {
           peaje_id: v.peaje_id,
           nombre: v.nombre,
           ubicacion: v.ubicacion || null,
           descripcion: v.descripcion || null,
           codigos_proveedor: codigos.length ? codigos : null,
-        })
-      );
-      this.form.reset({
-        peaje_id: this.peajes[0]?.id ?? '',
-        nombre: '',
-        ubicacion: '',
-        descripcion: '',
-        codigos_proveedor: '',
-      });
+          latitud: v.latitud,
+          longitud: v.longitud,
+          camino: v.camino || null,
+          estado_geocodificacion: v.latitud !== null && v.longitud !== null ? 'OK' as const : 'REVIEW' as const,
+        };
+      if (this.editandoId) await firstValueFrom(this.catalogo.actualizarEstacion(this.editandoId, data));
+      else await firstValueFrom(this.catalogo.crearEstacion(data));
+      this.cancelarEdicion();
       await this.cargar();
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Error al guardar';
     } finally {
       this.guardando = false;
     }
+  }
+
+  editar(e: Estacion): void {
+    this.editandoId = e.id;
+    this.form.patchValue({ peaje_id: e.peaje_id, nombre: e.nombre, ubicacion: e.ubicacion ?? '', descripcion: e.descripcion ?? '', codigos_proveedor: (e.codigos_proveedor ?? []).join(', '), latitud: e.latitud ?? null, longitud: e.longitud ?? null, camino: e.camino ?? '' });
+  }
+
+  cancelarEdicion(): void {
+    this.editandoId = null;
+    this.form.reset({ peaje_id: this.peajes[0]?.id ?? '', nombre: '', ubicacion: '', descripcion: '', codigos_proveedor: '', latitud: null, longitud: null, camino: '' });
   }
 }

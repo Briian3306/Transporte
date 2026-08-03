@@ -7,11 +7,22 @@
         Algoritmos combinados
       </h1>
       <p class="plt__subtitle">
-        Definí secuencias reutilizables (p. ej. NORMALIZAR_PATENTE). Solo códigos del StrategyRegistry.
+        Armá secuencias reutilizables (p. ej. NORMALIZAR_PATENTE). Solo códigos del
+        StrategyRegistry. UPPER en docs = <code>CONVERTIR_MAYUSCULAS</code>.
       </p>
     </div>
     <div class="plt__actions">
+      <button type="button" class="plt__btn" (click)="nuevo()">Nuevo</button>
+      <button type="button" class="plt__btn" (click)="cargarEjemploPatente()">
+        <i class="fas fa-car" aria-hidden="true"></i> Ejemplo PATENTE
+      </button>
+      <button type="button" class="plt__btn" (click)="cargarEjemploReemplazoEstacion()">
+        <i class="fas fa-map-marker-alt" aria-hidden="true"></i> Ejemplo alias estación
+      </button>
       <button type="button" class="plt__btn" (click)="expandir()">Expandir pasos</button>
+      <button type="button" class="plt__btn" (click)="actualizarPreview()" [disabled]="previewLoading">
+        <i class="fas fa-sync-alt" aria-hidden="true"></i> Actualizar preview
+      </button>
       <button
         type="button"
         class="plt__btn plt__btn--primary"
@@ -19,6 +30,15 @@
         (click)="guardar()"
       >
         {{ guardando ? 'Guardando…' : 'Guardar' }}
+      </button>
+      <button
+        type="button"
+        class="plt__btn plt__btn--primary"
+        [disabled]="guardando"
+        (click)="guardarConPlantillaPatente()"
+        title="Guarda el algoritmo y una plantilla que escribe en PATENTE_ID"
+      >
+        Guardar + plantilla PATENTE_ID
       </button>
     </div>
   </header>
@@ -47,6 +67,8 @@
           {{ a.nombre }}
           <span class="plt__badge">{{ a.estado }}</span>
         </button>
+      } @empty {
+        <p class="plt__muted">Todavía no hay algoritmos. Cargá el ejemplo PATENTE o creá uno nuevo.</p>
       }
     </div>
   </section>
@@ -56,15 +78,20 @@
     <div class="plt__form">
       <div class="plt__field">
         <label for="nombreAlg">Nombre</label>
-        <input id="nombreAlg" name="nombreAlg" [(ngModel)]="nombre" />
+        <input id="nombreAlg" name="nombreAlg" [(ngModel)]="nombre" placeholder="NORMALIZAR_PATENTE" />
       </div>
       <div class="plt__field">
         <label for="descAlg">Descripción</label>
         <textarea id="descAlg" name="descAlg" [(ngModel)]="descripcion"></textarea>
       </div>
       <div class="plt__field">
-        <label for="empAlg">Empresa ID</label>
-        <input id="empAlg" name="empAlg" [(ngModel)]="empresaId" [disabled]="esGlobal" />
+        <label for="empAlg">Empresa</label>
+        <select id="empAlg" name="empAlg" [(ngModel)]="empresaId" [disabled]="esGlobal">
+          <option value="">Seleccionar empresa…</option>
+          @for (empresa of empresas; track empresa.id) {
+            <option [value]="empresa.id">{{ empresa.nombre }}</option>
+          }
+        </select>
       </div>
       <div class="plt__field">
         <label>
@@ -79,6 +106,27 @@
           <option value="activa">Activa</option>
           <option value="inactiva">Inactiva</option>
         </select>
+      </div>
+      <div class="plt__field">
+        <label for="colOrigen">Columna origen (archivo → plantilla)</label>
+        <input
+          id="colOrigen"
+          name="colOrigen"
+          [(ngModel)]="columnaOrigen"
+          (ngModelChange)="actualizarPreview()"
+          placeholder="DOMINIO o PATENTE"
+        />
+      </div>
+      <div class="plt__field">
+        <label for="colDestino">Columna destino (Structure Goal)</label>
+        <input
+          id="colDestino"
+          name="colDestino"
+          [(ngModel)]="columnaDestino"
+          (ngModelChange)="actualizarPreview()"
+          placeholder="PATENTE_ID"
+        />
+        <span class="plt__muted">En Paso 5 el mapeo usa este ID (no el nombre de la columna del Excel).</span>
       </div>
     </div>
   </section>
@@ -95,23 +143,63 @@
         <tr>
           <th>Orden</th>
           <th>Código</th>
-          <th>Parámetros JSON</th>
+          <th>Columna</th>
+          <th>Avanzado</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         @for (p of pasos; track $index; let i = $index) {
           <tr>
-            <td><input type="number" [(ngModel)]="p.orden" name="porden{{ i }}" /></td>
             <td>
-              <select [(ngModel)]="p.algoritmo_codigo" name="pcod{{ i }}">
+              <input
+                type="number"
+                [(ngModel)]="p.orden"
+                name="porden{{ i }}"
+                (ngModelChange)="actualizarPreview()"
+              />
+            </td>
+            <td>
+              <select
+                [(ngModel)]="p.algoritmo_codigo"
+                name="pcod{{ i }}"
+                (ngModelChange)="onCodigoChange(p)"
+              >
                 <option value="">—</option>
                 @for (c of codigosDisponibles; track c) {
                   <option [value]="c">{{ c }}</option>
                 }
               </select>
             </td>
-            <td><input [(ngModel)]="p.parametrosJson" name="pjson{{ i }}" /></td>
+            <td>
+              @if (usaColumnaSimple(p.algoritmo_codigo)) {
+                <input
+                  [(ngModel)]="p.columna"
+                  name="pcol{{ i }}"
+                  (ngModelChange)="onColumnaChange(p)"
+                  placeholder="columna"
+                />
+              } @else {
+                <span class="plt__muted">—</span>
+              }
+            </td>
+            <td>
+              <button
+                type="button"
+                class="plt__btn"
+                (click)="p.mostrarAvanzado = !p.mostrarAvanzado"
+              >
+                {{ p.mostrarAvanzado ? 'Ocultar JSON' : 'JSON' }}
+              </button>
+              @if (p.mostrarAvanzado) {
+                <input
+                  class="plt__json-input"
+                  [(ngModel)]="p.parametrosJson"
+                  name="pjson{{ i }}"
+                  (ngModelChange)="actualizarPreview()"
+                />
+              }
+            </td>
             <td>
               <button type="button" class="plt__btn" (click)="quitarPaso(i)">
                 <i class="fas fa-trash" aria-hidden="true"></i>
@@ -125,8 +213,8 @@
 
   @if (pasosEfectivos.length) {
     <section class="plt__panel">
-      <h2>Pasos efectivos (expansión RF-30)</h2>
-      <ol>
+      <h2>Pasos efectivos (expansión)</h2>
+      <ol class="plt__pipeline">
         @for (p of pasosEfectivos; track p.orden) {
           <li>
             <strong>{{ p.algoritmoCodigo }}</strong>
@@ -136,4 +224,44 @@
       </ol>
     </section>
   }
+
+  <section class="plt__panel">
+    <div class="plt__actions" style="justify-content: space-between; margin-bottom: 0.75rem">
+      <div>
+        <h2 style="margin: 0">Datos de muestra</h2>
+        <p class="plt__muted" style="margin: 0.35rem 0 0">
+          Preview como en Paso 3: filas de ejemplo antes → después
+          ({{ columnaOrigen }} → {{ columnaDestino }}).
+        </p>
+      </div>
+      <button type="button" class="plt__btn" (click)="actualizarPreview()" [disabled]="previewLoading">
+        <i class="fas fa-sync-alt" aria-hidden="true"></i> Refrescar
+      </button>
+    </div>
+
+    @if (!filasPreviewIo.length) {
+      <p class="plt__muted">Completá al menos un paso con código para ver el efecto.</p>
+    } @else {
+      <div class="plt__preview-wrap">
+        <table class="plt__table plt__table--preview">
+          <thead>
+            <tr>
+              @for (col of columnasPreview; track col) {
+                <th [class.plt__th-out]="col.startsWith('salida.')">{{ col }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of filasPreviewIo; track $index) {
+              <tr>
+                @for (col of columnasPreview; track col) {
+                  <td [class.plt__td-out]="col.startsWith('salida.')">{{ row[col] }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
 </div>

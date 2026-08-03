@@ -9,3 +9,177 @@
 .paso2__toolbar strong {
   font-size: 0.9rem;
 }
+
+/* Import assistant strip — signature of F02-11 */
+.paso2__recos {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--pw-blue, #1769e0) 28%, var(--pw-line, #d7e0ea));
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--pw-blue, #1769e0) 6%, #fff) 0%, #fff 55%),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 11px,
+      color-mix(in srgb, var(--pw-blue, #1769e0) 7%, transparent) 11px,
+      color-mix(in srgb, var(--pw-blue, #1769e0) 7%, transparent) 12px
+    );
+  animation: paso2-reco-in 0.35s ease-out;
+}
+
+.paso2__recos-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.paso2__recos-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pw-blue, #1769e0);
+  margin-bottom: 0.15rem;
+}
+
+.paso2__recos-head strong {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--pw-ink, #193e65);
+}
+
+.paso2__recos-head p {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--pw-muted, #5b6f86);
+}
+
+.paso2__reco-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.paso2__reco {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--pw-line, #d7e0ea);
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.paso2__reco--pending {
+  box-shadow: 0 4px 12px rgba(25, 62, 101, 0.05);
+}
+
+.paso2__reco--accepted {
+  border-color: color-mix(in srgb, #10b981 45%, var(--pw-line, #d7e0ea));
+  background: color-mix(in srgb, #10b981 6%, #fff);
+}
+
+.paso2__reco-mark {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--pw-blue, #1769e0);
+  background: color-mix(in srgb, var(--pw-blue, #1769e0) 12%, #fff);
+  border: 1px solid color-mix(in srgb, var(--pw-blue, #1769e0) 25%, transparent);
+}
+
+.paso2__reco--accepted .paso2__reco-mark {
+  color: #047857;
+  background: color-mix(in srgb, #10b981 18%, #fff);
+  border-color: color-mix(in srgb, #10b981 35%, transparent);
+}
+
+.paso2__reco-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--pw-ink, #193e65);
+}
+
+.paso2__reco-detail {
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--pw-muted, #5b6f86);
+}
+
+.paso2__reco-cols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+
+.paso2__reco-token {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.12rem 0.4rem;
+  border-radius: 5px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.paso2__reco-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.paso2__reco-done {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #047857;
+}
+
+.paso2__chip--hint {
+  box-shadow: inset 0 -2px 0 var(--pw-blue, #1769e0);
+}
+
+@keyframes paso2-reco-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paso2__recos {
+    animation: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .paso2__reco {
+    grid-template-columns: auto 1fr;
+  }
+
+  .paso2__reco-actions,
+  .paso2__reco-done {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}

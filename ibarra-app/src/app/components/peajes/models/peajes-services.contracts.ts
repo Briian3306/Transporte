@@ -6,14 +6,17 @@ import {
   ConfiguracionPlantilla,
   ErrorValidacionPasada,
   Estacion,
+  EstacionAliasProveedor,
   Factura,
   Pasada,
   PasadaEstandarizada,
+  PasadaGestion,
   Pase,
   Patente,
   Peaje,
   PlantillaConfiguracion,
   RegistroCargaPeajes,
+  ResultadoReconocimientoEstacion,
 } from './peajes.models';
 import { PasadaColumnKey } from './peajes.types';
 
@@ -56,7 +59,60 @@ export interface ConfirmacionCargaInput {
   mapeos: MapeoColumna[];
   relacionesEstacion: RelacionEstacionProveedor[];
   parametrosEfectivos?: Record<string, unknown>;
+  /** Nombre del archivo Excel/CSV cargado (auditoría). */
+  nombreArchivo?: string | null;
 }
+
+/** Filtros server-side para peajes_listar_pasadas. */
+export interface PasadasListFilters {
+  fecha_desde?: string | null;
+  fecha_hasta?: string | null;
+  estacion_ids?: string[];
+  patente_ids?: string[];
+  empresa_ids?: string[];
+  q_estacion?: string | null;
+  q_patente?: string | null;
+  q_empresa?: string | null;
+  q_archivo?: string | null;
+}
+
+export interface PasadasListParams {
+  filters?: PasadasListFilters;
+  sort?: string;
+  dir?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+}
+
+export interface PasadasListResult {
+  rows: PasadaGestion[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type PasadaCreateInput = {
+  fecha_hora: string;
+  pase_id: string;
+  patente_id: string;
+  estacion_id: string;
+  factura_id: string;
+  precio: number;
+  bonificacion?: number;
+  quantity?: number;
+  file_upload_name?: string | null;
+};
+
+export type PasadaUpdatePatch = Partial<{
+  fecha_hora: string;
+  pase_id: string;
+  patente_id: string;
+  estacion_id: string;
+  factura_id: string;
+  precio: number;
+  bonificacion: number;
+  quantity: number;
+}>;
 
 export interface ConfirmacionCargaResultado {
   factura: Factura;
@@ -77,6 +133,8 @@ export interface PeajesCatalogoService {
   crearEstacion(data: Omit<Estacion, 'id' | 'created_at' | 'peaje'>): Observable<Estacion>;
   actualizarEstacion(id: string, data: Partial<Estacion>): Observable<Estacion>;
   sugerirEstacion(valorProveedor: string): Observable<Estacion[]>;
+  reconocerEstacion(valorProveedor: string, empresaId?: string): Observable<ResultadoReconocimientoEstacion>;
+  confirmarAliasEstacion(data: Omit<EstacionAliasProveedor, 'id' | 'created_at' | 'valor_normalizado'>): Observable<EstacionAliasProveedor>;
 
   listarPatentes(): Observable<Patente[]>;
   crearPatente(data: Omit<Patente, 'id' | 'created_at'>): Observable<Patente>;
@@ -93,6 +151,14 @@ export interface PeajesCargaService {
   ): Observable<ResultadoValidacionCarga>;
   confirmarCarga(input: ConfirmacionCargaInput): Observable<ConfirmacionCargaResultado>;
   detectarDuplicados(pasadas: PasadaEstandarizada[]): Observable<ErrorValidacionPasada[]>;
+}
+
+/** Gestión / encuesta de pasadas persistidas (F08-1). */
+export interface PeajesPasadasService {
+  listar(params: PasadasListParams): Observable<PasadasListResult>;
+  crear(data: PasadaCreateInput): Observable<Pasada>;
+  actualizar(id: string, patch: PasadaUpdatePatch): Observable<Pasada>;
+  eliminar(id: string): Observable<{ id: string; deleted: boolean }>;
 }
 
 /** Plantillas y algoritmos — implementación 01; UI/mocks 03. */
@@ -140,3 +206,4 @@ export const PEAJES_CATALOGO_SERVICE = 'PEAJES_CATALOGO_SERVICE';
 export const PEAJES_CARGA_SERVICE = 'PEAJES_CARGA_SERVICE';
 export const PEAJES_PLANTILLAS_SERVICE = 'PEAJES_PLANTILLAS_SERVICE';
 export const PEAJES_MOTOR_TRANSFORMACION = 'PEAJES_MOTOR_TRANSFORMACION';
+export const PEAJES_PASADAS_SERVICE = 'PEAJES_PASADAS_SERVICE';

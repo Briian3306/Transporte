@@ -35,7 +35,7 @@
 | # | Label | Componente | Notas |
 |---|-------|------------|-------|
 | 1 | Carga | `paso1-carga` | Upload `.xlsx` |
-| 2 | Preview | `paso2-preview` | Máx. 10 filas (RNF-03) |
+| 2 | Preview | `paso2-preview` | Máx. 10 filas (RNF-03). Rail de recomendaciones semánticas (F02-11): ver [reconocimiento-columnas.md](./reconocimiento-columnas.md) |
 | 3 | Transformaciones | `paso3-transformaciones` | Motor 03 |
 | 4 | Plantilla | `paso4-plantilla` | Selección/aplicación plantilla |
 | 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal |
@@ -49,6 +49,19 @@
 ## Estado (RF-25)
 
 `PeajesWizardStateService` mantiene el paso actual y datos intermedios del flujo (archivo, preview, mapeos, relaciones, factura, resultado de validación).
+
+### Recomendaciones de columnas (F02-11)
+
+Tras `setPreview`, el estado calcula `recomendaciones` a partir de aliases semánticos (`column-recognition.ts`).
+
+| API | Efecto |
+|-----|--------|
+| `recomendacionesPendientes()` | Badges aún no aplicadas/descartadas |
+| `aceptarRecomendacion(id)` | Merge de `draftSteps` → `configuracionesDraft` + includes/mapeo hints |
+| `descartarRecomendacion(id)` | Oculta la badge (`dismissed`) |
+| `aceptarTodasRecomendaciones()` | Aplica todas las pendientes |
+
+Detalle canónico: [reconocimiento-columnas.md](./reconocimiento-columnas.md).
 
 ---
 
@@ -92,6 +105,10 @@ ng test --watch=false --browsers=ChromeHeadless
 ---
 
 ## Referencias
+
+### Reconocedor de estaciones
+
+El Paso 6 normaliza el valor del proveedor y prioriza alias confirmado, nombre exacto y sugerencias parciales dentro de la empresa. Las sugerencias requieren confirmación; solo después de declarar que ninguna coincide se habilita crear una estación. Caso reproducible: [AUSOL 557074](../../plan/prueba-workflow-557074-ausol.md).
 
 - PRD §4 (pasos), §21 (caso E2E — pendiente Agente 05)
 - Código: `src/app/components/peajes/wizard/**`

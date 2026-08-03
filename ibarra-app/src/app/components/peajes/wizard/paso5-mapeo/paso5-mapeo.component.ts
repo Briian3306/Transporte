@@ -1,13 +1,16 @@
-import { Component, EventEmitter, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Inject, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   MapeoColumna,
+  PEAJES_CATALOGO_SERVICE,
   PASADA_COLUMNAS_OBLIGATORIAS,
   PASADA_COLUMN_KEYS,
   PasadaColumnKey,
+  PeajesCatalogoService,
 } from '../../models';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-paso5-mapeo',
@@ -16,7 +19,7 @@ import { PeajesWizardStateService } from '../services/peajes-wizard-state.servic
   templateUrl: './paso5-mapeo.component.html',
   styleUrl: './paso5-mapeo.component.css',
 })
-export class Paso5MapeoComponent {
+export class Paso5MapeoComponent implements OnInit {
   @Output() completado = new EventEmitter<void>();
   @Output() atras = new EventEmitter<void>();
 
@@ -26,6 +29,13 @@ export class Paso5MapeoComponent {
 
   error: string | null = null;
   seleccionada: string | null = null;
+  resolviendoPatentes = false;
+
+  constructor(@Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService) {}
+
+  ngOnInit(): void {
+    this.state.asegurarMapeosObligatorios();
+  }
 
   get mapeos(): MapeoColumna[] {
     return this.state.mapeosActivos();
@@ -102,13 +112,46 @@ export class Paso5MapeoComponent {
     );
   }
 
-  continuar(): void {
+  async continuar(): Promise<void> {
     const faltan = this.faltantes();
     if (faltan.length) {
       this.error = `Columnas obligatorias sin mapear: ${faltan.join(', ')}`;
       return;
     }
-    this.state.setPasadasEstandarizadas(this.state.construirPasadasDesdeMapeo());
-    this.completado.emit();
+    this.resolviendoPatentes = true;
+    try {
+      const patentes = await firstValueFrom(this.catalogo.listarPatentes());
+      const porPatente = new Map<string, string>();
+      for (const patente of patentes) {
+        porPatente.set(this.normalizarPatente(patente.patente), patente.id);
+        // Si una plantilla ya devolvió el UUID, se conserva sin intentar normalizarlo como dominio.
+        porPatente.set(patente.id, patente.id);
+      }
+      const pasadas = this.state.construirPasadasDesdeMapeo();
+      const faltantesPatente = new Set<string>();
+      for (const pasada of pasadas) {
+        const clave = this.normalizarPatente(pasada.PATENTE_ID);
+        const patenteId = porPatente.get(clave);
+        if (!patenteId) {
+          faltantesPatente.add(clave || '(vacía)');
+        } else {
+          pasada.PATENTE_ID = patenteId;
+        }
+      }
+      if (faltantesPatente.size) {
+        this.error = `Patentes sin resolver en el catálogo: ${[...faltantesPatente].slice(0, 5).join(', ')}${faltantesPatente.size > 5 ? '…' : ''}`;
+        return;
+      }
+      this.state.setPasadasEstandarizadas(pasadas);
+      this.completado.emit();
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'No se pudo consultar el catálogo de patentes.';
+    } finally {
+      this.resolviendoPatentes = false;
+    }
+  }
+
+  private normalizarPatente(valor: unknown): string {
+    return String(valor ?? '').replace(/[\s-]/g, '').toUpperCase();
   }
 }

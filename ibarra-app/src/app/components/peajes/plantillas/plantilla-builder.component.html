@@ -52,8 +52,13 @@
         <textarea id="descripcion" name="descripcion" [(ngModel)]="descripcion"></textarea>
       </div>
       <div class="plt__field">
-        <label for="empresa">Empresa ID</label>
-        <input id="empresa" name="empresa" [(ngModel)]="empresaId" />
+        <label for="empresa">Empresa</label>
+        <select id="empresa" name="empresa" [(ngModel)]="empresaId">
+          <option value="">Seleccionar empresa…</option>
+          @for (empresa of empresas; track empresa.id) {
+            <option [value]="empresa.id">{{ empresa.nombre }}</option>
+          }
+        </select>
       </div>
       <div class="plt__field">
         <label for="estado">Estado</label>

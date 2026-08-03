@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { PeajesCatalogosHomeComponent } from './peajes-catalogos-home.component';
+import { CatalogoEmpresasComponent } from './empresas/catalogo-empresas.component';
 import { CatalogoPeajesComponent } from './peajes/catalogo-peajes.component';
 import { CatalogoEstacionesComponent } from './estaciones/catalogo-estaciones.component';
 import { CatalogoPatentesComponent } from './patentes/catalogo-patentes.component';
@@ -8,7 +9,7 @@ import { PEAJES_CATALOGO_PROVIDERS } from '../peajes.providers';
 
 /**
  * Fragmento de rutas de catálogos — fusionado en peajes.routes.ts (agente 05).
- * Paths: /peajes/catalogos, /peajes/catalogos/peajes, etc.
+ * Paths: /peajes/catalogos, /peajes/catalogos/empresas, /peajes/catalogos/peajes, etc.
  */
 export const PEAJES_CATALOGOS_ROUTES: Routes = [
   {
@@ -16,6 +17,7 @@ export const PEAJES_CATALOGOS_ROUTES: Routes = [
     providers: PEAJES_CATALOGO_PROVIDERS,
     children: [
       { path: '', component: PeajesCatalogosHomeComponent },
+      { path: 'empresas', component: CatalogoEmpresasComponent },
       { path: 'peajes', component: CatalogoPeajesComponent },
       { path: 'estaciones', component: CatalogoEstacionesComponent },
       { path: 'patentes', component: CatalogoPatentesComponent },

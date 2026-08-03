@@ -99,8 +99,8 @@ export class Paso1CargaComponent implements OnInit {
 
   async procesar(file: File): Promise<void> {
     this.error = null;
-    if (!this.excel.esXlsxValido(file)) {
-      this.error = 'Solo se permiten archivos .xlsx';
+    if (!this.excel.esArchivoValido(file)) {
+      this.error = 'Solo se permiten archivos .xlsx o .csv';
       return;
     }
 

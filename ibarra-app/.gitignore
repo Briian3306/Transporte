@@ -41,6 +41,6 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Local auth dumps from DESARROLLO (PII / password hashes — never commit)
-supabase/seed_auth.local.sql
+# Ad-hoc local dumps (optional). Canonical DEV seeds are committed:
+# supabase/seed_auth.sql + supabase/seed_rbac.sql
 supabase/*.local.sql

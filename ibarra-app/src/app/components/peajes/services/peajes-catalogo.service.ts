@@ -2,10 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import {
   Estacion,
+  EstacionAliasProveedor,
   Empresa,
   Pase,
   Patente,
   Peaje,
+  ResultadoReconocimientoEstacion,
 } from '../models/peajes.models';
 import { PeajesCatalogoService } from '../models/peajes-services.contracts';
 import { SupabaseService } from '../../../services/supabase.service';
@@ -142,6 +144,125 @@ export class PeajesCatalogoSupabaseService implements PeajesCatalogoService {
         return (data ?? []) as Estacion[];
       })
     );
+  }
+
+  reconocerEstacion(valorProveedor: string, empresaId?: string): Observable<ResultadoReconocimientoEstacion> {
+    return from(
+      this.supabase.executeWithRetry(async () => {
+        const client = await this.supabase.getClient();
+        const valor = (valorProveedor ?? '').trim();
+        const normalizado = this.normalizarEstacion(valor);
+        const vacio: ResultadoReconocimientoEstacion = {
+          valorProveedor: valor,
+          tipo: 'sin_coincidencia',
+          estacion: null,
+          sugerencias: [],
+        };
+        if (!normalizado) return vacio;
+
+        let aliases = client
+          .from('estaciones_alias_proveedor')
+          .select('estacion:estaciones(*, peaje:peajes(*))')
+          .eq('valor_normalizado', normalizado);
+        if (empresaId) aliases = aliases.eq('empresa_id', empresaId);
+        const { data: aliasRows, error: aliasError } = await aliases;
+        if (aliasError) throw aliasError;
+
+        const exactas = this.estacionesUnicas(aliasRows ?? []);
+        if (exactas.length === 1) {
+          return {
+            valorProveedor: valor,
+            tipo: 'exacta' as const,
+            estacion: exactas[0],
+            sugerencias: [],
+          };
+        }
+        if (exactas.length > 1) {
+          return {
+            valorProveedor: valor,
+            tipo: 'sugerencias' as const,
+            estacion: null,
+            sugerencias: exactas,
+          };
+        }
+
+        const { data: estaciones, error } = await client
+          .from('estaciones')
+          .select('*, peaje:peajes(*)')
+          .order('nombre')
+          .limit(500);
+        if (error) throw error;
+
+        const candidatas = (estaciones ?? [])
+          .filter((row: Estacion) => !empresaId || row.peaje?.empresa_id === empresaId)
+          .filter((row: Estacion) => {
+            const nombre = this.normalizarEstacion(row.nombre);
+            return nombre === normalizado || nombre.includes(normalizado) || normalizado.includes(nombre);
+          })
+          .sort((a: Estacion, b: Estacion) => {
+            const aNombre = this.normalizarEstacion(a.nombre);
+            const bNombre = this.normalizarEstacion(b.nombre);
+            const rank = (nombre: string) => nombre === normalizado ? 0 : nombre.startsWith(normalizado) ? 1 : 2;
+            return rank(aNombre) - rank(bNombre) || a.nombre.localeCompare(b.nombre);
+          }) as Estacion[];
+
+        if (candidatas.length === 1 && this.normalizarEstacion(candidatas[0].nombre) === normalizado) {
+          return {
+            valorProveedor: valor,
+            tipo: 'exacta' as const,
+            estacion: candidatas[0],
+            sugerencias: [],
+          };
+        }
+        return {
+          valorProveedor: valor,
+          tipo: (candidatas.length ? 'sugerencias' : 'sin_coincidencia') as ResultadoReconocimientoEstacion['tipo'],
+          estacion: null,
+          sugerencias: candidatas,
+        };
+      })
+    );
+  }
+
+  confirmarAliasEstacion(
+    data: Omit<EstacionAliasProveedor, 'id' | 'created_at' | 'valor_normalizado'>
+  ): Observable<EstacionAliasProveedor> {
+    return from(
+      this.supabase.executeWithRetry(async () => {
+        const client = await this.supabase.getClient();
+        const payload = {
+          ...data,
+          valor_proveedor: data.valor_proveedor.trim(),
+          valor_normalizado: this.normalizarEstacion(data.valor_proveedor),
+          origen: data.origen ?? 'usuario',
+        };
+        const { data: row, error } = await client
+          .from('estaciones_alias_proveedor')
+          .upsert(payload, { onConflict: 'empresa_id,estacion_id,valor_normalizado' })
+          .select('*')
+          .single();
+        if (error) throw error;
+        return row as EstacionAliasProveedor;
+      })
+    );
+  }
+
+  private normalizarEstacion(valor: string): string {
+    return (valor ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, ' ');
+  }
+
+  private estacionesUnicas(rows: unknown[]): Estacion[] {
+    const resultado = new Map<string, Estacion>();
+    for (const row of rows as Array<{ estacion?: Estacion | Estacion[] | null }>) {
+      const estacion = Array.isArray(row.estacion) ? row.estacion[0] : row.estacion;
+      if (estacion?.id) resultado.set(estacion.id, estacion);
+    }
+    return [...resultado.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
   }
 
   listarPatentes(): Observable<Patente[]> {

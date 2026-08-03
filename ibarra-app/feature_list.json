@@ -532,6 +532,38 @@
       ]
     },
     {
+      "id": "F02-11",
+      "title": "Paso 2 — Reconocimiento automático de columnas y recomendaciones de transformación",
+      "prd_refs": [
+        "RF-03",
+        "RF-04",
+        "RF-05",
+        "RF-07",
+        "RF-08",
+        "RF-11"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F02-2",
+        "F02-10",
+        "F03-9"
+      ],
+      "status": "passing",
+      "verification": [
+        "Headers semánticos (PATENTE/DOMINIO, TARIFA, BONIFICACION, FECHA+HORA, ESTACION) generan recomendaciones en Paso 2",
+        "Aplicar una recomendación escribe configuracionesDraft + incluye columnas; Descartar oculta la badge",
+        "AUSOL-like (PATENTE/DISPOSITIVO) no requiere headers Demo (DOMINIO/DISPOSITIVON) para sembrar pipeline",
+        "ng test --include=\"**/peajes/wizard/**/*recognition*\" y paso2/wizard-state specs",
+        "Docs: docs/06-components/peajes/reconocimiento-columnas.md + enlaces INDEX/wizard"
+      ],
+      "evidence": [
+        "2026-08-03: column-recognition.ts + PeajesColumnRecognitionService; state aceptar/descartar/aceptarTodas; Paso 2 rail UI",
+        "2026-08-03: ng test column-recognition + paso2-preview + peajes-wizard-state — 19 SUCCESS",
+        "2026-08-03: ng build --configuration=development OK",
+        "2026-08-03: docs reconocimiento-columnas.md + INDEX/wizard/plantillas/testing_plan §10a"
+      ]
+    },
+    {
       "id": "F03-1",
       "title": "Paso 3 — Motor de transformaciones (tarjetas, orden, preview)",
       "prd_refs": [
@@ -881,6 +913,81 @@
         "2026-07-30: npx supabase db reset --local --no-seed → OK (6 migraciones incl. align catálogo)",
         "2026-07-30: npx supabase test db → PASS 30/30",
         "2026-07-30: init.sh BLOCKED en este host Windows (bash/WSL no disponible); verificación equivalente vía build+test+CLI"
+      ]
+    },
+    {
+      "id": "F06-1",
+      "title": "Semillas, catálogos y plantillas Acceso Oeste/Demo",
+      "prd_refs": ["§14", "RN-04", "RN-05"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F01-1", "F01-3", "F01-4"],
+      "status": "in_progress",
+      "verification": ["Supabase CLI local aplica migración y semillas", "Estaciones, aliases, plantillas y categorías quedan disponibles"],
+      "evidence": []
+    },
+    {
+      "id": "F06-2",
+      "title": "Workflow CSV Acceso Oeste en wizard",
+      "prd_refs": ["RF-01", "RF-02", "RF-17"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F06-1"],
+      "status": "in_progress",
+      "verification": ["387882.csv se lee como CSV delimitado por ;", "Las 39 claves de estación se resuelven sobre el lote completo"],
+      "evidence": []
+    },
+    {
+      "id": "F06-3",
+      "title": "Pipelines Acceso Oeste y Demo",
+      "prd_refs": ["RF-07", "RF-08", "RF-09", "RF-10"],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": ["F03-9"],
+      "status": "in_progress",
+      "verification": ["Pipeline Acceso Oeste produce las salidas esperadas", "Pipeline Demo conserva el resultado del PRD"],
+      "evidence": []
+    },
+    {
+      "id": "F06-5",
+      "title": "Evidencia E2E local del workflow Acceso Oeste (387882.csv)",
+      "prd_refs": ["RN-16", "RN-17", "RN-24"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F06-1", "F06-2", "F06-3"],
+      "status": "not_started",
+      "verification": ["Nueve pasos del workflow documentados", "496 pasadas confirmadas con neto 2189120.01", "39 aliases resueltos y segunda ejecución rechaza duplicados", "Evidencia Supabase CLI local registrada"],
+      "evidence": []
+    },
+    {
+      "id": "F07-1",
+      "title": "Seed AUSOL y reconocimiento confirmable de estaciones",
+      "prd_refs": ["RF-17", "RN-04", "RN-05", "RN-24"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F01-1", "F03-9"],
+      "status": "in_progress",
+      "verification": [
+        "El seed de ESTACIONES.xlsx es idempotente y conserva ZONA/AUTOPISTA, coordenadas, camino y estado OK/REVIEW",
+        "El reconocedor resuelve exactos y aliases por empresa; las coincidencias parciales requieren confirmación",
+        "557074.csv produce 191 pasadas con neto 678607.05 y no crea estaciones desde sugerencias",
+        "REEMPLAZAR_TEXTO usa reglas registradas y el workflow/documentación AUSOL quedan actualizados"
+      ],
+      "evidence": [
+        "2026-08-03: implementación iniciada; contratos de alias/reconocimiento y wizard confirmable en curso. Pendiente verificación Supabase CLI y suites focalizadas."
+      ]
+    },
+    {
+      "id": "F08-1",
+      "title": "Gestión de pasadas: auditoría, vista SQL, DataTable compartido y CRUD",
+      "prd_refs": ["RF-22", "RF-26", "RF-32"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F01-2", "F01-9", "F02-8"],
+      "status": "in_progress",
+      "verification": [
+        "pasadas guarda user_id + file_upload_name en confirmar_carga; created_at permanece",
+        "Vista pasadas_gestion + peajes_listar_pasadas pagina y filtra en servidor",
+        "CRUD peajes_crear/actualizar/eliminar_pasada funciona sin tablas nuevas",
+        "UI /peajes/pasadas: filtros, chip rail, badge OK/PENDING por coordenadas, drawer CRUD",
+        "Shared DataTable reutilizable bajo components/shared"
+      ],
+      "evidence": [
+        "2026-08-03: migración 20260803190348_peajes_pasadas_audit_gestion.sql; UI pasadas + shared data-table; p_nombre_archivo cableado en PeajesCargaSupabaseService. ng build development OK."
       ]
     }
   ]

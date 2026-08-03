@@ -22,6 +22,8 @@ La aplicación y el paquete de coordinación están centralizados en `ibarra-app
 - Testing plan (transform/validate MVP): [testing_plan.md](./testing_plan.md).
 - Motor transformaciones (patrones): `../../.agents/skills/peajes-transformaciones-motor/SKILL.md`.
 - Testing transformaciones: `../../.agents/skills/peajes-testing-transformaciones/SKILL.md`.
+- Evidencia Acceso Oeste: [prueba-workflow-387882-acceso-oeste.md](./prueba-workflow-387882-acceso-oeste.md).
+- Ejemplo AUSOL: [ejemplo-ausol-procesamiento-pasadas.md](./ejemplo-ausol-procesamiento-pasadas.md) y [prueba-workflow-557074-ausol.md](./prueba-workflow-557074-ausol.md).
 - Estado y dependencias: `../../feature_list.json`.
 - Protocolo de ownership: `../../AGENTS.md`.
 - Bitácora vigente: `../claude-progress.md`.

@@ -1,0 +1,59 @@
+<div class="cat">
+  <header class="cat__header">
+    <h1><i class="fas fa-building" aria-hidden="true"></i> Catálogo de empresas</h1>
+    <a routerLink="/peajes/catalogos" class="cat__back">Volver a catálogos</a>
+  </header>
+
+  <div class="cat__layout">
+    <section class="cat__panel">
+      <h2>Nueva empresa</h2>
+      <form [formGroup]="form" class="cat__form" (ngSubmit)="guardar()">
+        <label>Nombre *<input formControlName="nombre" placeholder="Ej. ACCESO OESTE" /></label>
+        <label>Descripción<input formControlName="descripcion" placeholder="Proveedor / concesionaria" /></label>
+        <div class="cat__actions">
+          <button type="submit" [disabled]="guardando">
+            {{ guardando ? 'Guardando…' : 'Crear' }}
+          </button>
+        </div>
+      </form>
+      <p class="cat__error" *ngIf="error">{{ error }}</p>
+      <p class="cat__note">
+        La empresa es el contexto de peajes, plantillas y cargas del wizard.
+      </p>
+    </section>
+
+    <section class="cat__panel">
+      <div class="cat__list-head">
+        <h2>Listado</h2>
+        <label class="cat__filter">
+          Filtrar
+          <input
+            type="search"
+            [(ngModel)]="filtro"
+            name="filtroEmpresas"
+            placeholder="Nombre o ID…"
+          />
+        </label>
+      </div>
+      <table class="cat__table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of empresasFiltradas">
+            <td>{{ e.nombre }}</td>
+            <td>{{ e.descripcion || '—' }}</td>
+            <td><code class="cat__id">{{ e.id }}</code></td>
+          </tr>
+          <tr *ngIf="!empresasFiltradas.length">
+            <td colspan="3" class="cat__empty">Sin resultados para el filtro.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</div>

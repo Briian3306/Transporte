@@ -1,0 +1,245 @@
+.pfd {
+  --pfd-signal: #004ac6;
+  --pfd-price: #2563eb;
+  --pfd-rail: #f2f4f6;
+  --pfd-line: #e2e8f0;
+  --pfd-ink: #0f172a;
+  --pfd-muted: #434655;
+  --pfd-ok: #10b981;
+  --pfd-pending: #f59e0b;
+  --pfd-danger: #ef4444;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pfd__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(15 23 42 / 35%);
+  cursor: pointer;
+}
+
+.pfd__panel {
+  position: relative;
+  width: min(420px, 100%);
+  height: 100%;
+  background: #fff;
+  border-left: 1px solid var(--pfd-line);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -12px 0 40px rgb(15 23 42 / 12%);
+  animation: pfd-in 180ms ease;
+}
+
+@keyframes pfd-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0.6;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.pfd__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.1rem 1.15rem;
+  border-bottom: 1px solid var(--pfd-line);
+  background: var(--pfd-rail);
+}
+
+.pfd__eyebrow {
+  margin: 0;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pfd-muted);
+}
+
+.pfd__header h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.15rem;
+  color: var(--pfd-ink);
+}
+
+.pfd__icon-btn {
+  appearance: none;
+  border: 1px solid var(--pfd-line);
+  background: #fff;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.pfd__body {
+  padding: 1rem 1.15rem 1.5rem;
+  overflow: auto;
+}
+
+.pfd__badge-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.pfd__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+}
+
+.pfd__badge::before {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pfd__badge--ok {
+  color: #065f46;
+  background: color-mix(in srgb, var(--pfd-ok) 18%, #fff);
+}
+
+.pfd__badge--pending {
+  color: #92400e;
+  background: color-mix(in srgb, var(--pfd-pending) 22%, #fff);
+}
+
+.pfd__muted {
+  font-size: 0.75rem;
+  color: var(--pfd-muted);
+}
+
+.pfd__audit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  background: var(--pfd-rail);
+  border-radius: 0.6rem;
+}
+
+.pfd__audit dt {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pfd-muted);
+}
+
+.pfd__audit dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.8125rem;
+  word-break: break-all;
+}
+
+.pfd__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.pfd__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--pfd-muted);
+}
+
+.pfd__form input,
+.pfd__form select {
+  border: 1px solid var(--pfd-line);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--pfd-ink);
+}
+
+.pfd__row3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.pfd__neto {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--pfd-muted);
+}
+
+.pfd__neto strong {
+  color: var(--pfd-price);
+  font-variant-numeric: tabular-nums;
+  margin-left: 0.35rem;
+}
+
+.pfd__error {
+  margin: 0;
+  color: var(--pfd-danger);
+  font-size: 0.8125rem;
+}
+
+.pfd__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+
+.pfd__btn {
+  appearance: none;
+  border: 1px solid var(--pfd-line);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #fff;
+  color: var(--pfd-ink);
+}
+
+.pfd__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pfd__btn--primary {
+  background: var(--pfd-signal);
+  border-color: var(--pfd-signal);
+  color: #fff;
+}
+
+.pfd__btn--danger {
+  color: var(--pfd-danger);
+  border-color: color-mix(in srgb, var(--pfd-danger) 40%, var(--pfd-line));
+}
+
+.pfd__btn--ghost {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pfd__panel {
+    animation: none;
+  }
+}

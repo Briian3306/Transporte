@@ -44,15 +44,25 @@ Persistencia de factura (Bill) y pasadas estandarizadas (F01-2). Migración `202
 | `bonificacion` | numeric(14,2) | No | Default 0; 0 ≤ bonif ≤ precio |
 | `quantity` | integer | No | Default 1; ≥ 1 |
 | `importe_neto` | numeric(14,2) | No | CHECK = `precio - bonificacion` |
-| `created_at` | timestamptz | No | — |
+| `created_at` | timestamptz | No | Default `now()` |
+| `user_id` | uuid FK → auth.users | Sí | Usuario que creó la pasada (`auth.uid()` en confirmación/CRUD) |
+| `file_upload_name` | text | Sí | Nombre del archivo de carga (denormalizado) |
 
 UK anti-duplicados: `(pase_id, fecha_hora, estacion_id, patente_id)`.
+
+Índices adicionales (F08-1): `created_at DESC`, `user_id`, `file_upload_name`.
 
 ---
 
 ## Vista pasadas_con_peaje
 
 Vista con `security_invoker = true` que une pasada → estación → peaje y expone `peaje_id`, `estacion_nombre`, `peaje_nombre`.
+
+## Vista pasadas_gestion (F08-1)
+
+Vista de gestión con joins a estaciones (lat/lng), peajes, empresas, patentes, pases y facturas. El badge de estación en UI se deriva **solo de coordenadas** (`latitud` + `longitud`).
+
+Listado paginado: RPC `peajes_listar_pasadas`. CRUD: `peajes_crear_pasada`, `peajes_actualizar_pasada`, `peajes_eliminar_pasada`. Migración `20260803190348_peajes_pasadas_audit_gestion.sql`.
 
 ---
 
@@ -72,9 +82,11 @@ Confirmación atómica: RPC `peajes_confirmar_carga` (ver [auditoria-y-rpcs.md](
 ## Referencias
 
 - SQL: `supabase/migrations/20260730125518_peajes_facturas_pasadas.sql`
-- Servicio: `PeajesCargaSupabaseService`
+- SQL F08-1: `supabase/migrations/20260803190348_peajes_pasadas_audit_gestion.sql`
+- Servicio: `PeajesCargaSupabaseService`, `PeajesPasadasSupabaseService`
+- UI: `/peajes/pasadas`
 - Wizard pasos 7–9: [docs/06-components/peajes/wizard.md](../../06-components/peajes/wizard.md)
 
 ---
 
-> Última actualización: julio 2026
+> Última actualización: agosto 2026

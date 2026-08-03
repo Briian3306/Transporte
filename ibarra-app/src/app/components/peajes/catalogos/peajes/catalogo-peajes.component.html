@@ -11,14 +11,30 @@
         <label>Nombre *<input formControlName="nombre" /></label>
         <label>Ubicación<input formControlName="ubicacion" /></label>
         <label>Descripción<input formControlName="descripcion" /></label>
-        <label>Empresa ID<input formControlName="empresa_id" /></label>
+        <div class="cat__empresa">
+          <label class="cat__empresa-select">
+            Empresa
+            <select formControlName="empresa_id">
+              <option value="">Sin empresa…</option>
+              <option *ngFor="let empresa of empresas" [value]="empresa.id">
+                {{ empresa.nombre }}
+              </option>
+            </select>
+          </label>
+          <button
+            type="button"
+            class="cat__btn-link"
+            (click)="crearEmpresaAbierto = true"
+          >
+            + Crear empresa
+          </button>
+        </div>
         <div class="cat__actions">
           <button type="button" (click)="nuevo()">Limpiar</button>
           <button type="submit" [disabled]="guardando">Guardar</button>
         </div>
       </form>
       <p class="cat__error" *ngIf="error">{{ error }}</p>
-      <p class="cat__note">Usa mock tipado hasta que F01-1 entregue el servicio real.</p>
     </section>
 
     <section class="cat__panel">
@@ -30,24 +46,24 @@
             type="search"
             [(ngModel)]="filtro"
             name="filtroPeajes"
-            placeholder="Nombre, ubicación o ID…"
+            placeholder="Nombre, ubicación, empresa…"
           />
         </label>
       </div>
       <table class="cat__table">
         <thead>
           <tr>
-            <th>ID</th>
             <th>Nombre</th>
             <th>Ubicación</th>
+            <th>Empresa</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let p of peajesFiltrados">
-            <td>{{ p.id }}</td>
             <td>{{ p.nombre }}</td>
             <td>{{ p.ubicacion || '—' }}</td>
+            <td>{{ nombreEmpresa(p.empresa_id) }}</td>
             <td><button type="button" (click)="editar(p)">Editar</button></td>
           </tr>
           <tr *ngIf="!peajesFiltrados.length">
@@ -55,6 +71,46 @@
           </tr>
         </tbody>
       </table>
+    </section>
+  </div>
+
+  <div class="cat__dialog-backdrop" *ngIf="crearEmpresaAbierto">
+    <section
+      class="cat__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="nueva-empresa-peaje-titulo"
+    >
+      <div class="cat__dialog-head">
+        <div>
+          <p class="cat__eyebrow">Catálogo de empresas</p>
+          <h3 id="nueva-empresa-peaje-titulo">Crear empresa</h3>
+        </div>
+        <button type="button" class="cat__btn-ghost" (click)="crearEmpresaAbierto = false">
+          Cerrar
+        </button>
+      </div>
+      <p>La empresa agrupa peajes, plantillas y cargas del wizard.</p>
+      <div class="cat__dialog-form">
+        <label>
+          Nombre *
+          <input [(ngModel)]="nuevaEmpresaNombre" name="nuevaEmpresaNombre" autofocus />
+        </label>
+        <label>
+          Descripción
+          <input [(ngModel)]="nuevaEmpresaDescripcion" name="nuevaEmpresaDescripcion" />
+        </label>
+      </div>
+      <div class="cat__actions">
+        <button type="button" (click)="crearEmpresaAbierto = false">Cancelar</button>
+        <button
+          type="button"
+          [disabled]="!nuevaEmpresaNombre.trim()"
+          (click)="crearEmpresa()"
+        >
+          Crear y seleccionar
+        </button>
+      </div>
     </section>
   </div>
 </div>

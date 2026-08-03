@@ -33,6 +33,9 @@ describe('CatalogoEstacionesComponent', () => {
       ubicacion: '',
       descripcion: '',
       codigos_proveedor: '42',
+      latitud: null,
+      longitud: null,
+      camino: '',
     });
     const before = component.estaciones.length;
     await component.guardar();

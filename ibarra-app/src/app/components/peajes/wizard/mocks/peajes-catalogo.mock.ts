@@ -7,6 +7,8 @@ import {
   Patente,
   Peaje,
   PeajesCatalogoService,
+  EstacionAliasProveedor,
+  ResultadoReconocimientoEstacion,
 } from '../../models';
 
 /**
@@ -157,6 +159,26 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
     return of(
       matches.map((e) => ({ ...e, peaje: this.peajes.find((p) => p.id === e.peaje_id) }))
     );
+  }
+
+  reconocerEstacion(valorProveedor: string, _empresaId?: string): Observable<ResultadoReconocimientoEstacion> {
+    const normalizar = (valor: string) => valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toUpperCase();
+    const buscado = normalizar(valorProveedor);
+    const exacta = this.estaciones.find((e) => normalizar(e.nombre) === buscado || (e.codigos_proveedor ?? []).some((a) => normalizar(a) === buscado));
+    if (exacta) return of({ valorProveedor, tipo: 'exacta', estacion: { ...exacta, peaje: this.peajes.find((p) => p.id === exacta.peaje_id) }, sugerencias: [] });
+    const sugerencias = this.estaciones.filter((e) => {
+      const nombre = normalizar(e.nombre);
+      return nombre.includes(buscado) || buscado.includes(nombre);
+    }).map((e) => ({ ...e, peaje: this.peajes.find((p) => p.id === e.peaje_id) }));
+    return of({ valorProveedor, tipo: sugerencias.length ? 'sugerencias' : 'sin_coincidencia', estacion: null, sugerencias });
+  }
+
+  confirmarAliasEstacion(data: Omit<EstacionAliasProveedor, 'id' | 'created_at' | 'valor_normalizado'>): Observable<EstacionAliasProveedor> {
+    const estacion = this.estaciones.find((e) => e.id === data.estacion_id);
+    if (estacion && !estacion.codigos_proveedor?.includes(data.valor_proveedor)) {
+      estacion.codigos_proveedor = [...(estacion.codigos_proveedor ?? []), data.valor_proveedor];
+    }
+    return of({ ...data, id: `ALIAS-${Date.now()}`, valor_normalizado: data.valor_proveedor.trim().toUpperCase(), created_at: new Date().toISOString() });
   }
 
   listarPatentes(): Observable<Patente[]> {

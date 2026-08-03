@@ -321,7 +321,7 @@
                 >
                   <option value="" disabled>— Formato —</option>
                   <option
-                    *ngFor="let opt of field.opciones || formatosFechaHora"
+                    *ngFor="let opt of opcionesEnum(field)"
                     [value]="opt"
                   >
                     {{ opt }}

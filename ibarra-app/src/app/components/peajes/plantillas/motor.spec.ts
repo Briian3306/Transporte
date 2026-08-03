@@ -17,6 +17,11 @@ import {
   auFilasParaMotor,
   buildAuPlantillaConfigs,
 } from '../wizard/fixtures/autopistas-urbanas.fixture';
+import {
+  ACCESO_OESTE_FILAS_MUESTRA,
+  buildAccesoOestePlantillaConfigs,
+} from './mocks/acceso-oeste.fixture';
+import { AUSOL_FILAS_MUESTRA, buildAusolPlantillaConfigs } from './mocks/ausol.fixture';
 
 function cfg(
   partial: Partial<ConfiguracionPlantilla> & {
@@ -90,9 +95,33 @@ describe('peajes/plantillas/motor', () => {
   it('StrategyRegistry rechaza códigos no registrados', () => {
     const registry = createDefaultRegistry();
     expect(registry.tiene('BORRAR_ESPACIOS')).toBeTrue();
+    expect(registry.tiene('REEMPLAZAR_TEXTO')).toBeTrue();
     expect(() => registry.obtener('CODIGO_INEXISTENTE')).toThrowError(
       /no registrado/i
     );
+  });
+
+  it('REEMPLAZAR_TEXTO aplica aliases en orden', () => {
+    const motor = crearMotor();
+    const [row] = motor.aplicarPipeline([{ ESTACION: 'BD' }], [cfg({
+      nombre_columna: 'ESTACION', columna_destino: 'ESTACION_ID', orden: 10,
+      configuracion: { algoritmo_codigo: 'REEMPLAZAR_TEXTO', columna: 'ESTACION', reglas: [
+        { buscar: 'BD', reemplazar: 'BLACK DECK' },
+        { buscar: 'BLACK DECK', reemplazar: 'BLACK DECK NORTE' },
+      ] },
+    })]);
+    expect(row['ESTACION_ID']).toBe('BLACK DECK NORTE');
+  });
+
+  it('I-P12: AUSOL produce estructura estándar antes del reconocedor', () => {
+    const motor = crearMotor();
+    const [row] = motor.aplicarPipeline(AUSOL_FILAS_MUESTRA, buildAusolPlantillaConfigs());
+    expect(row['FECHA_HORA']).toBe('2026-07-16 01:34:14');
+    expect(row['ESTACION_ID']).toBe('CAMPANA');
+    expect(row['PASE_ID']).toBe('94891934');
+    expect(row['PATENTE_ID']).toBe('AE751PA');
+    expect(row['IMPORTE_NETO']).toBe(3976.59);
+    expect(row['QUANTITY']).toBe(1);
   });
 
   it('reproduce FECHA_HORA, PATENTE_ID, PASE_ID, IMPORTE_NETO del caso §21', () => {
@@ -133,6 +162,26 @@ describe('peajes/plantillas/motor', () => {
       algoritmos
     );
     expect(row['FECHA_HORA']).toBe('2026-06-25 08:55:57');
+  });
+
+  it('interpreta MM/DD/YY + HHMMSS del archivo Demo XLSX', () => {
+    const motor = crearMotor();
+    const [row] = motor.aplicarPipeline(
+      [{ FECHA: '6/25/26', HORA: '205005' }],
+      [
+        cfg({
+          nombre_columna: 'FECHA',
+          columna_destino: 'FECHA_HORA',
+          orden: 10,
+          configuracion: {
+            algoritmo_codigo: 'FORMATEAR_FECHA_HORA',
+            columnas_entrada: ['FECHA', 'HORA'],
+            formato_hora: 'MM/DD/YY HHMMSS',
+          },
+        }),
+      ]
+    );
+    expect(row['FECHA_HORA']).toBe('2026-06-25 20:50:05');
   });
 
   // --- F03-9 / U-P01…U-P08 ---
@@ -439,5 +488,23 @@ describe('peajes/plantillas/motor', () => {
     expect((rows[0] as Record<string, unknown>)['CODIGO_ESTACION']).toBe('VAR-02C');
     const sum = rows.reduce((a, r) => a + Number(r['IMPORTE_NETO'] ?? 0), 0);
     expect(sum).toBeCloseTo(AU_IMPORTE_SIN_IVA, 2);
+  });
+
+  it('I-P11: Acceso Oeste transforma fecha ISO, estación-vía y pasadas', () => {
+    const motor = crearMotor();
+    const rows = motor.aplicarPipeline(
+      ACCESO_OESTE_FILAS_MUESTRA,
+      buildAccesoOestePlantillaConfigs()
+    );
+    expect(rows.length).toBe(2);
+    const row0 = rows[0] as Record<string, unknown>;
+    expect(row0['FECHA_HORA']).toBe('2026-07-16 04:36:48');
+    expect(row0['CODIGO_ESTACION']).toBe('ITUZAINGO - 05');
+    expect(row0['PASE_ID']).toBe('94337220');
+    expect(row0['PATENTE_ID']).toBe('OWG130');
+    expect(row0['PRECIO']).toBe(3976.59);
+    expect(row0['BONIFICACION']).toBe(0);
+    expect(row0['QUANTITY']).toBe(1);
+    expect(row0['IMPORTE_NETO']).toBe(3976.59);
   });
 });

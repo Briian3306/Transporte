@@ -140,6 +140,12 @@ export class PeajesCargaMockService implements PeajesCargaService {
       created_at: new Date().toISOString(),
     };
 
+    const nombreArchivo =
+      input.nombreArchivo ??
+      (typeof input.parametrosEfectivos?.['archivo'] === 'string'
+        ? (input.parametrosEfectivos['archivo'] as string)
+        : null);
+
     const pasadas: Pasada[] = input.pasadas.map((p, i) => ({
       id: `PSD-${i + 1}`,
       fecha_hora: String(p.FECHA_HORA ?? ''),
@@ -152,6 +158,8 @@ export class PeajesCargaMockService implements PeajesCargaService {
       quantity: Number(p.QUANTITY ?? 1),
       importe_neto: Number(p.IMPORTE_NETO ?? 0),
       created_at: new Date().toISOString(),
+      user_id: 'mock-user',
+      file_upload_name: nombreArchivo,
     }));
 
     return of({
@@ -168,6 +176,8 @@ export class PeajesCargaMockService implements PeajesCargaService {
         filas_procesadas: pasadas.length,
         errores: null,
         created_at: new Date().toISOString(),
+        nombre_archivo: nombreArchivo,
+        user_id: 'mock-user',
       },
     });
   }

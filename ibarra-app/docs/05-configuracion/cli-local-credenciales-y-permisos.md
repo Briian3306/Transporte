@@ -2,7 +2,7 @@
 
 ## Resumen
 
-Guía para trabajar la app Angular contra **Supabase CLI** (`pnpm dev`) con los mismos usuarios de login y permisos de administrador que en **DESARROLLO**. Cubre los entornos Angular, la copia de `auth.users` y el seed local de tablas RBAC (`user_profiles`, roles, módulos).
+Guía para trabajar la app Angular contra **Supabase CLI** (`pnpm dev`) con los mismos usuarios de login y permisos de administrador que en **DESARROLLO**. Los seeds de Auth y RBAC están **versionados en el repo** (solo desarrollo).
 
 ## Índice
 
@@ -11,10 +11,11 @@ Guía para trabajar la app Angular contra **Supabase CLI** (`pnpm dev`) con los 
 - [Por qué hace falta](#por-qué-hace-falta)
 - [Prerrequisitos](#prerrequisitos)
 - [1. Arrancar CLI + app local](#1-arrancar-cli--app-local)
-- [2. Recuperar credenciales Auth (usuarios)](#2-recuperar-credenciales-auth-usuarios)
-- [3. Recuperar permisos RBAC (admin / peajes)](#3-recuperar-permisos-rbac-admin--peajes)
+- [2. Seeds versionados (Auth + RBAC)](#2-seeds-versionados-auth--rbac)
+- [3. Aplicar seeds manualmente](#3-aplicar-seeds-manualmente)
 - [4. Verificar](#4-verificar)
 - [Tras un `db reset`](#tras-un-db-reset)
+- [Regenerar dump Auth desde DESARROLLO](#regenerar-dump-auth-desde-desarrollo)
 - [Qué no hacer](#qué-no-hacer)
 - [Referencias](#referencias)
 
@@ -33,8 +34,11 @@ Scripts en `package.json`:
 ```json
 "start": "ng serve",
 "dev": "npx supabase start && ng serve --configuration=local",
-"dev:app": "ng serve --configuration=local"
+"dev:app": "ng serve --configuration=local",
+"seed:local": "…"
 ```
+
+Script `pnpm seed:local` / `npm run seed:local`: aplica `seed_auth.sql` + `seed_rbac.sql` vía `psql` en el contenedor (sin `db reset`).
 
 Contrato de entornos: CLI = testing; DESARROLLO = remoto. No hay staging/prod separados en este flujo.
 
@@ -43,7 +47,7 @@ Contrato de entornos: CLI = testing; DESARROLLO = remoto. No hay staging/prod se
 ## Por qué hace falta
 
 1. **Auth:** el CLI tiene JWT/secret propios. Copiar `supabaseUrl` / `supabaseKey` de DESARROLLO a local **no** trae usuarios.
-2. **Permisos:** tras `db reset`, el CLI vacío **no** tiene tablas host RBAC (`user_profiles`, `user_roles`, `system_modules`, …). Login puede funcionar y la app igual cae en access-denied (falta `peajes:read` / rol admin).
+2. **Permisos:** tras migraciones solas, el CLI puede no tener tablas host RBAC completas (`user_profiles`, `user_roles`, `system_modules`, …). Login puede funcionar y la app igual cae en access-denied (falta `peajes:read` / rol admin).
 
 ---
 
@@ -55,7 +59,7 @@ cd ibarra-app
 # Docker Desktop en ejecución
 npx supabase start
 
-# Proyecto linkeado a DESARROLLO
+# Proyecto linkeado a DESARROLLO (solo si vas a regenerar dumps)
 Get-Content supabase\.temp\project-ref
 # Esperado: kfffigvyvtzyczeiadxh
 ```
@@ -75,48 +79,25 @@ pnpm dev
 Studio local: http://127.0.0.1:54323  
 API local: http://127.0.0.1:54321  
 
----
+Con `config.toml` → `[db.seed]`, un `npx supabase db reset --local` aplica automáticamente:
 
-## 2. Recuperar credenciales Auth (usuarios)
-
-### Exportar desde DESARROLLO
-
-```powershell
-cd ibarra-app
-npx supabase db dump --linked --data-only --schema auth -f supabase/seed_auth.local.sql
-```
-
-El archivo queda en `.gitignore` (`supabase/*.local.sql`). **No commitear.**
-
-### Importar en CLI
-
-`npx supabase db query --local --file …` **falla** con dumps multi-statement (`cannot insert multiple commands into a prepared statement`). Usar `psql` dentro del contenedor:
-
-```powershell
-docker cp supabase/seed_auth.local.sql supabase_db_ibarra-app:/tmp/seed_auth.local.sql
-docker exec supabase_db_ibarra-app psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/seed_auth.local.sql
-```
-
-### Alternativa rápida (un solo usuario)
-
-Studio → Authentication → Add user → mismo email/password que DESARROLLO.  
-Eso **no** crea perfil ni roles; hace falta el paso 3.
+1. `supabase/seed_auth.sql` — usuarios Auth (hashes de DESARROLLO)
+2. `supabase/seed_rbac.sql` — tablas/roles/permisos + perfil admin de Francis
 
 ---
 
-## 3. Recuperar permisos RBAC (admin / peajes)
+## 2. Seeds versionados (Auth + RBAC)
 
-Aplicar el seed local de RBAC (crea tablas host si faltan, módulos/acciones/roles, perfil y roles `admin` + `administrador` para Francis):
+Archivos canónicos (commiteados, solo DEV):
 
-```powershell
-cd ibarra-app
-docker cp supabase/seed_rbac.local.sql supabase_db_ibarra-app:/tmp/seed_rbac.local.sql
-docker exec supabase_db_ibarra-app psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/seed_rbac.local.sql
-```
+| Archivo | Contenido |
+|---------|-----------|
+| `supabase/seed_auth.sql` | Dump data-only del schema `auth` (usuarios, identidades, etc.) |
+| `supabase/seed_rbac.sql` | Tablas host RBAC, módulos (incl. `peajes`), roles admin, perfil `francis@transporteibarra.com.ar` |
 
-Archivo canónico de seed: `supabase/seed_rbac.local.sql` (también `*.local.sql`, no commitear).
+Dumps ad-hoc con sufijo `.local.sql` siguen en `.gitignore` por si regenerás sin pisar el canónico.
 
-Incluye, entre otros:
+`seed_rbac.sql` incluye, entre otros:
 
 - `system_actions`, `system_modules` (incluye `peajes`)
 - `user_roles` (`admin`, `administrador`)
@@ -125,6 +106,29 @@ Incluye, entre otros:
 - RLS de lectura para rol `authenticated`
 
 Para **otro** email: insertar fila en `user_profiles` con el mismo `id` que `auth.users`, y filas en `user_profile_roles` apuntando a los roles admin.
+
+---
+
+## 3. Aplicar seeds manualmente
+
+Útil si el stack ya está arriba y no querés un `db reset` completo.
+
+`npx supabase db query --local --file …` **falla** con dumps multi-statement (`cannot insert multiple commands into a prepared statement`). Usar `psql` dentro del contenedor:
+
+```powershell
+cd ibarra-app
+
+docker cp supabase/seed_auth.sql supabase_db_ibarra-app:/tmp/seed_auth.sql
+docker exec supabase_db_ibarra-app psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/seed_auth.sql
+
+docker cp supabase/seed_rbac.sql supabase_db_ibarra-app:/tmp/seed_rbac.sql
+docker exec supabase_db_ibarra-app psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/seed_rbac.sql
+```
+
+### Alternativa rápida (un solo usuario)
+
+Studio → Authentication → Add user → mismo email/password que DESARROLLO.  
+Eso **no** crea perfil ni roles; hace falta aplicar `seed_rbac.sql` (y alinear el `id` del perfil).
 
 ---
 
@@ -147,15 +151,29 @@ Luego: cerrar sesión en la app, `pnpm dev`, login con el email/password de DESA
 ## Tras un `db reset`
 
 ```powershell
-npx supabase db reset --local --no-seed
-# Reaplicar Auth + RBAC
-docker cp supabase/seed_auth.local.sql supabase_db_ibarra-app:/tmp/seed_auth.local.sql
-docker exec supabase_db_ibarra-app psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/seed_auth.local.sql
-docker cp supabase/seed_rbac.local.sql supabase_db_ibarra-app:/tmp/seed_rbac.local.sql
-docker exec supabase_db_ibarra-app psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/seed_rbac.local.sql
+# Con seeds habilitados en config.toml (recomendado)
+npx supabase db reset --local
+
+# Si usaste --no-seed, reaplicar a mano:
+docker cp supabase/seed_auth.sql supabase_db_ibarra-app:/tmp/seed_auth.sql
+docker exec supabase_db_ibarra-app psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/seed_auth.sql
+docker cp supabase/seed_rbac.sql supabase_db_ibarra-app:/tmp/seed_rbac.sql
+docker exec supabase_db_ibarra-app psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/seed_rbac.sql
 ```
 
-Si no tenés el dump Auth, regenerarlo con el paso 2 (requiere link a DESARROLLO).
+---
+
+## Regenerar dump Auth desde DESARROLLO
+
+Solo cuando cambien usuarios en el remoto y quieras actualizar el seed versionado:
+
+```powershell
+cd ibarra-app
+npx supabase link --project-ref kfffigvyvtzyczeiadxh -p "DB_PASSWORD"
+npx supabase db dump --linked --data-only --schema auth -f supabase/seed_auth.sql
+```
+
+Revisar el diff y commitear si corresponde (entorno de desarrollo).
 
 ---
 
@@ -163,11 +181,11 @@ Si no tenés el dump Auth, regenerarlo con el paso 2 (requiere link a DESARROLLO
 
 | Incorrecto | Correcto |
 |------------|----------|
-| Pegar URL/anon key de DESARROLLO en el CLI esperando los mismos usuarios | Usar `environment.local.ts` + dump Auth |
+| Pegar URL/anon key de DESARROLLO en el CLI esperando los mismos usuarios | Usar `environment.local.ts` + `seed_auth.sql` / `seed_rbac.sql` |
 | `npx supabase db query --local --file dump.sql` con dumps grandes | `docker exec … psql -f …` |
-| Commitear `seed_*.local.sql` | Mantener en `.gitignore` |
 | `db reset --linked` / tocar DESARROLLO para “arreglar” local | Solo seed local |
 | Usar refs de OrdenCompra | Solo `kfffigvyvtzyczeiadxh` |
+| Tratar estos seeds como aptos para producción | Solo CLI / desarrollo |
 
 ---
 
@@ -176,10 +194,11 @@ Si no tenés el dump Auth, regenerarlo con el paso 2 (requiere link a DESARROLLO
 - Entornos (contrato): [`.agents/skills/backend-supabase-write/entornos.md`](../../.agents/skills/backend-supabase-write/entornos.md)
 - Environments: `src/environments/environment.ts`, `environment.local.ts`
 - Angular `local` config: `angular.json` → `build/serve` configuration `local`
-- Seed RBAC: `supabase/seed_rbac.local.sql`
+- Seed Auth: `supabase/seed_auth.sql`
+- Seed RBAC: `supabase/seed_rbac.sql`
 - Módulo Peajes: [docs/modulos/peajes.md](../modulos/peajes.md)
 - SQL empresas / catálogos: [docs/08-sql/peajes/empresas/](../08-sql/peajes/empresas/README.md)
 
 ---
 
-> Última actualización: julio 2026
+> Última actualización: agosto 2026

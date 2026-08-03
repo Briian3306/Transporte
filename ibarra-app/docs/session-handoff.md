@@ -2,6 +2,20 @@
 
 > Canónico en `ibarra-app/docs/session-handoff.md`. Actualizar al cerrar cada sesión de agente.
 
+## Última sesión — 2026-08-03 (Empresas + algoritmo preview + F06)
+
+### Hecho
+
+- Catálogo **Empresas** + peajes con select/crear empresa.
+- `AlgoritmoBuilderComponent`: preview mock, Ejemplo PATENTE, guardar plantilla → `PATENTE_ID`.
+- F06 aplicada en CLI local; seed `NORMALIZAR_PATENTE` + plantillas OK.
+- Docs usuario: `docs/06-components/peajes/guia-crear-plantillas.md`.
+
+### Pendiente / notas
+
+- DESARROLLO remoto (`kfffigvyvtzyczeiadxh`) no verificado en esta sesión vía MCP (solo aparece `uurlssweuhshbwpxxatw` OrdenCompra en list_projects). Push F06 a DESARROLLO solo si el usuario lo pide.
+- Migración F06 tenía basura de shell al inicio (limpiada) y un `UPDATE estaciones` inválido (corregido).
+
 ## Estado Fase 0 (Agente 00) — 2026-07-30
 
 **Fase 0 completada.** Habilita paralelismo de agentes **01, 02 y 03**.

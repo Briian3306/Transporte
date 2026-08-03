@@ -106,6 +106,10 @@ La misma migración intenta insertar `system_modules.name = 'peajes'` + acción 
 
 ## Referencias
 
+### Estaciones y aliases de proveedor
+
+`estaciones` incorpora coordenadas, camino y estado geográfico `OK`/`REVIEW`. `estaciones_alias_proveedor` conserva equivalencias normalizadas y confirmadas por empresa; es la fuente de resolución reutilizable antes de sugerir coincidencias parciales.
+
 - SQL: `supabase/migrations/20260730125513_peajes_catalogos.sql`, `supabase/migrations/20260731124502_peajes_empresas.sql`
 - SQL task: [docs/08-sql/peajes/empresas/](../../08-sql/peajes/empresas/README.md)
 - Servicio: `src/app/components/peajes/services/peajes-catalogo.service.ts`

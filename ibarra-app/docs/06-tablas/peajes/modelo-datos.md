@@ -76,6 +76,10 @@ Constante global: `PEAJES_GLOBAL_EMPRESA_ID === '__global__'` (alineada a `GLOBA
 
 ## Referencias
 
+### Extensión AUSOL
+
+La estación mantiene `latitud`, `longitud`, `camino` y `estado_geocodificacion`; los aliases proveedor-estación se modelan en una tabla relacional con alcance de empresa, no solo como texto libre.
+
 - Detalle tablas: [catalogos.md](./catalogos.md), [facturas-pasadas.md](./facturas-pasadas.md), [plantillas-algoritmos.md](./plantillas-algoritmos.md), [auditoria-y-rpcs.md](./auditoria-y-rpcs.md)
 - Migraciones: `supabase/migrations/20260730*_peajes_*.sql`
 - Módulo: [docs/modulos/peajes.md](../../modulos/peajes.md)

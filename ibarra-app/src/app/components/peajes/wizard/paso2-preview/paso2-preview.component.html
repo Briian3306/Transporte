@@ -12,6 +12,57 @@
     </div>
   </div>
 
+  <section
+    class="paso2__recos"
+    *ngIf="recomendacionesVisibles.length"
+    aria-label="Recomendaciones de transformación"
+  >
+    <div class="paso2__recos-head">
+      <div>
+        <div class="paso2__recos-eyebrow">Asistente de importación</div>
+        <strong>Columnas reconocidas</strong>
+        <p>Aplicá las transformaciones sugeridas según el significado de cada columna.</p>
+      </div>
+      <button
+        type="button"
+        class="pw__btn pw__btn--small pw__btn--primary"
+        *ngIf="pendientesCount >= 2"
+        (click)="aplicarTodas()"
+      >
+        Aplicar todas
+      </button>
+    </div>
+
+    <ul class="paso2__reco-list">
+      <li
+        class="paso2__reco"
+        *ngFor="let rec of recomendacionesVisibles"
+        [class.paso2__reco--accepted]="rec.status === 'accepted'"
+        [class.paso2__reco--pending]="rec.status === 'pending'"
+      >
+        <div class="paso2__reco-mark" aria-hidden="true">
+          {{ rec.status === 'accepted' ? '✓' : '→' }}
+        </div>
+        <div class="paso2__reco-body">
+          <div class="paso2__reco-title">{{ rec.title }}</div>
+          <div class="paso2__reco-detail">{{ rec.detail }}</div>
+          <div class="paso2__reco-cols" *ngIf="rec.columnasEntrada.length">
+            <span *ngFor="let col of rec.columnasEntrada" class="paso2__reco-token">{{ col }}</span>
+          </div>
+        </div>
+        <div class="paso2__reco-actions" *ngIf="rec.status === 'pending'">
+          <button type="button" class="pw__btn pw__btn--small pw__btn--primary" (click)="aplicarRecomendacion(rec.id)">
+            Aplicar
+          </button>
+          <button type="button" class="pw__btn pw__btn--small pw__btn--ghost" (click)="descartarRecomendacion(rec.id)">
+            Descartar
+          </button>
+        </div>
+        <div class="paso2__reco-done" *ngIf="rec.status === 'accepted'">Aplicada</div>
+      </li>
+    </ul>
+  </section>
+
   <div class="pw__body">
     <div class="paso2__toolbar">
       <div>
@@ -22,6 +73,7 @@
             class="pw__chip"
             *ngFor="let col of p.columnas"
             [class.pw__chip--off]="!incluida(col)"
+            [class.paso2__chip--hint]="columnaConRecomendacion(col)"
             (click)="toggleColumna(col, !incluida(col))"
           >
             {{ incluida(col) ? '✓' : '—' }} {{ col }}

@@ -77,6 +77,11 @@
                   <button type="button" class="pw__btn pw__btn--small pw__btn--ghost" (click)="abrirCrear(r.valorProveedor)">
                     Nueva
                   </button>
+                  <button
+                    *ngIf="reconocimientos[r.valorProveedor]?.tipo === 'sugerencias'"
+                    type="button" class="pw__btn pw__btn--small pw__btn--ghost"
+                    (click)="declararSinCoincidencia(r.valorProveedor)"
+                  >Ninguna coincide</button>
                 </td>
               </tr>
             </tbody>

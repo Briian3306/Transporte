@@ -1,0 +1,123 @@
+<div class="pfd" *ngIf="open" role="dialog" aria-modal="true" [attr.aria-label]="title">
+  <button type="button" class="pfd__backdrop" (click)="closed.emit()" aria-label="Cerrar"></button>
+  <aside class="pfd__panel">
+    <header class="pfd__header">
+      <div>
+        <p class="pfd__eyebrow">Pasadas</p>
+        <h2>{{ title }}</h2>
+      </div>
+      <button type="button" class="pfd__icon-btn" (click)="closed.emit()" aria-label="Cerrar panel">
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <div class="pfd__body">
+      <div class="pfd__badge-row" *ngIf="mode !== 'create' || form.controls.estacion_id.value">
+        <span class="pfd__badge" [class.pfd__badge--ok]="badge === 'OK'" [class.pfd__badge--pending]="badge === 'PENDING'">
+          {{ badge === 'OK' ? 'OK' : 'PENDING' }}
+        </span>
+        <span class="pfd__muted">Estado de estación por coordenadas</span>
+      </div>
+
+      <dl class="pfd__audit" *ngIf="mode !== 'create' && row">
+        <div>
+          <dt>Creado</dt>
+          <dd>{{ row.created_at | date: 'yyyy-MM-dd HH:mm' }}</dd>
+        </div>
+        <div>
+          <dt>Usuario</dt>
+          <dd>{{ row.user_id || '—' }}</dd>
+        </div>
+        <div>
+          <dt>Archivo</dt>
+          <dd>{{ row.file_upload_name || '—' }}</dd>
+        </div>
+        <div>
+          <dt>Factura</dt>
+          <dd>{{ row.factura_numero }}</dd>
+        </div>
+        <div>
+          <dt>Coords</dt>
+          <dd>
+            <ng-container *ngIf="row.estacion_latitud != null && row.estacion_longitud != null; else noCoords">
+              {{ row.estacion_latitud }}, {{ row.estacion_longitud }}
+            </ng-container>
+            <ng-template #noCoords>—</ng-template>
+          </dd>
+        </div>
+      </dl>
+
+      <form class="pfd__form" [formGroup]="form" (ngSubmit)="submit()">
+        <label>
+          Fecha y hora
+          <input type="datetime-local" formControlName="fecha_hora" />
+        </label>
+        <label>
+          Estación
+          <select formControlName="estacion_id">
+            <option value="">Seleccionar…</option>
+            <option *ngFor="let e of estaciones" [value]="e.id">{{ e.nombre }}</option>
+          </select>
+        </label>
+        <label>
+          Patente
+          <select formControlName="patente_id">
+            <option value="">Seleccionar…</option>
+            <option *ngFor="let p of patentes" [value]="p.id">{{ p.patente }}</option>
+          </select>
+        </label>
+        <label>
+          Pase
+          <select formControlName="pase_id">
+            <option value="">Seleccionar…</option>
+            <option *ngFor="let p of pasesFiltrados" [value]="p.id">{{ p.pase }}</option>
+          </select>
+        </label>
+        <label>
+          Factura
+          <select formControlName="factura_id">
+            <option value="">Seleccionar…</option>
+            <option *ngFor="let f of facturas" [value]="f.id">{{ f.factura }}</option>
+          </select>
+        </label>
+        <div class="pfd__row3">
+          <label>
+            Precio
+            <input type="number" step="0.01" formControlName="precio" />
+          </label>
+          <label>
+            Bonificación
+            <input type="number" step="0.01" formControlName="bonificacion" />
+          </label>
+          <label>
+            Cantidad
+            <input type="number" step="1" formControlName="quantity" />
+          </label>
+        </div>
+        <p class="pfd__neto">
+          Importe neto
+          <strong>{{ netoPreview | number: '1.2-2' }}</strong>
+        </p>
+
+        <p class="pfd__error" *ngIf="error">{{ error }}</p>
+
+        <footer class="pfd__actions">
+          <button type="button" class="pfd__btn pfd__btn--ghost" (click)="closed.emit()">Cerrar</button>
+          <ng-container *ngIf="mode === 'view'">
+            <button type="button" class="pfd__btn pfd__btn--danger" (click)="deleteRequest.emit()">
+              Eliminar
+            </button>
+            <button type="button" class="pfd__btn pfd__btn--primary" (click)="editRequest.emit()">
+              Editar
+            </button>
+          </ng-container>
+          <ng-container *ngIf="mode === 'edit' || mode === 'create'">
+            <button type="submit" class="pfd__btn pfd__btn--primary" [disabled]="saving || form.invalid">
+              {{ saving ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </ng-container>
+        </footer>
+      </form>
+    </div>
+  </aside>
+</div>

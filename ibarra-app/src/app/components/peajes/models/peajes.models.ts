@@ -30,9 +30,31 @@ export interface Estacion {
   descripcion?: string | null;
   /** Códigos/nombres del proveedor para sugerencia de match (RF-17). */
   codigos_proveedor?: string[] | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  camino?: string | null;
+  estado_geocodificacion?: 'OK' | 'REVIEW';
   created_at?: string;
   /** Join opcional. */
   peaje?: Peaje;
+}
+
+/** Alias normalizado y confirmado para resolver nombres heterogéneos del proveedor. */
+export interface EstacionAliasProveedor {
+  id: string;
+  empresa_id: string;
+  estacion_id: string;
+  valor_proveedor: string;
+  valor_normalizado: string;
+  origen?: 'seed' | 'usuario' | 'plantilla';
+  created_at?: string;
+}
+
+export interface ResultadoReconocimientoEstacion {
+  valorProveedor: string;
+  tipo: 'exacta' | 'sugerencias' | 'sin_coincidencia';
+  estacion?: Estacion | null;
+  sugerencias: Estacion[];
 }
 
 export interface Patente {
@@ -78,8 +100,41 @@ export interface Pasada {
   quantity: number;
   importe_neto: number;
   created_at?: string;
+  /** Usuario que creó el registro (auth.uid()). */
+  user_id?: string | null;
+  /** Nombre del archivo de carga (auditoría). */
+  file_upload_name?: string | null;
   estacion?: Estacion;
   factura?: Factura;
+}
+
+/** Fila de la vista `pasadas_gestion` / RPC listar. */
+export interface PasadaGestion extends Pasada {
+  estacion_nombre: string;
+  estacion_latitud?: number | null;
+  estacion_longitud?: number | null;
+  peaje_id: string;
+  peaje_nombre: string;
+  empresa_id?: string | null;
+  empresa_nombre?: string | null;
+  patente_codigo: string;
+  patente_categoria?: string | null;
+  pase_codigo: string;
+  factura_numero: string;
+  factura_cuenta?: string | null;
+  fecha_factura?: string | null;
+  factura_importe_sin_iva?: number | null;
+  factura_importe_total?: number | null;
+}
+
+export type EstacionCoordsBadge = 'OK' | 'PENDING';
+
+/** Badge estación: solo coordenadas (lat y lng informados). */
+export function stationBadgeFromCoords(
+  lat?: number | null,
+  lng?: number | null
+): EstacionCoordsBadge {
+  return lat != null && lng != null ? 'OK' : 'PENDING';
 }
 
 /** Fila ya mapeada a Structure Goal (pre-persistencia / preview). */
@@ -147,4 +202,6 @@ export interface RegistroCargaPeajes {
   filas_procesadas: number;
   errores?: ErrorValidacionPasada[] | null;
   created_at?: string;
+  nombre_archivo?: string | null;
+  user_id?: string | null;
 }

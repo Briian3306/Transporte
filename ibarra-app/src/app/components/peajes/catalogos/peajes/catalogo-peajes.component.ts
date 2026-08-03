@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { PEAJES_CATALOGO_SERVICE, Peaje, PeajesCatalogoService } from '../../models';
+import { Empresa, PEAJES_CATALOGO_SERVICE, Peaje, PeajesCatalogoService } from '../../models';
 
 @Component({
   selector: 'app-catalogo-peajes',
@@ -16,10 +16,15 @@ export class CatalogoPeajesComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   peajes: Peaje[] = [];
+  empresas: Empresa[] = [];
   filtro = '';
   editandoId: string | null = null;
   error: string | null = null;
   guardando = false;
+
+  crearEmpresaAbierto = false;
+  nuevaEmpresaNombre = '';
+  nuevaEmpresaDescripcion = '';
 
   form = this.fb.nonNullable.group({
     nombre: ['', Validators.required],
@@ -41,16 +46,28 @@ export class CatalogoPeajesComponent implements OnInit {
       (p) =>
         p.id.toLowerCase().includes(q) ||
         p.nombre.toLowerCase().includes(q) ||
-        (p.ubicacion ?? '').toLowerCase().includes(q)
+        (p.ubicacion ?? '').toLowerCase().includes(q) ||
+        this.nombreEmpresa(p.empresa_id).toLowerCase().includes(q)
     );
   }
 
   async ngOnInit(): Promise<void> {
-    await this.cargar();
+    await Promise.all([this.cargarEmpresas(), this.cargar()]);
+  }
+
+  async cargarEmpresas(): Promise<void> {
+    this.empresas = await firstValueFrom(this.catalogo.listarEmpresas());
   }
 
   async cargar(): Promise<void> {
     this.peajes = await firstValueFrom(this.catalogo.listarPeajes());
+  }
+
+  nombreEmpresa(empresaId: string | null | undefined): string {
+    if (!empresaId) {
+      return '—';
+    }
+    return this.empresas.find((e) => e.id === empresaId)?.nombre ?? empresaId;
   }
 
   nuevo(): void {
@@ -66,6 +83,30 @@ export class CatalogoPeajesComponent implements OnInit {
       descripcion: p.descripcion ?? '',
       empresa_id: p.empresa_id ?? '',
     });
+  }
+
+  async crearEmpresa(): Promise<void> {
+    if (!this.nuevaEmpresaNombre.trim()) {
+      return;
+    }
+    this.error = null;
+    try {
+      const empresa = await firstValueFrom(
+        this.catalogo.crearEmpresa({
+          nombre: this.nuevaEmpresaNombre.trim(),
+          descripcion: this.nuevaEmpresaDescripcion.trim() || null,
+        })
+      );
+      this.empresas = [...this.empresas, empresa].sort((a, b) =>
+        a.nombre.localeCompare(b.nombre, 'es')
+      );
+      this.form.patchValue({ empresa_id: empresa.id });
+      this.crearEmpresaAbierto = false;
+      this.nuevaEmpresaNombre = '';
+      this.nuevaEmpresaDescripcion = '';
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'No se pudo crear la empresa';
+    }
   }
 
   async guardar(): Promise<void> {

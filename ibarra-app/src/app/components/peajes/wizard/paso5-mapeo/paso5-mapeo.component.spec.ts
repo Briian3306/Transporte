@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Paso5MapeoComponent } from './paso5-mapeo.component';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+import { PEAJES_CATALOGO_SERVICE } from '../../models';
+import { of } from 'rxjs';
 
 describe('Paso5MapeoComponent', () => {
   let fixture: ComponentFixture<Paso5MapeoComponent>;
@@ -10,7 +12,10 @@ describe('Paso5MapeoComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Paso5MapeoComponent],
-      providers: [PeajesWizardStateService],
+      providers: [
+        PeajesWizardStateService,
+        { provide: PEAJES_CATALOGO_SERVICE, useValue: { listarPatentes: () => of([]) } },
+      ],
     }).compileComponents();
 
     state = TestBed.inject(PeajesWizardStateService);
@@ -36,5 +41,19 @@ describe('Paso5MapeoComponent', () => {
     component.continuar();
     expect(component.error).toContain('obligatorias');
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('restaura PATENTE_ID, PRECIO y BONIFICACION desde encabezados del proveedor', () => {
+    state.setPreview({
+      nombreArchivo: '387882.csv', tamanioBytes: 10, totalFilas: 1,
+      columnas: ['PATENTE', 'TARIFA', 'BONIFICACION'],
+      filasPreview: [], filasOrigen: [], tiposInferidos: {},
+    });
+    state.setMapeos([]);
+    component.ngOnInit();
+
+    expect(component.mapeos.map((m) => `${m.columnaOrigen}:${m.columnaDestino}`)).toEqual([
+      'PATENTE:PATENTE_ID', 'TARIFA:PRECIO', 'BONIFICACION:BONIFICACION',
+    ]);
   });
 });

@@ -121,6 +121,12 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
           importe_neto: p.IMPORTE_NETO != null ? Number(p.IMPORTE_NETO) : undefined,
         }));
 
+        const nombreArchivo =
+          input.nombreArchivo ??
+          (typeof input.parametrosEfectivos?.['archivo'] === 'string'
+            ? (input.parametrosEfectivos['archivo'] as string)
+            : null);
+
         const { data, error } = await client.rpc('peajes_confirmar_carga', {
           p_factura: input.factura,
           p_pasadas: pasadasPayload,
@@ -132,6 +138,7 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
           },
           p_algoritmos_efectivos: [],
           p_errores: [],
+          p_nombre_archivo: nombreArchivo,
         });
         if (error) throw error;
 

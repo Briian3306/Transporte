@@ -21,6 +21,10 @@ import {
   auFilasParaMotor,
   buildAuPlantillaConfigs,
 } from '../wizard/fixtures/autopistas-urbanas.fixture';
+import {
+  ACCESO_OESTE_FILAS_MUESTRA,
+  buildAccesoOestePlantillaConfigs,
+} from './mocks/acceso-oeste.fixture';
 
 const algoritmos: AlgoritmoCombinado[] = [
   {
@@ -150,7 +154,7 @@ function main(): void {
 
   console.log('F03-9 descriptors (10 códigos)');
   const descs = motor.getAlgorithmDescriptors();
-  assert(descs.length === 10, '10 AlgorithmDescriptor');
+  assert(descs.length === 11, '11 AlgorithmDescriptor');
   assert(
     descs.every((d) => typeof d.validar === 'function' && typeof d.resumen === 'function'),
     'descriptor validar/resumen'
@@ -314,6 +318,24 @@ function main(): void {
     Math.abs(auSum - AU_IMPORTE_SIN_IVA) < 0.01,
     `AU suma IMPORTE_NETO = 132940.19 (got ${auSum})`
   );
+
+  console.log('I-P Acceso Oeste CSV: ISO, estación-vía y valores estándar');
+  const accesoRows = motor.aplicarPipeline(
+    ACCESO_OESTE_FILAS_MUESTRA,
+    buildAccesoOestePlantillaConfigs()
+  );
+  assert(accesoRows.length === 2, 'Acceso Oeste filas muestra');
+  assert(
+    accesoRows[0]['FECHA_HORA'] === '2026-07-16 04:36:48',
+    'Acceso Oeste FECHA_HORA ISO'
+  );
+  assert(
+    accesoRows[0]['CODIGO_ESTACION'] === 'ITUZAINGO - 05',
+    'Acceso Oeste ESTACION + VIA'
+  );
+  assert(accesoRows[0]['PASE_ID'] === '94337220', 'Acceso Oeste DISPOSITIVO → PASE_ID');
+  assert(accesoRows[0]['PATENTE_ID'] === 'OWG130', 'Acceso Oeste PATENTE → PATENTE_ID');
+  assert(accesoRows[0]['IMPORTE_NETO'] === 3976.59, 'Acceso Oeste importe neto');
 
   console.log('\nPASS: verificación motor/plantillas F03 + I-P Demo/AU');
 }

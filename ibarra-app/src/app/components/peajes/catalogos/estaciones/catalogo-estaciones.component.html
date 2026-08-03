@@ -6,7 +6,7 @@
 
   <div class="cat__layout">
     <section class="cat__panel">
-      <h2>Nueva estación</h2>
+      <div class="est__form-title"><span>{{ editandoId ? 'Editar estación' : 'Nueva estación' }}</span><small *ngIf="editandoId">Edición activa</small></div>
       <form [formGroup]="form" class="cat__form" (ngSubmit)="guardar()">
         <label>
           Peaje *
@@ -19,8 +19,11 @@
         <label>Ubicación<input formControlName="ubicacion" /></label>
         <label>Descripción<input formControlName="descripcion" /></label>
         <label>Códigos proveedor (coma)<input formControlName="codigos_proveedor" placeholder="3, EST-3" /></label>
+        <div class="est__geo"><label>Latitud<input type="number" step="any" formControlName="latitud" /></label><label>Longitud<input type="number" step="any" formControlName="longitud" /></label></div>
+        <label>Camino / corredor<input formControlName="camino" placeholder="Ej.: COLECTORAS" /></label>
         <div class="cat__actions">
-          <button type="submit" [disabled]="guardando">Crear</button>
+          <button type="submit" [disabled]="guardando">{{ guardando ? 'Guardando…' : (editandoId ? 'Guardar cambios' : 'Crear estación') }}</button>
+          <button type="button" *ngIf="editandoId" (click)="cancelarEdicion()">Cancelar</button>
         </div>
       </form>
       <p class="cat__error" *ngIf="error">{{ error }}</p>
@@ -59,7 +62,7 @@
             <th>ID</th>
             <th>Nombre</th>
             <th>Peaje</th>
-            <th>Códigos</th>
+            <th>Ubicación</th><th>Estado</th><th>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -67,10 +70,12 @@
             <td>{{ e.id }}</td>
             <td>{{ e.nombre }}</td>
             <td>{{ e.peaje?.nombre || e.peaje_id }}</td>
-            <td>{{ (e.codigos_proveedor || []).join(', ') || '—' }}</td>
+            <td><strong>{{ e.camino || '—' }}</strong><small>{{ e.latitud ?? '—' }}, {{ e.longitud ?? '—' }}</small></td>
+            <td><span class="est__status" [class.est__status--review]="e.estado_geocodificacion === 'REVIEW'">{{ e.estado_geocodificacion || 'REVIEW' }}</span></td>
+            <td><button type="button" class="est__edit" (click)="editar(e)">Editar</button></td>
           </tr>
           <tr *ngIf="!estacionesFiltradas.length">
-            <td colspan="4" class="cat__empty">Sin resultados para el filtro.</td>
+            <td colspan="6" class="cat__empty">Sin resultados para el filtro.</td>
           </tr>
         </tbody>
       </table>

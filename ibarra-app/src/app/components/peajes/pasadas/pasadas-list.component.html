@@ -1,0 +1,145 @@
+<div class="pl">
+  <header class="pl__header">
+    <div>
+      <p class="pl__eyebrow">Módulo Peajes</p>
+      <h1>Pasadas</h1>
+      <p class="pl__sub">Revisá, filtrá y gestioná pasadas persistidas con auditoría de carga.</p>
+    </div>
+    <div class="pl__header-actions">
+      <a routerLink="/peajes" class="pl__link">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Volver
+      </a>
+      <button type="button" class="pl__btn pl__btn--primary" (click)="openCreate()">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        Nueva
+      </button>
+      <button
+        type="button"
+        class="pl__btn"
+        disabled
+        title="Acciones masivas — próximamente"
+        [attr.aria-disabled]="true"
+      >
+        Eliminar selección
+        <span *ngIf="selectedIds.length">({{ selectedIds.length }})</span>
+      </button>
+    </div>
+  </header>
+
+  <app-pasadas-filters
+    [value]="filters"
+    [estaciones]="estaciones"
+    [patentes]="patentes"
+    [empresas]="empresas"
+    (valueChange)="onFiltersChange($event)"
+  ></app-pasadas-filters>
+
+  <app-filter-chip-rail
+    [chips]="chips"
+    (remove)="removeChip($event)"
+    (clear)="clearFilters()"
+  ></app-filter-chip-rail>
+
+  <p class="pl__error" *ngIf="error" role="alert">{{ error }}</p>
+
+  <app-data-table
+    [columns]="columns"
+    [rows]="tableRows"
+    [loading]="loading"
+    [selectable]="true"
+    [selectedIds]="selectedIds"
+    [sort]="sort"
+    [page]="page"
+    [pageSize]="pageSize"
+    [total]="total"
+    emptyMessage="No hay pasadas con estos filtros."
+    exportLabel="Exportar"
+    [exportEnabled]="false"
+    (sortChange)="onSortChange($event)"
+    (pageChange)="onPageChange($event)"
+    (selectionChange)="onSelectionChange($event)"
+    (rowClick)="openRow($event)"
+  >
+    <ng-template appDataTableColumn="fecha_hora" let-row>
+      <span class="pl__mono">{{ asPasada(row).fecha_hora | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+    </ng-template>
+
+    <ng-template appDataTableColumn="estacion_nombre" let-row>
+      <div class="pl__estacion">
+        <span>{{ asPasada(row).estacion_nombre }}</span>
+        <span
+          class="pl__badge"
+          [class.pl__badge--ok]="badge(row) === 'OK'"
+          [class.pl__badge--pending]="badge(row) === 'PENDING'"
+        >
+          {{ badge(row) }}
+        </span>
+      </div>
+    </ng-template>
+
+    <ng-template appDataTableColumn="patente_codigo" let-row>
+      <span class="pl__plate">{{ asPasada(row).patente_codigo }}</span>
+    </ng-template>
+
+    <ng-template appDataTableColumn="empresa_nombre" let-row>
+      {{ asPasada(row).empresa_nombre || '—' }}
+    </ng-template>
+
+    <ng-template appDataTableColumn="precio" let-row>
+      <strong class="pl__price">{{ asPasada(row).precio | number: '1.2-2' }}</strong>
+    </ng-template>
+
+    <ng-template appDataTableColumn="importe_neto" let-row>
+      <strong class="pl__price">{{ asPasada(row).importe_neto | number: '1.2-2' }}</strong>
+    </ng-template>
+
+    <ng-template appDataTableColumn="file_upload_name" let-row>
+      <span class="pl__file">{{ asPasada(row).file_upload_name || '—' }}</span>
+    </ng-template>
+
+    <ng-template appDataTableColumn="created_at" let-row>
+      <span class="pl__mono">{{ asPasada(row).created_at | date: 'yyyy-MM-dd HH:mm' }}</span>
+    </ng-template>
+
+    <ng-template appDataTableColumn="acciones" let-row>
+      <button
+        type="button"
+        class="pl__icon"
+        title="Editar"
+        (click)="$event.stopPropagation(); openEdit(row)"
+      >
+        <i class="fas fa-pen" aria-hidden="true"></i>
+      </button>
+    </ng-template>
+  </app-data-table>
+
+  <app-pasadas-form-drawer
+    [open]="drawerOpen"
+    [mode]="drawerMode"
+    [row]="selectedRow"
+    [estaciones]="estaciones"
+    [patentes]="patentes"
+    [pases]="pases"
+    [facturas]="facturas"
+    [saving]="saving"
+    [error]="drawerError"
+    (closed)="closeDrawer()"
+    (save)="saveRow($event)"
+    (editRequest)="requestEdit()"
+    (deleteRequest)="requestDelete()"
+  ></app-pasadas-form-drawer>
+
+  <div class="pl__confirm" *ngIf="confirmDeleteId" role="alertdialog" aria-label="Confirmar eliminación">
+    <div class="pl__confirm-card">
+      <h3>Eliminar pasada</h3>
+      <p>Esta acción no se puede deshacer. ¿Confirmás eliminar el registro?</p>
+      <div class="pl__confirm-actions">
+        <button type="button" class="pl__btn" (click)="cancelDelete()">Cancelar</button>
+        <button type="button" class="pl__btn pl__btn--danger" [disabled]="saving" (click)="confirmDelete()">
+          {{ saving ? 'Eliminando…' : 'Eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

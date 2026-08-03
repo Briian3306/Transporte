@@ -270,7 +270,8 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
           if (
             paso.algoritmoCodigo === 'BORRAR_ESPACIOS' ||
             paso.algoritmoCodigo === 'ELIMINAR_GUIONES' ||
-            paso.algoritmoCodigo === 'CONVERTIR_MAYUSCULAS'
+            paso.algoritmoCodigo === 'CONVERTIR_MAYUSCULAS' ||
+            paso.algoritmoCodigo === 'REEMPLAZAR_TEXTO'
           ) {
             resultado[paso.columnaOrigen] = valor;
           }

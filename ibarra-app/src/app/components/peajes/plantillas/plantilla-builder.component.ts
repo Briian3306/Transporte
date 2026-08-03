@@ -2,11 +2,15 @@ import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import {
   AlgoritmoCombinado,
   ConfiguracionPlantilla,
+  Empresa,
   PlantillaConfiguracion,
+  PEAJES_CATALOGO_SERVICE,
   PEAJES_PLANTILLAS_SERVICE,
+  PeajesCatalogoService,
   PeajesPlantillasService,
 } from '../models';
 import { EstadoRecursoPeaje, PASADA_COLUMN_KEYS } from '../models/peajes.types';
@@ -31,7 +35,7 @@ interface ConfigDraft {
 
 /**
  * Builder / editor de plantillas (F03-2, F03-3).
- * Persistencia v?a PeajesPlantillasService (Supabase F01).
+ * Persistencia vía PeajesPlantillasService (Supabase F01).
  */
 @Component({
   selector: 'app-plantilla-builder',
@@ -46,13 +50,15 @@ export class PlantillaBuilderComponent implements OnInit {
   private readonly wizardState = inject(PeajesWizardStateService);
 
   constructor(
-    @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService
+    @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService,
+    @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
   ) {}
 
   plantillaId: string | null = null;
   nombre = '';
   descripcion = '';
-  empresaId = 'empresa-demo';
+  empresaId = '';
+  empresas: Empresa[] = [];
   estado: EstadoRecursoPeaje = 'borrador';
   configs: ConfigDraft[] = [];
   algoritmos: AlgoritmoCombinado[] = [];
@@ -65,9 +71,13 @@ export class PlantillaBuilderComponent implements OnInit {
   previewResultado: Record<string, unknown> | null = null;
   guardando = false;
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.codigosDisponibles = this.motor.getRegistry().codigos();
     this.plantillasSvc.listarAlgoritmos().subscribe((a) => (this.algoritmos = a));
+    this.empresas = await firstValueFrom(this.catalogo.listarEmpresas());
+    if (!this.empresaId && this.empresas.length) {
+      this.empresaId = this.empresas[0].id;
+    }
 
     if (this.route.snapshot.queryParamMap.get('desdeWizard') === '1' && this.prellenarDesdeWizard()) {
       return;

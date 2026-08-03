@@ -7,18 +7,25 @@ const PREVIEW_MAX_ROWS = 10;
 @Injectable({ providedIn: 'root' })
 export class PeajesExcelService {
   /** Solo acepta extensión .xlsx (RF-01 / RF-02). */
-  esXlsxValido(file: File): boolean {
+  esArchivoValido(file: File): boolean {
     const name = file.name.toLowerCase();
-    return name.endsWith('.xlsx');
+    return name.endsWith('.xlsx') || name.endsWith('.csv');
+  }
+
+  esXlsxValido(file: File): boolean {
+    return this.esArchivoValido(file);
   }
 
   async parsearArchivo(file: File): Promise<ExcelCargaPreview> {
-    if (!this.esXlsxValido(file)) {
-      throw new Error('Solo se permiten archivos .xlsx');
+    if (!this.esArchivoValido(file)) {
+      throw new Error('Solo se permiten archivos .xlsx o .csv');
     }
 
-    const buffer = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+    const esCsv = file.name.toLowerCase().endsWith('.csv');
+    const contenidoCsv = esCsv ? await file.text() : null;
+    const workbook = esCsv
+      ? XLSX.read(contenidoCsv ?? '', { type: 'string', FS: this.detectarDelimitador(contenidoCsv ?? '') })
+      : XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
     const sheetName = workbook.SheetNames[0];
     if (!sheetName) {
       throw new Error('El archivo no contiene hojas');
@@ -80,6 +87,16 @@ export class PeajesExcelService {
       return `${dd}/${mm}/${yyyy}`;
     }
     return value;
+  }
+
+  private detectarDelimitador(texto: string): string {
+    const encabezado = texto.replace(/^\uFEFF/, '').split(/\r?\n/, 1)[0] ?? '';
+    const candidatos = [';', ',', '\t'];
+    return candidatos.reduce(
+      (mejor, candidato) =>
+        encabezado.split(candidato).length > encabezado.split(mejor).length ? candidato : mejor,
+      ';'
+    );
   }
 
   private inferirTipo(valores: unknown[]): string {
