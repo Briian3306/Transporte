@@ -39,6 +39,9 @@ npx supabase db reset --local --no-seed
 npx supabase test db
 ```
 
+Para login + roles admin en CLI (`pnpm dev`), copiar Auth y seed RBAC desde DESARROLLO:  
+[docs/05-configuracion/cli-local-credenciales-y-permisos.md](../../../docs/05-configuracion/cli-local-credenciales-y-permisos.md).
+
 Aplicar migraciones con CLI local (`db reset`, `migration up`, o el flujo local del repo). **No** usar MCP remoto como fuente de verdad de testing.
 
 Antes de cualquier comando `--linked` contra DESARROLLO:

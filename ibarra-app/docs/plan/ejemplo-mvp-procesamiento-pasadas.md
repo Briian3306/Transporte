@@ -18,6 +18,35 @@ El objetivo es demostrar cómo el sistema:
 
 Los datos utilizados son ficticios y se emplean únicamente para validar el funcionamiento del MVP.
 
+Otro proveedor (CSV real, pipeline más simple): [ejemplo-autopistas-urbanas-pasadas.md](./ejemplo-autopistas-urbanas-pasadas.md).
+
+Arquitectura de patrones: skill `.agents/skills/peajes-transformaciones-motor/`.  
+Plan de pruebas (transform/validate): [testing_plan.md](./testing_plan.md) · skill `.agents/skills/peajes-testing-transformaciones/`.
+
+---
+
+## 1.1 Patrones y algoritmos del motor
+
+Este ejemplo aplica los tres patrones del Transformation Engine:
+
+| Patrón | Uso en el Demo |
+|--------|----------------|
+| **Adapter** | `PROVEEDOR_DEMO` / fixture `MVP_TRANSFORM_SPECS`: headers `DOMINIO`, `DISPOSITIVON`, hora `HHMMSS`. |
+| **Builder** | `PipelineBuilder` ordena configuraciones 10…50 y expande algoritmos combinados. |
+| **Strategy** | `StrategyRegistry` ejecuta solo códigos de `ALGORITMO_CODIGOS` (RN-20). |
+
+| Destino | Combinado (nombre) | Pasos atómicos registrados |
+|---------|-------------------|----------------------------|
+| `FECHA_HORA` | `COMBINAR_FECHA_HORA` | `FORMATEAR_FECHA_HORA` (incluye pad `HHMMSS` + parse fecha) |
+| `PATENTE_ID` | `NORMALIZAR_PATENTE` | `BORRAR_ESPACIOS` → `ELIMINAR_GUIONES` → `CONVERTIR_MAYUSCULAS` |
+| `PASE_ID` | — | `CONVERTIR_TEXTO` / `COPIAR_COLUMNA` |
+| `ESTACION_ID` | — | Mapeo catálogo (Paso 5; no es código atómico) |
+| `IMPORTE_NETO` | — | `CALCULAR_IMPORTE_NETO` (`TARIFA` − `BONIFICACION`) |
+| `QUANTITY` | — | `ASIGNAR_VALOR` `{ valor: 1 }` |
+| `PRECIO` / `BONIFICACION` | — | `CONVERTIR_NUMERO` |
+
+Los nombres `COMBINAR_FECHA_HORA` y `NORMALIZAR_PATENTE` **no** son códigos del registry: se expanden a pasos atómicos vía `algoritmo_combinado_pasos`.
+
 ---
 
 ## 2. Archivo de origen
@@ -237,24 +266,35 @@ La persistencia conceptual de los algoritmos combinados es:
 
 ### 5.7 Ejecución con Builder y Strategy
 
-El Builder recibe la plantilla vigente y construye un pipeline de ejecución con los pasos 10, 20, 30, 40 y 50. Antes de ejecutar, valida que existan `FECHA`, `HORA`, `DOMINIO`, `DISPOSITIVON`, `ESTACION`, `TARIFA` y `BONIFICACION`.
+El `PipelineBuilder` recibe la plantilla vigente y construye un pipeline con los pasos 10, 20, 30, 40 y 50. Antes de ejecutar, `validarDefinicionPlantilla` comprueba que existan `FECHA`, `HORA`, `DOMINIO`, `DISPOSITIVON`, `ESTACION`, `TARIFA` y `BONIFICACION`, y que no haya `orden` duplicado (RN-18).
 
-Luego, el motor usa Strategy para resolver cada código:
+Luego `PeajesMotorTransformacionService` / `StrategyRegistry` resuelve cada código **atómico** registrado:
 
 ```text
-COMBINAR_FECHA_HORA
-  → NormalizarHoraStrategy
-  → ParsearFechaStrategy
-  → CombinarFechaHoraStrategy
+COMBINAR_FECHA_HORA (combinado)
+  → FORMATEAR_FECHA_HORA
 
-NORMALIZAR_PATENTE
-  → BorrarEspaciosStrategy
-  → EliminarGuionesStrategy
-  → MayusculasStrategy
+NORMALIZAR_PATENTE (combinado)
+  → BORRAR_ESPACIOS
+  → ELIMINAR_GUIONES
+  → CONVERTIR_MAYUSCULAS
 
-CALCULAR_IMPORTE_NETO
-  → CalcularImporteNetoStrategy
+PASE_ID
+  → CONVERTIR_TEXTO
+
+IMPORTE_NETO
+  → CALCULAR_IMPORTE_NETO
+
+QUANTITY
+  → ASIGNAR_VALOR
 ```
+
+Implementación canónica:
+
+* `src/app/components/peajes/plantillas/motor/pipeline-builder.ts`
+* `src/app/components/peajes/plantillas/motor/strategy-registry.ts`
+* `src/app/components/peajes/plantillas/motor/strategies/estrategias-atomicas.ts`
+* Fixture Demo: `wizard/fixtures/mvp-ejemplo.fixture.ts` (`MVP_TRANSFORM_SPECS`)
 
 El resultado de la ejecución deberá registrar, como mínimo:
 
@@ -262,7 +302,7 @@ El resultado de la ejecución deberá registrar, como mínimo:
 * `algoritmo_combinado_id` y definición efectiva de cada algoritmo.
 * Orden ejecutado.
 * Cantidad de filas procesadas, válidas y rechazadas.
-* Fila, columna y algoritmo que originó cada error.
+* Fila, columna y algoritmo que originó cada error (RN-24).
 
 Si el usuario modifica la plantilla o un algoritmo combinado, la definición vigente se sobrescribirá y se utilizará en las ejecuciones posteriores. El versionado histórico queda fuera del MVP.
 

@@ -29,18 +29,24 @@ export class Paso6EstacionesComponent implements OnInit {
   relaciones: RelacionEstacionProveedor[] = [];
   sugerencias: Record<string, Estacion[]> = {};
   error: string | null = null;
+  successMsg: string | null = null;
   creandoPara: string | null = null;
   nuevaEstacionNombre = '';
   nuevaEstacionPeajeId = '';
+
+  /** Inline create peaje */
+  crearPeajeAbierto = false;
+  nuevoPeajeNombre = '';
+  nuevoPeajeUbicacion = '';
+  creandoPeaje = false;
+  guardandoRelaciones = false;
 
   constructor(
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.estaciones = await firstValueFrom(this.catalogo.listarEstaciones());
-    const peajes = await firstValueFrom(this.catalogo.listarPeajes());
-    this.peajesUnicos = peajes;
+    await this.recargarCatalogos();
     const valores = this.valoresProveedorUnicos();
     const prev = this.state.snapshot().relacionesEstacion;
 
@@ -64,6 +70,17 @@ export class Paso6EstacionesComponent implements OnInit {
     }
 
     this.nuevaEstacionPeajeId = this.peajesUnicos[0]?.id ?? '';
+  }
+
+  private async recargarCatalogos(): Promise<void> {
+    const empresaId = this.state.snapshot().empresaId ?? undefined;
+    this.estaciones = await firstValueFrom(this.catalogo.listarEstaciones());
+    // Sin filtrar por empresa si la lista queda vacía (peajes globales / sin empresa_id)
+    let peajes = await firstValueFrom(this.catalogo.listarPeajes(empresaId));
+    if (!peajes.length && empresaId) {
+      peajes = await firstValueFrom(this.catalogo.listarPeajes());
+    }
+    this.peajesUnicos = peajes;
   }
 
   private valoresProveedorUnicos(): string[] {
@@ -136,23 +153,113 @@ export class Paso6EstacionesComponent implements OnInit {
   abrirCrear(valorProveedor: string): void {
     this.creandoPara = valorProveedor;
     this.nuevaEstacionNombre = `Estación ${valorProveedor}`;
-    this.nuevaEstacionPeajeId = this.estaciones[0]?.peaje_id ?? '';
+    this.nuevaEstacionPeajeId =
+      this.peajesUnicos[0]?.id ?? this.estaciones[0]?.peaje_id ?? '';
+    this.crearPeajeAbierto = !this.peajesUnicos.length;
+    this.error = null;
+    this.successMsg = null;
+  }
+
+  abrirCrearPeaje(): void {
+    this.crearPeajeAbierto = true;
+    this.nuevoPeajeNombre = '';
+    this.nuevoPeajeUbicacion = '';
+    this.error = null;
+  }
+
+  async crearPeaje(): Promise<void> {
+    const nombre = this.nuevoPeajeNombre.trim();
+    if (!nombre) {
+      this.error = 'Ingresá el nombre del peaje.';
+      return;
+    }
+    this.creandoPeaje = true;
+    this.error = null;
+    try {
+      const empresaId = this.state.snapshot().empresaId;
+      const creado = await firstValueFrom(
+        this.catalogo.crearPeaje({
+          nombre,
+          ubicacion: this.nuevoPeajeUbicacion.trim() || null,
+          descripcion: null,
+          empresa_id: empresaId,
+        })
+      );
+      this.peajesUnicos = [...this.peajesUnicos, creado];
+      this.nuevaEstacionPeajeId = creado.id;
+      this.crearPeajeAbierto = false;
+      this.successMsg = `Peaje «${creado.nombre}» creado. Ahora podés crear la estación.`;
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'No se pudo crear el peaje.';
+    } finally {
+      this.creandoPeaje = false;
+    }
   }
 
   async crearEstacion(): Promise<void> {
-    if (!this.creandoPara || !this.nuevaEstacionNombre || !this.nuevaEstacionPeajeId) {
+    if (!this.creandoPara || !this.nuevaEstacionNombre.trim()) {
       return;
     }
-    const creada = await firstValueFrom(
-      this.catalogo.crearEstacion({
-        peaje_id: this.nuevaEstacionPeajeId,
-        nombre: this.nuevaEstacionNombre,
-        codigos_proveedor: [this.creandoPara],
-      })
-    );
-    this.estaciones = [...this.estaciones, creada];
-    this.seleccionar(this.creandoPara, creada.id);
-    this.creandoPara = null;
+    if (!this.nuevaEstacionPeajeId) {
+      this.error = 'Seleccioná o creá un peaje antes de relacionar la estación.';
+      this.crearPeajeAbierto = true;
+      return;
+    }
+    this.error = null;
+    try {
+      const creada = await firstValueFrom(
+        this.catalogo.crearEstacion({
+          peaje_id: this.nuevaEstacionPeajeId,
+          nombre: this.nuevaEstacionNombre.trim(),
+          codigos_proveedor: [this.creandoPara],
+        })
+      );
+      this.estaciones = [...this.estaciones, creada];
+      this.seleccionar(this.creandoPara, creada.id);
+      this.creandoPara = null;
+      this.successMsg = `Estación «${creada.nombre}» creada y relacionada (código ${creada.codigos_proveedor?.[0] ?? ''}). Quedará disponible la próxima vez.`;
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'No se pudo crear la estación.';
+    }
+  }
+
+  /**
+   * Persiste códigos de proveedor en las estaciones ya relacionadas
+   * para reutilizar el match en cargas futuras (plantilla de relaciones).
+   */
+  async guardarPlantillaRelaciones(): Promise<void> {
+    const listas = this.relaciones.filter((r) => r.estacionId);
+    if (!listas.length) {
+      this.error = 'No hay relaciones para guardar.';
+      return;
+    }
+    this.guardandoRelaciones = true;
+    this.error = null;
+    this.successMsg = null;
+    try {
+      for (const r of listas) {
+        const est = this.estaciones.find((e) => e.id === r.estacionId);
+        if (!est) continue;
+        const codigos = new Set((est.codigos_proveedor ?? []).map(String));
+        codigos.add(String(r.valorProveedor));
+        const actualizada = await firstValueFrom(
+          this.catalogo.actualizarEstacion(est.id, {
+            codigos_proveedor: [...codigos],
+          })
+        );
+        this.estaciones = this.estaciones.map((e) =>
+          e.id === actualizada.id ? actualizada : e
+        );
+      }
+      this.state.setRelacionesEstacion(this.relaciones);
+      this.successMsg =
+        'Relaciones guardadas en el catálogo. En la próxima carga se sugerirán automáticamente.';
+    } catch (e) {
+      this.error =
+        e instanceof Error ? e.message : 'No se pudieron guardar las relaciones.';
+    } finally {
+      this.guardandoRelaciones = false;
+    }
   }
 
   sinRelacion(): RelacionEstacionProveedor[] {

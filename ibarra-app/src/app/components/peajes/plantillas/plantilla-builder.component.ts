@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import {
   AlgoritmoCombinado,
   ConfiguracionPlantilla,
@@ -10,6 +11,7 @@ import {
 } from '../models';
 import { EstadoRecursoPeaje, PASADA_COLUMN_KEYS } from '../models/peajes.types';
 import { PeajesMotorTransformacionService } from './motor/peajes-motor-transformacion.service';
+import { PeajesWizardStateService } from '../wizard/services/peajes-wizard-state.service';
 import {
   COLUMNAS_ARCHIVO_DEMO,
   FILA_EJEMPLO_PRD_21,
@@ -40,6 +42,8 @@ interface ConfigDraft {
 })
 export class PlantillaBuilderComponent implements OnInit {
   private readonly motor = inject(PeajesMotorTransformacionService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly wizardState = inject(PeajesWizardStateService);
 
   constructor(
     @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService
@@ -64,6 +68,10 @@ export class PlantillaBuilderComponent implements OnInit {
   ngOnInit(): void {
     this.codigosDisponibles = this.motor.getRegistry().codigos();
     this.plantillasSvc.listarAlgoritmos().subscribe((a) => (this.algoritmos = a));
+
+    if (this.route.snapshot.queryParamMap.get('desdeWizard') === '1' && this.prellenarDesdeWizard()) {
+      return;
+    }
 
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     const match = path.match(/plantillas\/([^/]+)$/);
@@ -94,6 +102,33 @@ export class PlantillaBuilderComponent implements OnInit {
         this.mensaje = 'Plantilla demo ?21 cargada';
       }
     });
+  }
+
+  /** Convierte el estado vigente del wizard en un borrador editable, sin persistirlo. */
+  private prellenarDesdeWizard(): boolean {
+    const snap = this.wizardState.snapshot();
+    const mapeos = snap.mapeos.filter((m) => !m.excluida && !!m.columnaDestino);
+    if (!mapeos.length) {
+      return false;
+    }
+
+    const nombreArchivo = snap.preview?.nombreArchivo?.replace(/\.[^.]+$/, '') || 'carga actual';
+    this.nombre = `Plantilla · ${nombreArchivo}`;
+    this.descripcion = 'Borrador creado desde el wizard de carga de Peajes.';
+    this.empresaId = snap.factura.empresa_id || 'empresa-demo';
+    this.estado = 'borrador';
+    this.configs = mapeos.map((m, index) => ({
+      nombre_columna: m.columnaOrigen,
+      columna_destino: m.columnaDestino || '',
+      orden: (index + 1) * 10,
+      tipo: 'mapeo',
+      algoritmo_codigo: 'COPIAR_COLUMNA',
+      algoritmo_combinado_id: '',
+      obligatoria: true,
+      parametrosJson: '{}',
+    }));
+    this.mensaje = 'Borrador prellenado con las columnas y mapeos actuales del wizard.';
+    return true;
   }
 
   private aplicarPlantilla(p: PlantillaConfiguracion): void {

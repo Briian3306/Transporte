@@ -75,7 +75,9 @@
 
     <div class="pw__note">
       <strong>Nota de modelo:</strong>
-      PASADA_ID lo genera el sistema. QUANTITY e IMPORTE_NETO se completan al estandarizar si faltan.
+      PASADA_ID lo genera el sistema. Las columnas marcadas «(pipeline)» vienen del Paso 3
+      (p. ej. <span class="pw__mono">FECHA_HORA</span>); FECHA/HORA quedan resueltas y no requieren mapeo.
+      QUANTITY e IMPORTE_NETO se completan al estandarizar si faltan.
     </div>
 
     <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>

@@ -6,12 +6,14 @@ import {
   PEAJES_PLANTILLAS_SERVICE,
   PlantillaConfiguracion,
   PeajesPlantillasService,
+  PasadaEstandarizada,
 } from '../../models';
 import { PeajesMotorTransformacionService } from '../../plantillas/motor/peajes-motor-transformacion.service';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 
 /**
  * Paso 4 — selecciona/aplica plantilla vía PeajesPlantillasService + motor.
+ * Si hay draft del Paso 3, lo aplica a filasOrigen cuando no hay plantilla remota.
  */
 @Component({
   selector: 'app-paso4-plantilla',
@@ -38,17 +40,73 @@ export class Paso4PlantillaComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.plantillas = await firstValueFrom(this.plantillasSvc.listarPlantillas());
-    const prev = this.state.snapshot().plantillaId;
+    const snap = this.state.snapshot();
+    const prev = snap.plantillaId;
     if (prev) {
       this.plantillaId = prev;
     }
+    const draftCount = snap.configuracionesDraft.length;
+    if (draftCount > 0 && !prev) {
+      this.info = `Hay un pipeline draft del paso 3 (${draftCount} pasos). Se aplicará al continuar si no elegís otra plantilla.`;
+    }
+  }
+
+  get tieneDraft(): boolean {
+    return this.state.snapshot().configuracionesDraft.length > 0;
+  }
+
+  /** Filas completas para motor; fallback a preview. */
+  private filasParaMotor(columnas: string[]): Record<string, unknown>[] {
+    const s = this.state.snapshot();
+    const origen =
+      s.preview?.filasOrigen?.length
+        ? s.preview.filasOrigen
+        : (s.preview?.filasPreview ?? []);
+    return origen.map((f) => {
+      const out: Record<string, unknown> = {};
+      for (const c of columnas) {
+        out[c] = f[c];
+      }
+      // Conservar claves extra que ya vengan en la fila
+      for (const [k, v] of Object.entries(f)) {
+        if (!(k in out)) out[k] = v;
+      }
+      return out;
+    });
+  }
+
+  private aplicarDraftPipeline(): PasadaEstandarizada[] | null {
+    const configs = this.state.toConfiguracionesPlantilla();
+    if (!configs.length) return null;
+    const columnas = this.state.columnasParaMapeo();
+    const erroresValidacion = this.motor.validarDependenciasPipeline(configs, columnas);
+    if (erroresValidacion.length) {
+      this.errores = erroresValidacion.map(
+        (e) => `${e.columna}: ${e.motivo} (valor: ${e.valor})`
+      );
+      return null;
+    }
+    const filas = this.filasParaMotor(columnas);
+    return this.motor.aplicarPipeline(filas, configs);
   }
 
   async aplicarSeleccionada(): Promise<void> {
     this.errores = [];
     if (!this.plantillaId) {
       this.state.setPlantillaId(null);
-      this.info = 'Sin plantilla: se continúa con columnas crudas.';
+      if (this.tieneDraft) {
+        const transformadas = this.aplicarDraftPipeline();
+        if (!transformadas) {
+          if (!this.errores.length) {
+            this.errores.push('No se pudo aplicar el pipeline draft.');
+          }
+          return;
+        }
+        this.state.setPasadasEstandarizadas(transformadas);
+        this.info = `Pipeline draft aplicado (${transformadas.length} filas).`;
+        return;
+      }
+      this.info = 'Sin plantilla: se continúa con columnas crudas / mapeo posterior.';
       return;
     }
 
@@ -68,20 +126,12 @@ export class Paso4PlantillaComponent implements OnInit {
       return;
     }
 
-    const s = this.state.snapshot();
-    const filas = (s.preview?.filasPreview ?? []).map((f) => {
-      const out: Record<string, unknown> = {};
-      for (const c of columnas) {
-        out[c] = f[c];
-      }
-      return out;
-    });
-
+    const filas = this.filasParaMotor(columnas);
     const algoritmos = await firstValueFrom(this.plantillasSvc.listarAlgoritmos());
     const transformadas = this.motor.aplicarPipeline(filas, configs, algoritmos);
     this.state.setPasadasEstandarizadas(transformadas);
     this.state.setPlantillaId(plantilla.id);
-    this.info = `Plantilla «${plantilla.nombre}» aplicada vía motor (${transformadas.length} filas preview).`;
+    this.info = `Plantilla «${plantilla.nombre}» aplicada vía motor (${transformadas.length} filas).`;
   }
 
   async continuar(): Promise<void> {
@@ -92,8 +142,21 @@ export class Paso4PlantillaComponent implements OnInit {
     this.completado.emit();
   }
 
-  continuarSinPlantilla(): void {
+  async continuarSinPlantilla(): Promise<void> {
+    this.plantillaId = '';
     this.state.setPlantillaId(null);
+    this.errores = [];
+    if (this.tieneDraft) {
+      const transformadas = this.aplicarDraftPipeline();
+      if (!transformadas) {
+        if (!this.errores.length) {
+          this.errores.push('No se pudo aplicar el pipeline draft.');
+        }
+        return;
+      }
+      this.state.setPasadasEstandarizadas(transformadas);
+      this.info = `Continuando con pipeline draft (${transformadas.length} filas).`;
+    }
     this.completado.emit();
   }
 }

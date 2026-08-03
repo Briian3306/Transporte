@@ -8,6 +8,7 @@ import {
 import { EstadoRecursoPeaje } from '../../models/peajes.types';
 import { StrategyRegistry } from '../motor/strategy-registry';
 import { esRecursoGlobal } from '../mocks/peajes-plantillas.mock';
+import { validarDependenciasConfigs } from './dependencias-pipeline';
 
 export interface ResultadoValidacionPublicacion {
   ok: boolean;
@@ -16,12 +17,14 @@ export interface ResultadoValidacionPublicacion {
 
 /**
  * Validaciones previas a publicar plantilla/algoritmo (RF-31, RN-18, RN-20).
+ * Opcionalmente valida dependencias del pipeline si se pasan columnasOrigen.
  */
 export function validarPublicacionPlantilla(
   plantilla: Pick<PlantillaConfiguracion, 'nombre' | 'empresa_id' | 'estado'>,
   configuraciones: Omit<ConfiguracionPlantilla, 'id' | 'plantilla_id'>[],
   registry: StrategyRegistry,
-  algoritmos?: AlgoritmoCombinado[]
+  algoritmos?: AlgoritmoCombinado[],
+  columnasOrigen?: string[]
 ): ResultadoValidacionPublicacion {
   const errores: ErrorValidacionPasada[] = [];
 
@@ -104,6 +107,17 @@ export function validarPublicacionPlantilla(
       valor: null,
       motivo: 'No se puede publicar una plantilla activa sin configuraciones',
     });
+  }
+
+  if (columnasOrigen) {
+    const asFull = configuraciones.map((c, i) => ({
+      ...c,
+      id: `pub-${i}`,
+      plantilla_id: 'pub',
+    })) as ConfiguracionPlantilla[];
+    errores.push(
+      ...validarDependenciasConfigs(asFull, columnasOrigen, algoritmos)
+    );
   }
 
   return { ok: errores.length === 0, errores };

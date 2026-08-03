@@ -40,3 +40,7 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Local auth dumps from DESARROLLO (PII / password hashes — never commit)
+supabase/seed_auth.local.sql
+supabase/*.local.sql

@@ -55,6 +55,13 @@
             </div>
           </div>
           <div class="paso1__template-box">
+            <label class="paso1__template-select">Empresa
+              <select class="pw__select" [(ngModel)]="empresaId" (ngModelChange)="seleccionarEmpresa()">
+                <option value="">Buscar o seleccionar empresa…</option>
+                <option *ngFor="let empresa of empresas" [value]="empresa.id">{{ empresa.nombre }}</option>
+              </select>
+            </label>
+            <button type="button" class="pw__btn pw__btn--small" (click)="crearEmpresaAbierto = true">+ Crear empresa</button>
             <div class="paso1__template-head">
               <div>
                 <strong>¿Cómo seguir?</strong>
@@ -62,6 +69,20 @@
               </div>
               <span class="pw__status pw__status--valid" *ngIf="esEjemploMvp">Ejemplo MVP</span>
             </div>
+            <label class="paso1__template-select" for="plantilla-inicial">
+              <span>Plantilla a aplicar</span>
+              <select
+                id="plantilla-inicial"
+                class="pw__select"
+                [(ngModel)]="plantillaId"
+                (ngModelChange)="seleccionarPlantilla()"
+              >
+                <option value="">Elegir más adelante</option>
+                <option *ngFor="let plantilla of plantillas" [value]="plantilla.id">
+                  {{ plantilla.nombre }} · {{ plantilla.estado }}
+                </option>
+              </select>
+            </label>
           </div>
           <button type="button" class="pw__btn pw__btn--small" (click)="fileInput.click()">
             Reemplazar archivo
@@ -85,6 +106,20 @@
               </div>
               <span class="pw__status pw__status--warn">Recomendado</span>
             </div>
+            <label class="paso1__template-select" for="plantilla-inicial-vacia">
+              <span>Plantilla opcional</span>
+              <select
+                id="plantilla-inicial-vacia"
+                class="pw__select"
+                [(ngModel)]="plantillaId"
+                (ngModelChange)="seleccionarPlantilla()"
+              >
+                <option value="">Elegir más adelante</option>
+                <option *ngFor="let plantilla of plantillas" [value]="plantilla.id">
+                  {{ plantilla.nombre }} · {{ plantilla.estado }}
+                </option>
+              </select>
+            </label>
             <button type="button" class="pw__btn pw__btn--primary" (click)="cargarEjemploMvp()" style="width: 100%">
               <i class="fas fa-flask" aria-hidden="true"></i>
               Cargar ejemplo MVP
@@ -109,6 +144,15 @@
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </button>
     </div>
+  </div>
+
+  <div class="paso1__dialog-backdrop" *ngIf="crearEmpresaAbierto">
+    <section class="paso1__dialog" role="dialog" aria-modal="true" aria-labelledby="nueva-empresa-titulo">
+      <div class="paso1__dialog-head"><div><div class="pw__eyebrow">Catálogo de empresas</div><h3 id="nueva-empresa-titulo">Crear empresa</h3></div><button type="button" class="pw__btn pw__btn--small" (click)="crearEmpresaAbierto=false">Cerrar</button></div>
+      <p>La empresa será el contexto de esta carga, sus peajes y estaciones.</p>
+      <div class="pw__form-grid"><label class="pw__field">Nombre *<input [(ngModel)]="nuevaEmpresaNombre" autofocus /></label><label class="pw__field">Descripción<input [(ngModel)]="nuevaEmpresaDescripcion" /></label></div>
+      <div class="pw__footer-actions"><button type="button" class="pw__btn" (click)="crearEmpresaAbierto=false">Cancelar</button><button type="button" class="pw__btn pw__btn--primary" [disabled]="!nuevaEmpresaNombre.trim()" (click)="crearEmpresa()">Crear y seleccionar</button></div>
+    </section>
   </div>
 
   <input

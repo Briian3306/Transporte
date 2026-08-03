@@ -1,5 +1,13 @@
 import { CategoriaPatente, EstadoRecursoPeaje, PasadaColumnKey, TipoConfiguracionPlantilla } from './peajes.types';
 
+/** Empresa/proveedor de peajes (tabla empresas). */
+export interface Empresa {
+  id: string;
+  nombre: string;
+  descripcion?: string | null;
+  created_at?: string;
+}
+
 /** Catálogo Peaje (PRD §11.5 / tabla peajes). */
 export interface Peaje {
   id: string;

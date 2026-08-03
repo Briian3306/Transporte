@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import {
   Estacion,
+  Empresa,
   Pase,
   Patente,
   Peaje,
@@ -17,11 +18,25 @@ import { SupabaseService } from '../../../services/supabase.service';
 export class PeajesCatalogoSupabaseService implements PeajesCatalogoService {
   private readonly supabase = inject(SupabaseService);
 
-  listarPeajes(): Observable<Peaje[]> {
+  listarEmpresas(): Observable<Empresa[]> {
+    return from(this.supabase.executeWithRetry(async () => {
+      const client = await this.supabase.getClient(); const { data, error } = await client.from('empresas').select('*').order('nombre');
+      if (error) throw error; return (data ?? []) as Empresa[];
+    }));
+  }
+  crearEmpresa(data: Omit<Empresa, 'id' | 'created_at'>): Observable<Empresa> {
+    return from(this.supabase.executeWithRetry(async () => {
+      const client = await this.supabase.getClient(); const { data: row, error } = await client.from('empresas').insert(data).select('*').single();
+      if (error) throw error; return row as Empresa;
+    }));
+  }
+  listarPeajes(empresaId?: string): Observable<Peaje[]> {
     return from(
       this.supabase.executeWithRetry(async () => {
         const client = await this.supabase.getClient();
-        const { data, error } = await client.from('peajes').select('*').order('nombre');
+        let query = client.from('peajes').select('*').order('nombre');
+        if (empresaId) query = query.eq('empresa_id', empresaId);
+        const { data, error } = await query;
         if (error) throw error;
         return (data ?? []) as Peaje[];
       })

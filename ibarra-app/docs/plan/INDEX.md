@@ -16,7 +16,12 @@ La aplicación y el paquete de coordinación están centralizados en `ibarra-app
 ## Fuentes canónicas
 
 - PRD: [peaje-prd-es.md](./peaje-prd-es.md).
-- Caso de aceptación: [ejemplo-mvp-procesamiento-pasadas.md](./ejemplo-mvp-procesamiento-pasadas.md).
+- Caso de aceptación Demo: [ejemplo-mvp-procesamiento-pasadas.md](./ejemplo-mvp-procesamiento-pasadas.md).
+- Caso Autopistas Urbanas (CSV): [ejemplo-autopistas-urbanas-pasadas.md](./ejemplo-autopistas-urbanas-pasadas.md) — fuente [csv/autopistas_urbanas.csv](./csv/autopistas_urbanas.csv).
+- Datos ejemplo: [csv/](./csv/) (`1947768.xlsx` Demo, `autopistas_urbanas.csv`).
+- Testing plan (transform/validate MVP): [testing_plan.md](./testing_plan.md).
+- Motor transformaciones (patrones): `../../.agents/skills/peajes-transformaciones-motor/SKILL.md`.
+- Testing transformaciones: `../../.agents/skills/peajes-testing-transformaciones/SKILL.md`.
 - Estado y dependencias: `../../feature_list.json`.
 - Protocolo de ownership: `../../AGENTS.md`.
 - Bitácora vigente: `../claude-progress.md`.

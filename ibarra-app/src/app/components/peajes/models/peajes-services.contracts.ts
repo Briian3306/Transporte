@@ -1,6 +1,7 @@
 import { Observable } from 'rxjs';
 import {
   AlgoritmoCombinado,
+  Empresa,
   AlgoritmoCombinadoPaso,
   ConfiguracionPlantilla,
   ErrorValidacionPasada,
@@ -24,6 +25,8 @@ export interface ExcelCargaPreview {
   columnas: string[];
   /** Máximo 10 filas para preview (RNF-03). */
   filasPreview: Record<string, unknown>[];
+  /** Lote completo: la UI muestra 10 filas, el motor procesa todas. */
+  filasOrigen: Record<string, unknown>[];
   tiposInferidos: Record<string, string>;
 }
 
@@ -63,7 +66,9 @@ export interface ConfirmacionCargaResultado {
 
 /** Catálogos — implementación real: agente 01; mocks: 02. */
 export interface PeajesCatalogoService {
-  listarPeajes(): Observable<Peaje[]>;
+  listarEmpresas(): Observable<Empresa[]>;
+  crearEmpresa(data: Omit<Empresa, 'id' | 'created_at'>): Observable<Empresa>;
+  listarPeajes(empresaId?: string): Observable<Peaje[]>;
   obtenerPeaje(id: string): Observable<Peaje | null>;
   crearPeaje(data: Omit<Peaje, 'id' | 'created_at'>): Observable<Peaje>;
   actualizarPeaje(id: string, data: Partial<Peaje>): Observable<Peaje>;

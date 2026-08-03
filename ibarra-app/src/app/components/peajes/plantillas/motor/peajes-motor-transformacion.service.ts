@@ -7,9 +7,18 @@ import {
 } from '../../models/peajes.models';
 import { PASADA_COLUMNAS_OBLIGATORIAS, PasadaColumnKey } from '../../models/peajes.types';
 import { PeajesMotorTransformacion } from '../../models/peajes-services.contracts';
+import {
+  AlgorithmDescriptor,
+  getAlgorithmDescriptors,
+  resolverColumnasEntrada,
+} from './algorithm-descriptor';
 import { createDefaultRegistry, PipelineBuilder } from './pipeline-builder';
 import { StrategyRegistry } from './strategy-registry';
 import { PasoEjecucion, StrategyContext } from './strategy.types';
+import {
+  filtrarConfigsHabilitadas,
+  validarDependenciasConfigs,
+} from '../validacion/dependencias-pipeline';
 
 /**
  * Motor de transformación Peajes (Agente 03).
@@ -21,6 +30,11 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
 
   getRegistry(): StrategyRegistry {
     return this.registry;
+  }
+
+  /** Metadata UI de los 10 códigos atómicos (F03-9). */
+  getAlgorithmDescriptors(): AlgorithmDescriptor[] {
+    return getAlgorithmDescriptors();
   }
 
   /**
@@ -48,8 +62,9 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
     configuraciones: ConfiguracionPlantilla[],
     algoritmos?: AlgoritmoCombinado[]
   ): PasoEjecucion[] {
+    const habilitadas = filtrarConfigsHabilitadas(configuraciones);
     return new PipelineBuilder(this.registry)
-      .conConfiguraciones(configuraciones)
+      .conConfiguraciones(habilitadas)
       .conAlgoritmos(algoritmos ?? [])
       .build();
   }
@@ -63,14 +78,41 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
     return filas.map((fila) => this.aplicarPasosAFila(fila, pasos));
   }
 
+  /**
+   * Aplica solo pasos con `orden <= hastaOrden` (omitendo deshabilitados).
+   */
+  previsualizarPaso(
+    configs: ConfiguracionPlantilla[],
+    filas: Record<string, unknown>[],
+    hastaOrden: number,
+    algoritmos?: AlgoritmoCombinado[]
+  ): PasadaEstandarizada[] {
+    const subset = filtrarConfigsHabilitadas(configs).filter(
+      (c) => c.orden <= hastaOrden
+    );
+    return this.aplicarPipeline(filas, subset, algoritmos);
+  }
+
+  /**
+   * Fuentes ausentes, use-before-create, ciclos entre productores, outputs vacíos.
+   */
+  validarDependenciasPipeline(
+    configs: ConfiguracionPlantilla[],
+    columnasOrigen: string[],
+    algoritmos?: AlgoritmoCombinado[]
+  ): ErrorValidacionPasada[] {
+    return validarDependenciasConfigs(configs, columnasOrigen, algoritmos);
+  }
+
   validarDefinicionPlantilla(
     configuraciones: ConfiguracionPlantilla[],
-    columnasDisponibles: string[]
+    columnasDisponibles: string[],
+    algoritmos?: AlgoritmoCombinado[]
   ): ErrorValidacionPasada[] {
     const errores: ErrorValidacionPasada[] = [];
     const disponibles = new Set(columnasDisponibles.map((c) => c.toUpperCase()));
 
-    // Órdenes duplicados en el pipeline
+    // Órdenes duplicados en el pipeline (sobre todas las configs, incl. deshabilitadas)
     const ordenes = configuraciones.map((c) => c.orden);
     const vistos = new Set<number>();
     for (const o of ordenes) {
@@ -86,7 +128,6 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
     }
 
     for (const cfg of configuraciones) {
-      // Referencias a algoritmos en configuracion.algoritmo_codigo
       const codigo = cfg.configuracion?.['algoritmo_codigo'] as string | undefined;
       if (codigo && !this.registry.tiene(codigo)) {
         errores.push({
@@ -97,17 +138,20 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
         });
       }
 
-      // Columnas de origen requeridas por parámetros
-      const colsParam = cfg.configuracion?.['columnas'] as string[] | undefined;
-      if (colsParam) {
+      const colsParam = resolverColumnasEntrada(cfg.configuracion);
+      if (colsParam.length) {
         for (const col of colsParam) {
           if (!disponibles.has(col.toUpperCase()) && !columnasDisponibles.includes(col)) {
-            errores.push({
-              fila: 0,
-              columna: col,
-              valor: null,
-              motivo: `Columna requerida por la plantilla no está en el archivo: ${col}`,
-            });
+            // Puede ser producida por otro paso — lo cubre validarDependenciasPipeline
+            // Aquí solo marcamos si claramente no está y no es transformación generada.
+            if (!esColumnaGenerada(cfg) && cfg.tipo !== 'transformacion') {
+              errores.push({
+                fila: 0,
+                columna: col,
+                valor: null,
+                motivo: `Columna requerida por la plantilla no está en el archivo: ${col}`,
+              });
+            }
           }
         }
       } else if (
@@ -148,8 +192,6 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
         (c) => c.nombre_columna === obl || c.columna_destino === obl
       );
       if (!tieneDestino && !tieneNombre) {
-        // Solo advertir si la plantilla declara publicar (activa) — caller decide
-        // Aquí reportamos ausencia de mapeo obligatorio cuando hay configs.
         if (configuraciones.length > 0) {
           errores.push({
             fila: 0,
@@ -160,6 +202,14 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
         }
       }
     }
+
+    errores.push(
+      ...this.validarDependenciasPipeline(
+        configuraciones,
+        columnasDisponibles,
+        algoritmos
+      )
+    );
 
     return errores;
   }
@@ -174,10 +224,10 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
     const cols = new Set(columnasArchivo.map((c) => c.toUpperCase()));
     const errores: ErrorValidacionPasada[] = [];
 
-    for (const cfg of configuraciones) {
+    for (const cfg of filtrarConfigsHabilitadas(configuraciones)) {
       const requeridas: string[] = [];
-      const paramCols = cfg.configuracion?.['columnas'] as string[] | undefined;
-      if (paramCols?.length) {
+      const paramCols = resolverColumnasEntrada(cfg.configuracion);
+      if (paramCols.length) {
         requeridas.push(...paramCols);
       } else if (cfg.nombre_columna && necesitaColumnaOrigen(cfg)) {
         requeridas.push(cfg.nombre_columna);
@@ -216,10 +266,7 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
       const destino = paso.columnaDestino ?? paso.columnaOrigen;
       if (destino) {
         resultado[destino] = valor;
-        // Si normalizamos sobre la misma columna origen (p.ej. DOMINIO → PATENTE_ID),
-        // también actualizamos origen para cadenas de pasos del algoritmo combinado.
         if (paso.columnaOrigen && paso.columnaOrigen !== destino) {
-          // Mantener valor intermedio en origen solo si es la misma semántica de normalización
           if (
             paso.algoritmoCodigo === 'BORRAR_ESPACIOS' ||
             paso.algoritmoCodigo === 'ELIMINAR_GUIONES' ||
@@ -251,7 +298,12 @@ function esColumnaGenerada(cfg: ConfiguracionPlantilla): boolean {
 function necesitaColumnaOrigen(cfg: ConfiguracionPlantilla): boolean {
   if (esColumnaGenerada(cfg)) return false;
   const codigo = cfg.configuracion?.['algoritmo_codigo'];
-  return codigo === 'COPIAR_COLUMNA' || codigo === 'CONVERTIR_TEXTO' || codigo === 'CONVERTIR_NUMERO' || cfg.tipo === 'mapeo';
+  return (
+    codigo === 'COPIAR_COLUMNA' ||
+    codigo === 'CONVERTIR_TEXTO' ||
+    codigo === 'CONVERTIR_NUMERO' ||
+    cfg.tipo === 'mapeo'
+  );
 }
 
 /** Factory helper para tests sin DI. */

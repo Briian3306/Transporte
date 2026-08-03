@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Paso 5: Relacionar Estaciones</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"tertiary-fixed": "#ffdbcd", "primary-container": "#2563eb", "on-secondary-container": "#54647a", "surface-container": "#eceef0", outline: "#737686", "on-tertiary-fixed-variant": "#7d2d00", "on-tertiary-container": "#ffede6", "inverse-surface": "#2d3133", "on-primary": "#ffffff", background: "#f7f9fb", "surface-bright": "#f7f9fb", "secondary-fixed-dim": "#b7c8e1", "bg-canvas": "#FFFFFF", "tertiary-fixed-dim": "#ffb596", "status-info": "#3B82F6", "outline-variant": "#c3c6d7", surface: "#f7f9fb", "on-secondary": "#ffffff", "on-tertiary-fixed": "#360f00", "surface-container-lowest": "#ffffff", "status-success": "#10B981", "surface-container-highest": "#e0e3e5", "surface-tint": "#0053db", "on-secondary-fixed": "#0b1c30", secondary: "#505f76", "on-primary-fixed": "#00174b", "border-low-contrast": "#E2E8F0", "primary-fixed": "#dbe1ff", "on-error-container": "#93000a", tertiary: "#943700", "surface-dim": "#d8dadc", "inverse-primary": "#b4c5ff", "on-primary-container": "#eeefff", "inverse-on-surface": "#eff1f3", "tertiary-container": "#bc4800", "on-error": "#ffffff", "on-tertiary": "#ffffff", "surface-container-high": "#e6e8ea", "error-container": "#ffdad6", "on-background": "#191c1e", "status-warning": "#F59E0B", error: "#ba1a1a", "text-high-contrast": "#0F172A", primary: "#004ac6", "status-error": "#EF4444", "on-surface-variant": "#434655", "on-surface": "#191c1e", "surface-variant": "#e0e3e5", "secondary-fixed": "#d3e4fe", "surface-container-low": "#f2f4f6", "secondary-container": "#d0e1fb", "on-primary-fixed-variant": "#003ea8", "on-secondary-fixed-variant": "#38485d", "primary-fixed-dim": "#b4c5ff"}, borderRadius: {DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem"}, spacing: {"wizard-step-gap": "12px", baseline: "4px", "margin-mobile": "16px", "container-max-width": "1200px", "margin-desktop": "40px", gutter: "24px"}, fontFamily: {"body-md": ["Inter"], "headline-lg": ["Inter"], "label-md": ["Inter"], "headline-md": ["Inter"], "code-sm": ["Inter"], "body-lg": ["Inter"], "headline-lg-mobile": ["Inter"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"body-md": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-lg": ["30px", {lineHeight: "38px", letterSpacing: "-0.02em", fontWeight: "700"}], "label-md": ["13px", {lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600"}], "code-sm": ["12px", {lineHeight: "16px", fontWeight: "500"}], "body-lg": ["16px", {lineHeight: "24px", fontWeight: "400"}], "headline-lg-mobile": ["24px", {lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "700"}]}}}};</script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-bg-canvas text-on-surface min-h-screen flex">
+<!-- Sidebar Navigation -->
+<nav class="hidden md:flex flex-col p-4 gap-2 h-screen w-64 border-r border-outline-variant bg-surface dark:bg-surface shadow-[1px_0px_0px_rgba(0,0,0,0.05)] sticky top-0">
+<div class="mb-8 px-2 mt-4">
+<h1 class="text-on-surface font-semibold text-base">Automation Hub</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Main Workspace</p>
+</div>
+<button class="mb-6 flex items-center justify-center gap-2 bg-primary text-on-primary py-2 px-4 rounded-lg font-label-md text-label-md w-full hover:bg-surface-tint transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add</span>
+            New Module
+        </button>
+<div class="flex-1 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg font-body text-sm font-medium transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 bg-surface-container-high text-primary rounded-lg shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] font-body text-sm font-medium transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history</span>
+                History
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg font-body text-sm font-medium transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">description</span>
+                Templates
+            </a>
+</div>
+<div class="mt-auto border-t border-outline-variant pt-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg font-body text-sm font-medium transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">archive</span>
+                Archive
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg font-body text-sm font-medium transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">delete</span>
+                Trash
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 bg-bg-canvas">
+<!-- Top App Bar (Mobile Nav & Header) -->
+<header class="flex justify-between items-center px-6 h-16 w-full z-50 bg-surface dark:bg-surface shadow-[inset_0px_-1px_0px_rgba(0,0,0,0.05)] md:hidden">
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="text-lg font-semibold text-on-surface dark:text-on-surface tracking-tight">Module Automation Tool</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button><span class="material-symbols-outlined">settings</span></button>
+<button><span class="material-symbols-outlined">help</span></button>
+<img alt="User profile" class="w-8 h-8 rounded-full border border-border-low-contrast object-cover" data-alt="A generic minimalist user profile avatar placeholder, light mode, simple gray silhouette on white circle." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfGNNyObAw6XkfSX4pwzF7MQNpHHk_CXcqRcL5L_Po4TbK0-l4WtDwycqf_eXUZSacmHARNl3QetHt_fNIYEdOPwjETheIgPdvmzrjzPjw6dXzTOi6NFcG_zpvJRp7txJL6hqX4P6yrkY_5m8XLFrQxuYpac0NvmfebWre9-8Kkhz67JHKwAAtq_BvZQf_sZPaESIlGnRaCGjmz6LnXUrlOF74coi5y25_-aD8K8qv7vo4COq_wweE"/>
+</div>
+</header>
+<!-- Page Header -->
+<div class="px-margin-desktop py-8 md:py-10 border-b border-border-low-contrast">
+<div class="max-w-container-max-width mx-auto">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-md text-body-md mb-4">
+<span>Configuración</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span>Corredores Viales Demo SA</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-primary font-medium">Paso 5</span>
+</div>
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg md:text-headline-lg text-text-high-contrast mb-2">Relacionar Estaciones</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Vincula los códigos de estación provistos por el proveedor con los identificadores internos del sistema.</p>
+</div>
+<div class="flex items-center gap-3 bg-surface-container-low px-4 py-2 rounded-lg border border-border-low-contrast">
+<span class="material-symbols-outlined text-status-success">check_circle</span>
+<span class="font-label-md text-label-md text-on-surface">10 de 10 estaciones relacionadas</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Wizard / Content Container -->
+<div class="flex-1 p-margin-desktop overflow-y-auto">
+<div class="max-w-container-max-width mx-auto">
+<!-- Main Card -->
+<div class="border border-border-low-contrast rounded-xl bg-surface-container-lowest shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-6 md:p-8">
+<div class="flex items-center gap-4 mb-8 pb-6 border-b border-border-low-contrast">
+<div class="w-12 h-12 bg-primary-container/10 rounded-full flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">toll</span>
+</div>
+<div>
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-1">Peaje Actual</h3>
+<div class="font-headline-md text-headline-md text-on-surface">Corredores Viales Demo SA</div><button class="mt-2 flex items-center gap-1 text-primary font-label-md text-label-md hover:underline"><span class="material-symbols-outlined text-[16px]">swap_horiz</span> Cambiar Peaje</button>
+</div>
+</div>
+<!-- Mapping List -->
+<div class="space-y-4"><div class="relative mb-4"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span><input class="w-full pl-10 pr-4 py-2 bg-white border border-border-low-contrast rounded-lg text-body-md focus:outline-none focus:border-primary/50 transition-colors" placeholder="Buscar estación o código..." type="text"/></div>
+<!-- Mapping Item 1 -->
+<div class="group border border-border-low-contrast rounded-lg p-4 hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+<!-- Source Code -->
+<div class="flex-1">
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">Código Proveedor</div>
+<div class="flex items-center gap-2">
+<span class="font-code-sm text-code-sm bg-surface-dim px-2 py-1 rounded text-on-surface">Code 1</span>
+</div>
+</div>
+<!-- Resolution Path Visualization -->
+<div class="hidden md:flex flex-2 items-center justify-center text-outline">
+<div class="h-[1px] w-12 bg-border-low-contrast"></div>
+<span class="material-symbols-outlined mx-2 text-primary">arrow_forward</span>
+<div class="h-[1px] w-12 bg-border-low-contrast"></div>
+</div>
+<!-- Internal Mapping -->
+<div class="flex-[2] bg-white border border-border-low-contrast rounded p-3 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">ID Interno</div>
+<div class="font-body-md text-body-md font-medium text-primary">EST-091</div>
+</div>
+<div class="w-[1px] h-8 bg-border-low-contrast"></div>
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">Nombre Estación</div>
+<div class="font-body-md text-body-md text-on-surface">Zárate</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors mr-2"><span class="material-symbols-outlined">edit</span></button><button class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined">link_off</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Mapping Item 2 -->
+<div class="group border border-border-low-contrast rounded-lg p-4 hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+<div class="flex-1">
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">Código Proveedor</div>
+<div class="flex items-center gap-2">
+<span class="font-code-sm text-code-sm bg-surface-dim px-2 py-1 rounded text-on-surface">Code 2</span>
+</div>
+</div>
+<div class="hidden md:flex flex-2 items-center justify-center text-outline">
+<div class="h-[1px] w-12 bg-border-low-contrast"></div>
+<span class="material-symbols-outlined mx-2 text-primary">arrow_forward</span>
+<div class="h-[1px] w-12 bg-border-low-contrast"></div>
+</div>
+<div class="flex-[2] bg-white border border-border-low-contrast rounded p-3 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">ID Interno</div>
+<div class="font-body-md text-body-md font-medium text-primary">EST-092</div>
+</div>
+<div class="w-[1px] h-8 bg-border-low-contrast"></div>
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">Nombre Estación</div>
+<div class="font-body-md text-body-md text-on-surface">Luján</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors mr-2"><span class="material-symbols-outlined">edit</span></button><button class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined">link_off</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Mapping Item 3 (Highlight Example from Prompt) -->
+<div class="group border border-primary/30 bg-primary-fixed/10 rounded-lg p-4 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 ml-2">
+<div class="flex-1">
+<div class="font-label-md text-label-md text-primary mb-1">Código Proveedor</div>
+<div class="flex items-center gap-2">
+<span class="font-code-sm text-code-sm bg-white border border-primary/20 px-2 py-1 rounded text-primary font-semibold">Code 3</span>
+</div>
+</div>
+<div class="hidden md:flex flex-2 items-center justify-center text-primary">
+<div class="h-[1px] w-12 bg-primary/30"></div>
+<span class="material-symbols-outlined mx-2">arrow_forward</span>
+<div class="h-[1px] w-12 bg-primary/30"></div>
+</div>
+<div class="flex-[2] bg-white border border-primary/30 rounded p-3 flex items-center justify-between shadow-[0_2px_8px_rgba(37,99,235,0.08)]">
+<div class="flex items-center gap-4">
+<div>
+<div class="font-label-md text-label-md text-primary mb-1">ID Interno</div>
+<div class="font-body-md text-body-md font-bold text-primary">EST-096</div>
+</div>
+<div class="w-[1px] h-8 bg-border-low-contrast"></div>
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">Nombre Estación</div>
+<div class="font-body-md text-body-md text-on-surface font-medium">Monte Grande</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors mr-2"><span class="material-symbols-outlined">edit</span></button><button class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined">link_off</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Mapping Item 4 -->
+<div class="group border border-border-low-contrast rounded-lg p-4 hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+<div class="flex-1">
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">Código Proveedor</div>
+<div class="flex items-center gap-2">
+<span class="font-code-sm text-code-sm bg-surface-dim px-2 py-1 rounded text-on-surface">Code 5</span>
+</div>
+</div>
+<div class="hidden md:flex flex-2 items-center justify-center text-outline">
+<div class="h-[1px] w-12 bg-border-low-contrast"></div>
+<span class="material-symbols-outlined mx-2 text-primary">arrow_forward</span>
+<div class="h-[1px] w-12 bg-border-low-contrast"></div>
+</div>
+<div class="flex-[2] bg-white border border-border-low-contrast rounded p-3 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">ID Interno</div>
+<div class="font-body-md text-body-md font-medium text-primary">EST-095</div>
+</div>
+<div class="w-[1px] h-8 bg-border-low-contrast"></div>
+<div>
+<div class="font-label-md text-label-md text-on-surface-variant mb-1">Nombre Estación</div>
+<div class="font-body-md text-body-md text-on-surface">Pilar</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors mr-2"><span class="material-symbols-outlined">edit</span></button><button class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined">link_off</span>
+</button>
+</div>
+</div>
+</div>
+</div><div class="mt-6 flex justify-center"><button class="flex items-center gap-2 px-4 py-2 border border-dashed border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-all font-label-md text-label-md w-full justify-center"><span class="material-symbols-outlined">add_circle</span> Crear Nuevo Peaje</button></div>
+<!-- Action Buttons -->
+<div class="mt-8 pt-6 border-t border-border-low-contrast flex justify-between items-center">
+<button class="px-6 py-2 border border-border-low-contrast text-secondary font-label-md text-label-md rounded hover:bg-surface-container-low transition-colors">
+                            Atrás
+                        </button>
+<button class="px-6 py-2 bg-primary text-on-primary font-label-md text-label-md rounded hover:bg-surface-tint transition-colors flex items-center gap-2">
+                            Completar Configuración
+                            <span class="material-symbols-outlined text-[18px]">check</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

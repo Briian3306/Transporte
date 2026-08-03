@@ -38,7 +38,7 @@ export class PeajesExcelService {
     const filasPreview = rows.slice(0, PREVIEW_MAX_ROWS).map((row) => {
       const out: Record<string, unknown> = {};
       for (const col of columnas) {
-        out[col] = row[col] ?? null;
+        out[col] = this.normalizarCelda(row[col]);
       }
       return out;
     });
@@ -56,8 +56,30 @@ export class PeajesExcelService {
       totalFilas: rows.length,
       columnas,
       filasPreview,
+      filasOrigen: rows.map((row) => {
+        const out: Record<string, unknown> = {};
+        for (const col of columnas) {
+          out[col] = this.normalizarCelda(row[col]);
+        }
+        return out;
+      }),
       tiposInferidos,
     };
+  }
+
+  /**
+   * Normaliza celdas Excel para el motor: Date → dd/MM/yyyy; deja texto/números.
+   * Evita que FORMATEAR_FECHA_HORA reciba Date.toString() ilegible.
+   */
+  private normalizarCelda(value: unknown): unknown {
+    if (value == null || value === '') return value ?? null;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      const dd = String(value.getDate()).padStart(2, '0');
+      const mm = String(value.getMonth() + 1).padStart(2, '0');
+      const yyyy = value.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+    return value;
   }
 
   private inferirTipo(valores: unknown[]): string {

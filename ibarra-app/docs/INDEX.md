@@ -9,6 +9,7 @@
 | Sección | Descripción |
 |---------|-------------|
 | [modulos/](./modulos/INDEX.md) | Dominios de negocio (Peajes, …) |
+| [05-configuracion/](./05-configuracion/INDEX.md) | Entornos Angular, CLI local, Auth/RBAC |
 | [06-components/](./06-components/INDEX.md) | Componentes / UI |
 | [06-tablas/](./06-tablas/INDEX.md) | Tablas / modelo de datos documentado |
 | [08-sql/](./08-sql/) | Scripts y companions SQL (p. ej. peajes F01) |
@@ -22,6 +23,7 @@
 - Tablas: [06-tablas/peajes/](./06-tablas/peajes/INDEX.md)
 - Componentes: [06-components/peajes/](./06-components/peajes/INDEX.md)
 - PRD: [plan/peaje-prd-es.md](./plan/peaje-prd-es.md)
+- CLI local (login + admin): [05-configuracion/cli-local-credenciales-y-permisos.md](./05-configuracion/cli-local-credenciales-y-permisos.md)
 
 ---
 

@@ -9,6 +9,7 @@ Documentación de UI y servicios del módulo Peajes implementados en Fase 1 (F02
 | Documento | Descripción |
 |-----------|-------------|
 | [wizard.md](./wizard.md) | Asistente de carga (pasos 1–9), estado y Excel |
+| [pipeline-editable-paso3.md](./pipeline-editable-paso3.md) | Outline pipeline editable Paso 3 (F02-10 / F03-9) — borrador |
 | [catalogos.md](./catalogos.md) | CRUD UI peajes / estaciones / patentes / pases |
 | [plantillas-y-algoritmos.md](./plantillas-y-algoritmos.md) | Motor Builder/Strategy + UI plantillas |
 | [servicios-y-providers.md](./servicios-y-providers.md) | Contratos, mocks actuales y swap a Supabase |

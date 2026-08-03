@@ -1,4 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
+import {
+  PEAJES_CATALOGO_SERVICE,
+  PEAJES_PLANTILLAS_SERVICE,
+  PeajesCatalogoService,
+  PeajesPlantillasService,
+} from '../../models';
 import { Paso1CargaComponent } from './paso1-carga.component';
 import { PeajesExcelService } from '../services/peajes-excel.service';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
@@ -11,11 +18,29 @@ describe('Paso1CargaComponent', () => {
 
   beforeEach(async () => {
     excel = jasmine.createSpyObj('PeajesExcelService', ['esXlsxValido', 'parsearArchivo']);
+    const plantillasMock = jasmine.createSpyObj<PeajesPlantillasService>('PeajesPlantillasService', [
+      'listarPlantillas',
+      'obtenerPlantilla',
+      'guardarPlantilla',
+      'sobrescribirConfiguraciones',
+      'listarAlgoritmos',
+      'guardarAlgoritmo',
+      'expandirAlgoritmo',
+    ]);
+    plantillasMock.listarPlantillas.and.returnValue(of([]));
+    const catalogoMock = jasmine.createSpyObj<PeajesCatalogoService>('PeajesCatalogoService', [
+      'listarEmpresas',
+      'crearEmpresa',
+    ]);
+    catalogoMock.listarEmpresas.and.returnValue(of([]));
+
     await TestBed.configureTestingModule({
       imports: [Paso1CargaComponent],
       providers: [
         PeajesWizardStateService,
         { provide: PeajesExcelService, useValue: excel },
+        { provide: PEAJES_PLANTILLAS_SERVICE, useValue: plantillasMock },
+        { provide: PEAJES_CATALOGO_SERVICE, useValue: catalogoMock },
       ],
     }).compileComponents();
 
@@ -43,6 +68,7 @@ describe('Paso1CargaComponent', () => {
       totalFilas: 10,
       columnas: ['FECHA', 'HORA'],
       filasPreview: [{ FECHA: '25/06/2026', HORA: '205005' }],
+      filasOrigen: [{ FECHA: '25/06/2026', HORA: '205005' }],
       tiposInferidos: { FECHA: 'fecha', HORA: 'texto' },
     });
 

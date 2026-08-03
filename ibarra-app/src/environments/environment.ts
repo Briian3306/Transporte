@@ -1,3 +1,7 @@
+/**
+ * DESARROLLO remote (`kfffigvyvtzyczeiadxh`). Used by `ng serve` / `pnpm start`.
+ * For local Supabase CLI, use `pnpm dev` (loads environment.local.ts).
+ */
 export const environment = {
   production: false,
   supabaseUrl: 'https://kfffigvyvtzyczeiadxh.supabase.co',

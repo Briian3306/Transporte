@@ -10,7 +10,9 @@
 
 ## Estado actual
 
-Fecha: 2026-07-30 — **Fase 3 Agente 05 Integrador/QA completada**. Módulo Peajes integrado en `feature/peajes-mvp`.
+Fecha: 2026-07-31 — **F02-10** y **F03-9** `passing` (pipeline editable Paso 3 + motor descriptors/deps). Baseline F00–F05 sigue `passing`.
+
+Fecha previa: 2026-07-30 — **Fase 3 Agente 05 Integrador/QA completada**. Módulo Peajes integrado en `feature/peajes-mvp`.
 
 ### Rama Git (contrato)
 
@@ -28,6 +30,8 @@ Fecha: 2026-07-30 — **Fase 3 Agente 05 Integrador/QA completada**. Módulo Pea
 
 No hay staging/prod separados. No reutilizar refs OrdenCompra (`edxoqshrzdqpnldktpzy`, `uurlssweuhshbwpxxatw`).
 
+**2026-07-31 — CLI local login/admin:** `pnpm start` → DESARROLLO; `pnpm dev` → CLI (`environment.local.ts`). Dump Auth + seed RBAC documentados en [docs/05-configuracion/cli-local-credenciales-y-permisos.md](./05-configuracion/cli-local-credenciales-y-permisos.md).
+
 Decisiones vigentes:
 
 1. Dashboard `id: 'peajes'`, ruta `/peajes`, permiso `peajes:read`.
@@ -42,9 +46,22 @@ Decisiones vigentes:
 
 ## Features
 
-F00–F05 `passing` (F05-1…F05-3).
+F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31).
 
 ## Registro de sesiones
+
+### 2026-07-31 — Pipeline editable Paso 3 (F02-10 / F03-9) — multiagente
+
+- **Wave 0:** feature stubs + API contract en `session-handoff.md`.
+- **Wave 1 (Grok parallel):** 03 motor (`AlgorithmDescriptor`, skip-disabled, `validarDependenciasPipeline`, `previsualizarPaso`); 02 draft state + AU fixture; 04 docs outline.
+- **Wave 2 (Grok parallel):** 02 Paso3 CDK DnD editor + save/load plantilla + Paso4 `filasOrigen`; QA I-P* + `testing_plan.md` §10b; Demo **102060** / AU **132940.19**.
+- **Wave 3:** Paso1 spec providers fixed; docs finalizados; features marcadas `passing`.
+- **Verify:** `motor.verify.ts` PASS; `e2e-prd21.verify.ts` PASS; `npm run build` OK; `@angular/cdk@19.2.0`.
+- **Docs:** `docs/06-components/peajes/pipeline-editable-paso3.md` (ya no outline).
+
+### 2026-07-31 — Wave 0/1 outline docs — Agente 04
+
+- Outline inicial `pipeline-editable-paso3.md` + enlaces INDEX / módulo (luego finalizado en Wave 3).
 
 ### 2026-07-30 — Rediseño wizard Peajes ↔ mockup + ejemplo MVP
 

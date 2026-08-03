@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Module Automation Tool - Mapeo de Columnas</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"tertiary-fixed": "#ffdbcd", "primary-container": "#2563eb", "on-secondary-container": "#54647a", "surface-container": "#eceef0", outline: "#737686", "on-tertiary-fixed-variant": "#7d2d00", "on-tertiary-container": "#ffede6", "inverse-surface": "#2d3133", "on-primary": "#ffffff", background: "#f7f9fb", "surface-bright": "#f7f9fb", "secondary-fixed-dim": "#b7c8e1", "bg-canvas": "#FFFFFF", "tertiary-fixed-dim": "#ffb596", "status-info": "#3B82F6", "outline-variant": "#c3c6d7", surface: "#f7f9fb", "on-secondary": "#ffffff", "on-tertiary-fixed": "#360f00", "surface-container-lowest": "#ffffff", "status-success": "#10B981", "surface-container-highest": "#e0e3e5", "surface-tint": "#0053db", "on-secondary-fixed": "#0b1c30", secondary: "#505f76", "on-primary-fixed": "#00174b", "border-low-contrast": "#E2E8F0", "primary-fixed": "#dbe1ff", "on-error-container": "#93000a", tertiary: "#943700", "surface-dim": "#d8dadc", "inverse-primary": "#b4c5ff", "on-primary-container": "#eeefff", "inverse-on-surface": "#eff1f3", "tertiary-container": "#bc4800", "on-error": "#ffffff", "on-tertiary": "#ffffff", "surface-container-high": "#e6e8ea", "error-container": "#ffdad6", "on-background": "#191c1e", "status-warning": "#F59E0B", error: "#ba1a1a", "text-high-contrast": "#0F172A", primary: "#004ac6", "status-error": "#EF4444", "on-surface-variant": "#434655", "on-surface": "#191c1e", "surface-variant": "#e0e3e5", "secondary-fixed": "#d3e4fe", "surface-container-low": "#f2f4f6", "secondary-container": "#d0e1fb", "on-primary-fixed-variant": "#003ea8", "on-secondary-fixed-variant": "#38485d", "primary-fixed-dim": "#b4c5ff"}, borderRadius: {DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem"}, spacing: {"wizard-step-gap": "12px", baseline: "4px", "margin-mobile": "16px", "container-max-width": "1200px", "margin-desktop": "40px", gutter: "24px"}, fontFamily: {"body-md": ["Inter"], "headline-lg": ["Inter"], "label-md": ["Inter"], "headline-md": ["Inter"], "code-sm": ["Inter"], "body-lg": ["Inter"], "headline-lg-mobile": ["Inter"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"body-md": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-lg": ["30px", {lineHeight: "38px", letterSpacing: "-0.02em", fontWeight: "700"}], "label-md": ["13px", {lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600"}], "code-sm": ["12px", {lineHeight: "16px", fontWeight: "500"}], "body-lg": ["16px", {lineHeight: "24px", fontWeight: "400"}], "headline-lg-mobile": ["24px", {lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "700"}]}}}};</script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-bg-canvas text-on-surface h-screen flex overflow-hidden">
+<!-- TopAppBar & SideNavBar suppressed as this is a linear/transactional wizard step -->
+<main class="flex-1 overflow-y-auto w-full max-w-container-max-width mx-auto px-margin-mobile md:px-margin-desktop py-margin-desktop flex flex-col items-center">
+<div class="w-full max-w-4xl space-y-8">
+<!-- Header & Stepper -->
+<div class="space-y-6">
+<div class="flex items-center space-x-2 text-on-surface-variant font-label-md text-label-md">
+<a class="hover:text-primary transition-colors" href="#">Workspace</a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Importación de Datos</a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-on-surface">Paso 4</span>
+</div>
+<div class="flex flex-col space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-text-high-contrast mb-2">Paso 4: Mapear Columnas</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+                                Relaciona las columnas del archivo de origen con los campos estándar del sistema.
+                            </p>
+</div>
+<div class="inline-flex items-center space-x-2 bg-surface-container-low border border-border-low-contrast px-3 py-1.5 rounded-full">
+<span class="w-2 h-2 rounded-full bg-status-success"></span>
+<span class="font-label-md text-label-md text-on-surface">Mapping complete</span>
+</div>
+</div>
+<!-- Horizontal Stepper -->
+<div class="flex items-center space-x-wizard-step-gap w-full py-4">
+<!-- Step 1 (Completed) -->
+<div class="flex items-center space-x-2 text-status-success">
+<span class="material-symbols-outlined text-xl">check_circle</span>
+<span class="font-label-md text-label-md hidden sm:inline">Subir Archivo</span>
+</div>
+<div class="flex-1 h-px bg-border-low-contrast"></div>
+<!-- Step 2 (Completed) -->
+<div class="flex items-center space-x-2 text-status-success">
+<span class="material-symbols-outlined text-xl">check_circle</span>
+<span class="font-label-md text-label-md hidden sm:inline">Validar Formato</span>
+</div>
+<div class="flex-1 h-px bg-border-low-contrast"></div>
+<!-- Step 3 (Completed) -->
+<div class="flex items-center space-x-2 text-status-success">
+<span class="material-symbols-outlined text-xl">check_circle</span>
+<span class="font-label-md text-label-md hidden sm:inline">Vista Previa</span>
+</div>
+<div class="flex-1 h-px bg-border-low-contrast"></div>
+<!-- Step 4 (Active) -->
+<div class="flex items-center space-x-2 text-primary border border-primary px-3 py-1 rounded-full bg-primary-fixed-dim bg-opacity-20">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">sync_alt</span>
+<span class="font-label-md text-label-md">Mapear Columnas</span>
+</div>
+<div class="flex-1 h-px bg-border-low-contrast"></div>
+<!-- Step 5 (Pending) -->
+<div class="flex items-center space-x-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-xl">radio_button_unchecked</span>
+<span class="font-label-md text-label-md hidden sm:inline">Confirmar</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Mapping Table / Form -->
+<div class="border border-border-low-contrast rounded-xl bg-surface-container-lowest shadow-[0px_2px_4px_rgba(0,0,0,0.02)] overflow-hidden">
+<div class="px-6 py-4 border-b border-border-low-contrast bg-surface-container-low flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md text-text-high-contrast">Configuración de Mapeo</h2>
+<button class="text-primary hover:text-primary-container font-label-md text-label-md flex items-center space-x-1">
+<span class="material-symbols-outlined text-sm">autorenew</span>
+<span>Auto-Mapear</span>
+</button>
+</div>
+<div class="p-0">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-border-low-contrast font-label-md text-label-md text-on-surface-variant">
+<th class="px-6 py-3 font-medium uppercase tracking-wider">Campo Estándar (Destino)</th>
+<th class="px-6 py-3 font-medium uppercase tracking-wider">Columna de Origen</th>
+<th class="px-6 py-3 font-medium uppercase tracking-wider w-16">Acción</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-low-contrast font-body-md text-body-md">
+<!-- Row 1 -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-6 py-4 flex items-center space-x-3">
+<span class="w-2 h-2 rounded-full bg-status-success"></span>
+<span class="font-code-sm text-code-sm text-text-high-contrast bg-surface-container px-2 py-1 rounded">PASADA_ID</span>
+<span class="text-on-surface-variant text-xs">*Requerido</span>
+</td>
+<td class="px-6 py-4">
+<select class="w-full border border-border-low-contrast rounded-md py-1.5 px-3 bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none font-code-sm text-code-sm">
+<option selected="" value="TRANSACCION_ID">TRANSACCION_ID</option>
+</select>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">settings</span></button>
+</td>
+</tr>
+<!-- Row 2 (Logic) -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-6 py-4 flex items-center space-x-3">
+<span class="w-2 h-2 rounded-full bg-status-success"></span>
+<span class="font-code-sm text-code-sm text-text-high-contrast bg-surface-container px-2 py-1 rounded">FECHA_HORA</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center space-x-2 bg-surface-container-low border border-border-low-contrast rounded-md p-1.5 w-full">
+<span class="font-code-sm text-code-sm bg-surface-container-lowest px-2 py-1 border border-border-low-contrast rounded">FECHA</span>
+<span class="material-symbols-outlined text-sm text-on-surface-variant">add</span>
+<span class="font-code-sm text-code-sm bg-surface-container-lowest px-2 py-1 border border-border-low-contrast rounded">HORA</span>
+<span class="material-symbols-outlined text-sm text-on-surface-variant">arrow_right_alt</span>
+<span class="font-code-sm text-code-sm text-primary">FECHA_HORA</span>
+</div>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">edit</span></button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-6 py-4 flex items-center space-x-3">
+<span class="w-2 h-2 rounded-full bg-status-success"></span>
+<span class="font-code-sm text-code-sm text-text-high-contrast bg-surface-container px-2 py-1 rounded">PASE_ID</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center space-x-2">
+<select class="w-full border border-border-low-contrast rounded-md py-1.5 px-3 bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none font-code-sm text-code-sm">
+<option selected="" value="DISPOSITIVON">DISPOSITIVON</option>
+</select>
+</div>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">settings</span></button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-6 py-4 flex items-center space-x-3">
+<span class="w-2 h-2 rounded-full bg-status-success"></span>
+<span class="font-code-sm text-code-sm text-text-high-contrast bg-surface-container px-2 py-1 rounded">PATENTE_ID</span>
+</td>
+<td class="px-6 py-4">
+<select class="w-full border border-border-low-contrast rounded-md py-1.5 px-3 bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none font-code-sm text-code-sm">
+<option selected="" value="MATRICULA">MATRICULA</option>
+</select>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">settings</span></button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-6 py-4 flex items-center space-x-3">
+<span class="w-2 h-2 rounded-full bg-status-success"></span>
+<span class="font-code-sm text-code-sm text-text-high-contrast bg-surface-container px-2 py-1 rounded">ESTACION_ID</span>
+</td>
+<td class="px-6 py-4">
+<select class="w-full border border-border-low-contrast rounded-md py-1.5 px-3 bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none font-code-sm text-code-sm">
+<option selected="" value="PLAZA">PLAZA</option>
+</select>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">settings</span></button>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-surface transition-colors bg-surface-container-lowest">
+<td class="px-6 py-4 flex items-center space-x-3">
+<span class="w-2 h-2 rounded-full bg-status-success"></span>
+<span class="font-code-sm text-code-sm text-text-high-contrast bg-surface-container px-2 py-1 rounded">PRECIO</span>
+</td>
+<td class="px-6 py-4">
+<select class="w-full border border-border-low-contrast rounded-md py-1.5 px-3 bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none font-code-sm text-code-sm">
+<option selected="" value="TARIFA">TARIFA</option>
+</select>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">settings</span></button>
+</td>
+</tr>
+<!-- Row 7 -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-6 py-4 flex items-center space-x-3">
+<span class="w-2 h-2 rounded-full bg-status-success"></span>
+<span class="font-code-sm text-code-sm text-text-high-contrast bg-surface-container px-2 py-1 rounded">BONIFICACION</span>
+</td>
+<td class="px-6 py-4">
+<select class="w-full border border-border-low-contrast rounded-md py-1.5 px-3 bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none font-code-sm text-code-sm">
+<option selected="" value="DESCUENTO">DESCUENTO</option>
+</select>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">settings</span></button>
+</td>
+</tr>
+<!-- Row 8 -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-6 py-4 flex items-center space-x-3">
+<span class="w-2 h-2 rounded-full bg-status-success"></span>
+<span class="font-code-sm text-code-sm text-text-high-contrast bg-surface-container px-2 py-1 rounded">QUANTITY</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center space-x-2">
+<select class="w-full border border-border-low-contrast rounded-md py-1.5 px-3 bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none font-code-sm text-code-sm text-on-surface-variant">
+<option value="">[ Valor Constante ]</option>
+</select>
+<input class="w-16 border border-border-low-contrast rounded-md py-1.5 px-3 bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none font-code-sm text-code-sm text-center" readonly="" type="text" value="1"/>
+</div>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">settings</span></button>
+</td>
+</tr>
+<!-- Row 9 -->
+<tr class="hover:bg-surface transition-colors">
+<td class="px-6 py-4 flex items-center space-x-3">
+<span class="w-2 h-2 rounded-full bg-status-success"></span>
+<span class="font-code-sm text-code-sm text-text-high-contrast bg-surface-container px-2 py-1 rounded">IMPORTE_NETO</span>
+</td>
+<td class="px-6 py-4">
+<select class="w-full border border-border-low-contrast rounded-md py-1.5 px-3 bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none font-code-sm text-code-sm">
+<option selected="" value="MONTO_FINAL">MONTO_FINAL</option>
+</select>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-xl">settings</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="flex justify-between items-center pt-8 border-t border-border-low-contrast">
+<button class="font-label-md text-label-md px-6 py-2.5 rounded-md border border-transparent text-secondary hover:bg-surface-container-low transition-colors">
+                    Atrás
+                </button>
+<div class="space-x-4">
+<button class="font-label-md text-label-md px-6 py-2.5 rounded-md border border-border-low-contrast bg-surface-container-lowest text-secondary hover:bg-surface-container-low transition-colors shadow-sm">
+                        Guardar Borrador
+                    </button>
+<button class="font-label-md text-label-md px-6 py-2.5 rounded-md bg-primary text-on-primary hover:bg-primary-container transition-colors shadow-sm">
+                        Siguiente: Confirmar
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Step 3: Aplicar transformaciones - Module Automation Tool</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Theme Config Verbatim -->
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"on-secondary-fixed": "#0b1c30", "bg-canvas": "#FFFFFF", "status-error": "#EF4444", "on-tertiary-container": "#ffede6", "secondary-container": "#d0e1fb", "primary-container": "#2563eb", "on-surface": "#191c1e", error: "#ba1a1a", "on-secondary": "#ffffff", "on-background": "#191c1e", "surface-variant": "#e0e3e5", "surface-tint": "#0053db", "tertiary-fixed": "#ffdbcd", "surface-container-highest": "#e0e3e5", "on-primary-container": "#eeefff", "inverse-surface": "#2d3133", "on-secondary-container": "#54647a", "secondary-fixed-dim": "#b7c8e1", "on-primary": "#ffffff", "tertiary-container": "#bc4800", "primary-fixed": "#dbe1ff", "on-secondary-fixed-variant": "#38485d", "outline-variant": "#c3c6d7", "on-tertiary-fixed": "#360f00", "on-tertiary-fixed-variant": "#7d2d00", "status-success": "#10B981", "tertiary-fixed-dim": "#ffb596", "inverse-on-surface": "#eff1f3", background: "#f7f9fb", "surface-container": "#eceef0", secondary: "#505f76", "on-error": "#ffffff", "surface-dim": "#d8dadc", "on-error-container": "#93000a", "status-info": "#3B82F6", "primary-fixed-dim": "#b4c5ff", "border-low-contrast": "#E2E8F0", outline: "#737686", "surface-container-high": "#e6e8ea", "inverse-primary": "#b4c5ff", "surface-container-lowest": "#ffffff", "surface-container-low": "#f2f4f6", "on-tertiary": "#ffffff", "on-surface-variant": "#434655", "on-primary-fixed-variant": "#003ea8", "on-primary-fixed": "#00174b", surface: "#f7f9fb", "surface-bright": "#f7f9fb", tertiary: "#943700", "error-container": "#ffdad6", primary: "#004ac6", "secondary-fixed": "#d3e4fe", "status-warning": "#F59E0B", "text-high-contrast": "#0F172A"}, borderRadius: {DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem"}, spacing: {"wizard-step-gap": "12px", baseline: "4px", "container-max-width": "1200px", gutter: "24px", "margin-desktop": "40px", "margin-mobile": "16px"}, fontFamily: {"code-sm": ["Inter"], "body-md": ["Inter"], "headline-md": ["Inter"], "headline-lg-mobile": ["Inter"], "label-md": ["Inter"], "headline-lg": ["Inter"], "body-lg": ["Inter"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"code-sm": ["12px", {lineHeight: "16px", fontWeight: "500"}], "body-md": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600"}], "headline-lg-mobile": ["24px", {lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "700"}], "label-md": ["13px", {lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600"}], "headline-lg": ["30px", {lineHeight: "38px", letterSpacing: "-0.02em", fontWeight: "700"}], "body-lg": ["16px", {lineHeight: "24px", fontWeight: "400"}]}}}};</script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface flex justify-between items-center px-6 h-16 w-full z-50 fixed top-0 shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] shadow-[inset_0px_-1px_0px_rgba(0,0,0,0.05)]">
+<div class="flex items-center gap-8">
+<span class="text-lg font-semibold text-on-surface dark:text-on-surface tracking-tight">Module Automation Tool</span>
+<nav class="hidden md:flex gap-6">
+<a class="font-body font-medium text-on-surface text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="#">Process</a>
+<a class="font-body font-medium text-on-surface text-primary dark:text-primary-fixed border-b-2 border-primary" href="#">Validation</a>
+<a class="font-body font-medium text-on-surface text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="#">Execute</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-lg hover:bg-surface-container-low transition-colors duration-200">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed">settings</span>
+</button>
+<button class="p-2 rounded-lg hover:bg-surface-container-low transition-colors duration-200">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed">help</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-secondary-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close up professional portrait of a tech worker in a modern bright office environment, smiling warmly. The lighting is soft and natural, emphasizing a professional yet approachable personality. High contrast between the clean white background and the subject's professional attire." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRTFQMWKxABofVQ4yQ_6FAZ-rI0CyAIza0btARBpjsWioK4OpvdWw4gYgKeuF1Fusf3iiIOJ4AU3M7mkLdReAR7iOK-li8nHGPtvOEyrZgKb5LsPSE-dKjaAevrcq9mmrL2icM2yTY8OkwsypQE1zPZLIyKftQZA_0yWezrET16lkR9GvzGKMOpyMlZsJ9muxNsTlkINGI3okRtpKD4a-UqAZtYnYIoOSiMGLqFbl567MFl3Yv_eOp"/>
+</div>
+</div>
+</header>
+<div class="flex pt-16 h-screen">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col p-4 gap-2 h-full border-r border-outline-variant bg-surface dark:bg-surface w-64 fixed left-0 shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] shadow-[1px_0px_0px_rgba(0,0,0,0.05)]">
+<div class="flex items-center gap-3 px-2 py-4 mb-4">
+<div class="w-8 h-8 bg-primary rounded flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+</div>
+<div>
+<h2 class="text-on-surface font-semibold text-base leading-tight">Automation Hub</h2>
+<p class="text-xs text-on-surface-variant">Main Workspace</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 font-body text-sm font-medium bg-surface-container-high text-primary rounded-lg shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span> Dashboard
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 font-body text-sm font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">history</span> History
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 font-body text-sm font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">description</span> Templates
+                </a>
+</nav>
+<button class="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-primary text-white rounded-lg hover:scale-[1.02] active:scale-95 transition-all duration-200 font-medium">
+<span class="material-symbols-outlined">add</span> New Module
+            </button>
+<div class="mt-auto border-t border-outline-variant pt-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 font-body text-sm font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">archive</span> Archive
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 font-body text-sm font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">delete</span> Trash
+                </a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-0 md:ml-64 p-8 overflow-y-auto">
+<div class="max-w-[1200px] mx-auto">
+<!-- Breadcrumbs & Step Header -->
+<nav class="flex items-center gap-2 mb-8 text-on-surface-variant font-label-md text-label-md">
+<span>Procesamiento</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-primary">Paso 3: Aplicar transformaciones</span>
+</nav>
+<div class="flex justify-between items-end mb-8">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-text-high-contrast mb-2">Transformación de Datos</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Configure las reglas de limpieza y formateo para cada columna seleccionada.</p>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-2 border border-border-low-contrast rounded-lg font-label-md text-label-md text-secondary hover:bg-surface-container-low transition-colors">Atrás</button>
+<button class="px-6 py-2 bg-primary text-white rounded-lg font-label-md text-label-md shadow-sm hover:opacity-90 transition-opacity">Continuar</button>
+</div>
+</div>
+<!-- Wizard Progress Indicator -->
+<div class="flex items-center gap-4 mb-12 overflow-x-auto no-scrollbar py-2">
+<div class="flex items-center gap-3 shrink-0">
+<div class="w-8 h-8 rounded-full bg-status-success flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Carga de archivo</span>
+</div>
+<div class="h-[1px] w-12 bg-status-success"></div>
+<div class="flex items-center gap-3 shrink-0">
+<div class="w-8 h-8 rounded-full bg-status-success flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Mapeo de Columnas</span>
+</div>
+<div class="h-[1px] w-12 bg-primary"></div>
+<div class="flex items-center gap-3 shrink-0">
+<div class="w-8 h-8 rounded-full bg-primary-container border-2 border-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</div>
+<span class="font-label-md text-label-md text-primary">Transformaciones</span>
+</div>
+<div class="h-[1px] w-12 bg-outline-variant"></div>
+<div class="flex items-center gap-3 shrink-0">
+<div class="w-8 h-8 rounded-full border-2 border-outline-variant flex items-center justify-center text-outline">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Previsualización</span>
+</div>
+</div>
+<!-- Interactive Workspace -->
+<div class="grid grid-cols-12 gap-8 items-start">
+<!-- Left: Selected Columns -->
+<div class="col-span-12 lg:col-span-3 space-y-4">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Columnas Seleccionadas</h3>
+<div class="space-y-2">
+<button class="w-full text-left px-4 py-3 bg-white border border-primary rounded-lg flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">person</span>
+<span class="font-label-md text-label-md text-on-surface">Nombre Completo</span>
+</div>
+<span class="bg-primary-container text-white text-[10px] px-1.5 py-0.5 rounded-full">3</span>
+</button>
+<button class="w-full text-left px-4 py-3 bg-white border border-border-low-contrast rounded-lg flex items-center justify-between group hover:border-outline transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">calendar_today</span>
+<span class="font-label-md text-label-md text-on-surface">Fecha Registro</span>
+</div>
+</button>
+<button class="w-full text-left px-4 py-3 bg-white border border-border-low-contrast rounded-lg flex items-center justify-between group hover:border-outline transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">mail</span>
+<span class="font-label-md text-label-md text-on-surface">Email Corporativo</span>
+</div>
+</button>
+<button class="w-full text-left px-4 py-3 bg-white border border-border-low-contrast rounded-lg flex items-center justify-between group hover:border-outline transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">attach_money</span>
+<span class="font-label-md text-label-md text-on-surface">Ingresos Estimados</span>
+</div>
+</button>
+</div>
+</div>
+<!-- Center: Transformation Configuration -->
+<div class="col-span-12 lg:col-span-5 space-y-6">
+<div class="flex justify-between items-center">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Flujo de Transformación</h3>
+<button class="flex items-center gap-2 text-primary text-sm font-medium hover:underline">
+<span class="material-symbols-outlined text-[18px]">add_circle</span> Añadir Paso
+                            </button>
+</div>
+<!-- Step 1: Trim Spaces -->
+<div class="bg-white border border-border-low-contrast rounded-lg p-5 shadow-sm relative group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-lg"></div>
+<div class="flex items-start gap-4">
+<div class="cursor-grab text-outline-variant hover:text-outline py-1">
+<span class="material-symbols-outlined">drag_indicator</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-4">
+<div>
+<span class="font-label-md text-label-md text-primary">Paso 1</span>
+<h4 class="font-headline-md text-headline-md">Eliminar espacios</h4>
+</div>
+<button class="p-1 hover:text-status-error transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<label class="text-[11px] text-on-surface-variant font-medium">MODO</label>
+<select class="w-full bg-surface-container-low border-none rounded-lg text-sm focus:ring-1 focus:ring-primary">
+<option>Extremos y dobles</option>
+<option>Todo el texto</option>
+</select>
+</div>
+<div class="flex items-center gap-2 mt-auto pb-2">
+<input checked="" class="rounded text-primary focus:ring-primary border-outline-variant" id="step1-ignore" type="checkbox"/>
+<label class="text-sm text-on-surface-variant" for="step1-ignore">Ignorar nulos</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Step 2: To Uppercase -->
+<div class="bg-white border border-border-low-contrast rounded-lg p-5 shadow-sm relative group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-lg"></div>
+<div class="flex items-start gap-4">
+<div class="cursor-grab text-outline-variant hover:text-outline py-1">
+<span class="material-symbols-outlined">drag_indicator</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-4">
+<div>
+<span class="font-label-md text-label-md text-primary">Paso 2</span>
+<h4 class="font-headline-md text-headline-md">Convertir a Mayúsculas</h4>
+</div>
+<button class="p-1 hover:text-status-error transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<p class="text-sm text-on-surface-variant">Transforma todos los caracteres alfabéticos a mayúsculas sostenidas.</p>
+</div>
+</div>
+</div>
+<!-- Step 3: Custom Suffix -->
+<div class="bg-white border border-border-low-contrast rounded-lg p-5 shadow-sm relative group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-lg"></div>
+<div class="flex items-start gap-4">
+<div class="cursor-grab text-outline-variant hover:text-outline py-1">
+<span class="material-symbols-outlined">drag_indicator</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-4">
+<div>
+<span class="font-label-md text-label-md text-primary">Paso 3</span>
+<h4 class="font-headline-md text-headline-md">Añadir sufijo</h4>
+</div>
+<button class="p-1 hover:text-status-error transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<div class="space-y-1">
+<label class="text-[11px] text-on-surface-variant font-medium">VALOR DEL SUFIJO</label>
+<input class="w-full bg-surface-container-low border-none rounded-lg text-sm focus:ring-1 focus:ring-primary" type="text" value="(VALIDADO)"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Real-time Preview -->
+<div class="col-span-12 lg:col-span-4 space-y-6">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Previsualización (Fila 1)</h3>
+<div class="bg-white border border-border-low-contrast rounded-lg overflow-hidden">
+<div class="p-4 border-b border-border-low-contrast bg-surface-container-low">
+<span class="font-label-md text-label-md text-on-surface-variant">Comparativa en vivo</span>
+</div>
+<div class="p-6 space-y-6">
+<div class="space-y-2">
+<label class="text-xs font-semibold text-outline">ORIGINAL</label>
+<div class="p-3 bg-background rounded border border-dashed border-outline-variant font-mono text-sm text-on-surface">
+                                          juan pablo de la cruz 
+                                    </div>
+</div>
+<div class="flex justify-center">
+<div class="w-8 h-8 rounded-full bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">arrow_downward</span>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-semibold text-primary">TRANSFORMADO</label>
+<div class="p-3 bg-primary/5 rounded border border-primary/20 font-mono text-sm font-semibold text-primary">
+                                        JUAN PABLO DE LA CRUZ (VALIDADO)
+                                    </div>
+</div>
+</div>
+<div class="p-4 border-t border-border-low-contrast flex items-center justify-between">
+<div class="flex gap-1">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<div class="w-2 h-2 rounded-full bg-surface-variant"></div>
+<div class="w-2 h-2 rounded-full bg-surface-variant"></div>
+</div>
+<span class="text-[11px] text-on-surface-variant italic">Muestra aleatoria: 1 de 4,502 filas</span>
+</div>
+</div>
+<!-- Knowledge Card -->
+<div class="bg-secondary-fixed text-on-secondary-fixed p-6 rounded-lg relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-[20px]">lightbulb</span>
+<span class="font-label-md text-label-md uppercase">Tip de Experto</span>
+</div>
+<p class="text-sm leading-relaxed opacity-90">
+                                    Puedes aplicar una "Expresión Regular" si necesitas transformaciones complejas como extraer números de una cadena o validar formatos específicos de ID.
+                                </p>
+</div>
+<!-- Subtle abstract bg pattern -->
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-[120px]">settings_suggest</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Micro-interaction Scripts -->
+<script>
+        // Simple drag-and-drop placeholder visual logic
+        const steps = document.querySelectorAll('.cursor-grab');
+        steps.forEach(step => {
+            step.addEventListener('mousedown', () => {
+                step.closest('.bg-white').classList.add('opacity-50', 'scale-[0.98]');
+            });
+            window.addEventListener('mouseup', () => {
+                step.closest('.bg-white').classList.remove('opacity-50', 'scale-[0.98]');
+            });
+        });
+
+        // Toggle state for sidebar buttons
+        const navLinks = document.querySelectorAll('aside nav a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                navLinks.forEach(l => {
+                    l.classList.remove('bg-surface-container-high', 'text-primary', 'shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]');
+                    l.classList.add('text-on-surface-variant', 'hover:bg-surface-container-low', 'hover:text-on-surface');
+                });
+                link.classList.add('bg-surface-container-high', 'text-primary', 'shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)]');
+                link.classList.remove('text-on-surface-variant', 'hover:bg-surface-container-low', 'hover:text-on-surface');
+            });
+        });
+    </script>
+</body></html>

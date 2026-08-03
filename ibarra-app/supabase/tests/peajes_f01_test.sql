@@ -1,6 +1,6 @@
 -- pgTAP: F01-1 … F01-9 (Peajes backend)
 BEGIN;
-SELECT plan(30);
+SELECT plan(34);
 
 -- -----------------------------------------------------------------------------
 -- F01-1: catálogos + FK estacion → peaje
@@ -10,6 +10,12 @@ SELECT has_table('public', 'estaciones', 'F01-1 estaciones existe');
 SELECT has_table('public', 'patentes', 'F01-1 patentes existe');
 SELECT has_table('public', 'pases', 'F01-1 pases existe');
 SELECT fk_ok('estaciones', 'peaje_id', 'peajes', 'id', 'F01-1 estacion.peaje_id → peajes.id');
+
+-- Catálogo empresas (PRD §14); empresa_id text en peajes/otros apunta a id::text o '__global__'
+SELECT has_table('public', 'empresas', 'empresas existe');
+SELECT has_column('public', 'empresas', 'nombre', 'empresas.nombre existe');
+SELECT has_column('public', 'empresas', 'descripcion', 'empresas.descripcion existe');
+SELECT col_is_unique('public', 'empresas', ARRAY['nombre'], 'empresas.nombre UK');
 
 -- -----------------------------------------------------------------------------
 -- F01-2: facturas + pasadas (estacion_id, sin peaje_id)

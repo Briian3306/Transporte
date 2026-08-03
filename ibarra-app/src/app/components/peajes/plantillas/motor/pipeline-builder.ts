@@ -2,6 +2,7 @@ import {
   AlgoritmoCombinado,
   ConfiguracionPlantilla,
 } from '../../models/peajes.models';
+import { normalizarParametrosConfig } from './algorithm-descriptor';
 import { StrategyRegistry } from './strategy-registry';
 import { ESTRATEGIAS_ATOMICAS } from './strategies/estrategias-atomicas';
 import { AlgoritmoCodigo, PasoEjecucion } from './strategy.types';
@@ -38,7 +39,9 @@ export class PipelineBuilder {
    * No muta el registry.
    */
   build(): PasoEjecucion[] {
-    const sorted = [...this.configuraciones].sort((a, b) => a.orden - b.orden);
+    const sorted = [...this.configuraciones]
+      .filter((c) => c.configuracion?.['habilitado'] !== false)
+      .sort((a, b) => a.orden - b.orden);
     const pasos: PasoEjecucion[] = [];
     let seq = 0;
 
@@ -79,7 +82,7 @@ export class PipelineBuilder {
       pasos.push({
         orden: cfg.orden * 1000 + seq,
         algoritmoCodigo: codigo as AlgoritmoCodigo,
-        parametros: cfg.configuracion ?? null,
+        parametros: normalizarParametrosConfig(cfg.configuracion),
         columnaOrigen: cfg.nombre_columna,
         columnaDestino: (cfg.columna_destino as string) ?? cfg.nombre_columna,
         origen: `config:${cfg.id || cfg.orden}`,
@@ -110,7 +113,7 @@ function mergeParams(
   b?: Record<string, unknown> | null
 ): Record<string, unknown> | null {
   if (!a && !b) return null;
-  return { ...(a ?? {}), ...(b ?? {}) };
+  return normalizarParametrosConfig({ ...(a ?? {}), ...(b ?? {}) });
 }
 
 function inferCodigoDesdeTipo(cfg: ConfiguracionPlantilla): string | null {

@@ -1,5 +1,6 @@
 import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import {
   PEAJES_PLANTILLAS_SERVICE,
   PlantillaConfiguracion,
@@ -28,6 +29,7 @@ import { AlgoritmoBuilderComponent } from './algoritmo-builder.component';
 })
 export class PlantillasHomeComponent implements OnInit {
   private readonly motor = inject(PeajesMotorTransformacionService);
+  private readonly route = inject(ActivatedRoute);
 
   constructor(
     @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService
@@ -42,6 +44,9 @@ export class PlantillasHomeComponent implements OnInit {
     this.estrategias = this.motor.getRegistry().codigos();
     this.plantillasSvc.listarPlantillas().subscribe((p) => (this.plantillas = p));
     this.plantillasSvc.listarAlgoritmos().subscribe((a) => (this.algoritmos = a));
+    if (this.route.snapshot.queryParamMap.get('desdeWizard') === '1') {
+      this.vista = 'builder';
+    }
   }
 
   mostrar(v: typeof this.vista): void {

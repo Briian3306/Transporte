@@ -3,25 +3,38 @@
     <div>
       <div class="pw__eyebrow">Paso 04 · plantilla</div>
       <h2>Seleccionar plantilla</h2>
-      <p>Elegí una configuración persistida o continuá sin plantilla (mapeo manual en el siguiente paso).</p>
+      <p>
+        Elegí una plantilla persistida, o continuá con el pipeline draft del paso 3 / mapeo manual.
+      </p>
     </div>
   </div>
 
   <div class="pw__body">
+    <div class="pw__alert pw__alert--info" *ngIf="tieneDraft && !plantillaId">
+      Pipeline draft disponible desde el paso 3. Al continuar sin plantilla remota se aplicará sobre
+      todas las filas de origen.
+    </div>
+
     <div class="paso4__box">
       <div class="paso4__box-head">
         <div>
           <strong>Configuración automática</strong>
           <p>La plantilla aplica filtros, transformaciones y mapeos en el motor Builder/Strategy.</p>
         </div>
-        <span class="pw__status" [class.pw__status--valid]="!!plantillaId" [class.pw__status--warn]="!plantillaId">
-          {{ plantillaId ? 'Seleccionada' : 'Opcional' }}
+        <span
+          class="pw__status"
+          [class.pw__status--valid]="!!plantillaId || tieneDraft"
+          [class.pw__status--warn]="!plantillaId && !tieneDraft"
+        >
+          {{ plantillaId ? 'Seleccionada' : tieneDraft ? 'Draft listo' : 'Opcional' }}
         </span>
       </div>
       <label class="pw__field">
         Plantilla
         <select class="pw__select" id="plantilla" [(ngModel)]="plantillaId">
-          <option value="">— Continuar sin plantilla —</option>
+          <option value="">
+            {{ tieneDraft ? '— Usar pipeline draft del paso 3 —' : '— Continuar sin plantilla —' }}
+          </option>
           <option *ngFor="let p of plantillas" [value]="p.id">{{ p.nombre }} ({{ p.estado }})</option>
         </select>
       </label>
@@ -34,10 +47,14 @@
   </div>
 
   <div class="pw__footer">
-    <div class="pw__footer-hint">Sin plantilla: el wizard usa mapeo + heurísticas del ejemplo MVP.</div>
+    <div class="pw__footer-hint">
+      Sin plantilla remota: se usa el draft del paso 3 si existe; si no, mapeo + heurísticas MVP.
+    </div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
-      <button type="button" class="pw__btn pw__btn--ghost" (click)="continuarSinPlantilla()">Sin plantilla</button>
+      <button type="button" class="pw__btn pw__btn--ghost" (click)="continuarSinPlantilla()">
+        {{ tieneDraft ? 'Solo draft' : 'Sin plantilla' }}
+      </button>
       <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>
     </div>
   </div>

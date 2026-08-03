@@ -1,5 +1,9 @@
-import { Component, EventEmitter, Output, inject } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
+import { Inject } from '@angular/core';
+import { Empresa, PEAJES_CATALOGO_SERVICE, PEAJES_PLANTILLAS_SERVICE, PeajesCatalogoService, PlantillaConfiguracion, PeajesPlantillasService } from '../../models';
 import { MVP_EJEMPLO_NOMBRE_ARCHIVO } from '../fixtures/mvp-ejemplo.fixture';
 import { PeajesExcelService } from '../services/peajes-excel.service';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
@@ -7,19 +11,51 @@ import { PeajesWizardStateService } from '../services/peajes-wizard-state.servic
 @Component({
   selector: 'app-paso1-carga',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './paso1-carga.component.html',
   styleUrl: './paso1-carga.component.css',
 })
-export class Paso1CargaComponent {
+export class Paso1CargaComponent implements OnInit {
   @Output() completado = new EventEmitter<void>();
 
   private readonly excel = inject(PeajesExcelService);
   readonly state = inject(PeajesWizardStateService);
+  plantillas: PlantillaConfiguracion[] = [];
+  empresas: Empresa[] = [];
+  plantillaId = '';
+  empresaId = '';
+  crearEmpresaAbierto = false;
+  nuevaEmpresaNombre = '';
+  nuevaEmpresaDescripcion = '';
 
   error: string | null = null;
   cargando = false;
   dragOver = false;
+
+  constructor(
+    @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService,
+    @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
+  ) {}
+
+  async ngOnInit(): Promise<void> {
+    this.plantillaId = this.state.snapshot().plantillaId ?? '';
+    this.empresaId = this.state.snapshot().empresaId ?? '';
+    this.empresas = await firstValueFrom(this.catalogo.listarEmpresas());
+    await this.cargarPlantillas();
+  }
+
+  seleccionarPlantilla(): void {
+    this.state.setPlantillaId(this.plantillaId || null);
+  }
+  async seleccionarEmpresa(): Promise<void> {
+    this.state.setEmpresaId(this.empresaId || null); this.plantillaId = ''; this.state.setPlantillaId(null); await this.cargarPlantillas();
+  }
+  async crearEmpresa(): Promise<void> {
+    if (!this.nuevaEmpresaNombre.trim()) return;
+    const empresa = await firstValueFrom(this.catalogo.crearEmpresa({ nombre: this.nuevaEmpresaNombre.trim(), descripcion: this.nuevaEmpresaDescripcion.trim() || null }));
+    this.empresas = [...this.empresas, empresa]; this.empresaId = empresa.id; this.crearEmpresaAbierto = false; await this.seleccionarEmpresa();
+  }
+  private async cargarPlantillas(): Promise<void> { this.plantillas = await firstValueFrom(this.plantillasSvc.listarPlantillas(this.empresaId || undefined)); }
 
   get meta() {
     return this.state.snapshot().preview;
@@ -80,7 +116,7 @@ export class Paso1CargaComponent {
   }
 
   continuar(): void {
-    if (this.meta) {
+    if (this.meta && this.empresaId) {
       this.completado.emit();
     }
   }

@@ -274,6 +274,7 @@ export function buildMvpPreview(): ExcelCargaPreview {
     totalFilas: MVP_FILAS_ORIGEN.length,
     columnas,
     filasPreview: MVP_FILAS_ORIGEN.map((f) => ({ ...f })),
+    filasOrigen: MVP_FILAS_ORIGEN.map((f) => ({ ...f })),
     tiposInferidos,
   };
 }

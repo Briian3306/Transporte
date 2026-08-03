@@ -1,4 +1,4 @@
-import { Component, Inject, inject, OnInit } from '@angular/core';
+import { Component, Inject, inject, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import {
@@ -56,6 +56,9 @@ const PASOS: PasoMeta[] = [
   providers: PEAJES_SUPABASE_PROVIDERS,
   templateUrl: './peajes-wizard.component.html',
   styleUrl: './peajes-wizard.component.css',
+  // Los pasos son componentes standalone: el shell provee el kit .pw__* para todos sus hijos.
+  // El selector raíz .pw mantiene estas reglas aisladas del resto de la aplicación.
+  encapsulation: ViewEncapsulation.None,
 })
 export class PeajesWizardComponent implements OnInit {
   readonly state = inject(PeajesWizardStateService);
@@ -96,7 +99,7 @@ export class PeajesWizardComponent implements OnInit {
 
   puedeAvanzarA(paso: WizardPasoId): boolean {
     const s = this.state.snapshot();
-    if (paso >= 2 && !s.preview) {
+    if (paso >= 2 && (!s.preview || !s.empresaId)) {
       return false;
     }
     if (paso >= 5 && s.columnasIncluidas.length === 0) {

@@ -103,21 +103,57 @@
       <div class="pw__form-grid">
         <div class="pw__field">
           <label>Nombre</label>
-          <input [(ngModel)]="nuevaEstacionNombre" />
+          <input class="pw__input" [(ngModel)]="nuevaEstacionNombre" />
         </div>
         <div class="pw__field">
           <label>Peaje</label>
-          <select class="pw__select" [(ngModel)]="nuevaEstacionPeajeId">
-            <option *ngFor="let p of peajesUnicos" [value]="p.id">{{ p.nombre }}</option>
-          </select>
+          <div class="paso6__peaje-row">
+            <select class="pw__select" [(ngModel)]="nuevaEstacionPeajeId">
+              <option value="" disabled>— Seleccioná un peaje —</option>
+              <option *ngFor="let p of peajesUnicos" [value]="p.id">{{ p.nombre }}</option>
+            </select>
+            <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="abrirCrearPeaje()">
+              <i class="fas fa-plus" aria-hidden="true"></i> Añadir peaje
+            </button>
+          </div>
+          <p class="paso6__hint" *ngIf="!peajesUnicos.length">
+            No hay peajes en el catálogo. Creá uno para poder relacionar la estación.
+          </p>
         </div>
       </div>
+
+      <div class="paso6__crear-peaje" *ngIf="crearPeajeAbierto">
+        <h4>Nuevo peaje</h4>
+        <div class="pw__form-grid">
+          <div class="pw__field">
+            <label>Nombre del peaje</label>
+            <input class="pw__input" [(ngModel)]="nuevoPeajeNombre" placeholder="p. ej. Autopista Demo" />
+          </div>
+          <div class="pw__field">
+            <label>Ubicación (opcional)</label>
+            <input class="pw__input" [(ngModel)]="nuevoPeajeUbicacion" />
+          </div>
+        </div>
+        <div class="pw__actions">
+          <button type="button" class="pw__btn" (click)="crearPeajeAbierto = false">Cancelar peaje</button>
+          <button
+            type="button"
+            class="pw__btn pw__btn--primary"
+            (click)="crearPeaje()"
+            [disabled]="creandoPeaje"
+          >
+            {{ creandoPeaje ? 'Creando…' : 'Crear peaje' }}
+          </button>
+        </div>
+      </div>
+
       <div class="pw__actions">
         <button type="button" class="pw__btn" (click)="creandoPara = null">Cancelar</button>
         <button type="button" class="pw__btn pw__btn--primary" (click)="crearEstacion()">Crear y relacionar</button>
       </div>
     </div>
 
+    <div class="pw__alert pw__alert--ok" *ngIf="successMsg">{{ successMsg }}</div>
     <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
   </div>
 
@@ -125,6 +161,14 @@
     <div class="pw__footer-hint">La pasada guarda estacion_id; el peaje se deriva de la estación.</div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--ghost"
+        (click)="guardarPlantillaRelaciones()"
+        [disabled]="guardandoRelaciones || !relaciones.length"
+      >
+        {{ guardandoRelaciones ? 'Guardando…' : 'Guardar relaciones' }}
+      </button>
       <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>
     </div>
   </div>

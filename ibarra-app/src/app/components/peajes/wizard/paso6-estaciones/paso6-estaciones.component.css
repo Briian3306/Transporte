@@ -112,6 +112,37 @@
   background: #fff;
 }
 
+.paso6__peaje-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.paso6__peaje-row .pw__select {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+}
+
+.paso6__crear-peaje {
+  margin: 0.85rem 0;
+  padding: 0.85rem;
+  border: 1px dashed var(--pw-line, #dce5ee);
+  border-radius: 10px;
+  background: #f7fafc;
+}
+
+.paso6__crear-peaje h4 {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+}
+
+.paso6__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--pw-muted, #6f8197);
+}
+
 @media (max-width: 900px) {
   .paso6__layout {
     grid-template-columns: 1fr;

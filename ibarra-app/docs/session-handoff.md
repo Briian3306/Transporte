@@ -417,3 +417,54 @@ init.sh → BLOCKED (sin bash/WSL en host Windows)
 - Commit Agente 05 (F05): `fa26ab8`
 - Repair RBAC: `e6f7239`
 - `main` sin merge de Peajes.
+
+---
+
+## 2026-07-31 — Editable pipeline Paso 3 (F02-10 / F03-9)
+
+**Estado:** **COMPLETADO** — F02-10 / F03-9 `passing`. Wave 0–3 cerradas (motor + draft state + Paso3 DnD UI + tests + docs).
+
+### Ownership locks (esta iteración)
+
+| Path | Writer |
+|------|--------|
+| `plantillas/**` | Agente 03 (F03-9) |
+| `wizard/**` | Agente 02 (F02-10) |
+| `docs/06-*/peajes/**` | Agente 04 |
+| `feature_list.json` / `docs/claude-progress.md` finalize | Integrador / orquestador |
+
+### API contract — Agente 03 expone; Agente 02 consume
+
+Implementar en `PeajesMotorTransformacionService` (clase concreta; **no** editar contratos de 00 salvo handoff a 00). Wizard inyecta el service.
+
+#### Draft step shape (wizard state → configs motor)
+
+```ts
+// configuracion jsonb fields (además de algoritmo_codigo existentes)
+{
+  algoritmo_codigo?: string;
+  columnas_entrada?: string[];  // multi-input (alias: también aceptar 'columnas' legacy)
+  parametros?: Record<string, unknown>;
+  habilitado?: boolean;         // default true; false → omitir del pipeline
+}
+```
+
+Wizard draft local puede añadir `clientId: string` (no persistir).
+
+#### Métodos nuevos / comportamiento (03)
+
+| API | Firma / semántica |
+|-----|-------------------|
+| `getAlgorithmDescriptors()` | `AlgorithmDescriptor[]` — metadata UI de los 10 códigos atómicos |
+| `validarDependenciasPipeline(configs, columnasOrigen, algoritmos?)` | `ErrorValidacionPasada[]` — sources, use-before-create, ciclos, outputs |
+| `previsualizarPaso(configs, filas, hastaOrden, algoritmos?)` | filas transformadas aplicando solo pasos con `orden <= hastaOrden` (respetando habilitado) |
+| `construirPipeline` / `aplicarPipeline` | **Omitir** configs con `configuracion.habilitado === false` |
+| `validarDefinicionPlantilla` | Seguir validando; puede delegar deps a `validarDependenciasPipeline` |
+
+#### `AlgorithmDescriptor` (bajo `plantillas/motor/`)
+
+Campos mínimos: `codigo`, `nombre`, `descripcion`, `categoria`, `inputs` (arity/required cols), `parametrosSchema`, `outputType`, `validar(config)`, `resumen(config)`.
+
+#### Seed demo §21 (para wizard state)
+
+Si columnas MVP detectadas, draft inicial equivalente a plantilla demo (FECHA_HORA, PATENTE_ID, PASE_ID, IMPORTE_NETO, QUANTITY) — 02 puede hardcodear seed o importar mock de plantillas **solo lectura** vía service/mock, no editar `plantillas/**`.

@@ -4,78 +4,436 @@
       <div class="pw__eyebrow">Paso 03 · reglas de limpieza</div>
       <h2>Aplicar transformaciones</h2>
       <p>
-        Revisá las secuencias del ejemplo MVP. Seleccioná una tarjeta para inspeccionar entrada/salida
-        sobre las 10 filas de preview.
+        Armá el pipeline de pasos, validá dependencias y previsualizá el efecto sobre las 10 filas
+        de preview. Podés guardar o cargar una plantilla.
       </p>
+    </div>
+    <div class="paso3__head-actions">
+      <span
+        class="pw__status"
+        *ngIf="dirty"
+        [class.pw__status--warn]="dirty"
+        title="Hay cambios sin guardar"
+      >
+        Sin guardar
+      </span>
+      <span class="pw__status pw__status--valid" *ngIf="!dirty && drafts.length">Guardado</span>
     </div>
   </div>
 
   <div class="pw__body">
-    <div class="paso3__strip" *ngIf="tieneColumnasMvp">
-      <span class="paso3__mark">↗</span>
-      <span>
-        Transformaciones del ejemplo ·
-        <strong>Proveedor Demo - Pasadas</strong>
-        · 5 reglas · compatible con columnas detectadas
-      </span>
-      <span class="pw__status pw__status--valid">Compatible</span>
+    <!-- Toolbar -->
+    <div class="paso3__toolbar" role="toolbar" aria-label="Acciones del pipeline">
+      <button type="button" class="pw__btn pw__btn--primary pw__btn--small" (click)="anadirPaso()">
+        <i class="fas fa-plus" aria-hidden="true"></i> Añadir paso
+      </button>
+      <button type="button" class="pw__btn pw__btn--small" (click)="validarAhora()">
+        <i class="fas fa-check-double" aria-hidden="true"></i> Validar
+      </button>
+      <button type="button" class="pw__btn pw__btn--small" (click)="refrescarPreview()" [disabled]="previewLoading">
+        <i class="fas fa-sync-alt" aria-hidden="true"></i> Actualizar preview
+      </button>
+      <span class="paso3__toolbar-sep" aria-hidden="true"></span>
+      <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="abrirCargar()">
+        <i class="fas fa-folder-open" aria-hidden="true"></i> Cargar
+      </button>
+      <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="abrirGuardar(false)">
+        <i class="fas fa-save" aria-hidden="true"></i> Guardar plantilla
+      </button>
+      <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="duplicarPlantilla()">
+        <i class="fas fa-copy" aria-hidden="true"></i> Guardar como nueva
+      </button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--small"
+        (click)="descartarCambios()"
+        [disabled]="!dirty"
+      >
+        <i class="fas fa-undo" aria-hidden="true"></i> Descartar cambios
+      </button>
     </div>
 
-    <div class="pw__alert pw__alert--info" *ngIf="!tieneColumnasMvp">
-      {{ mensaje }}
-    </div>
-
+    <div class="pw__alert pw__alert--ok" *ngIf="successMsg">{{ successMsg }}</div>
+    <div class="pw__alert pw__alert--error" *ngIf="errorMsg" role="alert">{{ errorMsg }}</div>
+    <div class="pw__alert pw__alert--info" *ngIf="mensaje && !errorMsg">{{ mensaje }}</div>
     <div class="pw__alert pw__alert--error" *ngIf="errores.length" role="alert">
       <div *ngFor="let e of errores">{{ e.columna }}: {{ e.motivo }}</div>
     </div>
 
-    <div class="paso3__grid">
-      <article
-        class="paso3__card"
-        *ngFor="let spec of specs"
-        [class.paso3__card--selected]="selectedKey === spec.key"
-        (click)="selectedKey = spec.key"
-      >
-        <div class="paso3__card-title">
-          <strong class="pw__mono">{{ spec.target }}</strong>
-          <span class="pw__status pw__status--valid">{{ spec.tag }}</span>
-        </div>
-        <ul class="paso3__list">
-          <li *ngFor="let s of spec.steps">{{ s }}</li>
-        </ul>
-        <div class="paso3__hint" *ngIf="selectedKey === spec.key">Seleccionada · ver preview abajo</div>
-      </article>
+    <!-- Save panel -->
+    <div class="paso3__panel" *ngIf="showSavePanel">
+      <div class="paso3__section-head">
+        <span>{{ saveAsNew ? 'Guardar como nueva plantilla' : 'Guardar plantilla' }}</span>
+        <button type="button" class="paso3__icon-btn" (click)="cerrarPaneles()" aria-label="Cerrar">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="paso3__panel-grid">
+        <label class="pw__field">
+          Nombre
+          <input class="pw__input" type="text" [(ngModel)]="saveNombre" />
+        </label>
+        <label class="pw__field">
+          Descripción
+          <input class="pw__input" type="text" [(ngModel)]="saveDescripcion" />
+        </label>
+      </div>
+      <div class="paso3__panel-actions">
+        <button type="button" class="pw__btn" (click)="cerrarPaneles()">Cancelar</button>
+        <button
+          type="button"
+          class="pw__btn pw__btn--primary"
+          (click)="guardarPlantilla()"
+          [disabled]="guardando"
+        >
+          {{ guardando ? 'Guardando…' : 'Confirmar guardado' }}
+        </button>
+      </div>
     </div>
 
-    <div class="paso3__compare" *ngIf="specActiva as spec">
+    <!-- Load panel -->
+    <div class="paso3__panel" *ngIf="showLoadPanel">
+      <div class="paso3__section-head">
+        <span>Cargar plantilla</span>
+        <button type="button" class="paso3__icon-btn" (click)="cerrarPaneles()" aria-label="Cerrar">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <label class="pw__field">
+        Plantilla
+        <select class="pw__select" [(ngModel)]="plantillaLoadId">
+          <option value="">— Elegí una plantilla —</option>
+          <option *ngFor="let p of plantillas" [value]="p.id">
+            {{ p.nombre }} ({{ p.estado }})
+          </option>
+        </select>
+      </label>
+      <div class="paso3__panel-actions">
+        <button type="button" class="pw__btn" (click)="cerrarPaneles()">Cancelar</button>
+        <button type="button" class="pw__btn pw__btn--primary" (click)="cargarPlantillaSeleccionada()">
+          Cargar en el pipeline
+        </button>
+      </div>
+    </div>
+
+    <div class="paso3__workspace">
+      <!-- Left: columns rail -->
+      <aside class="paso3__columns" aria-label="Columnas incluidas">
+        <div class="paso3__section-head">
+          <span>Columnas incluidas</span>
+          <strong>{{ columnasIncluidas.length }}</strong>
+        </div>
+        <p>Origen del archivo. Las resaltadas participan del paso seleccionado.</p>
+        <div class="paso3__column-list" *ngIf="columnasIncluidas.length; else emptyCols">
+          <button
+            type="button"
+            class="paso3__column"
+            *ngFor="let columna of columnasIncluidas"
+            [class.paso3__column--selected]="isColumnaHighlighted(columna)"
+            [class.paso3__column--used]="isColumnaUsada(columna)"
+            (click)="seleccionarColumnaRail(columna)"
+          >
+            <span class="pw__mono">{{ columna }}</span>
+            <i
+              class="fas"
+              [class.fa-check]="isColumnaUsada(columna)"
+              [class.fa-minus]="!isColumnaUsada(columna)"
+              aria-hidden="true"
+            ></i>
+          </button>
+        </div>
+        <ng-template #emptyCols>
+          <div class="paso3__empty">No hay columnas incluidas. Volvé al paso 2.</div>
+        </ng-template>
+      </aside>
+
+      <!-- Center: DnD pipeline -->
+      <section class="paso3__pipeline" aria-label="Pipeline de transformación">
+        <div class="paso3__section-head">
+          <span>Pipeline</span>
+          <span class="pw__status" [class.pw__status--valid]="!errores.length" [class.pw__status--error]="errores.length">
+            {{ drafts.length }} paso(s)
+          </span>
+        </div>
+
+        <div
+          class="paso3__drop-list"
+          cdkDropList
+          [cdkDropListData]="drafts"
+          (cdkDropListDropped)="onDrop($event)"
+          *ngIf="drafts.length; else emptyPipeline"
+        >
+          <article
+            class="paso3__card"
+            *ngFor="let step of drafts; let i = index"
+            cdkDrag
+            [cdkDragData]="step"
+            [class.paso3__card--selected]="selectedClientId === step.clientId"
+            [class.paso3__card--disabled]="!estaHabilitado(step)"
+            [class.paso3__card--error]="badgeValidacion(step) === 'error'"
+            (click)="seleccionarPaso(step.clientId)"
+          >
+            <div class="paso3__card-placeholder" *cdkDragPlaceholder></div>
+            <div class="paso3__drag" cdkDragHandle title="Arrastrar" (click)="$event.stopPropagation()">
+              <i class="fas fa-grip-vertical" aria-hidden="true"></i>
+            </div>
+            <div class="paso3__card-body">
+              <div class="paso3__card-title">
+                <span class="paso3__order">{{ i + 1 }}</span>
+                <div class="paso3__card-copy">
+                  <strong>{{ nombreAlgoritmo(step) }}</strong>
+                  <small class="pw__mono">{{ resumenPaso(step) }}</small>
+                </div>
+                <span
+                  class="pw__status"
+                  [class.pw__status--valid]="badgeValidacion(step) === 'ok'"
+                  [class.pw__status--error]="badgeValidacion(step) === 'error'"
+                  [class.pw__status--warn]="badgeValidacion(step) === 'off'"
+                >
+                  {{ badgeValidacion(step) === 'ok' ? 'OK' : badgeValidacion(step) === 'error' ? 'Error' : 'Omitido' }}
+                </span>
+              </div>
+              <div class="paso3__card-meta">
+                <span><em>Entrada</em> {{ fuentesPaso(step) }}</span>
+                <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                <span><em>Salida</em> <span class="pw__mono">{{ salidaPaso(step) }}</span></span>
+              </div>
+              <div class="paso3__card-errors" *ngIf="erroresPaso(step).length">
+                <div *ngFor="let e of erroresPaso(step)">{{ e.motivo }}</div>
+              </div>
+              <div class="paso3__card-actions" (click)="$event.stopPropagation()">
+                <button type="button" class="paso3__icon-btn" title="Editar" (click)="seleccionarPaso(step.clientId)">
+                  <i class="fas fa-pen" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="paso3__icon-btn" title="Duplicar" (click)="duplicarPaso(step.clientId, $event)">
+                  <i class="fas fa-clone" aria-hidden="true"></i>
+                </button>
+                <button
+                  type="button"
+                  class="paso3__icon-btn"
+                  [title]="estaHabilitado(step) ? 'Deshabilitar' : 'Habilitar'"
+                  (click)="toggleHabilitado(step.clientId, $event)"
+                >
+                  <i class="fas" [class.fa-eye]="estaHabilitado(step)" [class.fa-eye-slash]="!estaHabilitado(step)" aria-hidden="true"></i>
+                </button>
+                <button
+                  type="button"
+                  class="paso3__icon-btn paso3__icon-btn--danger"
+                  title="Eliminar"
+                  (click)="pedirBorrar(step.clientId, $event)"
+                >
+                  <i class="fas fa-trash" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div class="paso3__confirm" *ngIf="pendingDeleteId === step.clientId" (click)="$event.stopPropagation()">
+                <span>¿Eliminar este paso?</span>
+                <button type="button" class="pw__btn pw__btn--small pw__btn--danger" (click)="confirmarBorrar()">Sí</button>
+                <button type="button" class="pw__btn pw__btn--small" (click)="cancelarBorrar()">No</button>
+              </div>
+            </div>
+          </article>
+        </div>
+        <ng-template #emptyPipeline>
+          <div class="paso3__empty paso3__empty--pipeline">
+            <i class="fas fa-layer-group" aria-hidden="true"></i>
+            <p>No hay pasos en el pipeline.</p>
+            <button type="button" class="pw__btn pw__btn--primary pw__btn--small" (click)="anadirPaso()">
+              Añadir el primer paso
+            </button>
+          </div>
+        </ng-template>
+      </section>
+
+      <!-- Right: config panel -->
+      <section class="paso3__config" aria-label="Configuración del paso">
+        <div class="paso3__section-head"><span>Configuración</span></div>
+
+        <ng-container *ngIf="selectedStep; else noSelection">
+          <label class="pw__field">
+            Algoritmo
+            <input
+              class="pw__input"
+              type="search"
+              placeholder="Buscar algoritmo…"
+              [(ngModel)]="algorithmSearch"
+            />
+            <select class="pw__select" [(ngModel)]="editAlgoritmo" (ngModelChange)="onAlgoritmoChange()">
+              <option value="">— Elegí —</option>
+              <option *ngFor="let d of descriptorsFiltrados" [value]="d.codigo">
+                {{ d.nombre }} ({{ d.codigo }})
+              </option>
+            </select>
+          </label>
+          <p class="paso3__hint-text" *ngIf="selectedDescriptor">{{ selectedDescriptor.descripcion }}</p>
+
+          <fieldset class="paso3__fieldset" *ngIf="esFormatearFechaHora; else entradasCheckbox">
+            <legend>Columnas de entrada (fecha + hora)</legend>
+            <label class="pw__field">
+              Columna fecha
+              <select
+                class="pw__select pw__mono"
+                [ngModel]="editEntradas[0] || ''"
+                (ngModelChange)="setEntradaOrdenada(0, $event)"
+              >
+                <option value="">— Elegí —</option>
+                <option *ngFor="let col of columnasParaInputs" [value]="col">{{ col }}</option>
+              </select>
+            </label>
+            <label class="pw__field">
+              Columna hora
+              <select
+                class="pw__select pw__mono"
+                [ngModel]="editEntradas[1] || ''"
+                (ngModelChange)="setEntradaOrdenada(1, $event)"
+              >
+                <option value="">— Elegí —</option>
+                <option *ngFor="let col of columnasParaInputs" [value]="col">{{ col }}</option>
+              </select>
+            </label>
+          </fieldset>
+          <ng-template #entradasCheckbox>
+            <fieldset class="paso3__fieldset">
+              <legend>Columnas de entrada</legend>
+              <label class="paso3__check" *ngFor="let col of columnasParaInputs">
+                <input
+                  type="checkbox"
+                  [checked]="editEntradas.includes(col)"
+                  (change)="toggleEntrada(col, $any($event.target).checked)"
+                />
+                <span class="pw__mono">{{ col }}</span>
+              </label>
+              <div class="paso3__empty" *ngIf="!columnasParaInputs.length">Sin columnas disponibles</div>
+            </fieldset>
+          </ng-template>
+
+          <div class="paso3__params" *ngIf="paramFields().length">
+            <div class="paso3__section-head"><span>Parámetros</span></div>
+            <ng-container *ngFor="let field of paramFields()">
+              <label
+                class="pw__field"
+                *ngIf="field.tipo === 'enum' || field.nombre === 'formato_hora'"
+              >
+                {{ field.descripcion || field.nombre }}
+                <select
+                  class="pw__select pw__mono"
+                  [ngModel]="paramAsString(field.nombre)"
+                  (ngModelChange)="setParam(field.nombre, $event)"
+                >
+                  <option value="" disabled>— Formato —</option>
+                  <option
+                    *ngFor="let opt of field.opciones || formatosFechaHora"
+                    [value]="opt"
+                  >
+                    {{ opt }}
+                  </option>
+                </select>
+              </label>
+              <label
+                class="pw__field"
+                *ngIf="field.tipo !== 'enum' && field.nombre !== 'formato_hora'"
+              >
+                {{ field.nombre }}
+                <input
+                  class="pw__input"
+                  type="text"
+                  [ngModel]="paramAsString(field.nombre)"
+                  (ngModelChange)="setParam(field.nombre, $event)"
+                  [attr.placeholder]="field.descripcion || field.nombre"
+                />
+              </label>
+            </ng-container>
+          </div>
+
+          <label class="pw__field">
+            Columna de salida (resultado del paso)
+            <select
+              class="pw__select pw__mono"
+              [ngModel]="salidaSelectValue"
+              (ngModelChange)="setSalidaEstandar($event)"
+            >
+              <option value="">— Elegí destino —</option>
+              <option *ngFor="let d of destinosEstandar" [value]="d">{{ d }}</option>
+              <option value="__custom__">Nombre personalizado…</option>
+            </select>
+          </label>
+          <label class="pw__field" *ngIf="editSalidaCustom || salidaSelectValue === '__custom__'">
+            Nombre de columna generada
+            <input
+              class="pw__input pw__mono"
+              type="text"
+              [(ngModel)]="editSalida"
+              (ngModelChange)="editSalidaCustom = true; aplicarEdicion()"
+              placeholder="p. ej. FECHA_HORA_CUSTOM"
+            />
+          </label>
+          <p class="paso3__hint-text" *ngIf="editSalida">
+            Esta salida se podrá mapear al Structure Goal y usarse en pasos siguientes.
+          </p>
+
+          <label class="paso3__check">
+            <input
+              type="checkbox"
+              [(ngModel)]="editHabilitado"
+              (ngModelChange)="aplicarEdicion()"
+            />
+            Paso habilitado
+          </label>
+          <label class="paso3__check">
+            <input
+              type="checkbox"
+              [(ngModel)]="editObligatoria"
+              (ngModelChange)="aplicarEdicion()"
+            />
+            Obligatorio
+          </label>
+        </ng-container>
+        <ng-template #noSelection>
+          <div class="paso3__empty">Seleccioná un paso del pipeline para editarlo.</div>
+        </ng-template>
+      </section>
+    </div>
+
+    <!-- Bottom: I/O preview -->
+    <div class="paso3__compare">
       <div class="paso3__compare-head">
-        <span>Datos de entrada y salida</span>
-        <span class="pw__mono">{{ spec.target }} · {{ filas.length }} registros</span>
+        <span>Vista previa entrada / salida</span>
+        <span class="pw__mono">
+          {{ filasPreviewIo.length }} filas
+          <ng-container *ngIf="selectedStep">
+            · hasta orden {{ selectedStep.orden }}
+          </ng-container>
+        </span>
       </div>
       <div class="paso3__compare-body">
-        <p class="paso3__note-text">
-          Aplica {{ spec.steps.length }} pasos sobre
-          <strong>{{ spec.inputs.join(' + ') }}</strong> para producir
-          <strong>{{ spec.target }}</strong>.
-        </p>
-        <div class="pw__table-wrap">
+        <div class="paso3__loading" *ngIf="previewLoading">Calculando preview…</div>
+        <div class="paso3__empty" *ngIf="!previewLoading && !filasPreviewIo.length">
+          Sin filas de preview. Cargá un Excel en el paso 1.
+        </div>
+        <div class="pw__table-wrap" *ngIf="!previewLoading && filasPreviewIo.length">
           <table class="pw__table paso3__preview-table">
             <thead>
               <tr>
                 <th>#</th>
-                <th *ngFor="let input of spec.inputs">Entrada · {{ input }}</th>
-                <th>Salida · {{ spec.target }}</th>
-                <th>Estado</th>
+                <th
+                  *ngFor="let col of columnasTabla"
+                  [class.paso3__th-in]="isColumnaInput(col)"
+                  [class.paso3__th-out]="isColumnaOutput(col)"
+                >
+                  {{ col }}
+                </th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let fila of filas; let i = index">
+              <tr *ngFor="let fila of filasPreviewIo; let i = index">
                 <td class="pw__mono">{{ i + 1 }}</td>
-                <td class="pw__mono" *ngFor="let input of spec.inputs">
-                  {{ input === '—' ? '—' : fila[input] }}
+                <td
+                  *ngFor="let col of columnasTabla"
+                  class="pw__mono"
+                  [class.paso3__td-in]="isColumnaInput(col)"
+                  [class.paso3__td-out]="isColumnaOutput(col)"
+                >
+                  {{ celda(fila, col) }}
                 </td>
-                <td class="paso3__out">{{ salida(spec.key, fila) }}</td>
-                <td><span class="pw__status pw__status--valid">Válido</span></td>
               </tr>
             </tbody>
           </table>
@@ -85,7 +443,9 @@
   </div>
 
   <div class="pw__footer">
-    <div class="pw__footer-hint">El motor Builder/Strategy se aplica al elegir plantilla (paso 4).</div>
+    <div class="pw__footer-hint">
+      El draft queda en el estado del wizard. En el paso 4 podés aplicar una plantilla guardada o este pipeline.
+    </div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
       <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>

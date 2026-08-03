@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Paso 7: Revisar y Confirmar</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"tertiary-fixed": "#ffdbcd", "primary-container": "#2563eb", "on-secondary-container": "#54647a", "surface-container": "#eceef0", outline: "#737686", "on-tertiary-fixed-variant": "#7d2d00", "on-tertiary-container": "#ffede6", "inverse-surface": "#2d3133", "on-primary": "#ffffff", background: "#f7f9fb", "surface-bright": "#f7f9fb", "secondary-fixed-dim": "#b7c8e1", "bg-canvas": "#FFFFFF", "tertiary-fixed-dim": "#ffb596", "status-info": "#3B82F6", "outline-variant": "#c3c6d7", surface: "#f7f9fb", "on-secondary": "#ffffff", "on-tertiary-fixed": "#360f00", "surface-container-lowest": "#ffffff", "status-success": "#10B981", "surface-container-highest": "#e0e3e5", "surface-tint": "#0053db", "on-secondary-fixed": "#0b1c30", secondary: "#505f76", "on-primary-fixed": "#00174b", "border-low-contrast": "#E2E8F0", "primary-fixed": "#dbe1ff", "on-error-container": "#93000a", tertiary: "#943700", "surface-dim": "#d8dadc", "inverse-primary": "#b4c5ff", "on-primary-container": "#eeefff", "inverse-on-surface": "#eff1f3", "tertiary-container": "#bc4800", "on-error": "#ffffff", "on-tertiary": "#ffffff", "surface-container-high": "#e6e8ea", "error-container": "#ffdad6", "on-background": "#191c1e", "status-warning": "#F59E0B", error: "#ba1a1a", "text-high-contrast": "#0F172A", primary: "#004ac6", "status-error": "#EF4444", "on-surface-variant": "#434655", "on-surface": "#191c1e", "surface-variant": "#e0e3e5", "secondary-fixed": "#d3e4fe", "surface-container-low": "#f2f4f6", "secondary-container": "#d0e1fb", "on-primary-fixed-variant": "#003ea8", "on-secondary-fixed-variant": "#38485d", "primary-fixed-dim": "#b4c5ff"}, borderRadius: {DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem"}, spacing: {"wizard-step-gap": "12px", baseline: "4px", "margin-mobile": "16px", "container-max-width": "1200px", "margin-desktop": "40px", gutter: "24px"}, fontFamily: {"body-md": ["Inter"], "headline-lg": ["Inter"], "label-md": ["Inter"], "headline-md": ["Inter"], "code-sm": ["Inter"], "body-lg": ["Inter"], "headline-lg-mobile": ["Inter"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"body-md": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-lg": ["30px", {lineHeight: "38px", letterSpacing: "-0.02em", fontWeight: "700"}], "label-md": ["13px", {lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600"}], "code-sm": ["12px", {lineHeight: "16px", fontWeight: "500"}], "body-lg": ["16px", {lineHeight: "24px", fontWeight: "400"}], "headline-lg-mobile": ["24px", {lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "700"}]}}}};</script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    </style>
+</head>
+<body class="bg-bg-canvas text-on-surface font-body-md min-h-screen flex flex-col md:flex-row">
+<!-- Desktop SideNav -->
+<nav class="hidden md:flex flex-col p-4 gap-2 h-screen w-64 border-r border-outline-variant bg-surface dark:bg-surface shadow-[1px_0px_0px_rgba(0,0,0,0.05)] sticky top-0 flex-shrink-0">
+<div class="flex items-center gap-3 px-4 py-3 mb-4">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">dataset</span>
+<div>
+<h1 class="text-on-surface font-semibold text-base tracking-tight leading-tight">Automation Hub</h1>
+<p class="text-on-surface-variant text-xs opacity-80">Main Workspace</p>
+</div>
+</div>
+<button class="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-2.5 rounded-lg mb-6 shadow-sm hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">add</span>
+<span class="font-label-md">New Module</span>
+</button>
+<div class="flex flex-col gap-1 flex-grow">
+<a class="flex items-center gap-3 px-4 py-2.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary">dashboard</span>
+<span class="font-body-md text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 bg-surface-container-high text-primary rounded-lg shadow-[inset_4px_4px_8px_rgba(0,0,0,0.06),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-body-md text-sm font-medium">History</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary">description</span>
+<span class="font-body-md text-sm font-medium">Templates</span>
+</a>
+</div>
+<div class="mt-auto flex flex-col gap-1 pt-4 border-t border-outline-variant">
+<a class="flex items-center gap-3 px-4 py-2.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">archive</span>
+<span class="font-body-md text-sm font-medium">Archive</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+<span class="font-body-md text-sm font-medium">Trash</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col max-w-full overflow-hidden">
+<!-- TopAppBar (Mobile & Global Actions) -->
+<header class="flex justify-between items-center px-6 h-16 w-full z-50 bg-surface dark:bg-surface shadow-[inset_0px_-1px_0px_rgba(0,0,0,0.05)] shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.6)] sticky top-0 md:static">
+<div class="flex items-center md:hidden">
+<span class="text-lg font-semibold text-on-surface dark:text-on-surface tracking-tight">Module Automation Tool</span>
+</div>
+<!-- Top Nav (Hidden on Mobile, replaced by SideNav) -->
+<nav class="hidden md:flex gap-6 h-full items-center">
+<a class="h-full flex items-center px-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="font-body font-medium text-sm">Process</span>
+</a>
+<a class="h-full flex items-center px-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="font-body font-medium text-sm">Validation</span>
+</a>
+<a class="h-full flex items-center px-2 text-primary dark:text-primary-fixed border-b-2 border-primary hover:bg-surface-container-low transition-colors duration-200" href="#">
+<span class="font-body font-medium text-sm">Execute</span>
+</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-on-surface transition-colors p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden border border-outline-variant">
+<span class="material-symbols-outlined text-on-secondary-container text-sm">person</span>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<div class="p-margin-mobile md:p-margin-desktop flex-1 overflow-y-auto">
+<div class="max-w-container-max-width mx-auto flex flex-col gap-8">
+<!-- Wizard Stepper (Horizontal) -->
+<div class="flex items-center w-full justify-between mb-2">
+<div class="flex flex-col items-center flex-1">
+<div class="w-8 h-8 rounded-full bg-status-success text-on-primary flex items-center justify-center mb-2 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<span class="font-code-sm text-on-surface-variant">Upload</span>
+</div>
+<div class="h-[2px] bg-status-success flex-1 -mt-6 mx-2"></div>
+<div class="flex flex-col items-center flex-1">
+<div class="w-8 h-8 rounded-full bg-status-success text-on-primary flex items-center justify-center mb-2 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<span class="font-code-sm text-on-surface-variant">Map</span>
+</div>
+<div class="h-[2px] bg-status-success flex-1 -mt-6 mx-2"></div>
+<div class="flex flex-col items-center flex-1">
+<div class="w-8 h-8 rounded-full border-2 border-primary bg-bg-canvas text-primary flex items-center justify-center mb-2 shadow-sm relative before:content-[''] before:absolute before:inset-[-4px] before:rounded-full before:border before:border-primary/20">
+<span class="font-label-md">7</span>
+</div>
+<span class="font-code-sm text-primary font-semibold">Review</span>
+</div>
+</div>
+<!-- Header Section -->
+<div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-on-surface mb-2">Paso 7: Revisar y Confirmar</h2>
+<p class="font-body-lg text-on-surface-variant max-w-2xl">Final review before saving standardized data to the main database. Please verify the summary metrics below.</p>
+</div>
+<!-- Bento Metrics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="border border-border-low-contrast rounded-xl p-6 bg-surface-bright flex flex-col justify-between hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-md uppercase text-on-surface-variant">Processed</span>
+<span class="material-symbols-outlined text-status-info text-[20px]">sync</span>
+</div>
+<span class="font-headline-lg text-on-surface">10</span>
+<span class="font-code-sm text-on-surface-variant mt-2 block">Total rows evaluated</span>
+</div>
+<div class="border border-border-low-contrast rounded-xl p-6 bg-surface-bright flex flex-col justify-between hover:bg-surface-container-low transition-colors duration-200 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-16 h-16 bg-status-success/10 rounded-bl-full -mr-4 -mt-4"></div>
+<div class="flex items-center justify-between mb-4 relative z-10">
+<span class="font-label-md uppercase text-on-surface-variant">Valid</span>
+<span class="material-symbols-outlined text-status-success text-[20px]">check_circle</span>
+</div>
+<span class="font-headline-lg text-on-surface relative z-10">10</span>
+<span class="font-code-sm text-status-success mt-2 block relative z-10">100% Pass Rate</span>
+</div>
+<div class="border border-border-low-contrast rounded-xl p-6 bg-surface-bright flex flex-col justify-between hover:bg-surface-container-low transition-colors duration-200">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-md uppercase text-on-surface-variant">Rejected</span>
+<span class="material-symbols-outlined text-on-surface-variant opacity-50 text-[20px]">error</span>
+</div>
+<span class="font-headline-lg text-on-surface-variant">0</span>
+<span class="font-code-sm text-on-surface-variant mt-2 block">Requires manual review</span>
+</div>
+<div class="border border-border-low-contrast rounded-xl p-6 bg-surface-container-low flex flex-col justify-between shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-md uppercase text-on-surface-variant">Total Net</span>
+<span class="material-symbols-outlined text-primary text-[20px]">payments</span>
+</div>
+<span class="font-headline-lg text-primary">$102,060.00</span>
+<span class="font-code-sm text-on-surface-variant mt-2 block">Aggregated value</span>
+</div>
+</div>
+<!-- Data Table Section -->
+<div class="border border-border-low-contrast rounded-xl bg-bg-canvas overflow-hidden flex flex-col shadow-sm">
+<div class="p-4 border-b border-border-low-contrast bg-surface-bright flex justify-between items-center">
+<h3 class="font-headline-md text-on-surface">Standardized Output Preview</h3>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container-low rounded-full border border-border-low-contrast">
+<span class="material-symbols-outlined text-[14px] text-status-info">info</span>
+<span class="font-code-sm text-on-surface-variant">MVP Demo Data</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-bright border-b border-border-low-contrast">
+<th class="py-3 px-4 font-label-md text-on-surface-variant whitespace-nowrap">ID</th>
+<th class="py-3 px-4 font-label-md text-on-surface-variant whitespace-nowrap">Date</th>
+<th class="py-3 px-4 font-label-md text-on-surface-variant whitespace-nowrap">Client Name</th>
+<th class="py-3 px-4 font-label-md text-on-surface-variant whitespace-nowrap">Category</th>
+<th class="py-3 px-4 font-label-md text-on-surface-variant whitespace-nowrap">Status</th>
+<th class="py-3 px-4 font-label-md text-on-surface-variant text-right whitespace-nowrap">Amount</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-on-surface">
+<tr class="border-b border-border-low-contrast hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4 font-code-sm text-on-surface-variant">PAS-0001</td>
+<td class="py-3 px-4">2023-10-24</td>
+<td class="py-3 px-4 font-medium">Acme Corp</td>
+<td class="py-3 px-4">Software License</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-[12px] font-medium px-2 py-0.5 rounded-full bg-status-success/10 text-status-success border border-status-success/20">
+<span class="material-symbols-outlined text-[12px]">check</span> Valid
+                                        </span>
+</td>
+<td class="py-3 px-4 text-right font-code-sm">$12,500.00</td>
+</tr>
+<tr class="border-b border-border-low-contrast hover:bg-surface-container-low transition-colors bg-surface-bright/30">
+<td class="py-3 px-4 font-code-sm text-on-surface-variant">PAS-0002</td>
+<td class="py-3 px-4">2023-10-24</td>
+<td class="py-3 px-4 font-medium">Globex Inc</td>
+<td class="py-3 px-4">Consulting</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-[12px] font-medium px-2 py-0.5 rounded-full bg-status-success/10 text-status-success border border-status-success/20">
+<span class="material-symbols-outlined text-[12px]">check</span> Valid
+                                        </span>
+</td>
+<td class="py-3 px-4 text-right font-code-sm">$8,200.00</td>
+</tr>
+<tr class="border-b border-border-low-contrast hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-4 font-code-sm text-on-surface-variant">PAS-0003</td>
+<td class="py-3 px-4">2023-10-25</td>
+<td class="py-3 px-4 font-medium">Soylent Corp</td>
+<td class="py-3 px-4">Hardware</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-[12px] font-medium px-2 py-0.5 rounded-full bg-status-success/10 text-status-success border border-status-success/20">
+<span class="material-symbols-outlined text-[12px]">check</span> Valid
+                                        </span>
+</td>
+<td class="py-3 px-4 text-right font-code-sm">$45,000.00</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-bright/30">
+<td class="py-3 px-4 font-code-sm text-on-surface-variant">PAS-0004</td>
+<td class="py-3 px-4">2023-10-25</td>
+<td class="py-3 px-4 font-medium">Initech</td>
+<td class="py-3 px-4">Subscription</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 text-[12px] font-medium px-2 py-0.5 rounded-full bg-status-success/10 text-status-success border border-status-success/20">
+<span class="material-symbols-outlined text-[12px]">check</span> Valid
+                                        </span>
+</td>
+<td class="py-3 px-4 text-right font-code-sm">$1,250.00</td>
+</tr>
+<tr>
+<td class="py-3 px-4 text-center text-on-surface-variant font-code-sm italic bg-surface-container-lowest" colspan="6">... 6 more rows ...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="flex justify-between items-center mt-4 border-t border-border-low-contrast pt-6">
+<button class="px-6 py-2.5 font-label-md text-secondary hover:text-on-surface transition-colors rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                        Back to Map
+                    </button>
+<div class="flex gap-4">
+<button class="px-6 py-2.5 font-label-md text-secondary bg-bg-canvas border border-border-low-contrast hover:bg-surface-container-low transition-colors rounded-lg">
+                            Cancel
+                        </button>
+<button class="px-8 py-2.5 font-label-md text-on-primary bg-primary hover:bg-surface-tint transition-colors rounded-lg flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1)]">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                            Confirm &amp; Save
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

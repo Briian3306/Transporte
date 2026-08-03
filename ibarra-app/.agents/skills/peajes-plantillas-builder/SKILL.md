@@ -32,13 +32,14 @@ Mismo kit del host: Angular 19 standalone, CSS/SCSS propio, Font Awesome, españ
 
 ## Motor Builder + Strategy (PRD)
 
-Implementar paso a paso:
+Implementar paso a paso (detalle de arquitectura: skill
+`peajes-transformaciones-motor`):
 
 1. **StrategyRegistry** — códigos registrados; rechazar referencias inexistentes.
 2. **Estrategias atómicas** — p. ej. unir fecha/hora, borrar espacios, eliminar guiones, convertir mayúsculas, calcular importe neto, etc. (catálogo del PRD §7).
-3. **Builder** — arma el pipeline ordenado por `orden` determinista.
-4. **Algoritmo combinado** — expandir pasos (`algoritmo_codigo` + `parametros` jsonb) sin mutar el registry.
-5. **Preview** — aplicar pipeline a filas de muestra (caso §21).
+3. **Builder** — `PipelineBuilder` arma el pipeline ordenado por `orden` determinista.
+4. **Algoritmo combinado** — expandir pasos (`algoritmo_codigo` + `parametros` jsonb) sin mutar el registry. Nombres como `NORMALIZAR_PATENTE` / `COMBINAR_FECHA_HORA` son combinados, no códigos atómicos.
+5. **Preview** — aplicar pipeline a filas de muestra (caso §21) vía `PeajesMotorTransformacionService`.
 
 Caso de aceptación §21 debe producir correctamente: `FECHA_HORA`, `PATENTE_ID`, `PASE_ID`, `IMPORTE_NETO`.
 

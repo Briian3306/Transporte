@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import {
   Estacion,
+  Empresa,
   Pase,
   Patente,
   Peaje,
@@ -14,6 +15,7 @@ import {
  */
 @Injectable()
 export class PeajesCatalogoMockService implements PeajesCatalogoService {
+  private empresas: Empresa[] = [{ id: 'EMP-001', nombre: 'Empresa Demo', descripcion: 'Proveedor demo' }];
   private peajes: Peaje[] = [
     {
       id: 'PEA-001',
@@ -73,8 +75,13 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
     { id: 'PAS-001', pase: '98702170', patente_id: 'PAT-001', created_at: '2026-01-01T00:00:00Z' },
   ];
 
-  listarPeajes(): Observable<Peaje[]> {
-    return of([...this.peajes]);
+  listarEmpresas(): Observable<Empresa[]> { return of([...this.empresas]); }
+  crearEmpresa(data: Omit<Empresa, 'id' | 'created_at'>): Observable<Empresa> {
+    const empresa = { ...data, id: `EMP-${String(this.empresas.length + 1).padStart(3, '0')}` };
+    this.empresas = [...this.empresas, empresa]; return of(empresa);
+  }
+  listarPeajes(empresaId?: string): Observable<Peaje[]> {
+    return of(this.peajes.filter((p) => !empresaId || p.empresa_id === empresaId));
   }
 
   obtenerPeaje(id: string): Observable<Peaje | null> {

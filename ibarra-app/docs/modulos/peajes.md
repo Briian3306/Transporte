@@ -82,7 +82,12 @@ Tests SQL: `supabase/tests/peajes_f01_test.sql`
 |------|--------|
 | Modelo de datos / tablas | [docs/06-tablas/peajes/](../06-tablas/peajes/INDEX.md) |
 | Componentes UI | [docs/06-components/peajes/](../06-components/peajes/INDEX.md) |
+| Pipeline editable Paso 3 (outline) | [pipeline-editable-paso3.md](../06-components/peajes/pipeline-editable-paso3.md) |
 | SQL F01 | [docs/08-sql/peajes/F01-schema/](../08-sql/peajes/F01-schema/README.md), [F01-rpc/](../08-sql/peajes/F01-rpc/README.md) |
+| CLI local: Auth + permisos | [docs/05-configuracion/cli-local-credenciales-y-permisos.md](../05-configuracion/cli-local-credenciales-y-permisos.md) |
+| Motor transformaciones (skill) | [`.agents/skills/peajes-transformaciones-motor/`](../../.agents/skills/peajes-transformaciones-motor/SKILL.md) |
+| Testing transformaciones (skill) | [`.agents/skills/peajes-testing-transformaciones/`](../../.agents/skills/peajes-testing-transformaciones/SKILL.md) |
+| Testing plan MVP | [docs/plan/testing_plan.md](../plan/testing_plan.md) |
 | Planes agentes | [docs/plan/INDEX.md](../plan/INDEX.md) |
 | Handoff | [docs/session-handoff.md](../session-handoff.md) |
 | Bitácora | [docs/claude-progress.md](../claude-progress.md) |

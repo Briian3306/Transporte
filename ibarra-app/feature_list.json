@@ -501,6 +501,37 @@
       ]
     },
     {
+      "id": "F02-10",
+      "title": "Paso 3 — Pipeline editable (draft, DnD, preview motor, plantilla save/load)",
+      "prd_refs": [
+        "RF-07",
+        "RF-08",
+        "RF-09",
+        "RF-10",
+        "RF-11",
+        "RF-28"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F02-9",
+        "F03-9"
+      ],
+      "status": "passing",
+      "verification": [
+        "Usuario puede agregar/editar/eliminar/duplicar/reordenar/habilitar-deshabilitar pasos en Paso 3",
+        "Preview usa motor (máx 10 filas); Continuar/Paso4 aplica draft a filasOrigen",
+        "Save/Load/Discard plantilla + dirty indicator",
+        "ng test --include=\"**/peajes/wizard/**/*.spec.ts\"",
+        "Suma Demo IMPORTE_NETO = 102060 tras pipeline editable; AU = 132940.19 cuando fixture AU presente"
+      ],
+      "evidence": [
+        "2026-07-31: Paso3 editable UI + CDK DnD + plantilla save/load/discard; Paso4 aplica draft a filasOrigen",
+        "2026-07-31: ng test peajes wizard — Paso3 I-P01…I-P08 + state U-W01…U-W04; Paso1 providers mock fixed",
+        "2026-07-31: motor.verify + e2e-prd21 PASS — Demo suma 102060; AU suma 132940.19",
+        "2026-07-31: npm run build OK (@angular/cdk@19.2.0)"
+      ]
+    },
+    {
       "id": "F03-1",
       "title": "Paso 3 — Motor de transformaciones (tarjetas, orden, preview)",
       "prd_refs": [
@@ -660,6 +691,37 @@
       ],
       "evidence": [
         "2026-07-30: puedeAplicarRecurso + GLOBAL_EMPRESA_ID; motor.verify.ts A↛B, global sí"
+      ]
+    },
+    {
+      "id": "F03-9",
+      "title": "Motor — AlgorithmDescriptor, skip-disabled, dependencias, previsualizarPaso",
+      "prd_refs": [
+        "RF-07",
+        "RF-08",
+        "RF-09",
+        "RF-10",
+        "RN-18",
+        "RN-20"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F03-1",
+        "F03-7"
+      ],
+      "status": "passing",
+      "verification": [
+        "getAlgorithmDescriptors() expone metadata de los 10 códigos atómicos",
+        "construirPipeline/aplicarPipeline omiten configuracion.habilitado === false",
+        "validarDependenciasPipeline detecta use-before-create y ciclos",
+        "previsualizarPaso aplica pipeline hasta orden N",
+        "ng test --include=\"**/peajes/plantillas/**/*.spec.ts\"",
+        "npx tsx src/app/components/peajes/plantillas/motor.verify.ts"
+      ],
+      "evidence": [
+        "2026-07-31: algorithm-descriptor.ts (10 códigos) + dependencias-pipeline.ts + motor APIs",
+        "2026-07-31: motor.spec U-P01…U-P08 + I-P09/I-P10; motor.verify.ts PASS (skip-disabled, deps, preview, §21)",
+        "2026-07-31: Demo 102060 / AU 132940.19 assertados en motor.verify"
       ]
     },
     {

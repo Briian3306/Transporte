@@ -2,11 +2,12 @@
 
 ## Resumen
 
-Catálogos base del módulo (F01-1): peajes/corredores, estaciones, patentes y pases. Migración `20260730125513_peajes_catalogos.sql`.
+Catálogos base del módulo (F01-1): peajes/corredores, estaciones, patentes y pases. Migración `20260730125513_peajes_catalogos.sql`. Catálogo `empresas`: `20260731124502_peajes_empresas.sql`.
 
 ## Índice
 
 - [Resumen](#resumen)
+- [empresas](#empresas)
 - [peajes](#peajes)
 - [estaciones](#estaciones)
 - [patentes](#patentes)
@@ -14,6 +15,19 @@ Catálogos base del módulo (F01-1): peajes/corredores, estaciones, patentes y p
 - [RLS y permisos](#rls-y-permisos)
 - [system_modules](#system_modules)
 - [Referencias](#referencias)
+
+---
+
+## empresas
+
+| Columna | Tipo | Nullable | Descripción |
+|---------|------|----------|-------------|
+| `id` | uuid PK | No | `gen_random_uuid()` |
+| `nombre` | text UNIQUE | No | Nombre de la empresa |
+| `descripcion` | text | Sí | — |
+| `created_at` | timestamptz | No | Default `now()` |
+
+Índice: `nombre`. Relación lógica: `peajes.empresa_id` / `facturas.empresa_id` / plantillas y algoritmos usan `empresas.id::text` o `'__global__'` (sin FK uuid; RN-23).
 
 ---
 
@@ -25,7 +39,7 @@ Catálogos base del módulo (F01-1): peajes/corredores, estaciones, patentes y p
 | `nombre` | text | No | Nombre del peaje/corredor |
 | `ubicacion` | text | Sí | — |
 | `descripcion` | text | Sí | — |
-| `empresa_id` | text | Sí | UUID empresa o `'__global__'` |
+| `empresa_id` | text | Sí | `empresas.id::text` o `'__global__'` |
 | `created_at` | timestamptz | No | Default `now()` |
 
 Índices: `empresa_id`, `nombre`.
@@ -78,7 +92,7 @@ Dispositivos/pases reutilizables (RN-02).
 
 ## RLS y permisos
 
-- RLS habilitado en las cuatro tablas.
+- RLS habilitado en `empresas`, `peajes`, `estaciones`, `patentes` y `pases`.
 - Policy `*_authenticated_all`: ALL para rol `authenticated`.
 - Grants SELECT/INSERT/UPDATE/DELETE a `authenticated`; ALL a `service_role`.
 
@@ -92,7 +106,8 @@ La misma migración intenta insertar `system_modules.name = 'peajes'` + acción 
 
 ## Referencias
 
-- SQL: `supabase/migrations/20260730125513_peajes_catalogos.sql`
+- SQL: `supabase/migrations/20260730125513_peajes_catalogos.sql`, `supabase/migrations/20260731124502_peajes_empresas.sql`
+- SQL task: [docs/08-sql/peajes/empresas/](../../08-sql/peajes/empresas/README.md)
 - Servicio: `src/app/components/peajes/services/peajes-catalogo.service.ts`
 - UI catálogos: [docs/06-components/peajes/catalogos.md](../../06-components/peajes/catalogos.md)
 - Companion: [docs/08-sql/peajes/F01-schema/](../../08-sql/peajes/F01-schema/README.md)

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"on-secondary-fixed": "#0b1c30", "bg-canvas": "#FFFFFF", "status-error": "#EF4444", "on-tertiary-container": "#ffede6", "secondary-container": "#d0e1fb", "primary-container": "#2563eb", "on-surface": "#191c1e", error: "#ba1a1a", "on-secondary": "#ffffff", "on-background": "#191c1e", "surface-variant": "#e0e3e5", "surface-tint": "#0053db", "tertiary-fixed": "#ffdbcd", "surface-container-highest": "#e0e3e5", "on-primary-container": "#eeefff", "inverse-surface": "#2d3133", "on-secondary-container": "#54647a", "secondary-fixed-dim": "#b7c8e1", "on-primary": "#ffffff", "tertiary-container": "#bc4800", "primary-fixed": "#dbe1ff", "on-secondary-fixed-variant": "#38485d", "outline-variant": "#c3c6d7", "on-tertiary-fixed": "#360f00", "on-tertiary-fixed-variant": "#7d2d00", "status-success": "#10B981", "tertiary-fixed-dim": "#ffb596", "inverse-on-surface": "#eff1f3", background: "#f7f9fb", "surface-container": "#eceef0", secondary: "#505f76", "on-error": "#ffffff", "surface-dim": "#d8dadc", "on-error-container": "#93000a", "status-info": "#3B82F6", "primary-fixed-dim": "#b4c5ff", "border-low-contrast": "#E2E8F0", outline: "#737686", "surface-container-high": "#e6e8ea", "inverse-primary": "#b4c5ff", "surface-container-lowest": "#ffffff", "surface-container-low": "#f2f4f6", "on-tertiary": "#ffffff", "on-surface-variant": "#434655", "on-primary-fixed-variant": "#003ea8", "on-primary-fixed": "#00174b", surface: "#f7f9fb", "surface-bright": "#f7f9fb", tertiary: "#943700", "error-container": "#ffdad6", primary: "#004ac6", "secondary-fixed": "#d3e4fe", "status-warning": "#F59E0B", "text-high-contrast": "#0F172A"}, borderRadius: {DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem"}, spacing: {"wizard-step-gap": "12px", baseline: "4px", "container-max-width": "1200px", gutter: "24px", "margin-desktop": "40px", "margin-mobile": "16px"}, fontFamily: {"code-sm": ["Inter"], "body-md": ["Inter"], "headline-md": ["Inter"], "headline-lg-mobile": ["Inter"], "label-md": ["Inter"], "headline-lg": ["Inter"], "body-lg": ["Inter"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"code-sm": ["12px", {lineHeight: "16px", fontWeight: "500"}], "body-md": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600"}], "headline-lg-mobile": ["24px", {lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "700"}], "label-md": ["13px", {lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600"}], "headline-lg": ["30px", {lineHeight: "38px", letterSpacing: "-0.02em", fontWeight: "700"}], "body-lg": ["16px", {lineHeight: "24px", fontWeight: "400"}]}}}};</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #FFFFFF;
+            color: #191c1e;
+        }
+        .notion-shadow {
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-hidden">
+<!-- App Shell Wrapper -->
+<div class="flex h-screen w-full bg-canvas">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col p-4 gap-2 h-full border-r border-outline-variant bg-surface w-64 shadow-[1px_0px_0px_rgba(0,0,0,0.05)]">
+<div class="flex items-center gap-3 px-2 py-4 mb-4">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-lg">cloud_download</span>
+</div>
+<div>
+<h2 class="text-on-surface font-semibold text-base leading-tight">Automation Hub</h2>
+<p class="text-xs text-on-surface-variant">Main Workspace</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-body text-sm font-medium">History</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-body text-sm font-medium">Templates</span>
+</a>
+</nav>
+<button class="mt-4 flex items-center justify-center gap-2 bg-primary text-on-primary py-2 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity active:scale-95">
+<span class="material-symbols-outlined text-sm">add</span>
+<span class="">New Module</span>
+</button>
+<div class="mt-auto border-t border-outline-variant pt-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="archive">archive</span>
+<span class="font-body text-sm font-medium">Archive</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+<span class="font-body text-sm font-medium">Trash</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 bg-canvas overflow-y-auto">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 h-16 w-full z-50 bg-surface shadow-[inset_0px_-1px_0px_rgba(0,0,0,0.05)] sticky top-0">
+<div class="flex items-center gap-8">
+<span class="text-lg font-semibold text-on-surface tracking-tight">Module Automation Tool</span>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-primary border-b-2 border-primary h-16 flex items-center font-body font-medium" href="#">Process</a>
+<a class="text-on-surface-variant hover:text-on-surface h-16 flex items-center font-body font-medium transition-colors duration-200" href="#">Validation</a>
+<a class="text-on-surface-variant hover:text-on-surface h-16 flex items-center font-body font-medium transition-colors duration-200" href="#">Execute</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">search</span>
+<input class="bg-surface-container-low border-none rounded-full pl-10 pr-4 py-1.5 text-sm focus:ring-1 focus:ring-primary w-64" placeholder="Search..." type="text"/>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors duration-200">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="settings">settings</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors duration-200">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="help">help</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A clean professional studio portrait of a user for a corporate profile, with soft high-key lighting and a neutral blurred background, matching the minimalist blue and white aesthetic of the application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCShXSrLJtKQio-LUjyBFuVhhVbTXly_QIL0wDMDG23OT_jvjDTbr177pXPU9i-zZm1jI1UdepIqR88oa3DD89SbEiOuWEMRItxFf8cEFgLG1bBL3D3DvfM78i024zbmWmP2NV2ideBFTywRtP6VzUP--RiUCE-GuqCDfFKZJlycds-F2Z7l17Ce2WeZTY9FhOQ1ZNVKcOIFjftviD5uw_ed7Arx65ZSHFG7VJxixFHBFTOQgMmSZT1"/>
+</div>
+</div>
+</header>
+<!-- Workspace Content -->
+<main class="flex-1 w-full max-w-[900px] mx-auto px-wizard-step-gap md:px-margin-desktop py-12">
+<!-- Breadcrumbs -->
+<nav class="flex items-center gap-2 mb-8 text-on-surface-variant">
+<span class="font-label-md text-label-md">Workspace</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="font-label-md text-label-md">Automations</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="font-label-md text-label-md text-primary">Upload File</span>
+</nav>
+<!-- Page Header -->
+<div class="mb-12">
+<h1 class="font-headline-lg text-headline-lg text-text-high-contrast mb-2">Step 1: Cargar archivo</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                        Comienza el proceso de automatización cargando tu base de datos. Validaremos la estructura antes de proceder a la configuración del módulo.
+                    </p>
+</div>
+<!-- Bento Grid Layout for Upload & Info -->
+<div class="grid grid-cols-1 gap-8">
+<!-- Main Drop Zone -->
+<div class="relative group border-2 border-dashed border-outline-variant rounded-xl p-16 flex flex-col items-center justify-center bg-surface-container-lowest hover:border-primary hover:bg-primary-fixed/5 transition-all duration-300 cursor-pointer" id="drop-zone">
+<div class="w-20 h-20 bg-secondary-container rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-primary text-4xl" style="font-variation-settings: 'FILL' 1;">upload_file</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Arrastra un archivo .xlsx</h3>
+<p class="font-body-md text-body-md text-on-surface-variant text-center max-w-xs mb-8">
+                            O selecciona manualmente desde tu ordenador para comenzar la validación.
+                        </p><div class="w-full max-w-xs mb-8 p-4 bg-surface-container-low rounded-lg border border-outline-variant">
+<div class="flex items-center justify-between mb-2">
+<label class="font-label-md text-label-md text-on-surface">¿Qué configuración aplicar?</label>
+<span class="px-2 py-0.5 rounded-full bg-status-warning/10 text-status-warning text-[10px] font-bold uppercase tracking-wider">Requerido</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-3">La plantilla cargará automáticamente sus filtros y mapeos en los pasos siguientes.</p>
+<div class="relative">
+<select class="w-full bg-white border border-outline-variant rounded-lg px-3 py-2 text-sm appearance-none focus:ring-1 focus:ring-primary cursor-pointer">
+<option selected="">Corredores Viales Demo SA · Excel junio 2026</option>
+<option>Autopistas del Sur · formato A</option>
+<option>Sin plantilla (Manual)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant text-lg">expand_more</span>
+</div>
+</div>
+<button class="bg-white border border-border-low-contrast px-6 py-2.5 rounded-lg font-medium text-text-high-contrast shadow-sm hover:bg-surface-container-low transition-colors">
+                            Seleccionar archivo
+                        </button>
+<input accept=".xlsx" class="absolute inset-0 opacity-0 cursor-pointer" type="file"/>
+</div>
+<!-- Bottom Info Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Format Spec -->
+<div class="p-6 border border-border-low-contrast rounded-xl bg-surface-container-lowest flex items-start gap-4">
+<div class="w-10 h-10 bg-status-info/10 rounded-lg flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-status-info">info</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface mb-1">FORMATO ACEPTADO</h4>
+<p class="text-sm text-on-surface-variant">Solo se permiten archivos Microsoft Excel (.xlsx). Tamaño máximo 50MB.</p>
+</div>
+</div>
+<!-- Template Download -->
+<div class="p-6 border border-border-low-contrast rounded-xl bg-surface-container-lowest flex items-start gap-4">
+<div class="w-10 h-10 bg-status-success/10 rounded-lg flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-status-success">download</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface mb-1">PLANTILLA BASE</h4>
+<p class="text-sm text-on-surface-variant">¿No tienes el formato correcto? <a class="text-primary font-medium hover:underline" href="#">Descarga nuestra plantilla oficial</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Secondary visual section / Decorative Bento piece -->
+<div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-2 rounded-xl overflow-hidden h-48 relative border border-border-low-contrast">
+<img class="w-full h-full object-cover" data-alt="A macro close-up of a high-tech data processing visualization with glowing ethereal lines and nodes, clean white background with blue accents, reflecting a calm professional atmosphere of digital transformation and precision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEEdbvFiv5Avyu7KAYAwagHXGzLaeJJAk9UxFNDwYQ4XM7JGmskd-CiSSAsMyYa_db1T8-Bhz7_1HC528Y9xqLylf58I4ZNwtNiXFWAS3rNMrwvMd4EQ2vPu5hejxCZQsPSBoEC_oamN6mg6bISU0qymOhTjICjQ1z4u_j6OoMjs7xcBEpX-CimqCdiY2MUO8Wxpx49DPzPZqIZ_UR4izjIoMczeyNA17DuhvzfCmoLG_AVOe1ZK2J"/>
+<div class="absolute inset-0 bg-gradient-to-r from-white via-transparent to-transparent flex flex-col justify-center px-8">
+<span class="font-label-md text-label-md text-primary mb-1">SISTEMA INTELIGENTE</span>
+<p class="text-text-high-contrast font-medium text-lg leading-tight">Mapeo automático de columnas <br/>y detección de errores.</p>
+</div>
+</div>
+<div class="rounded-xl border border-border-low-contrast p-6 bg-surface-container-low flex flex-col justify-between">
+<span class="material-symbols-outlined text-on-surface-variant">security</span>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">Encriptación AES-256</h4>
+<p class="text-xs text-on-surface-variant mt-1">Tus datos están seguros durante todo el proceso de carga y procesamiento.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar (Transactional) -->
+<footer class="h-20 bg-canvas border-t border-border-low-contrast flex items-center justify-between px-8 mt-auto sticky bottom-0">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-on-surface font-medium transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+<span class="">Cancelar</span>
+</button>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 text-on-surface-variant mr-4">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-xs font-medium uppercase tracking-wider">Esperando archivo</span>
+</div>
+<button class="bg-surface-container-highest text-on-surface-variant px-8 py-2.5 rounded-lg font-medium cursor-not-allowed opacity-50" disabled="">
+                        Siguiente paso
+                    </button>
+</div>
+</footer>
+</div>
+</div>
+<!-- Micro-interaction Script -->
+<script>
+        const dropZone = document.getElementById('drop-zone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('border-primary', 'bg-primary-fixed/10', 'scale-[1.01]');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('border-primary', 'bg-primary-fixed/10', 'scale-[1.01]');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            let dt = e.dataTransfer;
+            let files = dt.files;
+            console.log('File dropped:', files[0].name);
+            // Simulate processing
+            alert('Archivo detectado: ' + files[0].name + '. Iniciando validación...');
+        }
+    </script>
+</body></html>

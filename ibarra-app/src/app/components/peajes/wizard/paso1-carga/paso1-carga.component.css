@@ -85,6 +85,24 @@
   background: #f3f8ff;
 }
 
+.paso1__template-select {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.paso1__template-select .pw__select {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .paso1__template-head {
   display: flex;
   justify-content: space-between;
@@ -109,6 +127,13 @@
   align-items: center;
   gap: 0.55rem;
 }
+
+.paso1__dialog-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgba(15,35,58,.48); backdrop-filter: blur(2px); }
+.paso1__dialog { width: min(560px,100%); padding: 1.35rem; border: 1px solid var(--pw-line,#dce5ee); border-radius: 14px; background: #fff; box-shadow: 0 24px 60px rgba(15,35,58,.25); }
+.paso1__dialog-head { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:.6rem; }
+.paso1__dialog h3 { margin:.25rem 0 0; font-size:1.15rem; }
+.paso1__dialog > p { margin:0 0 1rem; color:var(--pw-muted,#6f8197); font-size:.85rem; }
+.paso1__dialog .pw__footer-actions { margin-top:1rem; }
 
 @media (max-width: 900px) {
   .paso1__layout {

@@ -1,7 +1,29 @@
 import { TestBed } from '@angular/core/testing';
-import { PeajesWizardStateService } from './peajes-wizard-state.service';
+import { buildMvpPreview } from '../fixtures/mvp-ejemplo.fixture';
+import {
+  ConfiguracionPlantillaDraft,
+  PeajesWizardStateService,
+} from './peajes-wizard-state.service';
 
-describe('PeajesWizardStateService (F02-9)', () => {
+function draftStep(
+  overrides: Partial<ConfiguracionPlantillaDraft> & Pick<ConfiguracionPlantillaDraft, 'nombre_columna'>
+): ConfiguracionPlantillaDraft {
+  return {
+    clientId: overrides.clientId ?? `c-${overrides.nombre_columna}-${overrides.orden ?? 0}`,
+    orden: overrides.orden ?? 10,
+    tipo: overrides.tipo ?? 'transformacion',
+    nombre_columna: overrides.nombre_columna,
+    columna_destino: overrides.columna_destino ?? overrides.nombre_columna,
+    algoritmo_combinado_id: overrides.algoritmo_combinado_id ?? null,
+    configuracion: overrides.configuracion ?? {
+      algoritmo_codigo: 'COPIAR_COLUMNA',
+      habilitado: true,
+    },
+    obligatoria: overrides.obligatoria ?? true,
+  };
+}
+
+describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
   let state: PeajesWizardStateService;
 
   beforeEach(() => {
@@ -17,6 +39,7 @@ describe('PeajesWizardStateService (F02-9)', () => {
       totalFilas: 1,
       columnas: ['A'],
       filasPreview: [{ A: 1 }],
+      filasOrigen: [{ A: 1 }],
       tiposInferidos: { A: 'número' },
     });
     state.setFactura({
@@ -32,5 +55,85 @@ describe('PeajesWizardStateService (F02-9)', () => {
     state.setPaso(7);
     expect(state.snapshot().factura.factura).toBe('F-1');
     expect(state.snapshot().preview?.nombreArchivo).toBe('a.xlsx');
+  });
+
+  /** U-W01: dirty after setConfiguracionesDraft until markPipelineSaved */
+  it('U-W01: dirty after setConfiguracionesDraft until markPipelineSaved', () => {
+    expect(state.isPipelineDirty()).toBeFalse();
+
+    state.setConfiguracionesDraft([
+      draftStep({ clientId: 'a', orden: 10, nombre_columna: 'FECHA' }),
+    ]);
+    expect(state.isPipelineDirty()).toBeTrue();
+
+    state.markPipelineSaved();
+    expect(state.isPipelineDirty()).toBeFalse();
+  });
+
+  /** U-W02: discard restores snapshot */
+  it('U-W02: discard restores snapshot', () => {
+    const saved = [
+      draftStep({ clientId: 'saved-1', orden: 10, nombre_columna: 'FECHA', columna_destino: 'FECHA_HORA' }),
+    ];
+    state.setConfiguracionesDraft(saved);
+    state.markPipelineSaved();
+
+    state.addDraftStep({
+      tipo: 'transformacion',
+      nombre_columna: 'EXTRA',
+      columna_destino: 'EXTRA',
+      configuracion: { algoritmo_codigo: 'ASIGNAR_VALOR', parametros: { valor: 1 }, habilitado: true },
+      obligatoria: false,
+    });
+    expect(state.isPipelineDirty()).toBeTrue();
+    expect(state.getConfiguracionesDraft().length).toBe(2);
+
+    state.discardPipelineChanges();
+    const restored = state.getConfiguracionesDraft();
+    expect(restored.length).toBe(1);
+    expect(restored[0].clientId).toBe('saved-1');
+    expect(restored[0].nombre_columna).toBe('FECHA');
+    expect(state.isPipelineDirty()).toBeFalse();
+  });
+
+  /** U-W03: seed MVP headers → non-empty draft */
+  it('U-W03: seed MVP headers → non-empty draft', () => {
+    state.setPreview(buildMvpPreview());
+    expect(state.getConfiguracionesDraft().length).toBe(0);
+
+    const seeded = state.seedDemoPipelineIfEmpty();
+    expect(seeded).toBeTrue();
+    const draft = state.getConfiguracionesDraft();
+    expect(draft.length).toBeGreaterThan(0);
+
+    const codigos = draft.map((d) => d.configuracion?.algoritmo_codigo);
+    expect(codigos).toContain('FORMATEAR_FECHA_HORA');
+    expect(codigos).toContain('BORRAR_ESPACIOS');
+    expect(codigos).toContain('ELIMINAR_GUIONES');
+    expect(codigos).toContain('CONVERTIR_MAYUSCULAS');
+    expect(codigos).toContain('COPIAR_COLUMNA');
+    expect(codigos).toContain('CALCULAR_IMPORTE_NETO');
+    expect(codigos).toContain('ASIGNAR_VALOR');
+
+    // Idempotent when already seeded
+    expect(state.seedDemoPipelineIfEmpty()).toBeFalse();
+  });
+
+  /** U-W04: reorder updates orden ascending */
+  it('U-W04: reorder updates orden ascending', () => {
+    state.setConfiguracionesDraft([
+      draftStep({ clientId: 'first', orden: 10, nombre_columna: 'A' }),
+      draftStep({ clientId: 'second', orden: 20, nombre_columna: 'B' }),
+      draftStep({ clientId: 'third', orden: 30, nombre_columna: 'C' }),
+    ]);
+
+    // Move index 0 → 2 (A goes to end)
+    state.reorderDraftSteps(0, 2);
+    const after = state.getConfiguracionesDraft();
+    expect(after.map((d) => d.clientId)).toEqual(['second', 'third', 'first']);
+    expect(after.map((d) => d.orden)).toEqual([10, 20, 30]);
+    for (let i = 1; i < after.length; i++) {
+      expect(after[i].orden).toBeGreaterThan(after[i - 1].orden);
+    }
   });
 });

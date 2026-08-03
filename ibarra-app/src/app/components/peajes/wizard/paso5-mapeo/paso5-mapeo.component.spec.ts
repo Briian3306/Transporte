@@ -21,6 +21,7 @@ describe('Paso5MapeoComponent', () => {
       totalFilas: 1,
       columnas: ['DOMINIO', 'TARIFA'],
       filasPreview: [{ DOMINIO: 'AD625QB', TARIFA: 17400 }],
+      filasOrigen: [{ DOMINIO: 'AD625QB', TARIFA: 17400 }],
       tiposInferidos: { DOMINIO: 'texto', TARIFA: 'número' },
     });
 

@@ -26,6 +26,7 @@ describe('Paso6EstacionesComponent', () => {
       totalFilas: 1,
       columnas: ['ESTACION'],
       filasPreview: [{ ESTACION: '99' }],
+      filasOrigen: [{ ESTACION: '99' }],
       tiposInferidos: { ESTACION: 'texto' },
     });
     state.setMapeos([

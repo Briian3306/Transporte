@@ -39,14 +39,23 @@ export class Paso5MapeoComponent {
   }
 
   etiquetaOrigen(col: string): string {
-    if (col.toUpperCase() === 'FECHA') {
-      return 'FECHA + HORA';
+    if (this.esSalidaPipeline(col)) {
+      return `${col} (pipeline)`;
     }
     return col;
   }
 
+  esSalidaPipeline(col: string): boolean {
+    return this.state.columnasGeneradasPipeline().includes(col);
+  }
+
   descripcionTransform(m: MapeoColumna): string {
     const dest = m.columnaDestino;
+    if (this.esSalidaPipeline(m.columnaOrigen)) {
+      return dest
+        ? `Salida del pipeline → ${dest}`
+        : 'Salida del pipeline (elegí destino estándar)';
+    }
     const map: Record<string, string> = {
       FECHA_HORA: 'Completar HORA · combinar columnas',
       PASE_ID: 'Convertir a texto · limpiar',

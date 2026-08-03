@@ -26,6 +26,7 @@ describe('Paso9RevisionComponent', () => {
       totalFilas: 1,
       columnas: ['X'],
       filasPreview: [{ X: 1 }],
+      filasOrigen: [{ X: 1 }],
       tiposInferidos: { X: 'número' },
     });
     state.setFactura({

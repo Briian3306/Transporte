@@ -25,6 +25,7 @@ describe('Paso2PreviewComponent', () => {
       totalFilas: 15,
       columnas: ['FECHA', 'VIA'],
       filasPreview: filas.slice(0, 10),
+      filasOrigen: filas,
       tiposInferidos: { FECHA: 'fecha', VIA: 'número' },
     });
 
