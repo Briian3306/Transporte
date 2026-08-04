@@ -104,43 +104,28 @@
   font-weight: 800;
 }
 
-.paso6__crear {
-  margin-top: 1.1rem;
-  padding: 1rem;
-  border: 1px solid var(--pw-line, #dce5ee);
-  border-radius: 12px;
-  background: #fff;
-}
-
-.paso6__peaje-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.paso6__peaje-row .pw__select {
-  flex: 1 1 12rem;
-  min-width: 10rem;
-}
-
-.paso6__crear-peaje {
-  margin: 0.85rem 0;
-  padding: 0.85rem;
-  border: 1px dashed var(--pw-line, #dce5ee);
-  border-radius: 10px;
-  background: #f7fafc;
-}
-
-.paso6__crear-peaje h4 {
-  margin: 0 0 0.65rem;
-  font-size: 0.95rem;
-}
-
 .paso6__hint {
   margin: 0.35rem 0 0;
   font-size: 0.8rem;
   color: var(--pw-muted, #6f8197);
+}
+
+.paso6__peaje-fijo {
+  font-weight: 800;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: #f1f5f9;
+  border: 1px solid var(--pw-line, #dce5ee);
+}
+
+.paso6__reco {
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: #9a6700;
+}
+
+.paso6__row--need td {
+  background: #fffbeb;
 }
 
 @media (max-width: 900px) {

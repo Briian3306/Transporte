@@ -76,7 +76,8 @@ export interface Pase {
 export interface Factura {
   id: string;
   factura: string;
-  cuenta: string;
+  /** Opcional; NULL/vacío permitido en DB. */
+  cuenta: string | null;
   empresa_id: string;
   fecha_factura: string;
   importe_sin_iva: number;

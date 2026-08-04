@@ -24,23 +24,19 @@
     </section>
 
     <section class="cat__panel">
-      <h2>Listado</h2>
-      <table class="cat__table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Pase</th>
-            <th>Patente</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let p of pases">
-            <td>{{ p.id }}</td>
-            <td>{{ p.pase }}</td>
-            <td>{{ p.patente?.patente || p.patente_id }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <h2 class="cat__list-title">Listado</h2>
+      <app-data-table
+        [columns]="columns"
+        [rows]="tableRows"
+        [page]="page"
+        [pageSize]="pageSize"
+        [clientFilter]="true"
+        [filterableColumnsInputs]="true"
+        [searchableInputMain]="['pase']"
+        [exportLabel]="''"
+        emptyMessage="Sin resultados para el filtro."
+        (pageChange)="onPageChange($event)"
+      />
     </section>
   </div>
 </div>

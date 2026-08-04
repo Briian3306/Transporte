@@ -197,7 +197,7 @@ Revisar el diff y commitear si corresponde (entorno de desarrollo).
 - Seed Auth: `supabase/seed_auth.sql`
 - Seed RBAC: `supabase/seed_rbac.sql`
 - Módulo Peajes: [docs/modulos/peajes.md](../modulos/peajes.md)
-- SQL empresas / catálogos: [docs/08-sql/peajes/empresas/](../08-sql/peajes/empresas/README.md)
+- SQL empresas / catálogos: consultar `supabase/migrations/` y los servicios de dominio.
 
 ---
 

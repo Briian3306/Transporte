@@ -73,6 +73,82 @@
       </aside>
     </div>
 
+    <section class="paso5__unresolved" *ngIf="unresolvedPatentes.length" aria-label="Patentes sin resolver">
+      <div class="paso5__unresolved-head">
+        <div>
+          <div class="pw__eyebrow">Catálogo</div>
+          <h3>Patentes sin resolver en el catálogo</h3>
+          <p>
+            {{ unresolvedPatentes.length }} dominio(s) no están en el catálogo.
+            Agregalos o quitálos del import para continuar.
+          </p>
+        </div>
+        <label class="paso5__filtro-rapido">
+          <span>Filtro rápido</span>
+          <input
+            type="search"
+            class="pw__input"
+            [(ngModel)]="filtroPatenteRapido"
+            placeholder="Buscar patente…"
+            [disabled]="accionesPatenteOcupadas"
+          />
+        </label>
+      </div>
+
+      <div class="paso5__bulk-toolbar" role="toolbar" aria-label="Acciones masivas de patentes">
+        <button
+          type="button"
+          class="pw__btn pw__btn--small pw__btn--primary"
+          (click)="agregarTodasPatentes()"
+          [disabled]="accionesPatenteOcupadas || !unresolvedRows.length"
+        >
+          {{ agregandoTodas ? 'Agregando…' : 'Agregar todas' }}
+        </button>
+        <button
+          type="button"
+          class="pw__btn pw__btn--small pw__btn--ghost"
+          (click)="quitarTodasPatentes()"
+          [disabled]="accionesPatenteOcupadas || !unresolvedRows.length"
+        >
+          Quitar todas
+        </button>
+        <span class="paso5__bulk-hint" *ngIf="filtroPatenteRapido.trim()">
+          Aplica al filtro actual ({{ unresolvedRows.length }})
+        </span>
+      </div>
+
+      <app-data-table
+        [columns]="unresolvedColumns"
+        [rows]="unresolvedRows"
+        [total]="unresolvedRows.length"
+        [pageSize]="50"
+        [pageSizeOptions]="[25, 50, 100]"
+        emptyMessage="No hay patentes pendientes con ese filtro."
+        rowIdKey="id"
+      >
+        <ng-template appDataTableColumn="acciones" let-row>
+          <div class="paso5__row-actions">
+            <button
+              type="button"
+              class="pw__btn pw__btn--small pw__btn--primary"
+              (click)="$event.stopPropagation(); agregarPatente(asPatente(row))"
+              [disabled]="accionesPatenteOcupadas"
+            >
+              {{ accionPatente === asPatente(row) ? '…' : 'Agregar' }}
+            </button>
+            <button
+              type="button"
+              class="pw__btn pw__btn--small pw__btn--ghost"
+              (click)="$event.stopPropagation(); quitarPatente(asPatente(row))"
+              [disabled]="accionesPatenteOcupadas"
+            >
+              Quitar
+            </button>
+          </div>
+        </ng-template>
+      </app-data-table>
+    </section>
+
     <div class="pw__note">
       <strong>Nota de modelo:</strong>
       PASADA_ID lo genera el sistema. Las columnas marcadas «(pipeline)» vienen del Paso 3
@@ -87,7 +163,12 @@
     <div class="pw__footer-hint">Obligatorias: {{ obligatorias.join(', ') }}</div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
-      <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()" [disabled]="resolviendoPatentes">
+      <button
+        type="button"
+        class="pw__btn pw__btn--primary"
+        (click)="continuar()"
+        [disabled]="!puedeContinuar"
+      >
         {{ resolviendoPatentes ? 'Resolviendo patentes…' : 'Continuar' }}
       </button>
     </div>

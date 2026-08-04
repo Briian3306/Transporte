@@ -3,7 +3,7 @@
     <div>
       <div class="pw__eyebrow">Paso 06 · catálogo maestro</div>
       <h2>Relacionar estaciones</h2>
-      <p>Vinculá los códigos del proveedor con estaciones internas y obtené el peaje asociado.</p>
+      <p>Vinculá los códigos del proveedor con estaciones internas de la empresa seleccionada.</p>
     </div>
     <span
       class="pw__status"
@@ -33,7 +33,7 @@
           <div class="paso6__link-icon"><i class="fas fa-link" aria-hidden="true"></i></div>
           <div>
             <strong>Relación confirmada para el archivo</strong>
-            <span>El valor recibido se traduce al catálogo interno y hereda su peaje.</span>
+            <span>Solo se listan estaciones de los peajes de la empresa del Paso 1.</span>
           </div>
         </div>
 
@@ -48,7 +48,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let r of relaciones">
+              <tr *ngFor="let r of relaciones" [class.paso6__row--need]="necesitaCrear(r.valorProveedor)">
                 <td class="pw__mono">{{ r.valorProveedor }}</td>
                 <td>
                   <select
@@ -58,7 +58,7 @@
                   >
                     <option value="">— Seleccionar —</option>
                     <option *ngFor="let e of estaciones" [value]="e.id">
-                      {{ e.nombre }} ({{ e.id }})
+                      {{ e.nombre }}
                     </option>
                   </select>
                   <div class="paso6__sug" *ngIf="sugerencias[r.valorProveedor]?.length">
@@ -71,6 +71,9 @@
                       {{ s.nombre }}
                     </button>
                   </div>
+                  <div class="paso6__reco" *ngIf="necesitaCrear(r.valorProveedor)">
+                    <strong>Recomendado:</strong> no hay coincidencia — creá una estación interna.
+                  </div>
                 </td>
                 <td>{{ peajeDe(r.estacionId) }}</td>
                 <td>
@@ -79,9 +82,20 @@
                   </button>
                   <button
                     *ngIf="reconocimientos[r.valorProveedor]?.tipo === 'sugerencias'"
-                    type="button" class="pw__btn pw__btn--small pw__btn--ghost"
+                    type="button"
+                    class="pw__btn pw__btn--small pw__btn--ghost"
                     (click)="declararSinCoincidencia(r.valorProveedor)"
-                  >Ninguna coincide</button>
+                  >
+                    Ninguna coincide
+                  </button>
+                  <button
+                    *ngIf="necesitaCrear(r.valorProveedor)"
+                    type="button"
+                    class="pw__btn pw__btn--small pw__btn--primary"
+                    (click)="abrirCrear(r.valorProveedor)"
+                  >
+                    Crear estación
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -100,61 +114,6 @@
             <span class="paso6__pill">{{ ej.peaje }}</span>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="paso6__crear" *ngIf="creandoPara">
-      <h3>Crear estación para código «{{ creandoPara }}»</h3>
-      <div class="pw__form-grid">
-        <div class="pw__field">
-          <label>Nombre</label>
-          <input class="pw__input" [(ngModel)]="nuevaEstacionNombre" />
-        </div>
-        <div class="pw__field">
-          <label>Peaje</label>
-          <div class="paso6__peaje-row">
-            <select class="pw__select" [(ngModel)]="nuevaEstacionPeajeId">
-              <option value="" disabled>— Seleccioná un peaje —</option>
-              <option *ngFor="let p of peajesUnicos" [value]="p.id">{{ p.nombre }}</option>
-            </select>
-            <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="abrirCrearPeaje()">
-              <i class="fas fa-plus" aria-hidden="true"></i> Añadir peaje
-            </button>
-          </div>
-          <p class="paso6__hint" *ngIf="!peajesUnicos.length">
-            No hay peajes en el catálogo. Creá uno para poder relacionar la estación.
-          </p>
-        </div>
-      </div>
-
-      <div class="paso6__crear-peaje" *ngIf="crearPeajeAbierto">
-        <h4>Nuevo peaje</h4>
-        <div class="pw__form-grid">
-          <div class="pw__field">
-            <label>Nombre del peaje</label>
-            <input class="pw__input" [(ngModel)]="nuevoPeajeNombre" placeholder="p. ej. Autopista Demo" />
-          </div>
-          <div class="pw__field">
-            <label>Ubicación (opcional)</label>
-            <input class="pw__input" [(ngModel)]="nuevoPeajeUbicacion" />
-          </div>
-        </div>
-        <div class="pw__actions">
-          <button type="button" class="pw__btn" (click)="crearPeajeAbierto = false">Cancelar peaje</button>
-          <button
-            type="button"
-            class="pw__btn pw__btn--primary"
-            (click)="crearPeaje()"
-            [disabled]="creandoPeaje"
-          >
-            {{ creandoPeaje ? 'Creando…' : 'Crear peaje' }}
-          </button>
-        </div>
-      </div>
-
-      <div class="pw__actions">
-        <button type="button" class="pw__btn" (click)="creandoPara = null">Cancelar</button>
-        <button type="button" class="pw__btn pw__btn--primary" (click)="crearEstacion()">Crear y relacionar</button>
       </div>
     </div>
 
@@ -177,4 +136,52 @@
       <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>
     </div>
   </div>
+
+  <app-dialog
+    [open]="!!creandoPara"
+    eyebrow="Catálogo de estaciones"
+    title="Crear estación"
+    [description]="
+      'Código proveedor «' + (creandoPara || '') + '» se asociará automáticamente al crear.'
+    "
+    (closed)="cerrarCrear()"
+  >
+    <div class="pw__form-grid">
+      <div class="pw__field">
+        <label for="nueva-estacion-nombre">Nombre *</label>
+        <input
+          id="nueva-estacion-nombre"
+          class="pw__input"
+          [(ngModel)]="nuevaEstacionNombre"
+          autocomplete="off"
+        />
+      </div>
+      <div class="pw__field" *ngIf="!peajeUnicoEmpresa">
+        <label for="nueva-estacion-peaje">Peaje *</label>
+        <select id="nueva-estacion-peaje" class="pw__select" [(ngModel)]="nuevaEstacionPeajeId">
+          <option value="" disabled>— Seleccioná un peaje —</option>
+          <option *ngFor="let p of peajesUnicos" [value]="p.id">{{ p.nombre }}</option>
+        </select>
+      </div>
+      <div class="pw__field" *ngIf="peajeUnicoEmpresa">
+        <label>Peaje</label>
+        <div class="paso6__peaje-fijo">{{ peajeNombreUnico }}</div>
+      </div>
+    </div>
+    <p class="paso6__hint" *ngIf="!peajesUnicos.length">
+      No hay peajes para esta empresa. Creá uno en Catálogos → Peajes.
+    </p>
+
+    <div appDialogActions class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="cerrarCrear()">Cancelar</button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--primary"
+        (click)="crearEstacion()"
+        [disabled]="!nuevaEstacionPeajeId || !nuevaEstacionNombre.trim()"
+      >
+        Crear y relacionar
+      </button>
+    </div>
+  </app-dialog>
 </div>

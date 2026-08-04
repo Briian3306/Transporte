@@ -104,33 +104,24 @@ export class PasadasListComponent implements OnInit, OnDestroy {
   get chips(): FilterChip[] {
     const chips: FilterChip[] = [];
     if (this.filters.fecha_desde) {
-      chips.push({ id: 'fecha_desde', label: `Desde: ${this.filters.fecha_desde}` });
+      chips.push({ id: 'fecha_desde', label: `Desde: ${this.formatChipDate(this.filters.fecha_desde)}` });
     }
     if (this.filters.fecha_hasta) {
-      chips.push({ id: 'fecha_hasta', label: `Hasta: ${this.filters.fecha_hasta}` });
-    }
-    if (this.filters.q_estacion) {
-      chips.push({ id: 'q_estacion', label: `Estación ≈ ${this.filters.q_estacion}` });
-    }
-    if (this.filters.q_patente) {
-      chips.push({ id: 'q_patente', label: `Patente ≈ ${this.filters.q_patente}` });
-    }
-    if (this.filters.q_empresa) {
-      chips.push({ id: 'q_empresa', label: `Empresa ≈ ${this.filters.q_empresa}` });
-    }
-    for (const id of this.filters.estacion_ids ?? []) {
-      const name = this.estaciones.find((e) => e.id === id)?.nombre ?? id;
-      chips.push({ id: `estacion:${id}`, label: `Estación: ${name}` });
-    }
-    for (const id of this.filters.patente_ids ?? []) {
-      const name = this.patentes.find((p) => p.id === id)?.patente ?? id;
-      chips.push({ id: `patente:${id}`, label: `Patente: ${name}` });
-    }
-    for (const id of this.filters.empresa_ids ?? []) {
-      const name = this.empresas.find((e) => e.id === id)?.nombre ?? id;
-      chips.push({ id: `empresa:${id}`, label: `Empresa: ${name}` });
+      chips.push({ id: 'fecha_hasta', label: `Hasta: ${this.formatChipDate(this.filters.fecha_hasta)}` });
     }
     return chips;
+  }
+
+  private formatChipDate(iso: string): string {
+    try {
+      return new Intl.DateTimeFormat('es-AR', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
   }
 
   async ngOnInit(): Promise<void> {
@@ -194,12 +185,8 @@ export class PasadasListComponent implements OnInit, OnDestroy {
       const result = await firstValueFrom(
         this.pasadas.listar({
           filters: {
-            fecha_desde: this.filters.fecha_desde
-              ? new Date(this.filters.fecha_desde).toISOString()
-              : null,
-            fecha_hasta: this.filters.fecha_hasta
-              ? new Date(this.filters.fecha_hasta).toISOString()
-              : null,
+            fecha_desde: this.filters.fecha_desde ?? null,
+            fecha_hasta: this.filters.fecha_hasta ?? null,
             estacion_ids: this.filters.estacion_ids,
             patente_ids: this.filters.patente_ids,
             empresa_ids: this.filters.empresa_ids,
@@ -233,19 +220,6 @@ export class PasadasListComponent implements OnInit, OnDestroy {
     const next: PasadasFilterState = { ...this.filters };
     if (id === 'fecha_desde') next.fecha_desde = null;
     else if (id === 'fecha_hasta') next.fecha_hasta = null;
-    else if (id === 'q_estacion') next.q_estacion = null;
-    else if (id === 'q_patente') next.q_patente = null;
-    else if (id === 'q_empresa') next.q_empresa = null;
-    else if (id.startsWith('estacion:')) {
-      const sid = id.slice('estacion:'.length);
-      next.estacion_ids = (next.estacion_ids ?? []).filter((x) => x !== sid);
-    } else if (id.startsWith('patente:')) {
-      const sid = id.slice('patente:'.length);
-      next.patente_ids = (next.patente_ids ?? []).filter((x) => x !== sid);
-    } else if (id.startsWith('empresa:')) {
-      const sid = id.slice('empresa:'.length);
-      next.empresa_ids = (next.empresa_ids ?? []).filter((x) => x !== sid);
-    }
     this.onFiltersChange(next);
   }
 

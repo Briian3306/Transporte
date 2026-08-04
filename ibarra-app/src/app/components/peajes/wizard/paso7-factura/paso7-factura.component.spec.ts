@@ -1,38 +1,57 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { Paso7FacturaComponent } from './paso7-factura.component';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+import { PEAJES_CATALOGO_SERVICE } from '../../models';
 
 describe('Paso7FacturaComponent', () => {
   let fixture: ComponentFixture<Paso7FacturaComponent>;
   let component: Paso7FacturaComponent;
+  let state: PeajesWizardStateService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Paso7FacturaComponent],
-      providers: [PeajesWizardStateService],
+      providers: [
+        PeajesWizardStateService,
+        {
+          provide: PEAJES_CATALOGO_SERVICE,
+          useValue: {
+            listarEmpresas: () =>
+              of([{ id: 'EMP-001', nombre: 'Empresa Demo', created_at: undefined }]),
+          },
+        },
+      ],
     }).compileComponents();
+
+    state = TestBed.inject(PeajesWizardStateService);
+    state.reiniciar();
+    state.setEmpresaId('EMP-001');
 
     fixture = TestBed.createComponent(Paso7FacturaComponent);
     component = fixture.componentInstance;
+    await component.ngOnInit();
     fixture.detectChanges();
   });
 
-  it('exige factura, cuenta, empresa, fecha e importes', () => {
+  it('exige factura, empresa, fecha e importes; cuenta es opcional', () => {
     const spy = jasmine.createSpy('completado');
     component.completado.subscribe(spy);
     component.continuar();
     expect(component.form.invalid).toBeTrue();
     expect(spy).not.toHaveBeenCalled();
 
-    component.form.setValue({
+    component.form.patchValue({
       factura: 'A-0001',
-      cuenta: 'CTA-1',
-      empresa_id: 'EMP-001',
+      cuenta: '',
       fecha_factura: '2026-06-30',
       importe_sin_iva: 100,
       importe_total: 121,
     });
+    component.fechaRange = { from: new Date(2026, 5, 30), to: null };
     component.continuar();
     expect(spy).toHaveBeenCalled();
+    expect(state.snapshot().factura.cuenta).toBe('');
+    expect(state.snapshot().factura.empresa_id).toBe('EMP-001');
   });
 });

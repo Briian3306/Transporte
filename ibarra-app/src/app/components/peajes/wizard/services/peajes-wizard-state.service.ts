@@ -72,6 +72,8 @@ export interface PeajesWizardState {
   pipelineSnapshotSaved: string | null;
   /** Recomendaciones semánticas de columnas (F02-11). */
   recomendaciones: ColumnRecommendation[];
+  /** Patentes normalizadas excluidas del import (F02-14). */
+  patentesExcluidas: string[];
 }
 
 const FACTURA_VACIA: WizardFacturaForm = {
@@ -101,6 +103,7 @@ function estadoInicial(): PeajesWizardState {
     plantillaMeta: null,
     pipelineSnapshotSaved: null,
     recomendaciones: [],
+    patentesExcluidas: [],
   };
 }
 
@@ -158,8 +161,32 @@ export class PeajesWizardStateService {
     this.state.confirmacion = null;
     this.state.configuracionesDraft = [];
     this.state.pipelineSnapshotSaved = null;
+    this.state.patentesExcluidas = [];
     this.state.recomendaciones = detectColumnRecommendations(preview);
+    this.aplicarSeleccionPorReconocimiento(preview, this.state.recomendaciones);
     this.aplicarSugerenciasSiPareceMvp(preview);
+  }
+
+  /**
+   * F02-12: por defecto solo columnas reconocidas; el resto queda excluida (toggleable).
+   * Si no hay reconocimiento, deja include-all.
+   */
+  private aplicarSeleccionPorReconocimiento(
+    preview: ExcelCargaPreview,
+    recs: ColumnRecommendation[]
+  ): void {
+    const reconocidas = new Set<string>();
+    for (const r of recs) {
+      for (const col of r.incluirColumnas) {
+        reconocidas.add(col);
+      }
+    }
+    if (reconocidas.size === 0) {
+      return;
+    }
+    const incluidas = preview.columnas.filter((c) => reconocidas.has(c));
+    const excluidas = preview.columnas.filter((c) => !reconocidas.has(c));
+    this.setSeleccionColumnas(incluidas, excluidas);
   }
 
   /**
@@ -236,6 +263,33 @@ export class PeajesWizardStateService {
 
   setPasadasEstandarizadas(pasadas: PasadaEstandarizada[]): void {
     this.state.pasadasEstandarizadas = pasadas.map((p) => ({ ...p }));
+  }
+
+  setPatentesExcluidas(patentes: string[]): void {
+    this.state.patentesExcluidas = [...patentes];
+  }
+
+  excluirPatenteDelImport(patenteNormalizada: string): void {
+    const key = patenteNormalizada.trim().toUpperCase();
+    if (!key || this.state.patentesExcluidas.includes(key)) {
+      return;
+    }
+    this.state.patentesExcluidas = [...this.state.patentesExcluidas, key];
+  }
+
+  private normalizarPatenteClave(valor: unknown): string {
+    return String(valor ?? '')
+      .replace(/[\s-]/g, '')
+      .toUpperCase();
+  }
+
+  /** Filtra pasadas cuya PATENTE_ID normalizada está en patentesExcluidas. */
+  filtrarPasadasPorPatentesExcluidas(pasadas: PasadaEstandarizada[]): PasadaEstandarizada[] {
+    const excluidas = new Set(this.state.patentesExcluidas);
+    if (!excluidas.size) {
+      return pasadas;
+    }
+    return pasadas.filter((p) => !excluidas.has(this.normalizarPatenteClave(p.PATENTE_ID)));
   }
 
   setValidacion(validacion: ResultadoValidacionCarga | null): void {
@@ -524,6 +578,25 @@ export class PeajesWizardStateService {
     return this.state.columnasIncluidas.filter((c) => !this.state.columnasExcluidas.includes(c));
   }
 
+  /**
+   * Combina ESTACION+VIA solo si VIA está incluida en Paso 2 (F02-15).
+   * Si VIA está excluida, usa el valor de ESTACION / columna origen.
+   */
+  private valorEstacionProveedorDesdeFila(
+    fila: Record<string, unknown>,
+    columnaOrigen: string,
+    valorActual: string | number | null
+  ): string | number | null {
+    const viaIncluida = this.columnasParaMapeo().some((c) => c.toUpperCase() === 'VIA');
+    if (viaIncluida && fila['ESTACION'] != null && fila['VIA'] != null) {
+      const origenEsEstacion = columnaOrigen.toUpperCase() === 'ESTACION';
+      if (origenEsEstacion || valorActual == null) {
+        return `${fila['ESTACION']} - ${fila['VIA']}`;
+      }
+    }
+    return valorActual;
+  }
+
   /** Salidas generadas por el pipeline editable (columna_destino). */
   columnasGeneradasPipeline(): string[] {
     const outs = new Set<string>();
@@ -647,9 +720,10 @@ export class PeajesWizardStateService {
 
   facturaComoPersistible(): Omit<Factura, 'id' | 'created_at'> {
     const f = this.state.factura;
+    const cuenta = (f.cuenta ?? '').trim();
     return {
       factura: f.factura,
-      cuenta: f.cuenta,
+      cuenta: cuenta.length ? cuenta : null,
       empresa_id: f.empresa_id,
       fecha_factura: f.fecha_factura,
       importe_sin_iva: Number(f.importe_sin_iva ?? 0),
@@ -676,10 +750,12 @@ export class PeajesWizardStateService {
     const preferMotor =
       this.state.configuracionesDraft.length > 0 && this.state.pasadasEstandarizadas.length > 0;
 
+    let rows: PasadaEstandarizada[];
+
     if (preferMotor) {
       const motorRows = this.state.pasadasEstandarizadas;
       const filas = preview.filasOrigen.length ? preview.filasOrigen : preview.filasPreview;
-      return filas.map((fila, idx) => {
+      rows = filas.map((fila, idx) => {
         const base = motorRows[idx] ?? motorRows[Math.min(idx, motorRows.length - 1)] ?? {};
         const out: Record<string, string | number | null> = { ...base };
 
@@ -697,13 +773,8 @@ export class PeajesWizardStateService {
               ? null
               : (fila[m.columnaOrigen] as string | number);
 
-          if (
-            dest === 'ESTACION_ID' &&
-            preview.nombreArchivo.toLowerCase() === '387882.csv' &&
-            fila['ESTACION'] != null &&
-            fila['VIA'] != null
-          ) {
-            valor = `${fila['ESTACION']} - ${fila['VIA']}`;
+          if (dest === 'ESTACION_ID') {
+            valor = this.valorEstacionProveedorDesdeFila(fila, m.columnaOrigen, valor);
           }
 
           if (dest === 'ESTACION_ID' && valor !== null) {
@@ -732,75 +803,72 @@ export class PeajesWizardStateService {
 
         return out as PasadaEstandarizada;
       });
+    } else {
+      const colHora =
+        preview.columnas.find((c) => c.toUpperCase() === 'HORA') ??
+        this.state.columnasIncluidas.find((c) => c.toUpperCase() === 'HORA');
+
+      rows = preview.filasOrigen.map((fila) => {
+        const out: Partial<Record<PasadaColumnKey, string | number | null>> = {
+          PASADA_ID: null,
+          FECHA_HORA: null,
+          PASE_ID: null,
+          PATENTE_ID: null,
+          ESTACION_ID: null,
+          PRECIO: null,
+          BONIFICACION: null,
+          QUANTITY: 1,
+          IMPORTE_NETO: null,
+        };
+
+        for (const m of mapeoActivo) {
+          const dest = m.columnaDestino!;
+          let valor: string | number | null =
+            fila[m.columnaOrigen] === undefined || fila[m.columnaOrigen] === null
+              ? null
+              : (fila[m.columnaOrigen] as string | number);
+
+          if (dest === 'ESTACION_ID') {
+            valor = this.valorEstacionProveedorDesdeFila(fila, m.columnaOrigen, valor);
+          }
+
+          if (dest === 'FECHA_HORA') {
+            const horaVal = colHora ? fila[colHora] : null;
+            valor = combinarFechaHoraMvp(valor, horaVal);
+          } else if (dest === 'PATENTE_ID') {
+            valor = normalizarPatenteMvp(valor);
+          } else if (dest === 'PASE_ID') {
+            valor = normalizarPaseMvp(valor);
+          } else if (dest === 'ESTACION_ID' && valor !== null) {
+            const mapped = relMap.get(String(valor));
+            valor = mapped ?? String(valor);
+          } else if ((dest === 'PRECIO' || dest === 'BONIFICACION') && valor !== null) {
+            const n = Number(String(valor).replace(',', '.'));
+            valor = Number.isFinite(n) ? n : valor;
+          }
+
+          out[dest] = valor;
+        }
+
+        if (out.QUANTITY === null || out.QUANTITY === undefined) {
+          out.QUANTITY = 1;
+        }
+
+        if (out.IMPORTE_NETO === null && out.PRECIO !== null) {
+          const precio = Number(out.PRECIO);
+          const bonif = Number(out.BONIFICACION ?? 0);
+          const qty = Number(out.QUANTITY ?? 1);
+          if (Number.isFinite(precio)) {
+            out.IMPORTE_NETO =
+              (precio - (Number.isFinite(bonif) ? bonif : 0)) * (Number.isFinite(qty) ? qty : 1);
+          }
+        }
+
+        return out as PasadaEstandarizada;
+      });
     }
 
-    const colHora =
-      preview.columnas.find((c) => c.toUpperCase() === 'HORA') ??
-      this.state.columnasIncluidas.find((c) => c.toUpperCase() === 'HORA');
-
-    return preview.filasOrigen.map((fila) => {
-      const out: Partial<Record<PasadaColumnKey, string | number | null>> = {
-        PASADA_ID: null,
-        FECHA_HORA: null,
-        PASE_ID: null,
-        PATENTE_ID: null,
-        ESTACION_ID: null,
-        PRECIO: null,
-        BONIFICACION: null,
-        QUANTITY: 1,
-        IMPORTE_NETO: null,
-      };
-
-      for (const m of mapeoActivo) {
-        const dest = m.columnaDestino!;
-        let valor: string | number | null =
-          fila[m.columnaOrigen] === undefined || fila[m.columnaOrigen] === null
-            ? null
-            : (fila[m.columnaOrigen] as string | number);
-
-        if (
-          dest === 'ESTACION_ID' &&
-          preview.nombreArchivo.toLowerCase() === '387882.csv' &&
-          fila['ESTACION'] != null &&
-          fila['VIA'] != null
-        ) {
-          valor = `${fila['ESTACION']} - ${fila['VIA']}`;
-        }
-
-        if (dest === 'FECHA_HORA') {
-          const horaVal = colHora ? fila[colHora] : null;
-          valor = combinarFechaHoraMvp(valor, horaVal);
-        } else if (dest === 'PATENTE_ID') {
-          valor = normalizarPatenteMvp(valor);
-        } else if (dest === 'PASE_ID') {
-          valor = normalizarPaseMvp(valor);
-        } else if (dest === 'ESTACION_ID' && valor !== null) {
-          const mapped = relMap.get(String(valor));
-          valor = mapped ?? String(valor);
-        } else if ((dest === 'PRECIO' || dest === 'BONIFICACION') && valor !== null) {
-          const n = Number(String(valor).replace(',', '.'));
-          valor = Number.isFinite(n) ? n : valor;
-        }
-
-        out[dest] = valor;
-      }
-
-      if (out.QUANTITY === null || out.QUANTITY === undefined) {
-        out.QUANTITY = 1;
-      }
-
-      if (out.IMPORTE_NETO === null && out.PRECIO !== null) {
-        const precio = Number(out.PRECIO);
-        const bonif = Number(out.BONIFICACION ?? 0);
-        const qty = Number(out.QUANTITY ?? 1);
-        if (Number.isFinite(precio)) {
-          out.IMPORTE_NETO =
-            (precio - (Number.isFinite(bonif) ? bonif : 0)) * (Number.isFinite(qty) ? qty : 1);
-        }
-      }
-
-      return out as PasadaEstandarizada;
-    });
+    return this.filtrarPasadasPorPatentesExcluidas(rows);
   }
 
   reiniciar(): void {

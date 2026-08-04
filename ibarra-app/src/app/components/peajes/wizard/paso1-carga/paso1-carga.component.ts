@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { Inject } from '@angular/core';
 import { Empresa, PEAJES_CATALOGO_SERVICE, PEAJES_PLANTILLAS_SERVICE, PeajesCatalogoService, PlantillaConfiguracion, PeajesPlantillasService } from '../../models';
+import { DialogComponent } from '../../../shared';
 import { MVP_EJEMPLO_NOMBRE_ARCHIVO } from '../fixtures/mvp-ejemplo.fixture';
 import { PeajesExcelService } from '../services/peajes-excel.service';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
@@ -11,7 +12,7 @@ import { PeajesWizardStateService } from '../services/peajes-wizard-state.servic
 @Component({
   selector: 'app-paso1-carga',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DialogComponent],
   templateUrl: './paso1-carga.component.html',
   styleUrl: './paso1-carga.component.css',
 })

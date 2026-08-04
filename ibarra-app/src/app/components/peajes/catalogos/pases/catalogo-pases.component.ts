@@ -9,10 +9,16 @@ import {
   PEAJES_CATALOGO_SERVICE,
   PeajesCatalogoService,
 } from '../../models';
+import {
+  DataTableColumn,
+  DataTableComponent,
+  DataTablePageChange,
+} from '../../../shared';
+
 @Component({
   selector: 'app-catalogo-pases',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, DataTableComponent],
   templateUrl: './catalogo-pases.component.html',
   styleUrl: '../peajes/catalogo-peajes.component.css',
 })
@@ -21,8 +27,25 @@ export class CatalogoPasesComponent implements OnInit {
 
   pases: Pase[] = [];
   patentes: Patente[] = [];
+  page = 1;
+  pageSize = 50;
   error: string | null = null;
   guardando = false;
+
+  readonly columns: DataTableColumn[] = [
+    {
+      key: 'pase',
+      label: 'Pase',
+      filter: { type: 'text', placeholder: 'Filtrar pase…' },
+      searchable: true,
+    },
+    {
+      key: 'patenteLabel',
+      label: 'Patente',
+      filter: { type: 'search-select', placeholder: 'Filtrar patente…' },
+    },
+    { key: 'id', label: 'ID', width: '12rem' },
+  ];
 
   form = this.fb.nonNullable.group({
     pase: ['', Validators.required],
@@ -33,6 +56,13 @@ export class CatalogoPasesComponent implements OnInit {
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
   ) {}
 
+  get tableRows(): Record<string, unknown>[] {
+    return this.pases.map((p) => ({
+      ...p,
+      patenteLabel: p.patente?.patente || p.patente_id,
+    })) as unknown as Record<string, unknown>[];
+  }
+
   async ngOnInit(): Promise<void> {
     this.patentes = await firstValueFrom(this.catalogo.listarPatentes());
     await this.cargar();
@@ -40,6 +70,11 @@ export class CatalogoPasesComponent implements OnInit {
 
   async cargar(): Promise<void> {
     this.pases = await firstValueFrom(this.catalogo.listarPases());
+  }
+
+  onPageChange(ev: DataTablePageChange): void {
+    this.page = ev.page;
+    this.pageSize = ev.pageSize;
   }
 
   async guardar(): Promise<void> {

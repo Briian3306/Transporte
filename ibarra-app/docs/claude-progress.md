@@ -10,7 +10,25 @@
 
 ## Estado actual
 
-Fecha: 2026-08-03 — **F02-11 passing**: reconocimiento automático de columnas + recomendaciones Paso 2. En paralelo: **F08-1 in_progress** (gestión de pasadas).
+Fecha: 2026-08-04 — **Shared `app-dialog`**: Paso 6 «Ninguna coincide» / crear estación en modal; Paso 1 crear empresa migrado al mismo dialog.
+
+Fecha previa: 2026-08-04 — **Bloqueo CLI post `db reset`:** `GET …/auth/v1/user` **403** → no se pueden crear patentes en Paso 5 (`pnpm dev`). Mitigación: `seed:local` + re-login (ver sesión abajo). Paso 7 factura UX ya entregado.
+
+Fecha previa: 2026-08-04 — **Paso 7 factura UX**: `cuenta` opcional (migración + RPC); empresa SMS single locked Paso 1; fecha DRP `mode=single`.
+
+Fecha previa: 2026-08-04 — **DataTable column filters**: `filterableColumnsInputs` + `searchableInputMain` + `clientFilter`; catálogos usan filtros por columna (labels claros). Docs shared actualizadas.
+
+Fecha previa: 2026-08-04 — **F02-15 / F02-16 passing**: Paso 6 respeta exclusión de VIA; Paso 5 Agregar/Quitar todas. Shared DataTable / F08-1 siguen en curso.
+
+Fecha previa: 2026-08-04 — **Bugs/features documentados (sin code fix):** F02-15 (Paso 6 ESTACION+VIA ignora exclusión de VIA) `not_started`; F02-16 (Agregar todas patentes unresolved) `not_started`. Shared DataTable / F08-1 siguen en curso.
+
+Fecha previa: 2026-08-04 — **Shared DataTable library**: docs `docs/06-components/shared/`; `DateRangePicker` + `SearchMultiSelect`; pasadas-filters refactor; catálogos listados migrados a `app-data-table` + SMS. F08-1 sigue `in_progress`.
+
+Fecha previa: 2026-08-04 — **F02-12 / F02-13 / F02-14 passing**: default-include columnas reconocidas; Paso 6 estaciones por empresa; Paso 5 patentes sin resolver (DataTable). En paralelo: **F08-1 in_progress**.
+
+Fecha previa: 2026-08-04 — **F02-12 / F02-13 / F02-14 in_progress**: default-include columnas reconocidas; Paso 6 estaciones por empresa; Paso 5 patentes sin resolver (DataTable).
+
+Fecha previa: 2026-08-03 — **F02-11 passing**: reconocimiento automático de columnas + recomendaciones Paso 2. En paralelo: **F08-1 in_progress** (gestión de pasadas).
 
 Fecha previa: 2026-08-03 — **F02-11 in_progress**: reconocimiento automático de columnas + recomendaciones en Paso 2 (semántica → pipeline drafts). En paralelo: **F08-1 in_progress** (gestión de pasadas).
 
@@ -52,9 +70,66 @@ Decisiones vigentes:
 10. Reconocimiento de columnas (F02-11) por **semántica/aliases**, no por concesionaria; ESTACION → Paso 6.
 ## Features
 
-F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `passing` (2026-08-03).
+F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `passing` (2026-08-03). **F02-12/13/14** `passing` (2026-08-04). **F02-15** + **F02-16** `passing` (2026-08-04).
 
 ## Registro de sesiones
+
+### 2026-08-04 — Shared Dialog + Paso 6 alta estación
+
+- **Hecho:** `app-dialog` en `shared/dialog` (eyebrow/title/body/actions, Esc/backdrop).
+- Paso 6: «Ninguna coincide» / Nueva / Crear abren el modal (se quitó el bloque inline al pie).
+- Paso 1: crear empresa usa el mismo dialog.
+- Docs: `docs/06-components/shared/dialog.md` + INDEX / reconocimiento-estaciones / wizard.
+
+### 2026-08-04 — Bloqueo: Auth 403 CLI + Agregar patente Paso 5
+
+- **Síntoma (app `pnpm dev` / CLI `127.0.0.1:54321`):**
+  - Consola: `GET http://127.0.0.1:54321/auth/v1/user` → **403 Forbidden**
+  - Stack: `SupabaseService.getCurrentUser` → `GranularPermissionService.loadUserProfile` (también en `visibilitychange` / reinit cliente)
+  - Efecto: en wizard **Paso 5** (`paso5-mapeo`) no se pueden **Agregar** / **Agregar todas** patentes unresolved (INSERT a `patentes` vía catálogo falla o no autentica).
+- **Causa probable:** verificación Paso 7 corrió `npx supabase db reset --local --no-seed` → Auth local y seeds RBAC se borraron; el browser conserva sesión/JWT vieja inválida para el CLI recreado.
+- **No es bug de F02-14/F02-16** (UI/bulk); es entorno CLI post-reset.
+- **Mitigación (usuario / agente):**
+  1. `cd ibarra-app` → `npm run seed:local` (o flujo en [cli-local-credenciales-y-permisos.md](./05-configuracion/cli-local-credenciales-y-permisos.md) § Tras un `db reset`)
+  2. Cerrar sesión en la app / borrar storage del origen `localhost` / hard refresh
+  3. Login de nuevo con usuario seed local
+  4. Reintentar Paso 5 Agregar patente
+- **Status:** documentado; fix de entorno, no de código del wizard.
+
+### 2026-08-04 — Paso 7 factura (cuenta opcional + SMS/DRP)
+
+- **Cuenta opcional:** migración `20260804141122_peajes_facturas_cuenta_nullable.sql`; RPC `peajes_confirmar_carga` NULLIF vacío; frontend sin `Validators.required` en cuenta.
+- **Empresa:** `app-search-multi-select` `mode=single` disabled/clearable=false (empresa Paso 1).
+- **Fecha:** `app-date-range-picker` `mode=single`.
+- **Docs:** shared date-range/SMS, facturas-pasadas, wizard, `docs/08-sql/peajes/facturas-cuenta-opcional/`.
+- **Verify:** ng test paso7+SMS+DRP **8 SUCCESS**; build OK; `supabase test db` **55 PASS** (CLI).
+
+### 2026-08-04 — F02-15 / F02-16 (fix VIA + bulk patentes)
+
+- **Objetivo:** (1) Paso 6 no combine ESTACION+VIA si VIA está excluida en Paso 2; (2) toolbar Agregar todas / Quitar todas sobre patentes unresolved.
+- **Hecho:**
+  - F02-15: `viaIncluidaEnSeleccion` en paso6; `valorEstacionProveedorDesdeFila` en state (reemplaza hardcode `387882.csv`)
+  - F02-16: `agregarTodasPatentes` / `quitarTodasPatentes` (filtro rápido, errores parciales)
+  - Docs: `reconocimiento-estaciones.md`, `patentes-sin-resolver.md`
+- **Verify:** `ng test` paso5+paso6+wizard-state → **17 SUCCESS**; `ng build --configuration=development` OK
+- **Status:** F02-15 / F02-16 `passing`
+
+### 2026-08-04 — Reportes F02-15 / F02-16 (solo documentación)
+
+- **F02-15 (bug, sin fix):** con `557074.csv`, Paso 2 deja `ESTACION` incluida y `VIA` excluida, pero Paso 6 arma código proveedor `CAMPANA - 0003`. Causa probable: `valorEstacionProveedor` concatena ESTACION+VIA sin respetar `columnasExcluidas`. Contexto en `docs/06-components/peajes/reconocimiento-estaciones.md`.
+- **F02-16 (feature, sin impl):** botón encima de la tabla de patentes unresolved para **Agregar todas** (optimizar workflow). Spec en `docs/06-components/peajes/patentes-sin-resolver.md`.
+- **feature_list.json:** entradas F02-15 / F02-16 `not_started` + evidence de reporte.
+
+### 2026-08-04 — F02-12/13/14 Wizard UX (columnas, estaciones, patentes)
+
+- **Objetivo:** (1) Paso 2 incluir solo columnas reconocidas; (2) Paso 6 filtrar estaciones por empresa + reconocimiento + alta mínima; (3) Paso 5 resolver patentes faltantes vía DataTable Agregar/Quitar.
+- **Hecho:**
+  - F02-12: `aplicarSeleccionPorReconocimiento` en `setPreview`
+  - F02-14: `patentesExcluidas` + DataTable unresolved (Agregar/Quitar + filtro rápido)
+  - F02-13: estaciones filtradas por peajes de empresa; auto exacta; slim create (sin peaje inline); reco crear
+  - Docs: `reconocimiento-estaciones.md`, `patentes-sin-resolver.md`, INDEX/wizard/testing_plan
+- **Verify:** `ng test` wizard-state+paso2+paso5+paso6+recognition → **24 SUCCESS**; `ng build --configuration=development` OK
+- **Status:** F02-12/13/14 `passing`
 
 ### 2026-08-03 — F02-11 Reconocimiento automático de columnas (Paso 2)
 
@@ -183,3 +258,11 @@ F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `
 - `npx supabase migration up --local` → aplicada OK.
 - `npx supabase test db`: `peajes_f01_test.sql` ok; fallos en AUSOL/F06 (conteos seed preexistentes: REVIEW 18 vs 14, aliases F06) **no atribuibles a F08**.
 - DESARROLLO no tocado.
+
+### 2026-08-04 — Sincronización documental
+
+- Se revisaron `feature_list.json`, `src/app/components` y la documentación existente.
+- Se documentaron los módulos host y se actualizó el índice.
+- Peajes queda documentado como MVP integrado: F00–F05 passing; F06-1/2/3, F07-1 y F08-1 en progreso; F06-5 no iniciado.
+- Se eliminó `docs/08-sql`; las migraciones y RPC se referencian desde `supabase/migrations` y servicios.
+- Riesgos: evidencia E2E Acceso Oeste/AUSOL, discrepancias de seeds/conteos, cierre de gestión de pasadas e `init.sh` en Windows.

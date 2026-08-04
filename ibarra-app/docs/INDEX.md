@@ -1,30 +1,16 @@
-# Documentación — ibarra-app
+# Documentación de ibarra-app
 
-## Resumen
+Índice maestro de documentación técnica y funcional.
 
-Índice maestro de documentación técnica y de producto bajo `ibarra-app/docs/`.
+## Navegación
 
-## Secciones
+- [Módulos](./modulos/INDEX.md)
+- [Componentes Peajes](./06-components/peajes/INDEX.md)
+- [Modelo de datos Peajes](./06-tablas/peajes/INDEX.md)
+- [Plan y PRD Peajes](./plan/INDEX.md)
+- [Progreso](./claude-progress.md)
+- [Handoff](./session-handoff.md)
 
-| Sección | Descripción |
-|---------|-------------|
-| [modulos/](./modulos/INDEX.md) | Dominios de negocio (Peajes, …) |
-| [05-configuracion/](./05-configuracion/INDEX.md) | Entornos Angular, CLI local, Auth/RBAC |
-| [06-components/](./06-components/INDEX.md) | Componentes / UI |
-| [06-tablas/](./06-tablas/INDEX.md) | Tablas / modelo de datos documentado |
-| [08-sql/](./08-sql/) | Scripts y companions SQL (p. ej. peajes F01) |
-| [plan/](./plan/INDEX.md) | PRD y planes de agentes Peajes |
-| [claude-progress.md](./claude-progress.md) | Bitácora de sesiones |
-| [session-handoff.md](./session-handoff.md) | Handoff entre agentes |
+La implementación real se consulta en `src/app/`, `supabase/migrations/` y `feature_list.json`. No se mantiene una carpeta separada de documentación SQL.
 
-## Entrada rápida — Peajes
-
-- Módulo: [modulos/peajes.md](./modulos/peajes.md)
-- Tablas: [06-tablas/peajes/](./06-tablas/peajes/INDEX.md)
-- Componentes: [06-components/peajes/](./06-components/peajes/INDEX.md)
-- PRD: [plan/peaje-prd-es.md](./plan/peaje-prd-es.md)
-- CLI local (login + admin): [05-configuracion/cli-local-credenciales-y-permisos.md](./05-configuracion/cli-local-credenciales-y-permisos.md)
-
----
-
-> Última actualización: julio 2026
+> Actualizado: 2026-08-04

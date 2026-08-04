@@ -1,110 +1,42 @@
 <section class="pf" aria-label="Filtros de pasadas">
   <div class="pf__grid">
-    <label class="pf__field">
-      <span>Desde</span>
-      <input
-        type="datetime-local"
-        [ngModel]="value.fecha_desde ?? ''"
-        (ngModelChange)="patch({ fecha_desde: $event || null })"
-      />
-    </label>
-    <label class="pf__field">
-      <span>Hasta</span>
-      <input
-        type="datetime-local"
-        [ngModel]="value.fecha_hasta ?? ''"
-        (ngModelChange)="patch({ fecha_hasta: $event || null })"
-      />
-    </label>
+    <app-date-range-picker
+      class="pf__span-2"
+      label="Rango de fechas"
+      placeholder="Elegir fechas"
+      [value]="dateRange"
+      (valueChange)="onDateRange($event)"
+    />
 
-    <label class="pf__field">
-      <span>Estación (rápido)</span>
-      <input
-        type="search"
-        placeholder="Buscar por nombre…"
-        [ngModel]="value.q_estacion ?? ''"
-        (ngModelChange)="patch({ q_estacion: $event || null })"
-      />
-    </label>
-    <label class="pf__field">
-      <span>Patente (rápido)</span>
-      <input
-        type="search"
-        placeholder="Buscar patente…"
-        [ngModel]="value.q_patente ?? ''"
-        (ngModelChange)="patch({ q_patente: $event || null })"
-      />
-    </label>
-    <label class="pf__field">
-      <span>Empresa (rápido)</span>
-      <input
-        type="search"
-        placeholder="Buscar empresa…"
-        [ngModel]="value.q_empresa ?? ''"
-        (ngModelChange)="patch({ q_empresa: $event || null })"
-      />
-    </label>
+    <app-search-multi-select
+      label="Estación"
+      placeholder="Buscar estación…"
+      [options]="estacionOptions"
+      [value]="value.estacion_ids ?? []"
+      (valueChange)="onEstaciones($event)"
+    />
+
+    <app-search-multi-select
+      label="Patente"
+      placeholder="Buscar patente…"
+      [options]="patenteOptions"
+      [value]="value.patente_ids ?? []"
+      (valueChange)="onPatentes($event)"
+    />
+
+    <app-search-multi-select
+      label="Empresa"
+      placeholder="Buscar empresa…"
+      [options]="empresaOptions"
+      [value]="value.empresa_ids ?? []"
+      (valueChange)="onEmpresas($event)"
+    />
+
     <label class="pf__field">
       <span>Estado</span>
       <select disabled title="Próximamente" [ngModel]="value.statusStub ?? ''">
         <option value="">Todos (próximamente)</option>
       </select>
     </label>
-  </div>
-
-  <div class="pf__multis">
-    <div class="pf__multi">
-      <div class="pf__multi-head">
-        <strong>Estaciones</strong>
-        <input type="search" placeholder="Filtrar lista…" [(ngModel)]="estacionSearch" />
-      </div>
-      <div class="pf__multi-list" role="listbox" aria-multiselectable="true">
-        <label *ngFor="let e of estacionesFiltradas" class="pf__opt">
-          <input
-            type="checkbox"
-            [checked]="isSelected('estacion_ids', e.id)"
-            (change)="toggleId('estacion_ids', e.id, $any($event.target).checked)"
-          />
-          {{ e.nombre }}
-        </label>
-        <p *ngIf="!estacionesFiltradas.length" class="pf__empty">Sin estaciones</p>
-      </div>
-    </div>
-
-    <div class="pf__multi">
-      <div class="pf__multi-head">
-        <strong>Patentes</strong>
-        <input type="search" placeholder="Filtrar lista…" [(ngModel)]="patenteSearch" />
-      </div>
-      <div class="pf__multi-list" role="listbox" aria-multiselectable="true">
-        <label *ngFor="let p of patentesFiltradas" class="pf__opt">
-          <input
-            type="checkbox"
-            [checked]="isSelected('patente_ids', p.id)"
-            (change)="toggleId('patente_ids', p.id, $any($event.target).checked)"
-          />
-          {{ p.patente }}
-        </label>
-        <p *ngIf="!patentesFiltradas.length" class="pf__empty">Sin patentes</p>
-      </div>
-    </div>
-
-    <div class="pf__multi">
-      <div class="pf__multi-head">
-        <strong>Empresas</strong>
-        <input type="search" placeholder="Filtrar lista…" [(ngModel)]="empresaSearch" />
-      </div>
-      <div class="pf__multi-list" role="listbox" aria-multiselectable="true">
-        <label *ngFor="let e of empresasFiltradas" class="pf__opt">
-          <input
-            type="checkbox"
-            [checked]="isSelected('empresa_ids', e.id)"
-            (change)="toggleId('empresa_ids', e.id, $any($event.target).checked)"
-          />
-          {{ e.nombre }}
-        </label>
-        <p *ngIf="!empresasFiltradas.length" class="pf__empty">Sin empresas</p>
-      </div>
-    </div>
   </div>
 </section>

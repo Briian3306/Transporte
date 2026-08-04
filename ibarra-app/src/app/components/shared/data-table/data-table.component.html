@@ -12,6 +12,60 @@
     </button>
   </div>
 
+  <div class="dt__filters" *ngIf="showFilterBar" aria-label="Filtros de tabla">
+    <label *ngIf="showGlobalSearch" class="dt__filter dt__filter--global">
+      <span class="dt__filter-label">Búsqueda</span>
+      <input
+        type="search"
+        class="dt__filter-input"
+        [placeholder]="globalPlaceholder"
+        [ngModel]="activeFilters.global"
+        (ngModelChange)="onGlobalChange($event)"
+      />
+    </label>
+
+    <ng-container *ngFor="let col of filterColumns">
+      <label *ngIf="col.filter?.type === 'text'" class="dt__filter">
+        <span class="dt__filter-label">{{ col.label }}</span>
+        <input
+          type="search"
+          class="dt__filter-input"
+          [placeholder]="col.filter?.placeholder || ('Filtrar ' + col.label + '…')"
+          [ngModel]="textValue(col.key)"
+          (ngModelChange)="onTextFilter(col.key, $event)"
+        />
+      </label>
+
+      <app-search-multi-select
+        *ngIf="col.filter?.type === 'search-select' || col.filter?.type === 'multiselect'"
+        class="dt__filter dt__filter--sms"
+        [label]="col.label"
+        [placeholder]="col.filter?.placeholder || ('Filtrar ' + col.label + '…')"
+        [options]="optionsFor(col)"
+        [value]="multiValue(col.key)"
+        (valueChange)="onMultiFilter(col.key, $event)"
+      />
+
+      <app-date-range-picker
+        *ngIf="col.filter?.type === 'date-range'"
+        class="dt__filter dt__filter--date"
+        [label]="col.label"
+        [placeholder]="col.filter?.placeholder || ('Fechas ' + col.label)"
+        [value]="dateValue(col.key)"
+        (valueChange)="onDateFilter(col.key, $event)"
+      />
+    </ng-container>
+
+    <button
+      *ngIf="hasActiveFilters"
+      type="button"
+      class="dt__filter-clear"
+      (click)="clearFilters()"
+    >
+      Limpiar filtros
+    </button>
+  </div>
+
   <div class="dt__frame">
     <div class="dt__scroll">
       <table class="dt__table">
@@ -22,7 +76,7 @@
                 type="checkbox"
                 class="dt__check"
                 [checked]="allSelected"
-                [disabled]="!rows.length || loading"
+                [disabled]="!displayRows.length || loading"
                 (change)="toggleAll($any($event.target).checked)"
                 aria-label="Seleccionar todos"
               />
@@ -58,13 +112,13 @@
               </div>
             </td>
           </tr>
-          <tr *ngIf="!loading && !rows.length" class="dt__state-row">
+          <tr *ngIf="!loading && !displayRows.length" class="dt__state-row">
             <td [attr.colspan]="columns.length + (selectable ? 1 : 0)">
               <div class="dt__state dt__state--empty">{{ emptyMessage }}</div>
             </td>
           </tr>
           <tr
-            *ngFor="let row of rows; trackBy: trackByRow"
+            *ngFor="let row of displayRows; trackBy: trackByRow"
             class="dt__row"
             [hidden]="loading"
             [class.dt__row--selected]="isSelected(row)"

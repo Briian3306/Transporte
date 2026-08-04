@@ -240,6 +240,16 @@ Detalle: [ejemplo-autopistas-urbanas-pasadas.md](./ejemplo-autopistas-urbanas-pa
 | U-R03 | Headers AUSOL sin DOMINIO | idem | Recs patente+fecha_hora+dispositivo |
 | U-R04 | Accept escribe draft | `peajes-wizard-state.service.spec.ts` | `configuracionesDraft` poblado; no duplica |
 | I-R01 | Rail Paso 2 + Aplicar | `paso2-preview.component.spec.ts` | Badge visible; draft tras Aplicar |
+| U-R05 | Default include solo reconocidas | `peajes-wizard-state.service.spec.ts` | Extra cols en excluidas (F02-12) |
+
+---
+
+## 10a-bis. Patentes / estaciones wizard (F02-13 / F02-14)
+
+| ID | Caso | Archivo | Esperado |
+|----|------|---------|----------|
+| I-P5-01 | Unresolved + Quitar | `paso5-mapeo.component.spec.ts` | Lista AH033DL; excluye del import |
+| I-P6-01 | Sin relación bloquea | `paso6-estaciones.component.spec.ts` | Error sin relacionar |
 
 ---
 

@@ -138,7 +138,7 @@ npx tsx src/app/components/peajes/plantillas/motor.verify.ts
 
 Specs: `motor.spec.ts`, `builder.spec.ts`, `aplicar.spec.ts`, `algoritmos.spec.ts`.
 
-SQL seed PATENTE_ID: ver [F06 README](../../08-sql/peajes/F06-catalogos-plantillas/README.md).
+SQL seed PATENTE_ID: consultar la migración correspondiente en `supabase/migrations/`.
 
 ---
 

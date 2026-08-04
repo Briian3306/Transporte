@@ -4,11 +4,24 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Empresa, PEAJES_CATALOGO_SERVICE, Peaje, PeajesCatalogoService } from '../../models';
+import {
+  DataTableColumn,
+  DataTableColumnDirective,
+  DataTableComponent,
+  DataTablePageChange,
+} from '../../../shared';
 
 @Component({
   selector: 'app-catalogo-peajes',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterLink,
+    DataTableComponent,
+    DataTableColumnDirective,
+  ],
   templateUrl: './catalogo-peajes.component.html',
   styleUrl: './catalogo-peajes.component.css',
 })
@@ -17,7 +30,8 @@ export class CatalogoPeajesComponent implements OnInit {
 
   peajes: Peaje[] = [];
   empresas: Empresa[] = [];
-  filtro = '';
+  page = 1;
+  pageSize = 50;
   editandoId: string | null = null;
   error: string | null = null;
   guardando = false;
@@ -25,6 +39,26 @@ export class CatalogoPeajesComponent implements OnInit {
   crearEmpresaAbierto = false;
   nuevaEmpresaNombre = '';
   nuevaEmpresaDescripcion = '';
+
+  readonly columns: DataTableColumn[] = [
+    {
+      key: 'nombre',
+      label: 'Nombre',
+      filter: { type: 'text', placeholder: 'Filtrar nombre…' },
+      searchable: true,
+    },
+    {
+      key: 'empresa',
+      label: 'Empresa',
+      filter: { type: 'search-select', placeholder: 'Filtrar empresa…' },
+    },
+    {
+      key: 'ubicacion',
+      label: 'Ubicación',
+      filter: { type: 'text', placeholder: 'Filtrar ubicación…' },
+    },
+    { key: 'acciones', label: '', templateOnly: true, width: '6rem', align: 'right' },
+  ];
 
   form = this.fb.nonNullable.group({
     nombre: ['', Validators.required],
@@ -37,18 +71,12 @@ export class CatalogoPeajesComponent implements OnInit {
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
   ) {}
 
-  get peajesFiltrados(): Peaje[] {
-    const q = this.filtro.trim().toLowerCase();
-    if (!q) {
-      return this.peajes;
-    }
-    return this.peajes.filter(
-      (p) =>
-        p.id.toLowerCase().includes(q) ||
-        p.nombre.toLowerCase().includes(q) ||
-        (p.ubicacion ?? '').toLowerCase().includes(q) ||
-        this.nombreEmpresa(p.empresa_id).toLowerCase().includes(q)
-    );
+  get tableRows(): Record<string, unknown>[] {
+    return this.peajes.map((p) => ({
+      ...p,
+      empresa: this.nombreEmpresa(p.empresa_id),
+      ubicacion: p.ubicacion || '—',
+    })) as unknown as Record<string, unknown>[];
   }
 
   async ngOnInit(): Promise<void> {
@@ -70,12 +98,18 @@ export class CatalogoPeajesComponent implements OnInit {
     return this.empresas.find((e) => e.id === empresaId)?.nombre ?? empresaId;
   }
 
+  onPageChange(ev: DataTablePageChange): void {
+    this.page = ev.page;
+    this.pageSize = ev.pageSize;
+  }
+
   nuevo(): void {
     this.editandoId = null;
     this.form.reset({ nombre: '', ubicacion: '', descripcion: '', empresa_id: '' });
   }
 
-  editar(p: Peaje): void {
+  editar(row: Record<string, unknown>): void {
+    const p = row as unknown as Peaje;
     this.editandoId = p.id;
     this.form.patchValue({
       nombre: p.nombre,

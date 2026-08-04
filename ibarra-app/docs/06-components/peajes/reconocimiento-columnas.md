@@ -45,10 +45,11 @@ Catálogo de códigos atómicos: [plantillas-y-algoritmos.md](./plantillas-y-alg
 ## UI Paso 2
 
 1. Tras `setPreview`, el estado calcula `recomendaciones` (`pending`).
-2. El rail muestra badges con **Aplicar** / **Descartar**.
-3. Con ≥2 pendientes: **Aplicar todas**.
-4. **Aplicar** escribe `configuracionesDraft`, fuerza columnas incluidas y fusiona hints de mapeo; marca `accepted`.
-5. Paso 3 reutiliza el draft; `seedDemoPipelineIfEmpty` no pisa un draft ya poblado.
+2. **F02-12 — selección por defecto:** solo las columnas de `incluirColumnas` quedan incluidas; el resto pasa a excluidas (toggle manual). Si no hay reconocimiento, se mantiene include-all. La heurística MVP full-headers puede sobrescribir.
+3. El rail muestra badges con **Aplicar** / **Descartar**.
+4. Con ≥2 pendientes: **Aplicar todas**.
+5. **Aplicar** escribe `configuracionesDraft`, fuerza columnas incluidas y fusiona hints de mapeo; marca `accepted`.
+6. Paso 3 reutiliza el draft; `seedDemoPipelineIfEmpty` no pisa un draft ya poblado.
 
 ## Relación con seed Demo
 
@@ -56,7 +57,7 @@ Catálogo de códigos atómicos: [plantillas-y-algoritmos.md](./plantillas-y-alg
 
 ## ESTACION ≠ Strategy
 
-El reconocedor de estaciones permanece en **Paso 6** (catálogo / aliases). La recomendación `estacion` solo prepara la columna (e incluye `VIA` si aplica). No existe `RESOLVER_ESTACION` en `StrategyRegistry`.
+El reconocedor de estaciones permanece en **Paso 6** (catálogo / aliases). La recomendación `estacion` solo prepara la columna (e incluye `VIA` si aplica). No existe `RESOLVER_ESTACION` en `StrategyRegistry`. Ver [reconocimiento-estaciones.md](./reconocimiento-estaciones.md).
 
 ## Verificación
 
@@ -66,8 +67,8 @@ ng test --include="**/peajes/wizard/paso2*"
 ng test --include="**/peajes/wizard/services/peajes-wizard-state*"
 ```
 
-Ver también [wizard.md](./wizard.md) y `feature_list.json` → F02-11.
+Ver también [wizard.md](./wizard.md) y `feature_list.json` → F02-11 / F02-12.
 
 ---
 
-> Última actualización: 2026-08-03
+> Última actualización: 2026-08-04

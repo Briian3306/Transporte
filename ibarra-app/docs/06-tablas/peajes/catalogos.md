@@ -104,6 +104,15 @@ La misma migración intenta insertar `system_modules.name = 'peajes'` + acción 
 
 ---
 
+## UI listado / búsqueda
+
+Sin cambios de esquema. Los listados CRUD consumen las mismas tablas vía `PeajesCatalogoService` y renderizan con:
+
+- `app-data-table` — filas paginadas en el host
+- `app-search-multi-select` — filtro por ids del catálogo (vacío = todos)
+
+Detalle UI: [docs/06-components/peajes/catalogos.md](../../06-components/peajes/catalogos.md) · [docs/06-components/shared/filter-system.md](../../06-components/shared/filter-system.md).
+
 ## Referencias
 
 ### Estaciones y aliases de proveedor
@@ -111,11 +120,11 @@ La misma migración intenta insertar `system_modules.name = 'peajes'` + acción 
 `estaciones` incorpora coordenadas, camino y estado geográfico `OK`/`REVIEW`. `estaciones_alias_proveedor` conserva equivalencias normalizadas y confirmadas por empresa; es la fuente de resolución reutilizable antes de sugerir coincidencias parciales.
 
 - SQL: `supabase/migrations/20260730125513_peajes_catalogos.sql`, `supabase/migrations/20260731124502_peajes_empresas.sql`
-- SQL task: [docs/08-sql/peajes/empresas/](../../08-sql/peajes/empresas/README.md)
+- SQL fuente: `supabase/migrations/`.
 - Servicio: `src/app/components/peajes/services/peajes-catalogo.service.ts`
 - UI catálogos: [docs/06-components/peajes/catalogos.md](../../06-components/peajes/catalogos.md)
-- Companion: [docs/08-sql/peajes/F01-schema/](../../08-sql/peajes/F01-schema/README.md)
+- Migraciones fuente: `supabase/migrations/`.
 
 ---
 
-> Última actualización: julio 2026
+> Última actualización: 2026-08-04

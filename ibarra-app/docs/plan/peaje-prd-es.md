@@ -1782,3 +1782,9 @@ El ejemplo será válido cuando:
 - El importe neto sea igual a `12180`.
 - La pasada pueda relacionarse con una factura.
 - El usuario pueda revisar y confirmar el resultado.
+
+## 22. Estado de implementación (2026-08-04)
+
+El MVP F00–F05 está integrado: dashboard y permisos, wizard de nueve pasos, motor editable, plantillas, catálogos, servicios Supabase, auditoría y gestión inicial de pasadas. Las ampliaciones F06 (Acceso Oeste), F07 (AUSOL) y F08 (gestión avanzada de pasadas) permanecen en progreso; F06-5 aún no comenzó.
+
+El estado ejecutable y sus evidencias se mantienen en `feature_list.json`, `docs/claude-progress.md` y `docs/session-handoff.md`.

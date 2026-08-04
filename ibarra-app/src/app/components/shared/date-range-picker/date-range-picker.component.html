@@ -1,0 +1,86 @@
+<div class="drp" [class.drp--disabled]="disabled">
+  <label *ngIf="label" class="drp__label">{{ label }}</label>
+  <div class="drp__trigger-row">
+    <button
+      type="button"
+      class="drp__trigger"
+      [disabled]="disabled"
+      [attr.aria-expanded]="open"
+      aria-haspopup="dialog"
+      (click)="toggle()"
+    >
+      <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+      <span class="drp__trigger-text" [class.drp__trigger-text--placeholder]="!value.from">
+        {{ buttonLabel }}
+      </span>
+    </button>
+    <button
+      *ngIf="value.from && !disabled"
+      type="button"
+      class="drp__clear"
+      aria-label="Limpiar fechas"
+      (click)="clear($event)"
+    >
+      <i class="fas fa-times" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <div *ngIf="open" class="drp__popover" [class.drp__popover--single]="isSingle" role="dialog" [attr.aria-label]="isSingle ? 'Calendario' : 'Calendario de rango'">
+    <div class="drp__nav">
+      <button type="button" class="drp__nav-btn" (click)="prevMonth()" aria-label="Mes anterior">
+        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+      </button>
+      <div class="drp__titles" [class.drp__titles--single]="isSingle">
+        <strong>{{ leftMonthLabel }}</strong>
+        <strong *ngIf="!isSingle">{{ rightMonthLabel }}</strong>
+      </div>
+      <button type="button" class="drp__nav-btn" (click)="nextMonth()" aria-label="Mes siguiente">
+        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="drp__months" [class.drp__months--single]="isSingle">
+      <div class="drp__month">
+        <div class="drp__weekdays">
+          <span *ngFor="let w of weekdays">{{ w }}</span>
+        </div>
+        <div class="drp__grid">
+          <button
+            type="button"
+            *ngFor="let day of leftDays"
+            class="drp__day"
+            [class.drp__day--muted]="!day.inMonth"
+            [class.drp__day--start]="isStart(day)"
+            [class.drp__day--end]="!isSingle && isEnd(day)"
+            [class.drp__day--in-range]="!isSingle && inRange(day)"
+            [class.drp__day--single]="isSingle && isStart(day)"
+            [disabled]="day.disabled"
+            (click)="selectDay(day)"
+          >
+            {{ day.date.getDate() }}
+          </button>
+        </div>
+      </div>
+      <div class="drp__month drp__month--right" *ngIf="!isSingle">
+        <div class="drp__weekdays">
+          <span *ngFor="let w of weekdays">{{ w }}</span>
+        </div>
+        <div class="drp__grid">
+          <button
+            type="button"
+            *ngFor="let day of rightDays"
+            class="drp__day"
+            [class.drp__day--muted]="!day.inMonth"
+            [class.drp__day--start]="isStart(day)"
+            [class.drp__day--end]="isEnd(day)"
+            [class.drp__day--in-range]="inRange(day)"
+            [disabled]="day.disabled"
+            (click)="selectDay(day)"
+          >
+            {{ day.date.getDate() }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

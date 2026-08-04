@@ -78,7 +78,7 @@ DESARROLLO (`kfffigvyvtzyczeiadxh`): **sin push** hasta autorización explícita
 
 ## Referencias
 
-- Companion: [docs/08-sql/peajes/F01-rpc/](../../08-sql/peajes/F01-rpc/README.md)
+- Fuente: `supabase/migrations/*peajes*.sql` y servicios Supabase.
 - Servicio: `src/app/components/peajes/services/peajes-carga.service.ts`
 - Tests: `supabase/tests/peajes_f01_test.sql`
 

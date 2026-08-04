@@ -1,14 +1,26 @@
 import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Empresa, PEAJES_CATALOGO_SERVICE, PeajesCatalogoService } from '../../models';
+import {
+  DataTableColumn,
+  DataTableColumnDirective,
+  DataTableComponent,
+  DataTablePageChange,
+} from '../../../shared';
 
 @Component({
   selector: 'app-catalogo-empresas',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    DataTableComponent,
+    DataTableColumnDirective,
+  ],
   templateUrl: './catalogo-empresas.component.html',
   styleUrl: '../peajes/catalogo-peajes.component.css',
 })
@@ -16,9 +28,25 @@ export class CatalogoEmpresasComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   empresas: Empresa[] = [];
-  filtro = '';
+  page = 1;
+  pageSize = 50;
   error: string | null = null;
   guardando = false;
+
+  readonly columns: DataTableColumn[] = [
+    {
+      key: 'nombre',
+      label: 'Nombre',
+      filter: { type: 'text', placeholder: 'Filtrar nombre…' },
+      searchable: true,
+    },
+    {
+      key: 'descripcion',
+      label: 'Descripción',
+      filter: { type: 'text', placeholder: 'Filtrar descripción…' },
+    },
+    { key: 'id', label: 'ID', width: '12rem' },
+  ];
 
   form = this.fb.nonNullable.group({
     nombre: ['', Validators.required],
@@ -29,17 +57,11 @@ export class CatalogoEmpresasComponent implements OnInit {
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
   ) {}
 
-  get empresasFiltradas(): Empresa[] {
-    const q = this.filtro.trim().toLowerCase();
-    if (!q) {
-      return this.empresas;
-    }
-    return this.empresas.filter(
-      (e) =>
-        e.id.toLowerCase().includes(q) ||
-        e.nombre.toLowerCase().includes(q) ||
-        (e.descripcion ?? '').toLowerCase().includes(q)
-    );
+  get tableRows(): Record<string, unknown>[] {
+    return this.empresas.map((e) => ({
+      ...e,
+      descripcion: e.descripcion || '—',
+    })) as unknown as Record<string, unknown>[];
   }
 
   async ngOnInit(): Promise<void> {
@@ -48,6 +70,11 @@ export class CatalogoEmpresasComponent implements OnInit {
 
   async cargar(): Promise<void> {
     this.empresas = await firstValueFrom(this.catalogo.listarEmpresas());
+  }
+
+  onPageChange(ev: DataTablePageChange): void {
+    this.page = ev.page;
+    this.pageSize = ev.pageSize;
   }
 
   async guardar(): Promise<void> {

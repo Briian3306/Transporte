@@ -60,9 +60,12 @@ Fragmento `PEAJES_CATALOGOS_ROUTES` (fusionado en `peajes.routes.ts`):
 ## Comportamiento
 
 - Listado y alta/edición vía interfaz `PeajesCatalogoService`.
-- Estaciones ligadas a `peaje_id`; `codigos_proveedor` para sugerencias del wizard.
+- **Listados:** `app-data-table` con `filterableColumnsInputs` + `clientFilter`. Cada columna declara `filter.type` (text / search-select / multiselect / date-range); el buscador global usa `searchableInputMain`. Formularios de alta/edición (panel izquierdo) sin cambio.
+- Estaciones ligadas a `peaje_id`; `codigos_proveedor` para sugerencias del wizard (panel “Sugerir” aparte del listado).
 - Patentes: categoría según constraint actual (incluye TRANSPORTE / REMIS / OBRA / AUTO tras F06).
 - Pases: asociados a una patente.
+
+Patrón compartido: [../shared/filter-system.md](../shared/filter-system.md).
 
 ---
 
@@ -86,8 +89,8 @@ Incluida en la suite wizard+catalogos (ver [wizard.md](./wizard.md)).
 
 - Tablas: [docs/06-tablas/peajes/catalogos.md](../../06-tablas/peajes/catalogos.md)
 - Servicio: `services/peajes-catalogo.service.ts`
-- SQL empresas / F06: [docs/08-sql/peajes/F06-catalogos-plantillas/README.md](../../08-sql/peajes/F06-catalogos-plantillas/README.md)
+- SQL empresas / F06: migraciones correspondientes en `supabase/migrations/`.
 
 ---
 
-> Última actualización: 2026-08-03
+> Última actualización: 2026-08-04

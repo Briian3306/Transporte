@@ -23,37 +23,23 @@
     </section>
 
     <section class="cat__panel">
-      <div class="cat__list-head">
-        <h2>Listado</h2>
-        <label class="cat__filter">
-          Filtrar
-          <input
-            type="search"
-            [(ngModel)]="filtro"
-            name="filtroEmpresas"
-            placeholder="Nombre o ID…"
-          />
-        </label>
-      </div>
-      <table class="cat__table">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Descripción</th>
-            <th>ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let e of empresasFiltradas">
-            <td>{{ e.nombre }}</td>
-            <td>{{ e.descripcion || '—' }}</td>
-            <td><code class="cat__id">{{ e.id }}</code></td>
-          </tr>
-          <tr *ngIf="!empresasFiltradas.length">
-            <td colspan="3" class="cat__empty">Sin resultados para el filtro.</td>
-          </tr>
-        </tbody>
-      </table>
+      <h2 class="cat__list-title">Listado</h2>
+      <app-data-table
+        [columns]="columns"
+        [rows]="tableRows"
+        [page]="page"
+        [pageSize]="pageSize"
+        [clientFilter]="true"
+        [filterableColumnsInputs]="true"
+        [searchableInputMain]="['nombre']"
+        [exportLabel]="''"
+        emptyMessage="Sin resultados para el filtro."
+        (pageChange)="onPageChange($event)"
+      >
+        <ng-template appDataTableColumn="id" let-row>
+          <code class="cat__id">{{ row['id'] }}</code>
+        </ng-template>
+      </app-data-table>
     </section>
   </div>
 </div>

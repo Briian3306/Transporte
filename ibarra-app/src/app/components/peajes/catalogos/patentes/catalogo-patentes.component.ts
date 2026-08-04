@@ -9,10 +9,16 @@ import {
   Patente,
   PeajesCatalogoService,
 } from '../../models';
+import {
+  DataTableColumn,
+  DataTableComponent,
+  DataTablePageChange,
+} from '../../../shared';
+
 @Component({
   selector: 'app-catalogo-patentes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, DataTableComponent],
   templateUrl: './catalogo-patentes.component.html',
   styleUrl: '../peajes/catalogo-peajes.component.css',
 })
@@ -21,8 +27,25 @@ export class CatalogoPatentesComponent implements OnInit {
 
   patentes: Patente[] = [];
   categorias: CategoriaPatente[] = ['TRANSPORTE', 'REMIS'];
+  page = 1;
+  pageSize = 50;
   error: string | null = null;
   guardando = false;
+
+  readonly columns: DataTableColumn[] = [
+    {
+      key: 'patente',
+      label: 'Patente',
+      filter: { type: 'text', placeholder: 'Filtrar patente…' },
+      searchable: true,
+    },
+    {
+      key: 'categoria',
+      label: 'Categoría',
+      filter: { type: 'multiselect', placeholder: 'Filtrar categoría…' },
+    },
+    { key: 'id', label: 'ID', width: '12rem' },
+  ];
 
   form = this.fb.nonNullable.group({
     patente: ['', Validators.required],
@@ -33,12 +56,21 @@ export class CatalogoPatentesComponent implements OnInit {
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
   ) {}
 
+  get tableRows(): Record<string, unknown>[] {
+    return this.patentes as unknown as Record<string, unknown>[];
+  }
+
   async ngOnInit(): Promise<void> {
     await this.cargar();
   }
 
   async cargar(): Promise<void> {
     this.patentes = await firstValueFrom(this.catalogo.listarPatentes());
+  }
+
+  onPageChange(ev: DataTablePageChange): void {
+    this.page = ev.page;
+    this.pageSize = ev.pageSize;
   }
 
   async guardar(): Promise<void> {

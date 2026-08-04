@@ -1,6 +1,6 @@
 -- pgTAP: F01-1 … F01-9 (Peajes backend)
 BEGIN;
-SELECT plan(34);
+SELECT plan(35);
 
 -- -----------------------------------------------------------------------------
 -- F01-1: catálogos + FK estacion → peaje
@@ -25,6 +25,16 @@ SELECT has_table('public', 'pasadas', 'F01-2 pasadas existe');
 SELECT fk_ok('pasadas', 'factura_id', 'facturas', 'id', 'F01-2 pasadas.factura_id → facturas.id');
 SELECT fk_ok('pasadas', 'estacion_id', 'estaciones', 'id', 'F01-2 pasadas.estacion_id → estaciones.id');
 SELECT hasnt_column('public', 'pasadas', 'peaje_id', 'F01-2 pasadas no tiene peaje_id directo');
+SELECT ok(
+  (
+    SELECT is_nullable = 'YES'
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'facturas'
+      AND column_name = 'cuenta'
+  ),
+  'facturas.cuenta es opcional'
+);
 
 -- -----------------------------------------------------------------------------
 -- F01-3 / F01-4: constraints únicas

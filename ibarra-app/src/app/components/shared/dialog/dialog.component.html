@@ -1,0 +1,40 @@
+<div
+  class="app-dialog-backdrop"
+  *ngIf="open"
+  (click)="onBackdropClick()"
+>
+  <section
+    #panel
+    class="app-dialog"
+    [class.app-dialog--lg]="size === 'lg'"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="title ? 'app-dialog-title' : null"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="app-dialog__head">
+      <div class="app-dialog__titles">
+        <div class="app-dialog__eyebrow" *ngIf="eyebrow">{{ eyebrow }}</div>
+        <h3 class="app-dialog__title" id="app-dialog-title" *ngIf="title">{{ title }}</h3>
+      </div>
+      <button
+        type="button"
+        class="app-dialog__close"
+        [attr.aria-label]="closeLabel"
+        (click)="close()"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <p class="app-dialog__desc" *ngIf="description">{{ description }}</p>
+
+    <div class="app-dialog__body">
+      <ng-content></ng-content>
+    </div>
+
+    <footer class="app-dialog__footer">
+      <ng-content select="[appDialogActions]"></ng-content>
+    </footer>
+  </section>
+</div>

@@ -19,18 +19,31 @@
             <div class="pw__field-error" *ngIf="invalid('factura')">Obligatorio</div>
           </div>
           <div class="pw__field">
-            <label for="cuenta">Cuenta *</label>
-            <input id="cuenta" formControlName="cuenta" autocomplete="off" />
-            <div class="pw__field-error" *ngIf="invalid('cuenta')">Obligatorio</div>
+            <label for="cuenta">Cuenta</label>
+            <input id="cuenta" formControlName="cuenta" autocomplete="off" placeholder="Opcional" />
+          </div>
+          <div class="pw__field paso7__field--full">
+            <app-search-multi-select
+              label="Empresa *"
+              [options]="empresaOptions"
+              [value]="empresaIds"
+              mode="single"
+              [disabled]="true"
+              [clearable]="false"
+              placeholder="Empresa del Paso 1"
+              emptyMessage="Sin empresa seleccionada en Paso 1"
+            ></app-search-multi-select>
+            <p class="paso7__hint">Definida en Paso 1 · no se modifica aquí</p>
+            <div class="pw__field-error" *ngIf="invalid('empresa_id')">Obligatorio (elegí empresa en Paso 1)</div>
           </div>
           <div class="pw__field">
-            <label for="empresa_id">Empresa *</label>
-            <input id="empresa_id" formControlName="empresa_id" placeholder="ID o razón social" autocomplete="organization" />
-            <div class="pw__field-error" *ngIf="invalid('empresa_id')">Obligatorio</div>
-          </div>
-          <div class="pw__field">
-            <label for="fecha_factura">Fecha de factura *</label>
-            <input id="fecha_factura" type="date" formControlName="fecha_factura" />
+            <app-date-range-picker
+              label="Fecha de factura *"
+              mode="single"
+              placeholder="Elegir fecha"
+              [value]="fechaRange"
+              (valueChange)="onFechaChange($event)"
+            ></app-date-range-picker>
             <div class="pw__field-error" *ngIf="invalid('fecha_factura')">Obligatorio</div>
           </div>
           <div class="pw__field">

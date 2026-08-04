@@ -196,4 +196,24 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
     expect(state.descartarRecomendacion('rec-estacion')).toBeTrue();
     expect(state.recomendacionesPendientes().some((r) => r.id === 'rec-estacion')).toBeFalse();
   });
+
+  it('F02-12: setPreview incluye solo columnas reconocidas', () => {
+    state.setPreview({
+      nombreArchivo: 'mix.csv',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['FECHA', 'HORA', 'PATENTE', 'NOTA_EXTRA', 'RUIDO'],
+      filasPreview: [
+        { FECHA: '2026-01-01', HORA: '08:00:00', PATENTE: 'AB1', NOTA_EXTRA: 'x', RUIDO: 'y' },
+      ],
+      filasOrigen: [],
+      tiposInferidos: {},
+    });
+    const s = state.snapshot();
+    expect(s.columnasIncluidas).toContain('FECHA');
+    expect(s.columnasIncluidas).toContain('HORA');
+    expect(s.columnasIncluidas).toContain('PATENTE');
+    expect(s.columnasExcluidas).toContain('NOTA_EXTRA');
+    expect(s.columnasExcluidas).toContain('RUIDO');
+  });
 });

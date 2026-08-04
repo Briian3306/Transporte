@@ -38,39 +38,25 @@
     </section>
 
     <section class="cat__panel">
-      <div class="cat__list-head">
-        <h2>Listado</h2>
-        <label class="cat__filter">
-          Filtrar
-          <input
-            type="search"
-            [(ngModel)]="filtro"
-            name="filtroPeajes"
-            placeholder="Nombre, ubicación, empresa…"
-          />
-        </label>
-      </div>
-      <table class="cat__table">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Ubicación</th>
-            <th>Empresa</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let p of peajesFiltrados">
-            <td>{{ p.nombre }}</td>
-            <td>{{ p.ubicacion || '—' }}</td>
-            <td>{{ nombreEmpresa(p.empresa_id) }}</td>
-            <td><button type="button" (click)="editar(p)">Editar</button></td>
-          </tr>
-          <tr *ngIf="!peajesFiltrados.length">
-            <td colspan="4" class="cat__empty">Sin resultados para el filtro.</td>
-          </tr>
-        </tbody>
-      </table>
+      <h2 class="cat__list-title">Listado</h2>
+      <app-data-table
+        [columns]="columns"
+        [rows]="tableRows"
+        [page]="page"
+        [pageSize]="pageSize"
+        [clientFilter]="true"
+        [filterableColumnsInputs]="true"
+        [searchableInputMain]="['nombre']"
+        [exportLabel]="''"
+        emptyMessage="Sin resultados para el filtro."
+        (pageChange)="onPageChange($event)"
+      >
+        <ng-template appDataTableColumn="acciones" let-row>
+          <button type="button" class="cat__row-btn" (click)="editar(row); $event.stopPropagation()">
+            Editar
+          </button>
+        </ng-template>
+      </app-data-table>
     </section>
   </div>
 

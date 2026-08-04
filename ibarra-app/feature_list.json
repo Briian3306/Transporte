@@ -2,6 +2,8 @@
   "project": "peajes-module-automation-tool",
   "source_of_truth": "docs/plan/peaje-prd-es.md",
   "single_active_feature_per_agent": true,
+  "documentation_last_reviewed": "2026-08-04",
+  "documentation_status": "MVP integrado; F06/F07/F08 en progreso; F06-5 no iniciado",
   "agents": [
     "00-orquestador-setup",
     "01-backend-supabase",
@@ -564,6 +566,105 @@
       ]
     },
     {
+      "id": "F02-12",
+      "title": "Paso 2 — Incluir por defecto solo columnas reconocidas",
+      "prd_refs": ["RF-03", "RF-04", "RF-05"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-2", "F02-11"],
+      "status": "passing",
+      "verification": [
+        "setPreview deja incluidas solo incluirColumnas de recomendaciones; resto en excluidas",
+        "Sin reconocimiento → include-all; toggle manual sigue funcionando",
+        "MVP full-headers sigue aplicando lista MVP",
+        "ng test peajes-wizard-state F02-12"
+      ],
+      "evidence": [
+        "2026-08-04: aplicarSeleccionPorReconocimiento en setPreview",
+        "2026-08-04: ng test wizard-state/paso2/paso5/paso6/recognition — 24 SUCCESS",
+        "2026-08-04: ng build --configuration=development OK",
+        "2026-08-04: docs reconocimiento-columnas.md (F02-12 note)"
+      ]
+    },
+    {
+      "id": "F02-13",
+      "title": "Paso 6 — Estaciones por empresa, reconocimiento y alta mínima",
+      "prd_refs": ["RF-16", "RF-17", "§7.5"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-5", "F07-1"],
+      "status": "passing",
+      "verification": [
+        "Estaciones del select filtradas por peajes de empresaId",
+        "Reconocimiento exacta auto-selecciona Estación Interna; sin_coincidencia recomienda crear",
+        "Formulario crear: nombre + peaje (oculto si 1); sin crear peaje inline",
+        "Docs: reconocimiento-estaciones.md"
+      ],
+      "evidence": [
+        "2026-08-04: paso6 filtra estaciones por peajes de empresa; slim create form; reco sin_coincidencia",
+        "2026-08-04: docs reconocimiento-estaciones.md + wizard INDEX",
+        "2026-08-04: ng test paso6 — incluido en 24 SUCCESS; build OK",
+        "2026-08-04: known bug F02-15 — ESTACION+VIA combine ignores Paso 2 exclusion (documented, not fixed)"
+      ]
+    },
+    {
+      "id": "F02-14",
+      "title": "Paso 5 — Patentes sin catálogo (DataTable Agregar/Quitar)",
+      "prd_refs": ["RF-12", "RF-13"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-5"],
+      "status": "passing",
+      "verification": [
+        "Patentes no catalogadas se listan en DataTable con filtro rápido",
+        "Agregar crea en catálogo; Quitar excluye del import",
+        "Continuar requiere mapeo completo y 0 unresolved",
+        "Docs: patentes-sin-resolver.md"
+      ],
+      "evidence": [
+        "2026-08-04: paso5 DataTable unresolved + patentesExcluidas en state",
+        "2026-08-04: docs patentes-sin-resolver.md",
+        "2026-08-04: ng test paso5 F02-14 — 24 SUCCESS; build OK",
+        "2026-08-04: follow-up F02-16 — bulk Agregar todas (documented, not implemented)"
+      ]
+    },
+    {
+      "id": "F02-15",
+      "title": "Bug — Paso 6 concatena ESTACION+VIA aunque VIA esté excluida en Paso 2",
+      "prd_refs": ["RF-16", "RF-17"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-12", "F02-13"],
+      "status": "passing",
+      "verification": [
+        "Con VIA excluida en Paso 2, códigos proveedor en Paso 6 usan solo ESTACION (p. ej. CAMPANA), no ESTACION - VIA (CAMPANA - 0003)",
+        "Con VIA incluida, se mantiene el combine ESTACION - VIA (caso Acceso Oeste / AU)",
+        "Regresión documentada en docs/06-components/peajes/reconocimiento-estaciones.md",
+        "Fixture: docs/plan/csv/557074.csv (AUSOL)"
+      ],
+      "evidence": [
+        "2026-08-04: BUG reportado (sin fix). Repro: 557074.csv — Paso 2 ESTACION incluida / VIA excluida → Paso 6 muestra «CAMPANA - 0003». Causa probable: valorEstacionProveedor en paso6-estaciones.component.ts ignora columnasExcluidas y concatena si ambas existen en la fila.",
+        "2026-08-04: FIX — valorEstacionProveedor / valorEstacionProveedorDesdeFila gate on columnasParaMapeo() includes VIA; removed 387882.csv hardcode",
+        "2026-08-04: ng test paso5+paso6+wizard-state — 17 SUCCESS; ng build --configuration=development OK",
+        "2026-08-04: docs reconocimiento-estaciones.md actualizado (F02-15 fixed)"
+      ]
+    },
+    {
+      "id": "F02-16",
+      "title": "Paso 5 — Seleccionar / agregar todas las patentes sin resolver",
+      "prd_refs": ["RF-12", "RF-13"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-14"],
+      "status": "passing",
+      "verification": [
+        "Botón encima de la DataTable de unresolved: Agregar todas / Quitar todas",
+        "Optimiza el alta masiva de patentes faltantes sin acción fila a fila",
+        "Docs: patentes-sin-resolver.md (acciones masivas)"
+      ],
+      "evidence": [
+        "2026-08-04: feature solicitada (sin implementar). Documentada en patentes-sin-resolver.md",
+        "2026-08-04: Agregar todas / Quitar todas toolbar en paso5; respeta filtro rápido; errores parciales",
+        "2026-08-04: ng test paso5+paso6+wizard-state — 17 SUCCESS; ng build --configuration=development OK",
+        "2026-08-04: docs patentes-sin-resolver.md (F02-16 implemented)"
+      ]
+    },
+    {
       "id": "F03-1",
       "title": "Paso 3 — Motor de transformaciones (tarjetas, orden, preview)",
       "prd_refs": [
@@ -984,10 +1085,13 @@
         "Vista pasadas_gestion + peajes_listar_pasadas pagina y filtra en servidor",
         "CRUD peajes_crear/actualizar/eliminar_pasada funciona sin tablas nuevas",
         "UI /peajes/pasadas: filtros, chip rail, badge OK/PENDING por coordenadas, drawer CRUD",
-        "Shared DataTable reutilizable bajo components/shared"
+        "Shared DataTable reutilizable bajo components/shared",
+        "Shared DateRangePicker + SearchMultiSelect; pasadas-filters y catálogos listados migrados"
       ],
       "evidence": [
-        "2026-08-03: migración 20260803190348_peajes_pasadas_audit_gestion.sql; UI pasadas + shared data-table; p_nombre_archivo cableado en PeajesCargaSupabaseService. ng build development OK."
+        "2026-08-03: migración 20260803190348_peajes_pasadas_audit_gestion.sql; UI pasadas + shared data-table; p_nombre_archivo cableado en PeajesCargaSupabaseService. ng build development OK.",
+        "2026-08-04: docs/06-components/shared/*; DateRangePicker + SearchMultiSelect; pasadas-filters refactor; catálogos listados → data-table + SMS; editable? tipado. Specs date-range/search-multi + estaciones filtro. ng build development OK; ng test ChromeHeadless OK.",
+        "2026-08-04: column filters auto (filterableColumnsInputs, searchableInputMain, clientFilter); catálogos migrados. ng build OK."
       ]
     }
   ]

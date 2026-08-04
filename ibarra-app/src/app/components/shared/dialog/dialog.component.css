@@ -1,0 +1,156 @@
+/* Modal de operación Peajes — hoja de catálogo, no card genérica */
+.app-dialog-backdrop {
+  --dlg-ink: #0f233a;
+  --dlg-muted: #5b6f86;
+  --dlg-line: #d5e0ec;
+  --dlg-signal: #004ac6;
+  --dlg-wash: #eef4fc;
+  --dlg-surface: #ffffff;
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--dlg-ink) 52%, transparent);
+  backdrop-filter: blur(3px);
+  animation: app-dialog-fade 140ms ease-out;
+}
+
+.app-dialog {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: min(90vh, 720px);
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.35rem 1.15rem;
+  border: 1px solid var(--dlg-line);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, var(--dlg-wash) 0, var(--dlg-wash) 3.25rem, var(--dlg-surface) 3.25rem);
+  box-shadow: 0 28px 64px color-mix(in srgb, var(--dlg-ink) 28%, transparent);
+  color: var(--dlg-ink);
+  animation: app-dialog-rise 160ms ease-out;
+  overflow: hidden;
+}
+
+.app-dialog::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--dlg-signal);
+}
+
+.app-dialog--lg {
+  width: min(720px, 100%);
+}
+
+.app-dialog__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.45rem;
+  padding-left: 0.35rem;
+}
+
+.app-dialog__eyebrow {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dlg-signal);
+}
+
+.app-dialog__title {
+  margin: 0.2rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.app-dialog__close {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--dlg-line);
+  border-radius: 0.5rem;
+  background: var(--dlg-surface);
+  color: var(--dlg-muted);
+  cursor: pointer;
+}
+
+.app-dialog__close:hover {
+  color: var(--dlg-ink);
+  border-color: color-mix(in srgb, var(--dlg-signal) 35%, var(--dlg-line));
+}
+
+.app-dialog__close:focus-visible {
+  outline: 2px solid var(--dlg-signal);
+  outline-offset: 2px;
+}
+
+.app-dialog__desc {
+  margin: 0 0 1rem;
+  padding-left: 0.35rem;
+  color: var(--dlg-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.app-dialog__body {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding-left: 0.35rem;
+  min-height: 0;
+}
+
+.app-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+  padding-top: 0.85rem;
+  padding-left: 0.35rem;
+  border-top: 1px solid var(--dlg-line);
+}
+
+.app-dialog__footer:empty {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+@keyframes app-dialog-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes app-dialog-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-dialog-backdrop,
+  .app-dialog {
+    animation: none;
+  }
+}

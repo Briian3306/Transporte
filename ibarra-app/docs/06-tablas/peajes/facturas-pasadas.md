@@ -21,12 +21,14 @@ Persistencia de factura (Bill) y pasadas estandarizadas (F01-2). Migración `202
 |---------|------|----------|-------------|
 | `id` | uuid PK | No | — |
 | `factura` | text | No | Número / identificador de factura |
-| `cuenta` | text | No | Cuenta asociada |
-| `empresa_id` | text | No | Empresa (text, no uuid) |
+| `cuenta` | text | **Sí** | Cuenta asociada (**opcional**) |
+| `empresa_id` | text | No | Empresa (text, no uuid); en wizard = empresa del Paso 1 |
 | `fecha_factura` | date | No | — |
 | `importe_sin_iva` | numeric(14,2) | No | ≥ 0 |
 | `importe_total` | numeric(14,2) | No | ≥ 0 |
 | `created_at` | timestamptz | No | — |
+
+Migración cuenta opcional: `20260804141122_peajes_facturas_cuenta_nullable.sql`. `peajes_confirmar_carga` normaliza vacío → NULL.
 
 ---
 
@@ -82,11 +84,14 @@ Confirmación atómica: RPC `peajes_confirmar_carga` (ver [auditoria-y-rpcs.md](
 ## Referencias
 
 - SQL: `supabase/migrations/20260730125518_peajes_facturas_pasadas.sql`
+- SQL cuenta opcional: `supabase/migrations/20260804141122_peajes_facturas_cuenta_nullable.sql`
 - SQL F08-1: `supabase/migrations/20260803190348_peajes_pasadas_audit_gestion.sql`
+- Task SQL: [docs/08-sql/peajes/facturas-cuenta-opcional/README.md](../../08-sql/peajes/facturas-cuenta-opcional/README.md)
 - Servicio: `PeajesCargaSupabaseService`, `PeajesPasadasSupabaseService`
 - UI: `/peajes/pasadas`
 - Wizard pasos 7–9: [docs/06-components/peajes/wizard.md](../../06-components/peajes/wizard.md)
+  - Paso 7: `cuenta` opcional; empresa vía `app-search-multi-select` (single, locked Paso 1); fecha vía `app-date-range-picker` (`mode="single"`)
 
 ---
 
-> Última actualización: agosto 2026
+> Última actualización: 2026-08-04

@@ -18,8 +18,7 @@ Documentación del esquema persistente del módulo Peajes implementado en Fase 1
 
 | Path | Contenido |
 |------|-----------|
-| [docs/08-sql/peajes/F01-schema/](../../08-sql/peajes/F01-schema/README.md) | Migraciones de esquema |
-| [docs/08-sql/peajes/F01-rpc/](../../08-sql/peajes/F01-rpc/README.md) | RPCs y auditoría |
+| `supabase/migrations/*peajes*.sql` | Migraciones y RPCs fuente |
 
 ## Verificación ejecutada
 

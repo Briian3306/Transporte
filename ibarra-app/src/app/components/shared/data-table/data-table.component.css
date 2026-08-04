@@ -20,6 +20,78 @@
   margin-bottom: 0.5rem;
 }
 
+.dt__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: var(--dt-rail);
+  border: 1px solid var(--dt-line);
+  border-radius: 0.75rem;
+}
+
+.dt__filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: min(100%, 11rem);
+  flex: 1 1 11rem;
+  max-width: 18rem;
+}
+
+.dt__filter--global {
+  flex: 1 1 14rem;
+  max-width: 22rem;
+}
+
+.dt__filter--sms,
+.dt__filter--date {
+  max-width: 20rem;
+}
+
+.dt__filter-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--dt-ink-muted);
+}
+
+.dt__filter-input {
+  appearance: none;
+  border: 1px solid var(--dt-line);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.875rem;
+  background: var(--dt-surface);
+  color: var(--dt-ink);
+}
+
+.dt__filter-input:focus {
+  outline: 2px solid color-mix(in srgb, var(--dt-signal) 35%, transparent);
+  outline-offset: 1px;
+  border-color: color-mix(in srgb, var(--dt-signal) 40%, var(--dt-line));
+}
+
+.dt__filter-clear {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--dt-signal);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.45rem 0.35rem;
+  align-self: flex-end;
+}
+
+.dt__filter-clear:hover {
+  text-decoration: underline;
+}
+
 .dt__export {
   appearance: none;
   border: 1px solid var(--dt-line);

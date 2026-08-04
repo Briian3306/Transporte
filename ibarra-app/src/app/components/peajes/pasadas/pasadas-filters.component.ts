@@ -3,6 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Empresa, Estacion, Patente } from '../models';
 import { PasadasListFilters } from '../models/peajes-services.contracts';
+import {
+  DateRangePickerComponent,
+  DateRangeValue,
+  SearchMultiSelectComponent,
+  SearchMultiSelectOption,
+  rangeToIsoFilters,
+} from '../../shared';
 
 export interface PasadasFilterState extends PasadasListFilters {
   /** Status stub — not applied server-side yet. */
@@ -12,7 +19,7 @@ export interface PasadasFilterState extends PasadasListFilters {
 @Component({
   selector: 'app-pasadas-filters',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DateRangePickerComponent, SearchMultiSelectComponent],
   templateUrl: './pasadas-filters.component.html',
   styleUrl: './pasadas-filters.component.css',
 })
@@ -24,40 +31,46 @@ export class PasadasFiltersComponent {
 
   @Output() valueChange = new EventEmitter<PasadasFilterState>();
 
-  estacionSearch = '';
-  patenteSearch = '';
-  empresaSearch = '';
-
-  get estacionesFiltradas(): Estacion[] {
-    const q = this.estacionSearch.trim().toLowerCase();
-    if (!q) return this.estaciones.slice(0, 80);
-    return this.estaciones.filter((e) => e.nombre.toLowerCase().includes(q)).slice(0, 80);
+  get estacionOptions(): SearchMultiSelectOption[] {
+    return this.estaciones.map((e) => ({ id: e.id, label: e.nombre }));
   }
 
-  get patentesFiltradas(): Patente[] {
-    const q = this.patenteSearch.trim().toLowerCase();
-    if (!q) return this.patentes.slice(0, 80);
-    return this.patentes.filter((p) => p.patente.toLowerCase().includes(q)).slice(0, 80);
+  get patenteOptions(): SearchMultiSelectOption[] {
+    return this.patentes.map((p) => ({ id: p.id, label: p.patente }));
   }
 
-  get empresasFiltradas(): Empresa[] {
-    const q = this.empresaSearch.trim().toLowerCase();
-    if (!q) return this.empresas;
-    return this.empresas.filter((e) => e.nombre.toLowerCase().includes(q));
+  get empresaOptions(): SearchMultiSelectOption[] {
+    return this.empresas.map((e) => ({ id: e.id, label: e.nombre }));
+  }
+
+  get dateRange(): DateRangeValue {
+    return {
+      from: this.value.fecha_desde ? new Date(this.value.fecha_desde) : null,
+      to: this.value.fecha_hasta ? new Date(this.value.fecha_hasta) : null,
+    };
+  }
+
+  onDateRange(range: DateRangeValue): void {
+    const iso = rangeToIsoFilters(range);
+    this.patch({
+      fecha_desde: iso.fecha_desde,
+      fecha_hasta: iso.fecha_hasta,
+    });
+  }
+
+  onEstaciones(ids: string[]): void {
+    this.patch({ estacion_ids: ids.length ? ids : undefined });
+  }
+
+  onPatentes(ids: string[]): void {
+    this.patch({ patente_ids: ids.length ? ids : undefined });
+  }
+
+  onEmpresas(ids: string[]): void {
+    this.patch({ empresa_ids: ids.length ? ids : undefined });
   }
 
   patch(partial: Partial<PasadasFilterState>): void {
     this.valueChange.emit({ ...this.value, ...partial });
-  }
-
-  toggleId(field: 'estacion_ids' | 'patente_ids' | 'empresa_ids', id: string, checked: boolean): void {
-    const current = new Set(this.value[field] ?? []);
-    if (checked) current.add(id);
-    else current.delete(id);
-    this.patch({ [field]: [...current] });
-  }
-
-  isSelected(field: 'estacion_ids' | 'patente_ids' | 'empresa_ids', id: string): boolean {
-    return (this.value[field] ?? []).includes(id);
   }
 }

@@ -1,142 +1,40 @@
-# Módulo — Peajes
+# Módulo Peajes
 
 ## Resumen
 
-Módulo de automatización de carga de pasadas de peaje (PRD `peaje-prd-es.md`): wizard Excel → transformaciones/plantillas → mapeo a Structure Goal → relación estación/peaje → factura → validación → persistencia en Supabase. Dominio aislado dentro de `ibarra-app` (Angular 19 + Supabase). Estado documentado: **F00–F03 `passing`**; integración final **F05 pendiente**.
+Peajes automatiza la carga de archivos Excel/CSV, su reconocimiento, transformación, mapeo, relación con catálogos, validación de factura y persistencia/auditoría en Supabase. Es un dominio aislado de Checklists.
 
-## Índice
+## Flujo implementado
 
-- [Resumen](#resumen)
-- [Propósito y alcance](#propósito-y-alcance)
-- [Flujo principal](#flujo-principal)
-- [Estructura de código](#estructura-de-código)
-- [Integración host](#integración-host)
-- [Documentación hija](#documentación-hija)
-- [Estado de features](#estado-de-features)
-- [Pendiente Agente 05](#pendiente-agente-05)
-- [Verificación](#verificación)
-- [Referencias](#referencias)
+`/peajes` → `/wizard` (9 pasos) → `/catalogos` → `/plantillas` → `/pasadas`.
 
----
+El wizard conserva estado, muestra preview de hasta 10 filas, recomienda columnas y transformaciones, permite pipeline editable, resuelve estaciones con confirmación y patentes faltantes, valida factura/duplicados y confirma la carga. Los servicios reales encapsulan Supabase.
 
-## Propósito y alcance
+## Estructura
 
-- Cargar archivos `.xlsx` de pasadas de proveedores.
-- Aplicar plantillas/algoritmos (Builder + Strategy).
-- Mapear a columnas estándar y asociar estaciones/peajes.
-- Validar importes vs factura y anti-duplicados.
-- Confirmar carga con auditoría (`registros_carga_peajes`).
+- `src/app/components/peajes/wizard`: carga y flujo de importación.
+- `catalogos`: empresas, peajes, estaciones, patentes y pases.
+- `plantillas`: Builder/Strategy, algoritmos combinados y motor.
+- `services`: carga, catálogos, pasadas y plantillas contra Supabase.
+- `supabase/migrations`: esquema, RPC, auditoría y seeds.
+- `docs/06-components/peajes` y `docs/06-tablas/peajes`: documentación hija.
 
-**Fuera de alcance MVP (PRD §5.2):** auth/RBAC granular interno del módulo (solo respeta `peajes:read` del host).
+## Estado
 
-**No reutilizar:** `checklist_templates` / `ChecklistTemplateService`.
+Según `feature_list.json` (2026-08-04): 43 `passing`, 5 `in_progress` (F06-1/2/3, F07-1, F08-1) y 1 `not_started` (F06-5). El MVP F00–F05 está integrado y verificado; la ampliación Acceso Oeste/AUSOL y la gestión completa de pasadas aún requieren evidencia final.
 
----
+## Riesgos actuales
 
-## Flujo principal
-
-```text
-Upload Excel → Preview (≤10) → Transformaciones → Plantilla
-  → Mapeo Structure Goal → Relación estaciones → Factura
-  → Validación → Revisión / confirmarCarga
-```
-
-Datos: pasada → `estacion_id`; peaje derivado. Recurso global: `empresa_id === '__global__'`.
-
----
-
-## Estructura de código
-
-```text
-src/app/components/peajes/
-  models/           # Contratos Fase 0
-  services/         # Implementaciones Supabase (F01)
-  wizard/           # UI wizard + mocks (F02)
-  catalogos/        # UI catálogos (F02)
-  plantillas/       # Motor + UI + mocks (F03)
-  peajes-home.*
-  peajes.routes.ts  # Solo home hasta merge 05
-```
-
-Migraciones: `supabase/migrations/20260730*_peajes_*.sql`  
-Tests SQL: `supabase/tests/peajes_f01_test.sql`
-
----
-
-## Integración host
-
-| Elemento | Estado |
-|----------|--------|
-| Ruta `/peajes` | OK (home) |
-| `peajes:read` en `ROUTE_PERMISSIONS` | OK (Fase 0) |
-| Tarjeta dashboard `id: 'peajes'` | OK |
-| Subrutas wizard/catalogos/plantillas | **Pendiente merge 05** |
-| `system_modules` peajes en DESARROLLO | Repair `20260730150000_…admin_permissions.sql` en repo; **aplicar** con `db push --linked` autorizado |
-| Links reales en home (“Próximamente”) | **Pendiente 05** |
-
----
-
-## Documentación hija
-
-| Área | Índice |
-|------|--------|
-| Modelo de datos / tablas | [docs/06-tablas/peajes/](../06-tablas/peajes/INDEX.md) |
-| Componentes UI | [docs/06-components/peajes/](../06-components/peajes/INDEX.md) |
-| Pipeline editable Paso 3 (outline) | [pipeline-editable-paso3.md](../06-components/peajes/pipeline-editable-paso3.md) |
-| SQL F01 | [docs/08-sql/peajes/F01-schema/](../08-sql/peajes/F01-schema/README.md), [F01-rpc/](../08-sql/peajes/F01-rpc/README.md) |
-| CLI local: Auth + permisos | [docs/05-configuracion/cli-local-credenciales-y-permisos.md](../05-configuracion/cli-local-credenciales-y-permisos.md) |
-| Motor transformaciones (skill) | [`.agents/skills/peajes-transformaciones-motor/`](../../.agents/skills/peajes-transformaciones-motor/SKILL.md) |
-| Testing transformaciones (skill) | [`.agents/skills/peajes-testing-transformaciones/`](../../.agents/skills/peajes-testing-transformaciones/SKILL.md) |
-| Testing plan MVP | [docs/plan/testing_plan.md](../plan/testing_plan.md) |
-| Planes agentes | [docs/plan/INDEX.md](../plan/INDEX.md) |
-| Handoff | [docs/session-handoff.md](../session-handoff.md) |
-| Bitácora | [docs/claude-progress.md](../claude-progress.md) |
-
----
-
-## Estado de features
-
-| Bloque | Status |
-|--------|--------|
-| F00 Setup | `passing` |
-| F01 Backend Supabase | `passing` (CLI 30/30) |
-| F02 Wizard & catálogos | `passing` (mocks) |
-| F03 Plantillas & motor | `passing` (mocks persistencia) |
-| F04 Documentación | `passing` |
-| F05 Integrador/QA | `passing` (F05-1…F05-3) |
-
----
-
-## Pendiente post-F05 (autorización usuario)
-
-1. ~~Merge rutas / swap mocks / peajes-home / E2E §21 / catálogo SQL↔TS~~ → **hecho F05**.
-2. `system_modules` peajes en DESARROLLO tras `db push --linked` autorizado.
-3. **Sin push a `main`**; push feature/DESARROLLO solo con autorización.
-
----
-
-## Verificación
-
-Agente 05 (2026-07-30):
-
-```text
-npm run build -- --configuration=development → OK
-npx tsx …/e2e-prd21.verify.ts → PASS (total 102060)
-npx tsx …/plantillas/motor.verify.ts → PASS
-ng test --include="**/peajes/**/*.spec.ts" → 27 SUCCESS
-npx supabase db reset --local --no-seed → OK (6 migraciones)
-npx supabase test db → PASS 30/30
-```
-
----
+- F06-5 no tiene evidencia E2E local de 496 pasadas, aliases y segunda ejecución idempotente.
+- F07 requiere cerrar seed, reconocimiento y pruebas CLI; hay conteos de seed que todavía no coinciden.
+- F08 tiene UI y migración en curso; debe completar pruebas de auditoría, paginación y CRUD.
+- `init.sh` no corre en este host Windows sin Bash/WSL.
 
 ## Referencias
 
-- PRD: [peaje-prd-es.md](../plan/peaje-prd-es.md)
-- Ejemplo: [ejemplo-mvp-procesamiento-pasadas.md](../plan/ejemplo-mvp-procesamiento-pasadas.md)
-- Features: `feature_list.json`
-- Protocolo: `AGENTS.md`
-
----
-
-> Última actualización: julio 2026
+- [PRD](../plan/peaje-prd-es.md)
+- [Componentes](../06-components/peajes/INDEX.md)
+- [Tablas](../06-tablas/peajes/INDEX.md)
+- [Features](../../feature_list.json)
+- [Progreso](../claude-progress.md)
+- [Handoff](../session-handoff.md)

@@ -41,6 +41,16 @@
   line-height: 1.45;
 }
 
+.paso7__field--full {
+  grid-column: 1 / -1;
+}
+
+.paso7__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: var(--pw-muted, #6f8197);
+}
+
 @media (max-width: 900px) {
   .paso7__layout {
     grid-template-columns: 1fr;

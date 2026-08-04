@@ -10,12 +10,13 @@ import {
   RelacionEstacionProveedor,
   ResultadoReconocimientoEstacion,
 } from '../../models';
+import { DialogComponent } from '../../../shared';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 
 @Component({
   selector: 'app-paso6-estaciones',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DialogComponent],
   templateUrl: './paso6-estaciones.component.html',
   styleUrl: './paso6-estaciones.component.css',
 })
@@ -36,17 +37,19 @@ export class Paso6EstacionesComponent implements OnInit {
   creandoPara: string | null = null;
   nuevaEstacionNombre = '';
   nuevaEstacionPeajeId = '';
-
-  /** Inline create peaje */
-  crearPeajeAbierto = false;
-  nuevoPeajeNombre = '';
-  nuevoPeajeUbicacion = '';
-  creandoPeaje = false;
   guardandoRelaciones = false;
 
   constructor(
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
   ) {}
+
+  get peajeUnicoEmpresa(): boolean {
+    return this.peajesUnicos.length === 1;
+  }
+
+  get peajeNombreUnico(): string {
+    return this.peajesUnicos[0]?.nombre ?? '';
+  }
 
   async ngOnInit(): Promise<void> {
     await this.recargarCatalogos();
@@ -73,9 +76,14 @@ export class Paso6EstacionesComponent implements OnInit {
         this.catalogo.reconocerEstacion(v, this.state.snapshot().empresaId ?? undefined)
       );
       this.reconocimientos[v] = reconocimiento;
-      this.sugerencias[v] = reconocimiento.sugerencias;
+      this.sugerencias[v] = reconocimiento.sugerencias.filter((s) =>
+        this.estaciones.some((e) => e.id === s.id)
+      );
       if (reconocimiento.tipo === 'exacta' && reconocimiento.estacion) {
-        this.seleccionar(v, reconocimiento.estacion.id, false);
+        const enScope = this.estaciones.some((e) => e.id === reconocimiento.estacion!.id);
+        if (enScope) {
+          this.seleccionar(v, reconocimiento.estacion.id, false);
+        }
       }
     }
 
@@ -84,13 +92,17 @@ export class Paso6EstacionesComponent implements OnInit {
 
   private async recargarCatalogos(): Promise<void> {
     const empresaId = this.state.snapshot().empresaId ?? undefined;
-    this.estaciones = await firstValueFrom(this.catalogo.listarEstaciones());
-    // Sin filtrar por empresa si la lista queda vacía (peajes globales / sin empresa_id)
     let peajes = await firstValueFrom(this.catalogo.listarPeajes(empresaId));
     if (!peajes.length && empresaId) {
       peajes = await firstValueFrom(this.catalogo.listarPeajes());
     }
     this.peajesUnicos = peajes;
+    const peajeIds = new Set(peajes.map((p) => p.id));
+
+    const todas = await firstValueFrom(this.catalogo.listarEstaciones());
+    this.estaciones = peajeIds.size
+      ? todas.filter((e) => peajeIds.has(e.peaje_id))
+      : todas;
   }
 
   private valoresProveedorUnicos(): string[] {
@@ -109,15 +121,25 @@ export class Paso6EstacionesComponent implements OnInit {
     return [...set];
   }
 
+  /** VIA solo entra al código proveedor si quedó incluida en Paso 2 (F02-15). */
+  private viaIncluidaEnSeleccion(): boolean {
+    return this.state.columnasParaMapeo().some((c) => c.toUpperCase() === 'VIA');
+  }
+
   private valorEstacionProveedor(fila: Record<string, unknown>, columnaOrigen: string): unknown {
-    if (columnaOrigen === 'ESTACION' && fila['ESTACION'] != null && fila['VIA'] != null) {
+    const viaOk = this.viaIncluidaEnSeleccion();
+    if (
+      columnaOrigen === 'ESTACION' &&
+      fila['ESTACION'] != null &&
+      viaOk &&
+      fila['VIA'] != null
+    ) {
       return `${fila['ESTACION']} - ${fila['VIA']}`;
     }
     const estacion = fila[columnaOrigen];
     if (estacion !== undefined) return estacion;
 
-    // Acceso Oeste identifica la estación del proveedor por zona y vía.
-    if (fila['ESTACION'] != null && fila['VIA'] != null) {
+    if (fila['ESTACION'] != null && viaOk && fila['VIA'] != null) {
       return `${fila['ESTACION']} - ${fila['VIA']}`;
     }
     return null;
@@ -140,7 +162,11 @@ export class Paso6EstacionesComponent implements OnInit {
     if (!peajeId) {
       return null;
     }
-    return this.peajesUnicos.find((p) => p.id === peajeId) ?? this.estaciones.find((e) => e.peaje_id === peajeId)?.peaje ?? null;
+    return (
+      this.peajesUnicos.find((p) => p.id === peajeId) ??
+      this.estaciones.find((e) => e.peaje_id === peajeId)?.peaje ??
+      null
+    );
   }
 
   get ejemploResolucion(): { codigo: string; id: string; nombre: string; peaje: string } | null {
@@ -160,6 +186,12 @@ export class Paso6EstacionesComponent implements OnInit {
     };
   }
 
+  necesitaCrear(valorProveedor: string): boolean {
+    const rec = this.reconocimientos[valorProveedor];
+    const rel = this.relaciones.find((r) => r.valorProveedor === valorProveedor);
+    return !!rec && rec.tipo === 'sin_coincidencia' && !rel?.estacionId;
+  }
+
   async seleccionar(valorProveedor: string, estacionId: string, confirmarAlias = true): Promise<void> {
     const est = this.estaciones.find((e) => e.id === estacionId) ?? null;
     this.relaciones = this.relaciones.map((r) =>
@@ -175,12 +207,14 @@ export class Paso6EstacionesComponent implements OnInit {
     const empresaId = this.state.snapshot().empresaId;
     if (confirmarAlias && estacionId && empresaId) {
       try {
-        await firstValueFrom(this.catalogo.confirmarAliasEstacion({
-          empresa_id: empresaId,
-          estacion_id: estacionId,
-          valor_proveedor: valorProveedor,
-          origen: 'usuario',
-        }));
+        await firstValueFrom(
+          this.catalogo.confirmarAliasEstacion({
+            empresa_id: empresaId,
+            estacion_id: estacionId,
+            valor_proveedor: valorProveedor,
+            origen: 'usuario',
+          })
+        );
       } catch (e) {
         this.error = e instanceof Error ? e.message : 'No se pudo guardar la equivalencia de estación.';
       }
@@ -194,10 +228,8 @@ export class Paso6EstacionesComponent implements OnInit {
       return;
     }
     this.creandoPara = valorProveedor;
-    this.nuevaEstacionNombre = `Estación ${valorProveedor}`;
-    this.nuevaEstacionPeajeId =
-      this.peajesUnicos[0]?.id ?? this.estaciones[0]?.peaje_id ?? '';
-    this.crearPeajeAbierto = !this.peajesUnicos.length;
+    this.nuevaEstacionNombre = String(valorProveedor);
+    this.nuevaEstacionPeajeId = this.peajesUnicos[0]?.id ?? this.estaciones[0]?.peaje_id ?? '';
     this.error = null;
     this.successMsg = null;
   }
@@ -208,40 +240,8 @@ export class Paso6EstacionesComponent implements OnInit {
     this.abrirCrear(valorProveedor);
   }
 
-  abrirCrearPeaje(): void {
-    this.crearPeajeAbierto = true;
-    this.nuevoPeajeNombre = '';
-    this.nuevoPeajeUbicacion = '';
-    this.error = null;
-  }
-
-  async crearPeaje(): Promise<void> {
-    const nombre = this.nuevoPeajeNombre.trim();
-    if (!nombre) {
-      this.error = 'Ingresá el nombre del peaje.';
-      return;
-    }
-    this.creandoPeaje = true;
-    this.error = null;
-    try {
-      const empresaId = this.state.snapshot().empresaId;
-      const creado = await firstValueFrom(
-        this.catalogo.crearPeaje({
-          nombre,
-          ubicacion: this.nuevoPeajeUbicacion.trim() || null,
-          descripcion: null,
-          empresa_id: empresaId,
-        })
-      );
-      this.peajesUnicos = [...this.peajesUnicos, creado];
-      this.nuevaEstacionPeajeId = creado.id;
-      this.crearPeajeAbierto = false;
-      this.successMsg = `Peaje «${creado.nombre}» creado. Ahora podés crear la estación.`;
-    } catch (e) {
-      this.error = e instanceof Error ? e.message : 'No se pudo crear el peaje.';
-    } finally {
-      this.creandoPeaje = false;
-    }
+  cerrarCrear(): void {
+    this.creandoPara = null;
   }
 
   async crearEstacion(): Promise<void> {
@@ -249,8 +249,7 @@ export class Paso6EstacionesComponent implements OnInit {
       return;
     }
     if (!this.nuevaEstacionPeajeId) {
-      this.error = 'Seleccioná o creá un peaje antes de relacionar la estación.';
-      this.crearPeajeAbierto = true;
+      this.error = 'No hay peajes de la empresa. Creá un peaje en Catálogos antes de continuar.';
       return;
     }
     this.error = null;
@@ -265,16 +264,12 @@ export class Paso6EstacionesComponent implements OnInit {
       this.estaciones = [...this.estaciones, creada];
       await this.seleccionar(this.creandoPara, creada.id);
       this.creandoPara = null;
-      this.successMsg = `Estación «${creada.nombre}» creada y relacionada (código ${creada.codigos_proveedor?.[0] ?? ''}). Quedará disponible la próxima vez.`;
+      this.successMsg = `Estación «${creada.nombre}» creada y relacionada.`;
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'No se pudo crear la estación.';
     }
   }
 
-  /**
-   * Persiste códigos de proveedor en las estaciones ya relacionadas
-   * para reutilizar el match en cargas futuras (plantilla de relaciones).
-   */
   async guardarPlantillaRelaciones(): Promise<void> {
     const listas = this.relaciones.filter((r) => r.estacionId);
     if (!listas.length) {

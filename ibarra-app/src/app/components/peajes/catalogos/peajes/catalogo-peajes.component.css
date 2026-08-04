@@ -88,10 +88,14 @@
   box-shadow: 0 0 0 3px #eaf2ff;
 }
 
+.cat__list-title {
+  margin: 0 0 0.75rem;
+}
+
 .cat__list-head {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
   flex-wrap: wrap;
@@ -101,14 +105,22 @@
   margin: 0;
 }
 
-.cat__filter {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #6f8197;
+.cat__sms {
+  flex: 1 1 16rem;
+  max-width: 28rem;
   min-width: min(100%, 240px);
+}
+
+.cat__row-btn {
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.4rem 0.65rem;
+  background: #eaf2fb;
+  color: #15508e;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.8125rem;
 }
 
 .cat__empty {

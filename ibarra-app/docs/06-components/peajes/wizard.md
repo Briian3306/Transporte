@@ -35,12 +35,12 @@
 | # | Label | Componente | Notas |
 |---|-------|------------|-------|
 | 1 | Carga | `paso1-carga` | Upload `.xlsx` |
-| 2 | Preview | `paso2-preview` | Máx. 10 filas (RNF-03). Rail de recomendaciones semánticas (F02-11): ver [reconocimiento-columnas.md](./reconocimiento-columnas.md) |
+| 2 | Preview | `paso2-preview` | Máx. 10 filas (RNF-03). Rail de recomendaciones semánticas (F02-11). Por defecto solo columnas reconocidas quedan incluidas (F02-12): ver [reconocimiento-columnas.md](./reconocimiento-columnas.md) |
 | 3 | Transformaciones | `paso3-transformaciones` | Motor 03 |
 | 4 | Plantilla | `paso4-plantilla` | Selección/aplicación plantilla |
-| 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal |
-| 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación |
-| 7 | Factura | `paso7-factura` | Datos Bill |
+| 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal. Patentes sin catálogo: [patentes-sin-resolver.md](./patentes-sin-resolver.md) (F02-14) |
+| 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación; alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13) |
+| 7 | Factura | `paso7-factura` | Bill: `cuenta` opcional; empresa SMS single (Paso 1); fecha DRP single |
 | 8 | Validación | `paso8-validacion` | Errores fila/columna/valor/motivo |
 | 9 | Revisión | `paso9-revision` | Confirmación de carga |
 
@@ -62,6 +62,8 @@ Tras `setPreview`, el estado calcula `recomendaciones` a partir de aliases semá
 | `aceptarTodasRecomendaciones()` | Aplica todas las pendientes |
 
 Detalle canónico: [reconocimiento-columnas.md](./reconocimiento-columnas.md).
+
+**F02-12:** tras detectar recomendaciones, `setPreview` deja **incluidas** solo las columnas de `incluirColumnas` y el resto en **excluidas** (el usuario puede volver a marcarlas). Si no hay reconocimiento, se mantiene include-all. La heurística MVP full-headers puede sobrescribir la selección.
 
 ---
 

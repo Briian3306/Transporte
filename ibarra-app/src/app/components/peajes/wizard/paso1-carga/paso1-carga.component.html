@@ -146,14 +146,35 @@
     </div>
   </div>
 
-  <div class="paso1__dialog-backdrop" *ngIf="crearEmpresaAbierto">
-    <section class="paso1__dialog" role="dialog" aria-modal="true" aria-labelledby="nueva-empresa-titulo">
-      <div class="paso1__dialog-head"><div><div class="pw__eyebrow">Catálogo de empresas</div><h3 id="nueva-empresa-titulo">Crear empresa</h3></div><button type="button" class="pw__btn pw__btn--small" (click)="crearEmpresaAbierto=false">Cerrar</button></div>
-      <p>La empresa será el contexto de esta carga, sus peajes y estaciones.</p>
-      <div class="pw__form-grid"><label class="pw__field">Nombre *<input [(ngModel)]="nuevaEmpresaNombre" autofocus /></label><label class="pw__field">Descripción<input [(ngModel)]="nuevaEmpresaDescripcion" /></label></div>
-      <div class="pw__footer-actions"><button type="button" class="pw__btn" (click)="crearEmpresaAbierto=false">Cancelar</button><button type="button" class="pw__btn pw__btn--primary" [disabled]="!nuevaEmpresaNombre.trim()" (click)="crearEmpresa()">Crear y seleccionar</button></div>
-    </section>
-  </div>
+  <app-dialog
+    [open]="crearEmpresaAbierto"
+    eyebrow="Catálogo de empresas"
+    title="Crear empresa"
+    description="La empresa será el contexto de esta carga, sus peajes y estaciones."
+    (closed)="crearEmpresaAbierto = false"
+  >
+    <div class="pw__form-grid">
+      <label class="pw__field">
+        Nombre *
+        <input [(ngModel)]="nuevaEmpresaNombre" autofocus autocomplete="organization" />
+      </label>
+      <label class="pw__field">
+        Descripción
+        <input [(ngModel)]="nuevaEmpresaDescripcion" autocomplete="off" />
+      </label>
+    </div>
+    <div appDialogActions class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="crearEmpresaAbierto = false">Cancelar</button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--primary"
+        [disabled]="!nuevaEmpresaNombre.trim()"
+        (click)="crearEmpresa()"
+      >
+        Crear y seleccionar
+      </button>
+    </div>
+  </app-dialog>
 
   <input
     #fileInput

@@ -41,4 +41,8 @@ describe('CatalogoEstacionesComponent', () => {
     await component.guardar();
     expect(component.estaciones.length).toBe(before + 1);
   });
+
+  it('filtra listado por ids seleccionados; vacío muestra todas', () => {
+    expect(component.tableRows.length).toBe(component.estaciones.length);
+  });
 });

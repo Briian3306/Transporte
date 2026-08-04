@@ -6,7 +6,10 @@
 
   <div class="cat__layout">
     <section class="cat__panel">
-      <div class="est__form-title"><span>{{ editandoId ? 'Editar estación' : 'Nueva estación' }}</span><small *ngIf="editandoId">Edición activa</small></div>
+      <div class="est__form-title">
+        <span>{{ editandoId ? 'Editar estación' : 'Nueva estación' }}</span>
+        <small *ngIf="editandoId">Edición activa</small>
+      </div>
       <form [formGroup]="form" class="cat__form" (ngSubmit)="guardar()">
         <label>
           Peaje *
@@ -19,10 +22,15 @@
         <label>Ubicación<input formControlName="ubicacion" /></label>
         <label>Descripción<input formControlName="descripcion" /></label>
         <label>Códigos proveedor (coma)<input formControlName="codigos_proveedor" placeholder="3, EST-3" /></label>
-        <div class="est__geo"><label>Latitud<input type="number" step="any" formControlName="latitud" /></label><label>Longitud<input type="number" step="any" formControlName="longitud" /></label></div>
+        <div class="est__geo">
+          <label>Latitud<input type="number" step="any" formControlName="latitud" /></label>
+          <label>Longitud<input type="number" step="any" formControlName="longitud" /></label>
+        </div>
         <label>Camino / corredor<input formControlName="camino" placeholder="Ej.: COLECTORAS" /></label>
         <div class="cat__actions">
-          <button type="submit" [disabled]="guardando">{{ guardando ? 'Guardando…' : (editandoId ? 'Guardar cambios' : 'Crear estación') }}</button>
+          <button type="submit" [disabled]="guardando">
+            {{ guardando ? 'Guardando…' : editandoId ? 'Guardar cambios' : 'Crear estación' }}
+          </button>
           <button type="button" *ngIf="editandoId" (click)="cancelarEdicion()">Cancelar</button>
         </div>
       </form>
@@ -44,41 +52,33 @@
     </section>
 
     <section class="cat__panel">
-      <div class="cat__list-head">
-        <h2>Listado</h2>
-        <label class="cat__filter">
-          Filtrar
-          <input
-            type="search"
-            [(ngModel)]="filtroLista"
-            name="filtroEstaciones"
-            placeholder="Nombre, código o ID…"
-          />
-        </label>
-      </div>
-      <table class="cat__table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Peaje</th>
-            <th>Ubicación</th><th>Estado</th><th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let e of estacionesFiltradas">
-            <td>{{ e.id }}</td>
-            <td>{{ e.nombre }}</td>
-            <td>{{ e.peaje?.nombre || e.peaje_id }}</td>
-            <td><strong>{{ e.camino || '—' }}</strong><small>{{ e.latitud ?? '—' }}, {{ e.longitud ?? '—' }}</small></td>
-            <td><span class="est__status" [class.est__status--review]="e.estado_geocodificacion === 'REVIEW'">{{ e.estado_geocodificacion || 'REVIEW' }}</span></td>
-            <td><button type="button" class="est__edit" (click)="editar(e)">Editar</button></td>
-          </tr>
-          <tr *ngIf="!estacionesFiltradas.length">
-            <td colspan="6" class="cat__empty">Sin resultados para el filtro.</td>
-          </tr>
-        </tbody>
-      </table>
+      <h2 class="cat__list-title">Listado</h2>
+      <app-data-table
+        [columns]="columns"
+        [rows]="tableRows"
+        [page]="page"
+        [pageSize]="pageSize"
+        [clientFilter]="true"
+        [filterableColumnsInputs]="true"
+        [searchableInputMain]="['nombre']"
+        [exportLabel]="''"
+        emptyMessage="Sin resultados para el filtro."
+        (pageChange)="onPageChange($event)"
+      >
+        <ng-template appDataTableColumn="estado" let-row>
+          <span
+            class="est__status"
+            [class.est__status--review]="row['estado'] === 'REVIEW'"
+          >
+            {{ row['estado'] }}
+          </span>
+        </ng-template>
+        <ng-template appDataTableColumn="acciones" let-row>
+          <button type="button" class="est__edit" (click)="editar(row); $event.stopPropagation()">
+            Editar
+          </button>
+        </ng-template>
+      </app-data-table>
     </section>
   </div>
 </div>

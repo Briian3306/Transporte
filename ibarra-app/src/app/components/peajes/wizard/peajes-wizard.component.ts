@@ -113,7 +113,7 @@ export class PeajesWizardComponent implements OnInit {
     }
     if (paso >= 8) {
       const f = s.factura;
-      if (!f.factura || !f.cuenta || !f.empresa_id || !f.fecha_factura ||
+      if (!f.factura || !f.empresa_id || !f.fecha_factura ||
           f.importe_sin_iva === null || f.importe_total === null) {
         return false;
       }

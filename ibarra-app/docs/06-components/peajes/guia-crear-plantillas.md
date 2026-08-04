@@ -120,7 +120,7 @@ LEFT JOIN algoritmos_combinados alg ON alg.id = c.algoritmo_combinado_id
 WHERE c.columna_destino = 'PATENTE_ID';
 ```
 
-Semilla: migración `20260803170620_peajes_acceso_oeste_demo_catalogos_plantillas.sql` (ver [F06 README](../../08-sql/peajes/F06-catalogos-plantillas/README.md)).
+Semilla: migración `20260803170620_peajes_acceso_oeste_demo_catalogos_plantillas.sql` en `supabase/migrations/`.
 
 ---
 
