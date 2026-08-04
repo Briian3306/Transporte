@@ -4,9 +4,13 @@ import {
   ConfiguracionPlantilla,
   ErrorValidacionPasada,
   PasadaEstandarizada,
+  PlantillaMapeoColumna,
 } from '../../models/peajes.models';
 import { PASADA_COLUMNAS_OBLIGATORIAS, PasadaColumnKey } from '../../models/peajes.types';
-import { PeajesMotorTransformacion } from '../../models/peajes-services.contracts';
+import {
+  MapeoColumna,
+  PeajesMotorTransformacion,
+} from '../../models/peajes-services.contracts';
 import {
   AlgorithmDescriptor,
   getAlgorithmDescriptors,
@@ -107,10 +111,12 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
   validarDefinicionPlantilla(
     configuraciones: ConfiguracionPlantilla[],
     columnasDisponibles: string[],
-    algoritmos?: AlgoritmoCombinado[]
+    algoritmos?: AlgoritmoCombinado[],
+    mapeos?: PlantillaMapeoColumna[] | MapeoColumna[]
   ): ErrorValidacionPasada[] {
     const errores: ErrorValidacionPasada[] = [];
     const disponibles = new Set(columnasDisponibles.map((c) => c.toUpperCase()));
+    const mapeosActivos = (mapeos ?? []).filter((m) => !m.excluida && !!m.columnaDestino);
 
     // Órdenes duplicados en el pipeline (sobre todas las configs, incl. deshabilitadas)
     const ordenes = configuraciones.map((c) => c.orden);
@@ -180,19 +186,46 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
       }
     }
 
-    // Destinos obligatorios del Structure Goal presentes en el mapeo
-    const destinos = new Set(
+    // Columnas producidas por el pipeline (válidas como origen de mapeo post-transformación)
+    const producidasPipeline = new Set<string>();
+    for (const c of configuraciones) {
+      if (c.nombre_columna) producidasPipeline.add(c.nombre_columna.toUpperCase());
+      if (c.columna_destino) producidasPipeline.add(c.columna_destino.toUpperCase());
+    }
+
+    // Origen de mapeos activos debe existir en el archivo o ser salida del pipeline
+    for (const m of mapeosActivos) {
+      const origen = m.columnaOrigen;
+      if (
+        !disponibles.has(origen.toUpperCase()) &&
+        !columnasDisponibles.includes(origen) &&
+        !producidasPipeline.has(origen.toUpperCase())
+      ) {
+        errores.push({
+          fila: 0,
+          columna: origen,
+          valor: null,
+          motivo: `La columna de origen «${origen}» (mapeo a ${m.columnaDestino}) no está en el archivo`,
+        });
+      }
+    }
+
+    // Destinos obligatorios: pipeline (`configuraciones`) o snapshot Paso 5 (`mapeos`)
+    const destinosPipeline = new Set(
       configuraciones
         .map((c) => c.columna_destino)
         .filter((d): d is string => !!d)
     );
+    const destinosMapeo = new Set(
+      mapeosActivos.map((m) => m.columnaDestino as string)
+    );
     for (const obl of PASADA_COLUMNAS_OBLIGATORIAS) {
-      const tieneDestino = destinos.has(obl);
+      const tieneDestino = destinosPipeline.has(obl) || destinosMapeo.has(obl);
       const tieneNombre = configuraciones.some(
         (c) => c.nombre_columna === obl || c.columna_destino === obl
       );
       if (!tieneDestino && !tieneNombre) {
-        if (configuraciones.length > 0) {
+        if (configuraciones.length > 0 || mapeosActivos.length > 0) {
           errores.push({
             fila: 0,
             columna: obl,

@@ -1,7 +1,13 @@
+/**
+ * Production. Used by `pnpm build:prod`.
+ * Secrets come from `.env.production` or Netlify NG_APP_* env vars via `scripts/sync-env.mjs`.
+ */
+import { envValues } from './environment.values';
+
 export const environment = {
   production: true,
-  supabaseUrl: 'https://your-project-id.supabase.co',
-  supabaseKey: 'your-supabase-anon-key',
-  apiUrl: 'https://demo.tpteibarra.ar',
-  authToken: 'Bearer tu-token-de-autorizacion-produccion'
+  supabaseUrl: envValues.supabaseUrl,
+  supabaseKey: envValues.supabaseKey,
+  apiUrl: envValues.apiUrl,
+  authToken: envValues.authToken,
 };

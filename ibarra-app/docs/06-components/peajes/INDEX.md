@@ -6,6 +6,8 @@ Documentación de UI y servicios del módulo Peajes implementados en Fase 1 (F02
 
 ## Documentos
 
+| [validacion-carga.md](./validacion-carga.md) | Paso 8: checklist diagnóstico, tolerancia, referencias UUID y errores frontend/backend |
+
 | Documento | Descripción |
 |-----------|-------------|
 | [wizard.md](./wizard.md) | Asistente de carga (pasos 1–9), estado y Excel |

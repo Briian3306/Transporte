@@ -1121,13 +1121,17 @@
       "verification": [
         "Supabase CLI: plantilla_estaciones_reconocidas conserva snapshot, unicidad y cascada",
         "Aplicar plantilla restaura pipeline, mapeos y relaciones; prioridad plantilla antes de alias de empresa",
-        "Sin estaciones o patentes pendientes, el wizard pasa desde Paso 4 a Paso 7; con excepciones abre el paso correspondiente",
+        "validarDefinicionPlantilla acepta mapeos: ESTACION_ID cubierto solo por mapeo no falla (caso AUSOL)",
+        "Sin estaciones o patentes pendientes, el wizard pasa desde Paso 4 a Paso 7; con excepciones abre el paso correspondiente (5 o 6)",
         "Paso 7 recomienda crear plantilla una sola vez y persiste configuraciones, mapeos y estaciones",
         "Ejemplos MVP y Autopistas Urbanas verifican reimportación compatible"
       ],
       "evidence": [
         "2026-08-04: npx tsc --noEmit -p tsconfig.app.json EXIT 0.",
-        "2026-08-04: npm run build -- --configuration=development bloqueado por restricciones de lectura del sandbox; npx supabase db reset --local --no-seed agotó el tiempo del host tras solicitar permisos. Pendiente CLI local operativo para completar evidencia SQL/E2E."
+        "2026-08-04: npm run build -- --configuration=development bloqueado por restricciones de lectura del sandbox; npx supabase db reset --local --no-seed agotó el tiempo del host tras solicitar permisos. Pendiente CLI local operativo para completar evidencia SQL/E2E.",
+        "2026-08-04: Fix AUSOL ESTACION_ID — motor valida mapeos+pipeline; Paso 4 irAExcepcion 5|6; save paths no pisan mapeos incompletos. Specs motor + paso4.",
+        "2026-08-04: node ng.js test --include=**/peajes/plantillas/motor.spec.ts --include=**/peajes/wizard/paso4-plantilla/paso4-plantilla.component.spec.ts --watch=false --browsers=ChromeHeadless → 23 SUCCESS.",
+        "2026-08-04: Paso 1 early apply — PeajesPlantillaApplyService; con plantilla salta a Factura. Specs paso1+paso4 → 6 SUCCESS."
       ]
     },
     {

@@ -46,10 +46,21 @@
   </nav>
 
   <section class="pw__card fade-in" [attr.data-paso]="pasoActual">
-    <app-paso1-carga *ngIf="pasoActual === 1" (completado)="siguiente()" />
+    <app-paso1-carga
+      *ngIf="pasoActual === 1"
+      (completado)="siguiente()"
+      (facturaDirecta)="state.setPaso(7)"
+      (irAExcepcion)="state.setPaso($event)"
+    />
     <app-paso2-preview *ngIf="pasoActual === 2" (completado)="siguiente()" (atras)="atras()" />
     <app-paso3-transformaciones *ngIf="pasoActual === 3" (completado)="siguiente()" (atras)="atras()" />
-    <app-paso4-plantilla *ngIf="pasoActual === 4" (completado)="siguiente()" (facturaDirecta)="state.setPaso(7)" (atras)="atras()" />
+    <app-paso4-plantilla
+      *ngIf="pasoActual === 4"
+      (completado)="siguiente()"
+      (facturaDirecta)="state.setPaso(7)"
+      (irAExcepcion)="state.setPaso($event)"
+      (atras)="atras()"
+    />
     <app-paso5-mapeo *ngIf="pasoActual === 5" (completado)="siguiente()" (atras)="atras()" />
     <app-paso6-estaciones *ngIf="pasoActual === 6" (completado)="siguiente()" (atras)="atras()" />
     <app-paso7-factura *ngIf="pasoActual === 7" (completado)="siguiente()" (atras)="atras()" />

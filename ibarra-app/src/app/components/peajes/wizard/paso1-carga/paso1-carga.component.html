@@ -3,7 +3,10 @@
     <div>
       <div class="pw__eyebrow">Paso 01 · origen y configuración</div>
       <h2>Cargar archivo de pasadas</h2>
-      <p>Subí el Excel y, si coincide con el ejemplo MVP, se preseleccionan columnas y mapeos.</p>
+      <p>
+        Subí el archivo, elegí empresa y plantilla. Si la plantilla es compatible, el asistente
+        aplica mapeos y estaciones y salta a Factura.
+      </p>
     </div>
     <div class="head-actions">
       <span class="pw__status pw__status--valid" *ngIf="meta">Archivo listo</span>
@@ -64,8 +67,11 @@
             <button type="button" class="pw__btn pw__btn--small" (click)="crearEmpresaAbierto = true">+ Crear empresa</button>
             <div class="paso1__template-head">
               <div>
-                <strong>¿Cómo seguir?</strong>
-                <p>Podés usar el fixture del ejemplo MVP o tu propio Excel de <code>docs/plan/csv</code>.</p>
+                <strong>Importación con plantilla</strong>
+                <p>
+                  Con plantilla: Continuar aplica transformaciones, mapeos y estaciones y va a Factura.
+                  Sin plantilla: seguís el wizard desde la previsualización.
+                </p>
               </div>
               <span class="pw__status pw__status--valid" *ngIf="esEjemploMvp">Ejemplo MVP</span>
             </div>
@@ -130,17 +136,33 @@
     </div>
 
     <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+    <div class="pw__alert pw__alert--error" *ngIf="erroresPlantilla.length" role="alert">
+      <div *ngFor="let e of erroresPlantilla">{{ e }}</div>
+    </div>
+    <div class="pw__alert pw__alert--info" *ngIf="info && !erroresPlantilla.length">{{ info }}</div>
     <div class="pw__alert pw__alert--info" *ngIf="cargando">Procesando archivo…</div>
+    <div class="pw__alert pw__alert--info" *ngIf="aplicandoPlantilla">Aplicando plantilla…</div>
   </div>
 
   <div class="pw__footer">
-    <div class="pw__footer-hint">Solo se aceptan archivos .xlsx. Fixture: docs/plan/ejemplo-mvp-procesamiento-pasadas.md</div>
+    <div class="pw__footer-hint">
+      {{
+        plantillaId
+          ? 'Con plantilla seleccionada se omite el detalle del wizard si no hay excepciones.'
+          : 'Solo se aceptan .xlsx/.csv. Sin plantilla: continuar a previsualización.'
+      }}
+    </div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn pw__btn--ghost" *ngIf="!meta" (click)="cargarEjemploMvp()">
         Usar ejemplo MVP
       </button>
-      <button type="button" class="pw__btn pw__btn--primary" [disabled]="!meta || cargando" (click)="continuar()">
-        Continuar
+      <button
+        type="button"
+        class="pw__btn pw__btn--primary"
+        [disabled]="!puedeContinuar"
+        (click)="continuar()"
+      >
+        {{ plantillaId ? 'Aplicar plantilla' : 'Continuar' }}
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </button>
     </div>

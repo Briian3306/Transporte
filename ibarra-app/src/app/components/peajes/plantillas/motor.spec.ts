@@ -124,6 +124,100 @@ describe('peajes/plantillas/motor', () => {
     expect(row['QUANTITY']).toBe(1);
   });
 
+  it('F09: AUSOL-like — ESTACION_ID solo en mapeos no falla validarDefinicionPlantilla', () => {
+    const motor = crearMotor();
+    // Pipeline como AUSOL-V2-08-2026: sin paso con columna_destino ESTACION_ID
+    const configs: ConfiguracionPlantilla[] = [
+      cfg({
+        nombre_columna: 'FECHA',
+        columna_destino: 'FECHA_HORA',
+        orden: 10,
+        configuracion: {
+          algoritmo_codigo: 'COMBINAR_COLUMNAS',
+          columnas_entrada: ['FECHA', 'HORA'],
+          separador: ' ',
+        },
+      }),
+      cfg({
+        nombre_columna: 'DISPOSITIVO',
+        columna_destino: 'PASE_ID',
+        orden: 20,
+        configuracion: { algoritmo_codigo: 'COPIAR_COLUMNA', columna: 'DISPOSITIVO' },
+      }),
+      cfg({
+        nombre_columna: 'PATENTE',
+        columna_destino: 'PATENTE_ID',
+        orden: 30,
+        configuracion: { algoritmo_codigo: 'BORRAR_ESPACIOS', columna: 'PATENTE' },
+      }),
+      cfg({
+        nombre_columna: 'QUANTITY',
+        columna_destino: 'QUANTITY',
+        orden: 40,
+        configuracion: { algoritmo_codigo: 'ASIGNAR_VALOR', valor: 1 },
+      }),
+      cfg({
+        nombre_columna: 'TARIFA',
+        columna_destino: 'PRECIO',
+        orden: 50,
+        configuracion: { algoritmo_codigo: 'CONVERTIR_NUMERO', columna: 'TARIFA' },
+      }),
+      cfg({
+        nombre_columna: 'BONIFICACION',
+        columna_destino: 'BONIFICACION',
+        orden: 60,
+        configuracion: { algoritmo_codigo: 'CONVERTIR_NUMERO', columna: 'BONIFICACION' },
+      }),
+      cfg({
+        nombre_columna: 'IMPORTE_NETO',
+        columna_destino: 'IMPORTE_NETO',
+        orden: 70,
+        configuracion: {
+          algoritmo_codigo: 'CALCULAR_IMPORTE_NETO',
+          precio_columna: 'TARIFA',
+          bonificacion_columna: 'BONIFICACION',
+        },
+      }),
+    ];
+    const columnas = ['FECHA', 'HORA', 'ESTACION', 'DISPOSITIVO', 'PATENTE', 'TARIFA', 'BONIFICACION'];
+    const errsSinMapeo = motor.validarDefinicionPlantilla(configs, columnas);
+    expect(errsSinMapeo.some((e) => e.columna === 'ESTACION_ID')).toBeTrue();
+
+    const mapeos = [
+      { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID' as const, excluida: false },
+      { columnaOrigen: 'FECHA_HORA', columnaDestino: 'FECHA_HORA' as const, excluida: false },
+      { columnaOrigen: 'PASE_ID', columnaDestino: 'PASE_ID' as const, excluida: false },
+      { columnaOrigen: 'PATENTE', columnaDestino: 'PATENTE_ID' as const, excluida: false },
+      { columnaOrigen: 'PRECIO', columnaDestino: 'PRECIO' as const, excluida: false },
+      { columnaOrigen: 'BONIFICACION', columnaDestino: 'BONIFICACION' as const, excluida: false },
+      { columnaOrigen: 'QUANTITY', columnaDestino: 'QUANTITY' as const, excluida: false },
+      { columnaOrigen: 'IMPORTE_NETO', columnaDestino: 'IMPORTE_NETO' as const, excluida: false },
+    ];
+    const errs = motor.validarDefinicionPlantilla(configs, columnas, undefined, mapeos);
+    expect(errs.filter((e) => /obligatoria no mapeada/i.test(e.motivo))).toEqual([]);
+  });
+
+  it('F09: mapeo activo con origen ausente del archivo reporta error claro', () => {
+    const motor = crearMotor();
+    const configs: ConfiguracionPlantilla[] = [
+      cfg({
+        nombre_columna: 'QUANTITY',
+        columna_destino: 'QUANTITY',
+        orden: 10,
+        configuracion: { algoritmo_codigo: 'ASIGNAR_VALOR', valor: 1 },
+      }),
+    ];
+    const mapeos = [
+      { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID' as const, excluida: false },
+    ];
+    const errs = motor.validarDefinicionPlantilla(configs, ['FECHA', 'PATENTE'], undefined, mapeos);
+    expect(
+      errs.some((e) =>
+        /columna de origen «ESTACION» \(mapeo a ESTACION_ID\) no está en el archivo/i.test(e.motivo)
+      )
+    ).toBeTrue();
+  });
+
   it('reproduce FECHA_HORA, PATENTE_ID, PASE_ID, IMPORTE_NETO del caso §21', () => {
     const motor = crearMotor();
     const filas = motor.aplicarPipeline(

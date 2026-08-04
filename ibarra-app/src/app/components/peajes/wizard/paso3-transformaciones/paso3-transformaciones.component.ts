@@ -669,13 +669,24 @@ export class Paso3TransformacionesComponent implements OnInit {
       estado: (snap.plantillaMeta?.estado as PlantillaConfiguracion['estado']) || 'borrador',
     };
 
+    // No pisar mapeos/estaciones ya guardados si el wizard aún no completó Pasos 5–6.
+    const tieneMapeosUtiles = snap.mapeos.some((m) => !m.excluida && !!m.columnaDestino);
+    const relaciones = snap.relacionesEstacion
+      .filter((r) => !!r.estacionId)
+      .map((r) => ({
+        estacion_id: r.estacionId!,
+        valor_proveedor: r.valorProveedor,
+        valor_normalizado: r.valorProveedor.trim().toUpperCase(),
+        origen: 'plantilla' as const,
+      }));
+    const mapeosArg = existingId && !tieneMapeosUtiles ? undefined : snap.mapeos;
+    const estacionesArg = existingId && !relaciones.length ? undefined : relaciones;
+
     this.guardando = true;
     this.errorMsg = '';
     try {
       const saved = await firstValueFrom(
-        this.plantillasSvc.guardarPlantilla(meta, configsOmit, snap.mapeos, snap.relacionesEstacion
-          .filter((r) => !!r.estacionId)
-          .map((r) => ({ estacion_id: r.estacionId!, valor_proveedor: r.valorProveedor, valor_normalizado: r.valorProveedor.trim().toUpperCase(), origen: 'plantilla' as const })))
+        this.plantillasSvc.guardarPlantilla(meta, configsOmit, mapeosArg, estacionesArg)
       );
       await firstValueFrom(
         this.plantillasSvc.sobrescribirConfiguraciones(saved.id, configsOmit)

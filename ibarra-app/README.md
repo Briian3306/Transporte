@@ -33,16 +33,16 @@ Sistema de gestión de checklists dinámicos desarrollado con Angular y Supabase
 
 3. **Configurar variables de entorno**
    
-   Edita los archivos en `src/environments/`:
+   Copy `.env.example` and fill secrets (never commit real values):
    
-   ```typescript
-   // src/environments/environment.ts
-   export const environment = {
-     production: false,
-     supabaseUrl: 'https://tu-proyecto.supabase.co',
-     supabaseKey: 'tu-clave-anonima-de-supabase'
-   };
+   ```bash
+   cp .env.example .env.development   # pnpm start  (DESARROLLO remote)
+   cp .env.example .env.local         # pnpm dev    (Supabase CLI)
+   cp .env.example .env.production    # pnpm build:prod / Netlify
    ```
+   
+   Required keys: `NG_APP_SUPABASE_URL`, `NG_APP_SUPABASE_KEY`, `NG_APP_API_URL`, `NG_APP_AUTH_TOKEN`.
+   Scripts run `node scripts/sync-env.mjs` before serve/build.
 
 4. **Configurar base de datos Supabase**
    

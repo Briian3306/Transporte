@@ -88,7 +88,7 @@ Transporte/
     │   ├── directives/       # Permisos en UI
     │   ├── app.routes.ts     # Rutas + PermissionGuard
     │   └── app.config.ts
-    ├── src/environments/     # supabaseUrl / supabaseKey / apiUrl
+    ├── src/environments/     # thin wrappers; secrets from .env.* via scripts/sync-env.mjs
     ├── supabase/migrations/  # SQL incremental de módulos
     └── docs/plan/            # PRD peajes y ejemplos MVP
 ```
@@ -164,7 +164,7 @@ El MVP es un wizard: upload `.xlsx` → preview 10 filas → transformaciones �
 ## Seguridad (obligatorio)
 
 - **No** commitear ni pegar en chat claves reales, tokens de API ni service role de Supabase.
-- `src/environments/environment*.ts` contienen credenciales de cliente; no ampliar exposición (no loguear keys, no copiarlas a docs).
+- Secrets live in gitignored `.env.development` / `.env.local` / `.env.production` (see `.env.example`). Do not hardcode keys in `environment*.ts` or docs. Anon keys still ship in the browser bundle — never put service role in the frontend.
 - Preferir anon key + RLS; no usar service role en el frontend.
 - No debilitar guards ni políticas RLS “para probar” en código que se vaya a commitear.
 

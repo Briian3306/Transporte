@@ -8,12 +8,13 @@ import {
   ConfiguracionPlantilla,
   Empresa,
   PlantillaConfiguracion,
+  PlantillaMapeoColumna,
   PEAJES_CATALOGO_SERVICE,
   PEAJES_PLANTILLAS_SERVICE,
   PeajesCatalogoService,
   PeajesPlantillasService,
 } from '../models';
-import { EstadoRecursoPeaje, PASADA_COLUMN_KEYS } from '../models/peajes.types';
+import { EstadoRecursoPeaje, PASADA_COLUMN_KEYS, PasadaColumnKey } from '../models/peajes.types';
 import { PeajesMotorTransformacionService } from './motor/peajes-motor-transformacion.service';
 import { PeajesWizardStateService } from '../wizard/services/peajes-wizard-state.service';
 import {
@@ -223,11 +224,12 @@ export class PlantillaBuilderComponent implements OnInit {
     };
 
     const configsOmit = configs.map(({ id: _id, plantilla_id: _p, ...rest }) => rest);
+    const mapeos = this.mapeosParaPersistir(configs);
 
     if (this.plantillaId) {
       // F03-3: sobrescritura controlada en una sola operaci?n
       this.plantillasSvc
-        .guardarPlantilla(meta, configsOmit)
+        .guardarPlantilla(meta, configsOmit, mapeos)
         .subscribe({
           next: (saved) => {
             this.plantillasSvc
@@ -251,7 +253,7 @@ export class PlantillaBuilderComponent implements OnInit {
           },
         });
     } else {
-      this.plantillasSvc.guardarPlantilla(meta, configsOmit).subscribe({
+      this.plantillasSvc.guardarPlantilla(meta, configsOmit, mapeos).subscribe({
         next: (saved) => {
           this.plantillaId = saved.id;
           this.guardando = false;
@@ -263,6 +265,34 @@ export class PlantillaBuilderComponent implements OnInit {
         },
       });
     }
+  }
+
+  /**
+   * Prefer wizard mapeos; otherwise derive from configs with columna_destino.
+   * On update with neither, return undefined so RPC preserves the stored snapshot.
+   */
+  private mapeosParaPersistir(
+    configs: ConfiguracionPlantilla[]
+  ): PlantillaMapeoColumna[] | undefined {
+    const wizardMapeos = this.wizardState
+      .snapshot()
+      .mapeos.filter((m) => !m.excluida && !!m.columnaDestino);
+    if (wizardMapeos.length) {
+      return wizardMapeos.map((m) => ({
+        columnaOrigen: m.columnaOrigen,
+        columnaDestino: m.columnaDestino,
+        excluida: m.excluida,
+      }));
+    }
+    const derived = configs
+      .filter((c) => !!c.columna_destino)
+      .map((c) => ({
+        columnaOrigen: c.nombre_columna,
+        columnaDestino: c.columna_destino as PasadaColumnKey,
+        excluida: false,
+      }));
+    if (derived.length) return derived;
+    return this.plantillaId ? undefined : [];
   }
 
   private buildPayload(): {

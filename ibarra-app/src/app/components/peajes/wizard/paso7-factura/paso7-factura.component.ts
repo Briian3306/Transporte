@@ -103,6 +103,12 @@ export class Paso7FacturaComponent implements OnInit {
     const configuraciones = this.state.toConfiguracionesPlantilla().map(
       ({ id: _id, plantilla_id: _plantillaId, ...config }) => config
     ) as Omit<ConfiguracionPlantilla, 'id' | 'plantilla_id'>[];
+    // Snapshot canónico: mapeos activos del Paso 5 + relaciones confirmadas del Paso 6.
+    const mapeos = snap.mapeos.map((m) => ({
+      columnaOrigen: m.columnaOrigen,
+      columnaDestino: m.columnaDestino,
+      excluida: m.excluida,
+    }));
     const relaciones = snap.relacionesEstacion
       .filter((r) => !!r.estacionId)
       .map((r) => ({
@@ -117,7 +123,7 @@ export class Paso7FacturaComponent implements OnInit {
       const saved = await firstValueFrom(this.plantillas.guardarPlantilla(
         { nombre, descripcion: 'Creada desde el wizard de importación.', empresa_id: snap.empresaId, estado: 'activa' },
         configuraciones,
-        snap.mapeos,
+        mapeos,
         relaciones
       ));
       this.state.setPlantillaMeta({ id: saved.id, nombre: saved.nombre, descripcion: saved.descripcion ?? null, empresa_id: saved.empresa_id, estado: saved.estado });

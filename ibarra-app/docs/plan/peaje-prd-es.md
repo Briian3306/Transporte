@@ -232,12 +232,24 @@ Resultado:
 El usuario podrá:
 
 * Seleccionar una plantilla existente.
-* Aplicar automáticamente sus transformaciones.
+* Aplicar automáticamente sus transformaciones, relaciones de columnas (`mapeos`) y reconocimientos de estación guardados en la plantilla.
 * Revisar la compatibilidad de las columnas.
 * Modificar la plantilla aplicada.
 * Continuar sin utilizar una plantilla.
 
-Si el sistema detecta que faltan columnas requeridas por la plantilla, deberá informar el problema antes de aplicarla.
+Si el sistema detecta que faltan columnas requeridas por la plantilla (en el pipeline o en el origen de un mapeo activo), deberá informar el problema antes de aplicarla y no avanzar.
+
+#### Flujo recurrente con plantilla completa
+
+Cuando la plantilla asociada a la empresa ya contiene la configuración completa de importación, el flujo esperado es:
+
+1. Subir el archivo CSV o Excel (Paso 1).
+2. Seleccionar la empresa y la plantilla en el mismo Paso 1.
+3. Al continuar, aplicar automáticamente: transformaciones, mapeos de columnas y reconocimiento de estaciones.
+4. Si no quedan excepciones (columnas faltantes, estaciones nuevas o patentes fuera de catálogo), el asistente omite los Pasos 2–6 e ingresa directamente al **Paso 7 — Factura**.
+5. Completar la factura, validar e importar.
+
+Si no se elige plantilla en Paso 1, el asistente sigue el flujo guiado (preview → transformaciones → plantilla opcional en Paso 4). Si algo cambió respecto de cuando se creó la plantilla (por ejemplo, falta una columna de origen mapeada a `ESTACION_ID`), el sistema se detiene con un mensaje claro y abre el paso que corresponde corregir (Paso 5 para mapeos/patentes, Paso 6 para estaciones).
 
 ### Paso 5 — Relacionar columnas
 
@@ -501,13 +513,15 @@ Cada plantilla podrá contener:
 * Columnas seleccionadas.
 * Transformaciones.
 * Orden de ejecución.
-* Relaciones de columnas.
-* Relaciones con peajes.
+* Relaciones de columnas (snapshot del Paso 5, incluyendo campos que no pasan por un algoritmo del pipeline, p. ej. `ESTACION` → `ESTACION_ID`).
+* Relaciones con peajes / estaciones reconocidas (snapshot del Paso 6).
 * Reglas de validación.
 * Fecha de creación.
 * Fecha de modificación.
 
-Para la construcción dinámica de plantillas se recomienda utilizar el patrón **Builder**.
+Una plantilla es reproducible: al aplicarla sobre un archivo compatible debe restaurar pipeline, mapeos y estaciones. El destino Structure Goal puede cubrirse por un paso de `configuraciones_plantilla` **o** por un mapeo activo en `plantillas_configuracion.mapeos`; la validación de plantilla debe considerar ambos.
+
+Para la construcción dinámica de plantillas se recomienda utilizar el patrón **Builder**. El guardado canónico desde el wizard (Paso 7) persiste pipeline + mapeos + estaciones en una sola operación.
 
 #### 7.4.1 Modelo de configuración persistente
 
@@ -520,6 +534,8 @@ Cada plantilla deberá guardar como mínimo:
 * Proveedor o estrategia de origen, cuando corresponda.
 * Fecha de creación y actualización.
 * Usuario que la creó o publicó, cuando exista autenticación.
+* Snapshot de relaciones de columnas (`mapeos` jsonb).
+* Snapshot de estaciones reconocidas (`plantilla_estaciones_reconocidas`).
 
 Cada configuración de una plantilla deberá vincular `nombre_columna`, campo estandarizado de destino, `orden` de ejecución, tipo de configuración, parámetros declarativos en `jsonb`, obligatoriedad y comportamiento ante error. Podrá referenciar un `algoritmo_combinado_id` cuando el paso utilice una secuencia reutilizable.
 

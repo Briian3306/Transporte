@@ -8,6 +8,7 @@ import {
   PeajesCatalogoService,
 } from '../models';
 import { PeajesWizardStateService, WizardPasoId } from './services/peajes-wizard-state.service';
+import { PeajesPlantillaApplyService } from './services/peajes-plantilla-apply.service';
 import { Paso1CargaComponent } from './paso1-carga/paso1-carga.component';
 import { Paso2PreviewComponent } from './paso2-preview/paso2-preview.component';
 import { Paso3TransformacionesComponent } from './paso3-transformaciones/paso3-transformaciones.component';
@@ -53,7 +54,7 @@ const PASOS: PasoMeta[] = [
     Paso8ValidacionComponent,
     Paso9RevisionComponent,
   ],
-  providers: PEAJES_SUPABASE_PROVIDERS,
+  providers: [...PEAJES_SUPABASE_PROVIDERS, PeajesPlantillaApplyService],
   templateUrl: './peajes-wizard.component.html',
   styleUrl: './peajes-wizard.component.css',
   // Los pasos son componentes standalone: el shell provee el kit .pw__* para todos sus hijos.

@@ -12,6 +12,8 @@ El wizard conserva estado, muestra preview de hasta 10 filas, recomienda columna
 
 ## Estructura
 
+La validación diagnóstica, los errores de RPC y la conciliación de subtotal se documentan en [validacion-carga.md](../06-components/peajes/validacion-carga.md).
+
 - `src/app/components/peajes/wizard`: carga y flujo de importación.
 - `catalogos`: empresas, peajes, estaciones, patentes y pases.
 - `plantillas`: Builder/Strategy, algoritmos combinados y motor.

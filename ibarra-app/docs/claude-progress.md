@@ -10,7 +10,11 @@
 
 ## Estado actual
 
-Fecha: 2026-08-04 — **Shared `app-dialog`**: Paso 6 «Ninguna coincide» / crear estación en modal; Paso 1 crear empresa migrado al mismo dialog.
+Fecha: 2026-08-04 — **F09 early skip from Paso 1**: con archivo+empresa+plantilla, `PeajesPlantillaApplyService` aplica y salta a Factura (o 5/6). Paso 4 reutiliza el mismo servicio.
+
+Fecha previa: 2026-08-04 — **F09 plantilla restore**: `validarDefinicionPlantilla` acepta `mapeos` (cubre `ESTACION_ID` sin paso de pipeline; caso AUSOL-V2-08-2026). Paso 4 restaura mapeos/estaciones, salta a Factura o `irAExcepcion` 5|6. Saves Paso 3/builder no pisan snapshot incompleto. PRD §4/§7.4 + wizard/estaciones docs.
+
+Fecha previa: 2026-08-04 — **Shared `app-dialog`**: Paso 6 «Ninguna coincide» / crear estación en modal; Paso 1 crear empresa migrado al mismo dialog.
 
 Fecha previa: 2026-08-04 — **Bloqueo CLI post `db reset`:** `GET …/auth/v1/user` **403** → no se pueden crear patentes en Paso 5 (`pnpm dev`). Mitigación: `seed:local` + re-login (ver sesión abajo). Paso 7 factura UX ya entregado.
 
@@ -73,6 +77,18 @@ Decisiones vigentes:
 F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `passing` (2026-08-03). **F02-12/13/14** `passing` (2026-08-04). **F02-15** + **F02-16** `passing` (2026-08-04).
 
 ## Registro de sesiones
+
+### 2026-08-04 — F09 fix: restore mapeos (AUSOL ESTACION_ID)
+
+- Causa: `validarDefinicionPlantilla` solo miraba `configuraciones`; AUSOL guarda `ESTACION→ESTACION_ID` en `mapeos`.
+- Fix: motor acepta `mapeos`; Paso 4 los pasa, restaura snapshot, `facturaDirecta` o `irAExcepcion` 5|6; saves no pisan mapeos incompletos.
+- Docs: PRD §4/§7.4, wizard.md, reconocimiento-estaciones.md. Specs en `motor.spec.ts` + `paso4-plantilla.component.spec.ts`.
+
+### 2026-08-04 — Documentación de validación diagnóstica
+
+- Se agregó `docs/06-components/peajes/validacion-carga.md` como referencia canónica de controles, errores, acciones correctivas y detalles técnicos del Paso 8.
+- Documenta la resolución de códigos de proveedor a UUID, la tolerancia de subtotal de $5,00 y el uso del neto declarado cuando los descuentos no se desglosan por fila.
+- Se enlazó desde el índice de componentes, la guía del wizard y el módulo Peajes.
 
 ### 2026-08-04 — F09 Plantillas recurrentes y reconocimiento de estaciones
 

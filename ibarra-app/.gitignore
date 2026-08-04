@@ -37,6 +37,12 @@ yarn-error.log
 testem.log
 /typings
 
+# Environment secrets (keep .env.example committed)
+.env
+.env.*
+!.env.example
+src/environments/environment.values.ts
+
 # System files
 .DS_Store
 Thumbs.db

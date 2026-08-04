@@ -49,7 +49,9 @@ Al crearla, la plantilla guarda configuraciones del pipeline, mapeos del Paso 5 
 
 En una carga posterior, la prioridad de resolución es: relación de plantilla → alias confirmado de empresa en `estaciones_alias_proveedor` → coincidencia exacta o sugerencia. El alias por empresa se conserva para importaciones sin plantilla.
 
-Si el archivo es compatible y no hay estaciones ambiguas/nuevas ni patentes fuera del catálogo, el wizard salta desde Paso 4 directamente a Paso 7. Cualquier excepción mantiene al usuario en Paso 5 o Paso 6, según corresponda.
+Si el archivo es compatible y no hay estaciones ambiguas/nuevas ni patentes fuera del catálogo, el wizard salta desde Paso 4 directamente a Paso 7. Cualquier excepción abre el paso que corresponda (`irAExcepcion`: Paso 5 para mapeos/patentes, Paso 6 para estaciones).
+
+`validarDefinicionPlantilla` acepta el snapshot `mapeos`: un destino obligatorio como `ESTACION_ID` puede cubrirse solo por mapeo (sin paso de pipeline). Si el origen del mapeo (p. ej. `ESTACION`) no está en el archivo ni es salida del pipeline, se informa el error antes de aplicar.
 
 ## Archivos
 

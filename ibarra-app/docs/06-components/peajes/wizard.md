@@ -34,13 +34,13 @@
 
 | # | Label | Componente | Notas |
 |---|-------|------------|-------|
-| 1 | Carga | `paso1-carga` | Upload `.xlsx` |
+| 1 | Carga | `paso1-carga` | Upload `.xlsx`/`.csv` + empresa + plantilla. Con plantilla compatible → `facturaDirecta` Paso 7; excepciones → Paso 5/6; sin plantilla → Paso 2 |
 | 2 | Preview | `paso2-preview` | Máx. 10 filas (RNF-03). Rail de recomendaciones semánticas (F02-11). Por defecto solo columnas reconocidas quedan incluidas (F02-12): ver [reconocimiento-columnas.md](./reconocimiento-columnas.md) |
 | 3 | Transformaciones | `paso3-transformaciones` | Motor 03 |
-| 4 | Plantilla | `paso4-plantilla` | Selección/aplicación plantilla |
+| 4 | Plantilla | `paso4-plantilla` | Aplica pipeline + `mapeos` + estaciones (F09). Sin excepciones → `facturaDirecta` Paso 7; si no, `irAExcepcion` 5 o 6 |
 | 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal. Patentes sin catálogo: [patentes-sin-resolver.md](./patentes-sin-resolver.md) (F02-14) |
 | 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación; alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13) |
-| 7 | Factura | `paso7-factura` | Cuenta opcional; subtotal, percepciones, IVA y total declarados; empresa SMS single (Paso 1); fecha DRP single |
+| 7 | Factura | `paso7-factura` | Cuenta opcional; subtotal, percepciones, IVA y total declarados; empresa SMS single (Paso 1); fecha DRP single. Recomienda crear plantilla completa (pipeline+mapeos+estaciones) |
 | 8 | Validación | `paso8-validacion` | Errores fila/columna/valor/motivo y diferencia neto de factura vs. pasadas |
 | 9 | Revisión | `paso9-revision` | Confirmación de carga |
 
@@ -48,7 +48,15 @@
 
 ## Estado (RF-25)
 
+> Para controles, errores técnicos y el criterio de avance del Paso 8, consultar [validacion-carga.md](./validacion-carga.md).
+
 `PeajesWizardStateService` mantiene el paso actual y datos intermedios del flujo (archivo, preview, mapeos, relaciones, factura, resultado de validación).
+
+### Plantillas recurrentes (F09)
+
+En **Paso 1**, si hay archivo + empresa + plantilla, `PeajesPlantillaApplyService` aplica pipeline/mapeos/estaciones al Continuar: sin excepciones → Paso 7; con excepciones → Paso 5 o 6; sin plantilla → Paso 2.
+
+En Paso 4 (flujo sin plantilla temprana) se reutiliza el mismo servicio. `validarDefinicionPlantilla` considera destinos del pipeline **o** `mapeos` activos. Detalle: [reconocimiento-estaciones.md](./reconocimiento-estaciones.md) y PRD §4 / §7.4.
 
 ### Factura, percepciones, IVA y tolerancia
 

@@ -1,24 +1,19 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { Paso4PlantillaComponent } from './paso4-plantilla.component';
+import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+import { PeajesPlantillaApplyService } from '../services/peajes-plantilla-apply.service';
 import {
   PEAJES_CATALOGO_SERVICE,
   PEAJES_PLANTILLAS_SERVICE,
-  PeajesCatalogoService,
-  PeajesPlantillasService,
   PlantillaConfiguracion,
 } from '../../models';
-import { Paso1CargaComponent } from './paso1-carga.component';
-import { PeajesExcelService } from '../services/peajes-excel.service';
-import { PeajesPlantillaApplyService } from '../services/peajes-plantilla-apply.service';
-import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 
-describe('Paso1CargaComponent', () => {
-  let fixture: ComponentFixture<Paso1CargaComponent>;
-  let component: Paso1CargaComponent;
-  let excel: jasmine.SpyObj<PeajesExcelService>;
+describe('Paso4PlantillaComponent F09', () => {
+  let fixture: ComponentFixture<Paso4PlantillaComponent>;
+  let component: Paso4PlantillaComponent;
   let state: PeajesWizardStateService;
-  let plantillasMock: jasmine.SpyObj<PeajesPlantillasService>;
-  let catalogoMock: jasmine.SpyObj<PeajesCatalogoService>;
+  let plantillaActual: PlantillaConfiguracion;
 
   const estacionId = 'est-campana';
   const patenteId = 'pat-ae751pa';
@@ -138,111 +133,36 @@ describe('Paso1CargaComponent', () => {
   };
 
   beforeEach(async () => {
-    excel = jasmine.createSpyObj('PeajesExcelService', ['esArchivoValido', 'parsearArchivo']);
-    plantillasMock = jasmine.createSpyObj<PeajesPlantillasService>('PeajesPlantillasService', [
-      'listarPlantillas',
-      'obtenerPlantilla',
-      'guardarPlantilla',
-      'sobrescribirConfiguraciones',
-      'listarAlgoritmos',
-      'guardarAlgoritmo',
-      'expandirAlgoritmo',
-    ]);
-    plantillasMock.listarPlantillas.and.returnValue(of([plantillaAusolLike]));
-    plantillasMock.obtenerPlantilla.and.returnValue(of(plantillaAusolLike));
-    plantillasMock.listarAlgoritmos.and.returnValue(of([]));
-
-    catalogoMock = jasmine.createSpyObj<PeajesCatalogoService>('PeajesCatalogoService', [
-      'listarEmpresas',
-      'crearEmpresa',
-      'listarEstaciones',
-      'listarPatentes',
-    ]);
-    catalogoMock.listarEmpresas.and.returnValue(of([{ id: 'emp-1', nombre: 'Ausol' }]));
-    catalogoMock.listarEstaciones.and.returnValue(
-      of([{ id: estacionId, nombre: 'Campana', peaje_id: 'peaje-1', codigos_proveedor: ['CAMPANA'] }])
-    );
-    catalogoMock.listarPatentes.and.returnValue(
-      of([{ id: patenteId, patente: 'AE751PA', categoria: 'TRANSPORTE' }])
-    );
+    plantillaActual = structuredClone(plantillaAusolLike);
 
     await TestBed.configureTestingModule({
-      imports: [Paso1CargaComponent],
+      imports: [Paso4PlantillaComponent],
       providers: [
         PeajesWizardStateService,
         PeajesPlantillaApplyService,
-        { provide: PeajesExcelService, useValue: excel },
-        { provide: PEAJES_PLANTILLAS_SERVICE, useValue: plantillasMock },
-        { provide: PEAJES_CATALOGO_SERVICE, useValue: catalogoMock },
+        {
+          provide: PEAJES_PLANTILLAS_SERVICE,
+          useValue: {
+            listarPlantillas: () => of([plantillaAusolLike]),
+            obtenerPlantilla: () => of(plantillaActual),
+            listarAlgoritmos: () => of([]),
+          },
+        },
+        {
+          provide: PEAJES_CATALOGO_SERVICE,
+          useValue: {
+            listarEstaciones: () =>
+              of([{ id: estacionId, nombre: 'Campana', peaje_id: 'peaje-1', codigos_proveedor: ['CAMPANA'] }]),
+            listarPatentes: () =>
+              of([{ id: patenteId, patente: 'AE751PA', categoria: 'TRANSPORTE' }]),
+          },
+        },
       ],
     }).compileComponents();
 
     state = TestBed.inject(PeajesWizardStateService);
     state.reiniciar();
-    fixture = TestBed.createComponent(Paso1CargaComponent);
-    component = fixture.componentInstance;
-    await component.ngOnInit();
-    fixture.detectChanges();
-  });
-
-  it('muestra error si el archivo no es .xlsx ni .csv', async () => {
-    excel.esArchivoValido.and.returnValue(false);
-    const file = new File(['x'], 'pasadas.csv', { type: 'text/csv' });
-    await component.procesar(file);
-    fixture.detectChanges();
-    expect(component.error).toContain('.csv');
-    expect(fixture.nativeElement.textContent).toContain('.csv');
-  });
-
-  it('muestra nombre, tamaño y filas con .xlsx válido', async () => {
-    excel.esArchivoValido.and.returnValue(true);
-    excel.parsearArchivo.and.resolveTo({
-      nombreArchivo: 'pasadas_junio_2026.xlsx',
-      tamanioBytes: 4096,
-      totalFilas: 10,
-      columnas: ['FECHA', 'HORA'],
-      filasPreview: [{ FECHA: '25/06/2026', HORA: '205005' }],
-      filasOrigen: [{ FECHA: '25/06/2026', HORA: '205005' }],
-      tiposInferidos: { FECHA: 'fecha', HORA: 'texto' },
-    });
-
-    const file = new File(['dummy'], 'pasadas_junio_2026.xlsx', {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    });
-    await component.procesar(file);
-    fixture.detectChanges();
-
-    const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('pasadas_junio_2026.xlsx');
-    expect(text).toMatch(/4[,.]?096/);
-    expect(text).toContain('10');
-    expect(component.error).toBeNull();
-  });
-
-  it('sin plantilla emite completado (Paso 2)', async () => {
-    state.setPreview({
-      nombreArchivo: 'a.csv',
-      tamanioBytes: 1,
-      totalFilas: 1,
-      columnas: ['FECHA'],
-      filasPreview: [{ FECHA: '1' }],
-      filasOrigen: [{ FECHA: '1' }],
-      tiposInferidos: {},
-    });
-    component.empresaId = 'emp-1';
-    component.plantillaId = '';
-    const completado = jasmine.createSpy('completado');
-    const factura = jasmine.createSpy('factura');
-    component.completado.subscribe(completado);
-    component.facturaDirecta.subscribe(factura);
-
-    await component.continuar();
-
-    expect(completado).toHaveBeenCalled();
-    expect(factura).not.toHaveBeenCalled();
-  });
-
-  it('con plantilla compatible emite facturaDirecta (Paso 7)', async () => {
+    state.setEmpresaId('emp-1');
     state.setPreview({
       nombreArchivo: '557074.csv',
       tamanioBytes: 100,
@@ -272,22 +192,42 @@ describe('Paso1CargaComponent', () => {
       ],
       tiposInferidos: {},
     });
-    component.empresaId = 'emp-1';
-    component.plantillaId = plantillaAusolLike.id;
 
-    const completado = jasmine.createSpy('completado');
-    const factura = jasmine.createSpy('factura');
-    const excepcion = jasmine.createSpy('excepcion');
-    component.completado.subscribe(completado);
-    component.facturaDirecta.subscribe(factura);
-    component.irAExcepcion.subscribe(excepcion);
+    fixture = TestBed.createComponent(Paso4PlantillaComponent);
+    component = fixture.componentInstance;
+    await component.ngOnInit();
+    fixture.detectChanges();
+  });
+
+  it('aplica plantilla AUSOL-like sin error ESTACION_ID y emite facturaDirecta', async () => {
+    component.plantillaId = plantillaAusolLike.id;
+    const facturaSpy = jasmine.createSpy('facturaDirecta');
+    const excepcionSpy = jasmine.createSpy('irAExcepcion');
+    component.facturaDirecta.subscribe(facturaSpy);
+    component.irAExcepcion.subscribe(excepcionSpy);
 
     await component.continuar();
 
-    expect(component.erroresPlantilla).toEqual([]);
-    expect(factura).toHaveBeenCalled();
-    expect(completado).not.toHaveBeenCalled();
-    expect(excepcion).not.toHaveBeenCalled();
-    expect(state.snapshot().plantillaId).toBe(plantillaAusolLike.id);
+    expect(component.errores).toEqual([]);
+    expect(state.mapeosActivos().some((m) => m.columnaDestino === 'ESTACION_ID')).toBeTrue();
+    expect(state.snapshot().relacionesEstacion[0]?.estacionId).toBe(estacionId);
+    expect(facturaSpy).toHaveBeenCalled();
+    expect(excepcionSpy).not.toHaveBeenCalled();
+  });
+
+  it('con estación desconocida emite irAExcepcion Paso 6', async () => {
+    plantillaActual = { ...plantillaAusolLike, estaciones_reconocidas: [] };
+
+    component.plantillaId = plantillaAusolLike.id;
+    const facturaSpy = jasmine.createSpy('facturaDirecta');
+    const excepcionSpy = jasmine.createSpy('irAExcepcion');
+    component.facturaDirecta.subscribe(facturaSpy);
+    component.irAExcepcion.subscribe(excepcionSpy);
+
+    await component.continuar();
+
+    expect(component.errores).toEqual([]);
+    expect(facturaSpy).not.toHaveBeenCalled();
+    expect(excepcionSpy).toHaveBeenCalledWith(6);
   });
 });

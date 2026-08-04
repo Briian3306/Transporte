@@ -762,8 +762,10 @@ export class PeajesWizardStateService {
       this.state.relacionesEstacion.map((r) => [String(r.valorProveedor), r.estacionId])
     );
 
+    // Draft Paso 3 o plantilla aplicada (Paso 4): reutilizar salida del motor.
     const preferMotor =
-      this.state.configuracionesDraft.length > 0 && this.state.pasadasEstandarizadas.length > 0;
+      this.state.pasadasEstandarizadas.length > 0 &&
+      (this.state.configuracionesDraft.length > 0 || !!this.state.plantillaId);
 
     let rows: PasadaEstandarizada[];
 

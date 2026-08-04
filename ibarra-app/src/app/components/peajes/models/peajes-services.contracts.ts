@@ -199,9 +199,15 @@ export interface PeajesMotorTransformacion {
     configuraciones: ConfiguracionPlantilla[],
     algoritmos?: AlgoritmoCombinado[]
   ): PasadaEstandarizada[];
+  /**
+   * Valida pipeline + (opcional) snapshot de mapeos del Paso 5.
+   * Un destino Structure Goal puede cubrirse por `configuraciones` o por `mapeos` activos.
+   */
   validarDefinicionPlantilla(
     configuraciones: ConfiguracionPlantilla[],
-    columnasDisponibles: string[]
+    columnasDisponibles: string[],
+    algoritmos?: AlgoritmoCombinado[],
+    mapeos?: PlantillaMapeoColumna[] | MapeoColumna[]
   ): ErrorValidacionPasada[];
 }
 

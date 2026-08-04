@@ -80,7 +80,7 @@ describe('Paso8ValidacionComponent', () => {
   });
 
   it('resuelve el código de dispositivo del proveedor al UUID de pase del catálogo', async () => {
-    const catalogo = TestBed.inject(PEAJES_CATALOGO_SERVICE) as PeajesCatalogoMockService;
+    const catalogo = TestBed.inject(PEAJES_CATALOGO_SERVICE as never) as PeajesCatalogoMockService;
     const pase = (await new Promise<unknown>((resolve) => catalogo.listarPases().subscribe(resolve))) as Array<{ id: string; pase: string }>;
     state.setPasadasEstandarizadas([{ ...state.snapshot().pasadasEstandarizadas[0], PASE_ID: pase[0].pase }] as never);
     await component.validar();
