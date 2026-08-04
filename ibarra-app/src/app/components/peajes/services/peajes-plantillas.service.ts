@@ -5,6 +5,8 @@ import {
   AlgoritmoCombinadoPaso,
   ConfiguracionPlantilla,
   PlantillaConfiguracion,
+  PlantillaEstacionReconocida,
+  PlantillaMapeoColumna,
 } from '../models/peajes.models';
 import { PeajesPlantillasService } from '../models/peajes-services.contracts';
 import { SupabaseService } from '../../../services/supabase.service';
@@ -25,7 +27,7 @@ export class PeajesPlantillasSupabaseService implements PeajesPlantillasService 
         const client = await this.supabase.getClient();
         let q = client
           .from('plantillas_configuracion')
-          .select('*, configuraciones:configuraciones_plantilla(*)')
+          .select('*, configuraciones:configuraciones_plantilla(*), estaciones_reconocidas:plantilla_estaciones_reconocidas(*)')
           .order('nombre');
         if (empresaId) {
           // Empresa activa + recursos globales (RN-23)
@@ -44,7 +46,7 @@ export class PeajesPlantillasSupabaseService implements PeajesPlantillasService 
         const client = await this.supabase.getClient();
         const { data, error } = await client
           .from('plantillas_configuracion')
-          .select('*, configuraciones:configuraciones_plantilla(*)')
+          .select('*, configuraciones:configuraciones_plantilla(*), estaciones_reconocidas:plantilla_estaciones_reconocidas(*)')
           .eq('id', id)
           .maybeSingle();
         if (error) throw error;
@@ -57,47 +59,28 @@ export class PeajesPlantillasSupabaseService implements PeajesPlantillasService 
     plantilla: Omit<PlantillaConfiguracion, 'id' | 'created_at' | 'updated_at' | 'configuraciones'> & {
       id?: string;
     },
-    configuraciones: Omit<ConfiguracionPlantilla, 'id' | 'plantilla_id'>[]
+    configuraciones: Omit<ConfiguracionPlantilla, 'id' | 'plantilla_id'>[],
+    mapeos?: PlantillaMapeoColumna[],
+    estacionesReconocidas?: Omit<PlantillaEstacionReconocida, 'id' | 'plantilla_id' | 'created_at'>[]
   ): Observable<PlantillaConfiguracion> {
     return from(
       this.supabase.executeWithRetry(async () => {
         const client = await this.supabase.getClient();
-        let plantillaId = plantilla.id;
         const empresaId = plantilla.empresa_id?.trim() || PEAJES_GLOBAL_EMPRESA_ID;
-
-        if (!plantillaId) {
-          const { data, error } = await client
-            .from('plantillas_configuracion')
-            .insert({
-              nombre: plantilla.nombre,
-              descripcion: plantilla.descripcion ?? null,
-              empresa_id: empresaId,
-              estrategia_codigo: plantilla.estrategia_codigo ?? null,
-              estado: plantilla.estado,
-            })
-            .select('*')
-            .single();
-          if (error) throw error;
-          plantillaId = (data as PlantillaConfiguracion).id;
-        } else {
-          const { error } = await client
-            .from('plantillas_configuracion')
-            .update({
-              nombre: plantilla.nombre,
-              descripcion: plantilla.descripcion ?? null,
-              empresa_id: empresaId,
-              estrategia_codigo: plantilla.estrategia_codigo ?? null,
-              estado: plantilla.estado,
-            })
-            .eq('id', plantillaId);
-          if (error) throw error;
-        }
-
-        await this.sobrescribirConfiguracionesRpc(plantillaId!, configuraciones);
+        const { data: plantillaId, error: saveError } = await client.rpc(
+          'peajes_guardar_plantilla_importacion',
+          {
+            p_plantilla: { ...plantilla, empresa_id: empresaId },
+            p_configuraciones: configuraciones,
+            p_mapeos: mapeos ?? null,
+            p_estaciones_reconocidas: estacionesReconocidas ?? null,
+          }
+        );
+        if (saveError) throw saveError;
         const { data: full, error: getErr } = await client
           .from('plantillas_configuracion')
-          .select('*, configuraciones:configuraciones_plantilla(*)')
-          .eq('id', plantillaId!)
+          .select('*, configuraciones:configuraciones_plantilla(*), estaciones_reconocidas:plantilla_estaciones_reconocidas(*)')
+          .eq('id', plantillaId)
           .single();
         if (getErr) throw getErr;
         return full as PlantillaConfiguracion;

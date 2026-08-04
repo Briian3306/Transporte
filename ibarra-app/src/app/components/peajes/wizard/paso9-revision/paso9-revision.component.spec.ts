@@ -35,6 +35,8 @@ describe('Paso9RevisionComponent', () => {
       empresa_id: 'E-1',
       fecha_factura: '2026-06-30',
       importe_sin_iva: 12180,
+      percepciones: 2558,
+      iva: 0,
       importe_total: 14738,
     });
     state.setPasadasEstandarizadas([

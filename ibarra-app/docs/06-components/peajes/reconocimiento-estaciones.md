@@ -41,6 +41,16 @@ Misma regla en `construirPasadasDesdeMapeo` (ya no depende del nombre de archivo
 
 Implementación: `viaIncluidaEnSeleccion()` / `valorEstacionProveedor` en `paso6-estaciones.component.ts`; `valorEstacionProveedorDesdeFila` en el state.
 
+## Plantillas recurrentes (F09)
+
+Al finalizar Paso 6, al llegar a **Paso 7** se recomienda crear una plantilla si el usuario todavía no eligió una. La recomendación aparece una sola vez por carga y solo cuando ya existen mapeos y relaciones de estación confirmadas.
+
+Al crearla, la plantilla guarda configuraciones del pipeline, mapeos del Paso 5 y filas en `plantilla_estaciones_reconocidas`. Cada fila vincula el valor original y normalizado del proveedor con `estacion_id`; por ejemplo, `CAMPANA DESCENDENTE` → estación interna `CAMPANA`.
+
+En una carga posterior, la prioridad de resolución es: relación de plantilla → alias confirmado de empresa en `estaciones_alias_proveedor` → coincidencia exacta o sugerencia. El alias por empresa se conserva para importaciones sin plantilla.
+
+Si el archivo es compatible y no hay estaciones ambiguas/nuevas ni patentes fuera del catálogo, el wizard salta desde Paso 4 directamente a Paso 7. Cualquier excepción mantiene al usuario en Paso 5 o Paso 6, según corresponda.
+
 ## Archivos
 
 - `wizard/paso6-estaciones/*`

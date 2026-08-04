@@ -9,6 +9,20 @@
   </div>
 
   <div class="pw__body">
+    <section class="paso7__template-recommendation" *ngIf="recomendacionVisible">
+      <div>
+        <strong>¿Reutilizás archivos de esta empresa?</strong>
+        <p>Guardá transformaciones, mapeos y estaciones reconocidas para que la próxima importación llegue directo a Factura.</p>
+      </div>
+      <div class="paso7__template-actions">
+        <input class="pw__input" [(ngModel)]="nombrePlantilla" placeholder="Nombre de la plantilla" [disabled]="guardandoPlantilla" />
+        <button type="button" class="pw__btn pw__btn--primary" (click)="guardarPlantillaDesdeWizard()" [disabled]="guardandoPlantilla">
+          {{ guardandoPlantilla ? 'Guardando…' : 'Crear plantilla' }}
+        </button>
+        <button type="button" class="pw__btn pw__btn--ghost" (click)="omitirPlantilla()">Ahora no</button>
+      </div>
+      <div class="pw__field-error" *ngIf="plantillaError">{{ plantillaError }}</div>
+    </section>
     <div class="paso7__layout">
       <div class="paso7__form-card">
         <h3>Datos de la factura</h3>
@@ -47,13 +61,23 @@
             <div class="pw__field-error" *ngIf="invalid('fecha_factura')">Obligatorio</div>
           </div>
           <div class="pw__field">
-            <label for="importe_sin_iva">Importe sin IVA *</label>
+            <label for="importe_sin_iva">Subtotal *</label>
             <input id="importe_sin_iva" type="number" step="0.01" formControlName="importe_sin_iva" />
             <div class="pw__field-error" *ngIf="invalid('importe_sin_iva')">Obligatorio</div>
           </div>
           <div class="pw__field">
-            <label for="importe_total">Importe total *</label>
-            <input id="importe_total" type="number" step="0.01" formControlName="importe_total" />
+            <label for="percepciones">Percepciones *</label>
+            <input id="percepciones" type="number" min="0" step="0.01" formControlName="percepciones" />
+            <div class="pw__field-error" *ngIf="invalid('percepciones')">Ingresá un importe válido</div>
+          </div>
+          <div class="pw__field">
+            <label for="iva">IVA *</label>
+            <input id="iva" type="number" min="0" step="0.01" formControlName="iva" />
+            <div class="pw__field-error" *ngIf="invalid('iva')">IngresÃ¡ un importe válido</div>
+          </div>
+          <div class="pw__field">
+            <label for="importe_total">Total *</label>
+            <input id="importe_total" type="number" min="0" step="0.01" formControlName="importe_total" />
             <div class="pw__field-error" *ngIf="invalid('importe_total')">Obligatorio</div>
           </div>
         </form>
@@ -65,9 +89,21 @@
       <aside class="paso7__side">
         <div class="paso7__label">Suma estimada de importes netos</div>
         <div class="paso7__money">{{ sumaNetos | number: '1.2-2' }}</div>
+        <div class="paso7__comparison">
+          <span>Subtotal de factura</span>
+          <strong>{{ form.controls.importe_sin_iva.value | number: '1.2-2' }}</strong>
+          <span>Diferencia</span>
+          <strong [class.paso7__difference--ok]="diferenciaNetoPasadas <= 5 && diferenciaNetoPasadas >= -5">{{ diferenciaNetoPasadas | number: '1.2-2' }}</strong>
+          <span>Percepciones</span>
+          <strong>{{ form.controls.percepciones.value | number: '1.2-2' }}</strong>
+          <span>IVA</span>
+          <strong>{{ form.controls.iva.value | number: '1.2-2' }}</strong>
+          <span>Total de factura</span>
+          <strong>{{ form.controls.importe_total.value | number: '1.2-2' }}</strong>
+        </div>
         <p>
-          Al continuar, el paso de validación compara esta suma con el importe sin IVA de la factura
-          (tolerancia 0.01).
+          Al continuar, el paso de validación compara esta suma con el importe neto de la factura
+          (tolerancia $ 5,00).
         </p>
       </aside>
     </div>

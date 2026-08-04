@@ -11,6 +11,9 @@ Consultar, en este orden: `docs/plan/peaje-prd-es.md`, `feature_list.json`, `doc
 - F06-5: `not_started`; falta E2E local completo.
 - F07-1: `in_progress`; seed/reconocimiento AUSOL.
 - F08-1: `in_progress`; auditoría, vista, DataTable y CRUD de pasadas.
+- F09-1: `in_progress`; plantillas guardan mapeos y reconocimientos de estación. Falta ejecutar reset/tests Supabase locales y E2E MVP/Autopistas Urbanas.
+- F10-1: `in_progress`; IVA opcional y operaciones numéricas ya implementados. Falta repetir el test focalizado con ChromeHeadless funcional y ejecutar la verificación de reimportación de los fixtures MVP/AUSOL.
+- F11-1: `in_progress`; factura persiste subtotal, percepciones, IVA y total ingresados. Solo subtotal se valida contra pasadas (tolerancia $5); cubre factura real AUSOL 0840-0557074. Migración local y pgTAP F01 OK; la suite total sigue bloqueada por conteo AUSOL preexistente (REVIEW 19 vs 18).
 
 ## Contratos operativos
 
@@ -18,6 +21,7 @@ Consultar, en este orden: `docs/plan/peaje-prd-es.md`, `feature_list.json`, `doc
 - Una pasada referencia `estacion_id`; el peaje se deriva desde la estación.
 - El motor usa estrategias registradas; no se ejecuta código dinámico desde JSON.
 - No usar `ChecklistTemplateService` ni `checklist_templates` en Peajes.
+- Prioridad de estaciones F09: snapshot de plantilla → `estaciones_alias_proveedor` por empresa → reconocedor normal.
 
 ## Próximas verificaciones
 

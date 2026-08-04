@@ -217,6 +217,8 @@ export const AU_FACTURA: WizardFacturaForm = {
   empresa_id: 'EMP-AU-DEMO',
   fecha_factura: '2026-07-31',
   importe_sin_iva: AU_IMPORTE_SIN_IVA,
+  percepciones: 0,
+  iva: 0,
   importe_total: AU_IMPORTE_SIN_IVA,
 };
 

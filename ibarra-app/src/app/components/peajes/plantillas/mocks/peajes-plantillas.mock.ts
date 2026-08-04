@@ -6,6 +6,8 @@ import {
   AlgoritmoCombinadoPaso,
   ConfiguracionPlantilla,
   PlantillaConfiguracion,
+  PlantillaEstacionReconocida,
+  PlantillaMapeoColumna,
 } from '../../models/peajes.models';
 import { PeajesPlantillasService } from '../../models/peajes-services.contracts';
 import { EstadoRecursoPeaje } from '../../models/peajes.types';
@@ -44,7 +46,9 @@ export class PeajesPlantillasMockService implements PeajesPlantillasService {
       PlantillaConfiguracion,
       'id' | 'created_at' | 'updated_at' | 'configuraciones'
     > & { id?: string },
-    configuraciones: Omit<ConfiguracionPlantilla, 'id' | 'plantilla_id'>[]
+    configuraciones: Omit<ConfiguracionPlantilla, 'id' | 'plantilla_id'>[],
+    mapeos?: PlantillaMapeoColumna[],
+    estacionesReconocidas?: Omit<PlantillaEstacionReconocida, 'id' | 'plantilla_id' | 'created_at'>[]
   ): Observable<PlantillaConfiguracion> {
     const now = new Date().toISOString();
     const id = plantilla.id ?? `plt-${this.seq++}`;
@@ -63,6 +67,10 @@ export class PeajesPlantillasMockService implements PeajesPlantillasService {
       created_at: this.plantillas.get(id)?.created_at ?? now,
       updated_at: now,
       configuraciones: configs,
+      mapeos: structuredClone(mapeos ?? this.plantillas.get(id)?.mapeos ?? []),
+      estaciones_reconocidas: (estacionesReconocidas ?? this.plantillas.get(id)?.estaciones_reconocidas ?? []).map((r, i) => ({
+        ...r, id: `est-${id}-${i}`, plantilla_id: id, created_at: now,
+      })),
     };
     this.plantillas.set(id, saved);
     return of(saved).pipe(delay(10));

@@ -355,6 +355,51 @@ const DESCRIPTORES: AlgorithmDescriptor[] = [
     },
   },
   {
+    codigo: 'ELIMINAR_IVA',
+    nombre: 'Eliminar IVA',
+    descripcion: 'Divide el importe de entrada por 1,21 y redondea a dos decimales.',
+    categoria: 'numero',
+    inputs: { arity: 1, required: true },
+    parametrosSchema: [{ nombre: 'columna', tipo: 'string', requerido: false }],
+    outputType: 'number',
+    validar(config) {
+      const col = colUnaria(config);
+      return col ? [] : [err('columna', null, 'ELIMINAR_IVA: falta columna de entrada')];
+    },
+    resumen(config) {
+      return `Sin IVA(${colUnaria(config) ?? 'IMPORTE_NETO'} / 1,21)`;
+    },
+  },
+  {
+    codigo: 'OPERAR_NUMERO',
+    nombre: 'Operar número',
+    descripcion: 'Opera una columna numérica contra un valor fijo.',
+    categoria: 'numero',
+    inputs: { arity: 1, required: true },
+    parametrosSchema: [
+      { nombre: 'operacion', tipo: 'enum', requerido: true, opciones: ['sumar', 'restar', 'multiplicar', 'dividir'] },
+      { nombre: 'valor', tipo: 'number', requerido: true, descripcion: 'Valor fijo de la operación' },
+      { nombre: 'columna', tipo: 'string', requerido: false },
+    ],
+    outputType: 'number',
+    validar(config) {
+      const errores = colUnaria(config)
+        ? []
+        : [err('columna', null, 'OPERAR_NUMERO: falta columna de entrada')];
+      const op = config?.['operacion'];
+      if (!['sumar', 'restar', 'multiplicar', 'dividir'].includes(String(op))) {
+        errores.push(err('operacion', op ?? null, 'OPERAR_NUMERO: operación inválida'));
+      }
+      const valor = Number(config?.['valor']);
+      if (!Number.isFinite(valor)) errores.push(err('valor', config?.['valor'] ?? null, 'OPERAR_NUMERO: valor numérico inválido'));
+      if (op === 'dividir' && valor === 0) errores.push(err('valor', valor, 'OPERAR_NUMERO: no se puede dividir por cero'));
+      return errores;
+    },
+    resumen(config) {
+      return `${String(config?.['operacion'] ?? 'operar')}(${colUnaria(config) ?? '?'}, ${String(config?.['valor'] ?? '?')})`;
+    },
+  },
+  {
     codigo: 'CONVERTIR_NUMERO',
     nombre: 'Convertir a número',
     descripcion: 'Convierte el valor a número decimal.',

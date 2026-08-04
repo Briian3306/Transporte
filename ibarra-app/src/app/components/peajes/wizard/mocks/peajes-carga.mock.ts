@@ -11,7 +11,7 @@ import {
   ResultadoValidacionCarga,
 } from '../../models';
 
-const TOLERANCIA_FACTURA = 0.01;
+const TOLERANCIA_FACTURA = 5;
 
 /**
  * Mock tipado de PeajesCargaService.
@@ -21,7 +21,7 @@ const TOLERANCIA_FACTURA = 0.01;
 export class PeajesCargaMockService implements PeajesCargaService {
   validarCarga(
     pasadas: PasadaEstandarizada[],
-    factura: Pick<Factura, 'importe_sin_iva' | 'importe_total'>
+    factura: Pick<Factura, 'importe_sin_iva' | 'percepciones' | 'iva' | 'importe_total'>
   ): Observable<ResultadoValidacionCarga> {
     const errores: ErrorValidacionPasada[] = [];
     const validas: PasadaEstandarizada[] = [];

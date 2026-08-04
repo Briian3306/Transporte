@@ -1,6 +1,6 @@
 -- pgTAP: F01-1 … F01-9 (Peajes backend)
 BEGIN;
-SELECT plan(35);
+SELECT plan(46);
 
 -- -----------------------------------------------------------------------------
 -- F01-1: catálogos + FK estacion → peaje
@@ -113,11 +113,11 @@ SELECT is(
 -- -----------------------------------------------------------------------------
 -- F01-6: duplicados
 -- -----------------------------------------------------------------------------
-INSERT INTO public.facturas (id, factura, cuenta, empresa_id, fecha_factura, importe_sin_iva, importe_total)
+INSERT INTO public.facturas (id, factura, cuenta, empresa_id, fecha_factura, importe_sin_iva, percepciones, importe_total)
 VALUES (
   '55555555-5555-5555-5555-555555555555',
   'F-1', 'C-1', '66666666-6666-6666-6666-666666666666',
-  CURRENT_DATE, 90, 108.9
+  CURRENT_DATE, 90, 18.9, 108.9
 );
 
 INSERT INTO public.pasadas (
@@ -227,6 +227,57 @@ SELECT is(
 );
 
 -- -----------------------------------------------------------------------------
+-- F09: snapshots de plantilla (mapeos + estaciones reconocidas)
+-- -----------------------------------------------------------------------------
+SELECT has_table('public', 'plantilla_estaciones_reconocidas', 'F09 tabla de reconocimientos por plantilla existe');
+SELECT col_is_unique(
+  'public', 'plantilla_estaciones_reconocidas', ARRAY['plantilla_id', 'valor_normalizado'],
+  'F09 un valor normalizado es único por plantilla'
+);
+SELECT has_column('public', 'facturas', 'percepciones', 'F11 facturas.percepciones existe');
+SELECT has_column('public', 'facturas', 'iva', 'F12 facturas.iva existe');
+SELECT lives_ok(
+  $$INSERT INTO public.facturas (factura, empresa_id, fecha_factura, importe_sin_iva, percepciones, importe_total)
+    VALUES ('F-IMPORTE-INVALIDO', 'empresa-test', CURRENT_DATE, 100, 10, 109)$$,
+  'F12 permite total declarado distinto del desglose'
+);
+SELECT lives_ok(
+  $$INSERT INTO public.facturas (factura, empresa_id, fecha_factura, importe_sin_iva, percepciones, iva, importe_total)
+    VALUES ('0840-0557074', 'AUSOL', '2026-08-01', 560832.27, 24676.62, 117774.78, 703283.67)$$,
+  'F12 persiste la factura real AUSOL 0840-0557074 sin RAE'
+);
+SELECT is(
+  (SELECT importe_total FROM public.facturas WHERE factura = '0840-0557074'),
+  703283.67::numeric,
+  'F12 conserva el total declarado de la factura real AUSOL'
+);
+SELECT is(
+  (public.peajes_validar_factura_pasadas(105, ARRAY[100]::numeric[], NULL)->>'valido')::boolean,
+  true,
+  'F11 la validación de factura admite desviación de $5'
+);
+
+SELECT lives_ok(
+  $$SELECT public.peajes_guardar_plantilla_importacion(
+    jsonb_build_object('id', '77777777-7777-7777-7777-777777777777', 'nombre', 'Plantilla RPC', 'empresa_id', '__global__', 'estado', 'activa'),
+    '[{"nombre_columna":"ESTACION","columna_destino":"ESTACION_ID","orden":10,"tipo":"mapeo","obligatoria":true}]'::jsonb,
+    '[{"columnaOrigen":"ESTACION","columnaDestino":"ESTACION_ID","excluida":false}]'::jsonb,
+    '[{"estacion_id":"22222222-2222-2222-2222-222222222222","valor_proveedor":"CAMPANA DESCENDENTE","valor_normalizado":"CAMPANA DESCENDENTE","origen":"plantilla"}]'::jsonb
+  )$$,
+  'F09 guarda plantilla, mapeos y reconocimiento en una operación'
+);
+SELECT is(
+  (SELECT count(*)::integer FROM public.plantilla_estaciones_reconocidas WHERE plantilla_id = '77777777-7777-7777-7777-777777777777'),
+  1,
+  'F09 persiste relación estación de plantilla'
+);
+SELECT is(
+  (SELECT jsonb_array_length(mapeos) FROM public.plantillas_configuracion WHERE id = '77777777-7777-7777-7777-777777777777'),
+  1,
+  'F09 persiste snapshot de mapeos'
+);
+
+-- -----------------------------------------------------------------------------
 -- F01-9: confirmar carga persiste auditoría
 -- -----------------------------------------------------------------------------
 SELECT lives_ok(
@@ -237,6 +288,8 @@ SELECT lives_ok(
         'empresa_id', '66666666-6666-6666-6666-666666666666',
         'fecha_factura', CURRENT_DATE::text,
         'importe_sin_iva', 90,
+        'percepciones', 18.9,
+        'iva', 0,
         'importe_total', 108.9
       ),
       jsonb_build_array(
@@ -266,6 +319,8 @@ SELECT ok(
       AND r.filas_procesadas >= 1
       AND r.parametros_efectivos ? 'fuente'
       AND jsonb_array_length(r.algoritmos_efectivos) >= 1
+      AND (SELECT f.percepciones FROM public.facturas f WHERE f.id = r.factura_id) = 18.9
+      AND (SELECT f.iva FROM public.facturas f WHERE f.id = r.factura_id) = 0
   ),
   'F01-9 registro carga persiste plantilla, parámetros, algoritmos y filas'
 );

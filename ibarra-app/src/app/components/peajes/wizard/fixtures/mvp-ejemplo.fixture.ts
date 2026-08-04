@@ -163,6 +163,8 @@ export const MVP_FACTURA: WizardFacturaForm = {
   empresa_id: 'EMP-DEMO-001',
   fecha_factura: '2026-07-15',
   importe_sin_iva: 102060,
+  percepciones: 21432.6,
+  iva: 0,
   importe_total: 123492.6,
 };
 

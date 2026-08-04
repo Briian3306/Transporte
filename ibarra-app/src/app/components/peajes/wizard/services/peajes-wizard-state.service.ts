@@ -40,6 +40,8 @@ export interface WizardFacturaForm {
   empresa_id: string;
   fecha_factura: string;
   importe_sin_iva: number | null;
+  percepciones: number | null;
+  iva: number | null;
   importe_total: number | null;
 }
 
@@ -68,6 +70,7 @@ export interface PeajesWizardState {
   /** Pipeline editable (Paso 3) — draft local. */
   configuracionesDraft: ConfiguracionPlantillaDraft[];
   plantillaMeta: PlantillaWizardMeta | null;
+  recomendacionPlantillaDescartada: boolean;
   /** JSON snapshot de configuracionesDraft al último markPipelineSaved; null = nunca guardado. */
   pipelineSnapshotSaved: string | null;
   /** Recomendaciones semánticas de columnas (F02-11). */
@@ -82,6 +85,8 @@ const FACTURA_VACIA: WizardFacturaForm = {
   empresa_id: '',
   fecha_factura: '',
   importe_sin_iva: null,
+  percepciones: 0,
+  iva: 0,
   importe_total: null,
 };
 
@@ -101,6 +106,7 @@ function estadoInicial(): PeajesWizardState {
     empresaId: null,
     configuracionesDraft: [],
     plantillaMeta: null,
+    recomendacionPlantillaDescartada: false,
     pipelineSnapshotSaved: null,
     recomendaciones: [],
     patentesExcluidas: [],
@@ -181,6 +187,9 @@ export class PeajesWizardStateService {
         reconocidas.add(col);
       }
     }
+    // ESTACION sigue disponible para Paso 6 aunque ya no se sugiera una receta en Paso 2.
+    const estacion = preview.columnas.find((c) => c.trim().toUpperCase() === 'ESTACION');
+    if (estacion) reconocidas.add(estacion);
     if (reconocidas.size === 0) {
       return;
     }
@@ -408,6 +417,10 @@ export class PeajesWizardStateService {
     if (meta?.id !== undefined) {
       this.state.plantillaId = meta.id;
     }
+  }
+
+  descartarRecomendacionPlantilla(): void {
+    this.state.recomendacionPlantillaDescartada = true;
   }
 
   markPipelineSaved(): void {
@@ -727,6 +740,8 @@ export class PeajesWizardStateService {
       empresa_id: f.empresa_id,
       fecha_factura: f.fecha_factura,
       importe_sin_iva: Number(f.importe_sin_iva ?? 0),
+      percepciones: Number(f.percepciones ?? 0),
+      iva: Number(f.iva ?? 0),
       importe_total: Number(f.importe_total ?? 0),
     };
   }

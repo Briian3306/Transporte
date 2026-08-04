@@ -1,97 +1,68 @@
 <div class="paso8">
   <div class="pw__head">
     <div>
-      <div class="pw__eyebrow">Paso 08 · control de importes</div>
+      <div class="pw__eyebrow">Paso 08 · diagnóstico de carga</div>
       <h2>Validación</h2>
-      <p>Se validan campos, importes, duplicados y diferencia con la factura (RNF-08).</p>
+      <p>Cada control informa qué ocurrió, cómo resolverlo y, si hace falta, su respuesta técnica.</p>
     </div>
-    <span
-      class="pw__status"
-      *ngIf="resultado as r"
-      [class.pw__status--valid]="puedeContinuar"
-      [class.pw__status--error]="!puedeContinuar"
-    >
-      {{ puedeContinuar ? 'Coincidencia correcta' : 'Revisar errores' }}
+    <span class="pw__status" *ngIf="resultado" [class.pw__status--valid]="puedeContinuar" [class.pw__status--error]="!puedeContinuar">
+      {{ puedeContinuar ? 'Lista para confirmar' : 'Requiere revisión' }}
     </span>
   </div>
 
   <div class="pw__body">
-    <div class="pw__alert pw__alert--info" *ngIf="cargando">Validando…</div>
+    <div class="pw__alert pw__alert--info" *ngIf="cargando">Ejecutando controles independientes…</div>
     <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
 
-    <ng-container *ngIf="resultado as r">
-      <div class="paso8__layout">
-        <div class="paso8__card">
-          <div class="paso8__title">
-            <h3>Validación de importes</h3>
-            <span
-              class="pw__status"
-              [class.pw__status--valid]="r.dentroTolerancia"
-              [class.pw__status--error]="!r.dentroTolerancia"
-            >
-              {{ r.dentroTolerancia ? 'Dentro de tolerancia' : 'Fuera de tolerancia' }}
-            </span>
+    <section class="paso8__summary" *ngIf="resultado as r">
+      <div><span>Pasadas válidas</span><strong>{{ r.validas.length }}</strong></div>
+      <div><span>Importado</span><strong>{{ moneda(sumaNetos) }}</strong></div>
+      <div><span>Subtotal factura</span><strong>{{ moneda(state.snapshot().factura.importe_sin_iva) }}</strong></div>
+      <div><span>Diferencia</span><strong [class.paso8__money-error]="!r.dentroTolerancia">{{ moneda(r.diferenciaFactura) }}</strong></div>
+    </section>
+
+    <section class="paso8__checklist" *ngIf="diagnosticos.length" aria-label="Resultados de validación">
+      <article class="paso8__check" *ngFor="let d of diagnosticos" [class.paso8__check--error]="d.estado === 'error'" [class.paso8__check--ok]="d.estado === 'ok'">
+        <div class="paso8__check-icon" aria-hidden="true">{{ d.estado === 'ok' ? '✓' : d.estado === 'warning' ? '!' : '×' }}</div>
+        <div class="paso8__check-main">
+          <div class="paso8__check-heading"><h3>{{ d.titulo }}</h3><span class="pw__status" [class.pw__status--valid]="d.estado === 'ok'" [class.pw__status--error]="d.estado === 'error'">{{ estadoTexto(d.estado) }}</span></div>
+          <p>{{ d.detalle }}</p>
+          <div class="paso8__recommendation"><strong>Qué hacer:</strong> {{ d.accion }}</div>
+          <div class="paso8__actions" *ngIf="d.estado !== 'ok'">
+            <button type="button" class="pw__btn pw__btn--ghost" (click)="irAPaso.emit(d.paso)">Ir al Paso {{ d.paso }}</button>
           </div>
-          <div class="paso8__lines">
-            <div class="paso8__line">
-              <span>Registros válidos</span>
-              <strong class="pw__mono">{{ r.validas.length }}</strong>
-            </div>
-            <div class="paso8__line">
-              <span>Errores</span>
-              <strong class="pw__mono">{{ r.errores.length }}</strong>
-            </div>
-            <div class="paso8__line">
-              <span>Suma de importes netos</span>
-              <strong class="pw__mono">{{ sumaNetos | number: '1.2-2' }}</strong>
-            </div>
-            <div class="paso8__line">
-              <span>Importe factura sin IVA</span>
-              <strong class="pw__mono">{{ state.snapshot().factura.importe_sin_iva | number: '1.2-2' }}</strong>
-            </div>
-            <div class="paso8__line paso8__line--total">
-              <span>Diferencia</span>
-              <strong class="pw__mono" [style.color]="r.dentroTolerancia ? 'var(--pw-green, #238657)' : 'var(--pw-red, #bd4b4b)'">
-                {{ r.diferenciaFactura | number: '1.2-2' }}
-              </strong>
-            </div>
-          </div>
+          <details class="paso8__technical" *ngIf="d.tecnico">
+            <summary>Detalles técnicos</summary>
+            <dl>
+              <dt>RPC</dt><dd class="pw__mono">{{ d.tecnico.rpc }}</dd>
+              <dt *ngIf="d.tecnico.httpStatus">HTTP</dt><dd *ngIf="d.tecnico.httpStatus">{{ d.tecnico.httpStatus }}</dd>
+              <dt *ngIf="d.tecnico.postgresCode">PostgreSQL</dt><dd *ngIf="d.tecnico.postgresCode" class="pw__mono">{{ d.tecnico.postgresCode }}</dd>
+            </dl>
+            <p class="paso8__technical-label">Solicitud</p>
+            <pre>{{ d.tecnico.request | json }}</pre>
+            <p class="paso8__technical-label">Respuesta</p>
+            <pre>{{ d.tecnico.response | json }}</pre>
+            <p class="paso8__technical-label" *ngIf="d.tecnico.stack">Stack (desarrollo)</p>
+            <pre *ngIf="d.tecnico.stack">{{ d.tecnico.stack }}</pre>
+          </details>
         </div>
-      </div>
+      </article>
+    </section>
 
-      <div class="pw__alert pw__alert--ok" *ngIf="puedeContinuar">Sin errores bloqueantes. Podés continuar.</div>
-
-      <div class="pw__table-wrap" *ngIf="r.errores.length">
-        <table class="pw__table">
-          <thead>
-            <tr>
-              <th>Fila</th>
-              <th>Columna</th>
-              <th>Valor</th>
-              <th>Motivo</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let e of r.errores">
-              <td>{{ e.fila || '—' }}</td>
-              <td>{{ e.columna }}</td>
-              <td class="pw__mono">{{ e.valor }}</td>
-              <td>{{ e.motivo }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </ng-container>
+    <div class="pw__table-wrap" *ngIf="resultado?.errores?.length">
+      <table class="pw__table">
+        <thead><tr><th>Fila</th><th>Columna</th><th>Valor</th><th>Motivo</th></tr></thead>
+        <tbody><tr *ngFor="let e of resultado?.errores"><td>{{ e.fila || '—' }}</td><td>{{ e.columna }}</td><td class="pw__mono">{{ e.valor }}</td><td>{{ e.motivo }}</td></tr></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="pw__footer">
-    <div class="pw__footer-hint">El ejemplo MVP espera diferencia $ 0.00 con total 102060.00.</div>
+    <div class="pw__footer-hint">El contraste admite hasta $ 5,00 de diferencia entre subtotal y pasadas.</div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
       <button type="button" class="pw__btn pw__btn--ghost" (click)="validar()" [disabled]="cargando">Revalidar</button>
-      <button type="button" class="pw__btn pw__btn--primary" [disabled]="!puedeContinuar" (click)="continuar()">
-        Continuar
-      </button>
+      <button type="button" class="pw__btn pw__btn--primary" [disabled]="!puedeContinuar" (click)="continuar()">Continuar</button>
     </div>
   </div>
 </div>

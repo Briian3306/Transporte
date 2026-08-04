@@ -86,6 +86,17 @@ En Paso 5 el origen del mapeo es `PATENTE_ID` (salida del pipeline).
 
 ---
 
+## Operaciones numéricas e IVA
+
+`CALCULAR_IMPORTE_NETO` conserva la fórmula `PRECIO − BONIFICACION`.
+
+| Código | Entradas y resultado |
+|--------|----------------------|
+| `ELIMINAR_IVA` | Divide una columna numérica —normalmente `IMPORTE_NETO`— por `1,21` y redondea cada pasada a dos decimales. Es opcional y se guarda en la plantilla de la empresa. |
+| `OPERAR_NUMERO` | Opera una columna contra un valor fijo mediante `sumar`, `restar`, `multiplicar` o `dividir`. Rechaza valores inválidos y división por cero. |
+
+Estas estrategias se ejecutan únicamente desde el `StrategyRegistry`; los parámetros persistidos declaran operación, valor y columna, sin ejecutar código dinámico.
+
 ## UI
 
 | Componente | Rol |

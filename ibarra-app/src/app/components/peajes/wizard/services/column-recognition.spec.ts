@@ -56,7 +56,9 @@ describe('column-recognition (F02-11)', () => {
     expect(kinds).toContain('dispositivo');
     expect(kinds).toContain('tarifa');
     expect(kinds).toContain('bonificacion');
-    expect(kinds).toContain('estacion');
+    expect(recs.some((r) => r.id === 'rec-estacion')).toBeFalse();
+    const iva = recs.find((r) => r.id === 'rec-eliminar-iva');
+    expect(iva?.draftSteps[0].configuracion?.algoritmo_codigo).toBe('ELIMINAR_IVA');
 
     const fecha = recs.find((r) => r.kind === 'fecha_hora')!;
     expect(fecha.draftSteps[0].configuracion?.algoritmo_codigo).toBe('COMBINAR_COLUMNAS');

@@ -21,7 +21,7 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
 
   validarCarga(
     pasadas: PasadaEstandarizada[],
-    factura: Pick<Factura, 'importe_sin_iva' | 'importe_total'>
+    factura: Pick<Factura, 'importe_sin_iva' | 'percepciones' | 'iva' | 'importe_total'>
   ): Observable<ResultadoValidacionCarga> {
     return from(
       this.supabase.executeWithRetry(async () => {
@@ -49,25 +49,16 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
             continue;
           }
 
-          const { data: neto, error } = await client.rpc('peajes_calcular_importe_neto', {
-            p_precio: precio,
-            p_bonificacion: bonif,
-          });
-          if (error) throw error;
-
+          // RN-10 es una resta determinística. Antes se hacía un RPC por cada
+          // fila, lo cual producía cientos de requests idénticos en cargas grandes.
+          const netoCalculado = precio - bonif;
           const declarado = p.IMPORTE_NETO != null ? Number(p.IMPORTE_NETO) : null;
-          if (declarado != null && !Number.isNaN(declarado) && Math.abs(declarado - Number(neto)) > 0.01) {
-            errores.push({
-              fila,
-              columna: 'IMPORTE_NETO',
-              valor: declarado,
-              motivo: `Difiere del calculado ${neto} (RN-11)`,
-            });
-            continue;
-          }
-
-          importes.push(Number(neto));
-          validas.push({ ...p, IMPORTE_NETO: Number(neto) });
+          // AUSOL entrega el neto ya bonificado. La consistencia que autoriza
+          // la carga es el subtotal total de la factura (± $5), no exigir que
+          // cada fila replique PRECIO - BONIFICACION.
+          const neto = declarado !== null && Number.isFinite(declarado) ? declarado : netoCalculado;
+          importes.push(neto);
+          validas.push({ ...p, IMPORTE_NETO: neto });
         }
 
         const { data: validacion, error: valErr } = await client.rpc('peajes_validar_factura_pasadas', {

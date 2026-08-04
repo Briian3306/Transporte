@@ -64,6 +64,14 @@ Reglas:
   `peajes.routes.ts` o el mapa de permisos si 01/02/03 agregaron rutas de
    forma independiente y hay que fusionarlas.
 
+### F09 — Plantillas recurrentes y reconocimiento de estaciones
+
+F09 cruza plantillas, wizard, persistencia y documentación. La relación
+`plantilla_estaciones_reconocidas` es un snapshot de plantilla y no reemplaza
+`estaciones_alias_proveedor`: la prioridad de importación es plantilla → alias de empresa
+→ reconocimiento normal. El backend posee migración/RPC/servicio; el wizard restaura
+mapeos y relaciones y solo salta a Factura si no quedan excepciones.
+
 
 
 ## Flujo de arranque (toda sesión, todo agente)

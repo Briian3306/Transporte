@@ -4,6 +4,22 @@
   gap: 1.25rem;
 }
 
+.paso7__template-recommendation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid #b5d1f4;
+  border-radius: 14px;
+  background: #f3f8ff;
+}
+
+.paso7__template-recommendation p { margin: .35rem 0 0; color: var(--pw-muted, #6f8197); font-size: .8rem; }
+.paso7__template-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+
 .paso7__form-card,
 .paso7__side {
   border: 1px solid var(--pw-line, #dce5ee);
@@ -40,6 +56,20 @@
   font-size: 0.8rem;
   line-height: 1.45;
 }
+
+.paso7__comparison {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.45rem 0.8rem;
+  margin: 1rem 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--pw-line, #dce5ee);
+  font-size: 0.82rem;
+}
+
+.paso7__comparison span { color: var(--pw-muted, #6f8197); }
+.paso7__comparison strong { font-family: var(--pw-mono, monospace); text-align: right; }
+.paso7__difference--ok { color: var(--pw-green, #238657); }
 
 .paso7__field--full {
   grid-column: 1 / -1;

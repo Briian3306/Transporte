@@ -49,11 +49,11 @@
     <app-paso1-carga *ngIf="pasoActual === 1" (completado)="siguiente()" />
     <app-paso2-preview *ngIf="pasoActual === 2" (completado)="siguiente()" (atras)="atras()" />
     <app-paso3-transformaciones *ngIf="pasoActual === 3" (completado)="siguiente()" (atras)="atras()" />
-    <app-paso4-plantilla *ngIf="pasoActual === 4" (completado)="siguiente()" (atras)="atras()" />
+    <app-paso4-plantilla *ngIf="pasoActual === 4" (completado)="siguiente()" (facturaDirecta)="state.setPaso(7)" (atras)="atras()" />
     <app-paso5-mapeo *ngIf="pasoActual === 5" (completado)="siguiente()" (atras)="atras()" />
     <app-paso6-estaciones *ngIf="pasoActual === 6" (completado)="siguiente()" (atras)="atras()" />
     <app-paso7-factura *ngIf="pasoActual === 7" (completado)="siguiente()" (atras)="atras()" />
-    <app-paso8-validacion *ngIf="pasoActual === 8" (completado)="siguiente()" (atras)="atras()" />
+    <app-paso8-validacion *ngIf="pasoActual === 8" (completado)="siguiente()" (atras)="atras()" (irAPaso)="state.setPaso($event)" />
     <app-paso9-revision *ngIf="pasoActual === 9" (atras)="atras()" (reiniciar)="reiniciar()" />
   </section>
 </div>

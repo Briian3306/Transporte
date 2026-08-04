@@ -74,6 +74,13 @@ F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `
 
 ## Registro de sesiones
 
+### 2026-08-04 — F09 Plantillas recurrentes y reconocimiento de estaciones
+
+- Se agregó la migración `20260804145440_peajes_plantillas_reconocimiento_estaciones.sql`: snapshot de mapeos en plantilla, tabla `plantilla_estaciones_reconocidas` y RPC transaccional de guardado.
+- Paso 4 restaura mapeos y reconocimientos de la plantilla, valida catálogo de estaciones/patentes y solo salta a Paso 7 cuando no hay excepciones. Paso 7 recomienda crear una plantilla una sola vez y guarda pipeline, mapeos y relaciones confirmadas.
+- Prioridad documentada: plantilla → alias de empresa → reconocimiento habitual. Los aliases por empresa no se eliminan.
+- Verificación: `npx tsc --noEmit -p tsconfig.app.json` OK. Build Angular bloqueado por permisos de lectura del sandbox; reset Supabase local agotó tiempo del host. F09 queda `in_progress` hasta completar SQL y E2E local.
+
 ### 2026-08-04 — Shared Dialog + Paso 6 alta estación
 
 - **Hecho:** `app-dialog` en `shared/dialog` (eyebrow/title/body/actions, Esc/backdrop).
@@ -266,3 +273,16 @@ F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `
 - Peajes queda documentado como MVP integrado: F00–F05 passing; F06-1/2/3, F07-1 y F08-1 en progreso; F06-5 no iniciado.
 - Se eliminó `docs/08-sql`; las migraciones y RPC se referencian desde `supabase/migrations` y servicios.
 - Riesgos: evidencia E2E Acceso Oeste/AUSOL, discrepancias de seeds/conteos, cierre de gestión de pasadas e `init.sh` en Windows.
+
+### 2026-08-04 — F10-1 IVA opcional y operaciones numéricas
+
+- Paso 2 ya no propone la receta `ESTACION + VIA`; las columnas siguen disponibles para el Paso 6.
+- Se agregaron `ELIMINAR_IVA` (divide `IMPORTE_NETO` por 1,21 y redondea a dos decimales) y `OPERAR_NUMERO` (sumar, restar, multiplicar o dividir por valor fijo) al registro, descriptores, editor y catálogo SQL.
+- `ELIMINAR_IVA` se recomienda de forma opcional cuando se detectan tarifa y bonificación; al persistirse en el pipeline de una plantilla se reaplica solo para esa empresa.
+- Verificación: `npx tsc --noEmit -p tsconfig.app.json` y `git diff --check` OK. El bundle de specs focalizados compiló, pero ChromeHeadless no inició por error local de caché/cifrado, por lo que F10-1 sigue `in_progress`.
+
+### 2026-08-04 — F11-1 Factura con subtotal, percepciones e IVA
+
+- La migración posterior `20260804175001_peajes_facturas_iva_total_manual.sql` agrega `facturas.iva` y elimina la restricción de total derivado: subtotal, percepciones, IVA y total son valores ingresados de factura. RAE se ignora.
+- Paso 7 conserva la suma por centavos de las pasadas y compara únicamente subtotal contra pasadas, con tolerancia de $5,00. Se cubrió la factura AUSOL `0840-0557074` del `2026-08-01`: subtotal 560832.27, percepciones 24676.62, IVA 117774.78, total 703283.67.
+- `npx supabase migration up --local` OK; `peajes_f01_test.sql` OK (46 pruebas, incluidas F11). La suite global mantiene un fallo preexistente de AUSOL: REVIEW 19 vs 18. `npx tsc --noEmit -p tsconfig.app.json` y `git diff --check` OK. La suite Angular focalizada generó el bundle, pero ChromeHeadless no termina en el host.

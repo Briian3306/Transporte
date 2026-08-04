@@ -81,6 +81,10 @@ export interface Factura {
   empresa_id: string;
   fecha_factura: string;
   importe_sin_iva: number;
+  /** Percepciones declaradas en la factura. */
+  percepciones: number;
+  /** IVA declarado en la factura. */
+  iva: number;
   importe_total: number;
   created_at?: string;
 }
@@ -153,6 +157,26 @@ export interface PlantillaConfiguracion {
   created_at?: string;
   updated_at?: string;
   configuraciones?: ConfiguracionPlantilla[];
+  /** Snapshot del Paso 5; se restaura antes de validar una importación recurrente. */
+  mapeos?: PlantillaMapeoColumna[];
+  /** Reconocimientos de estación propios de la plantilla (prioridad máxima). */
+  estaciones_reconocidas?: PlantillaEstacionReconocida[];
+}
+
+export interface PlantillaMapeoColumna {
+  columnaOrigen: string;
+  columnaDestino: PasadaColumnKey | null;
+  excluida: boolean;
+}
+
+export interface PlantillaEstacionReconocida {
+  id: string;
+  plantilla_id: string;
+  valor_proveedor: string;
+  valor_normalizado: string;
+  estacion_id: string;
+  origen?: 'usuario' | 'plantilla';
+  created_at?: string;
 }
 
 export interface ConfiguracionPlantilla {

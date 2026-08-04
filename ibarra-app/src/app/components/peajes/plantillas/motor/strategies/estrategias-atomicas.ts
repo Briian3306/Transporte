@@ -251,6 +251,46 @@ export const calcularImporteNetoStrategy: TransformStrategy = {
   },
 };
 
+/** Divide un importe por 1,21 y redondea a dos decimales por pasada. */
+export const eliminarIvaStrategy: TransformStrategy = {
+  codigo: 'ELIMINAR_IVA',
+  nombre: 'Eliminar IVA',
+  descripcion: 'Divide el importe por 1,21 y redondea a dos decimales.',
+  ejecutar(ctx: StrategyContext): unknown {
+    const origen =
+      resolverColumnasEntrada(ctx.parametros)[0] ??
+      (ctx.parametros?.['columna'] as string | undefined) ??
+      ctx.columnaOrigen ??
+      'IMPORTE_NETO';
+    const importe = toNumber(ctx.resultado[origen] ?? ctx.fila[origen]);
+    return importe == null ? null : Math.round((importe / 1.21) * 100) / 100;
+  },
+};
+
+const OPERACIONES_NUMERICAS = ['sumar', 'restar', 'multiplicar', 'dividir'] as const;
+
+/** Opera una columna numérica contra un valor fijo declarado en la plantilla. */
+export const operarNumeroStrategy: TransformStrategy = {
+  codigo: 'OPERAR_NUMERO',
+  nombre: 'Operar número',
+  descripcion: 'Suma, resta, multiplica o divide un número por un valor fijo.',
+  ejecutar(ctx: StrategyContext): unknown {
+    const origen =
+      resolverColumnasEntrada(ctx.parametros)[0] ??
+      (ctx.parametros?.['columna'] as string | undefined) ??
+      ctx.columnaOrigen ??
+      '';
+    const base = toNumber(ctx.resultado[origen] ?? ctx.fila[origen]);
+    const valor = toNumber(ctx.parametros?.['valor']);
+    const operacion = ctx.parametros?.['operacion'];
+    if (base == null || valor == null || !OPERACIONES_NUMERICAS.includes(operacion as never)) return null;
+    if (operacion === 'dividir') return valor === 0 ? null : base / valor;
+    if (operacion === 'sumar') return base + valor;
+    if (operacion === 'restar') return base - valor;
+    return base * valor;
+  },
+};
+
 function normalizarFechaEntrada(value: unknown): string {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return asString(value);
@@ -414,4 +454,6 @@ export const ESTRATEGIAS_ATOMICAS: TransformStrategy[] = [
   formatearFechaHoraStrategy,
   combinarColumnasStrategy,
   calcularImporteNetoStrategy,
+  eliminarIvaStrategy,
+  operarNumeroStrategy,
 ];

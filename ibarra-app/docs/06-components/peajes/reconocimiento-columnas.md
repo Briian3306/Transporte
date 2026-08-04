@@ -38,9 +38,14 @@ Feature: **F02-11** · Owner: `02-frontend-wizard-tablas`.
 | `dispositivo` | alias de dispositivo | `COPIAR_COLUMNA` → `PASE_ID` |
 | `tarifa` | alias de tarifa | `CONVERTIR_NUMERO` → `PRECIO` (opcional `REEMPLAZAR_TEXTO` si número AR) |
 | `bonificacion` | alias de descuento | `CONVERTIR_NUMERO`; si hay tarifa, también `CALCULAR_IMPORTE_NETO` |
-| `estacion` | `ESTACION` | Incluye columna + hint `ESTACION_ID`; si hay `VIA`, `COMBINAR_COLUMNAS`. **No** hay Strategy de estación |
 
 Catálogo de códigos atómicos: [plantillas-y-algoritmos.md](./plantillas-y-algoritmos.md).
+
+## IVA opcional
+
+Paso 2 ya no muestra la recomendación de preparar `ESTACION` o `VIA`: esas columnas quedan disponibles para su resolución manual en Paso 6.
+
+Cuando se reconocen tarifa y bonificación, aparece la recomendación opcional **Eliminar IVA de IMPORTE_NETO**. Al aceptarla agrega `ELIMINAR_IVA` después de `CALCULAR_IMPORTE_NETO`; divide cada importe neto por `1,21` y redondea a dos decimales. Al descartarla no se modifica el cálculo actual. La elección forma parte del pipeline y se conserva al guardar una plantilla de empresa.
 
 ## UI Paso 2
 

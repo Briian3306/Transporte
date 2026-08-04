@@ -40,8 +40,8 @@
 | 4 | Plantilla | `paso4-plantilla` | Selección/aplicación plantilla |
 | 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal. Patentes sin catálogo: [patentes-sin-resolver.md](./patentes-sin-resolver.md) (F02-14) |
 | 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación; alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13) |
-| 7 | Factura | `paso7-factura` | Bill: `cuenta` opcional; empresa SMS single (Paso 1); fecha DRP single |
-| 8 | Validación | `paso8-validacion` | Errores fila/columna/valor/motivo |
+| 7 | Factura | `paso7-factura` | Cuenta opcional; subtotal, percepciones, IVA y total declarados; empresa SMS single (Paso 1); fecha DRP single |
+| 8 | Validación | `paso8-validacion` | Errores fila/columna/valor/motivo y diferencia neto de factura vs. pasadas |
 | 9 | Revisión | `paso9-revision` | Confirmación de carga |
 
 ---
@@ -49,6 +49,12 @@
 ## Estado (RF-25)
 
 `PeajesWizardStateService` mantiene el paso actual y datos intermedios del flujo (archivo, preview, mapeos, relaciones, factura, resultado de validación).
+
+### Factura, percepciones, IVA y tolerancia
+
+El Paso 7 persiste cuatro valores declarados por el usuario: `importe_sin_iva` como **subtotal**, `percepciones`, `iva` e `importe_total`. El total no se recalcula ni bloquea la carga: el único contraste contra las pasadas es subtotal versus suma de importes netos, con una diferencia absoluta admisible de hasta $5,00. La suma de pasadas se hace en centavos para no introducir desvíos por precisión decimal de JavaScript. RAE no integra el desglose actual.
+
+Caso real documentado: para `557074.csv`, la factura `0840-0557074` del `2026-08-01` usa subtotal `560832.27`, percepciones `24676.62`, IVA `117774.78` y total `703283.67`.
 
 ### Recomendaciones de columnas (F02-11)
 

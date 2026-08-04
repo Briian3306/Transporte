@@ -15,6 +15,8 @@ import {
   Patente,
   Peaje,
   PlantillaConfiguracion,
+  PlantillaEstacionReconocida,
+  PlantillaMapeoColumna,
   RegistroCargaPeajes,
   ResultadoReconocimientoEstacion,
 } from './peajes.models';
@@ -147,7 +149,7 @@ export interface PeajesCatalogoService {
 export interface PeajesCargaService {
   validarCarga(
     pasadas: PasadaEstandarizada[],
-    factura: Pick<Factura, 'importe_sin_iva' | 'importe_total'>
+    factura: Pick<Factura, 'importe_sin_iva' | 'percepciones' | 'iva' | 'importe_total'>
   ): Observable<ResultadoValidacionCarga>;
   confirmarCarga(input: ConfirmacionCargaInput): Observable<ConfirmacionCargaResultado>;
   detectarDuplicados(pasadas: PasadaEstandarizada[]): Observable<ErrorValidacionPasada[]>;
@@ -169,7 +171,9 @@ export interface PeajesPlantillasService {
     plantilla: Omit<PlantillaConfiguracion, 'id' | 'created_at' | 'updated_at' | 'configuraciones'> & {
       id?: string;
     },
-    configuraciones: Omit<ConfiguracionPlantilla, 'id' | 'plantilla_id'>[]
+    configuraciones: Omit<ConfiguracionPlantilla, 'id' | 'plantilla_id'>[],
+    mapeos?: PlantillaMapeoColumna[],
+    estacionesReconocidas?: Omit<PlantillaEstacionReconocida, 'id' | 'plantilla_id' | 'created_at'>[]
   ): Observable<PlantillaConfiguracion>;
   /** Reemplazo transaccional de configuraciones (RF-28 / F01-7). */
   sobrescribirConfiguraciones(

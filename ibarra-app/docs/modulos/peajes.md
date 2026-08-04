@@ -8,7 +8,7 @@ Peajes automatiza la carga de archivos Excel/CSV, su reconocimiento, transformac
 
 `/peajes` → `/wizard` (9 pasos) → `/catalogos` → `/plantillas` → `/pasadas`.
 
-El wizard conserva estado, muestra preview de hasta 10 filas, recomienda columnas y transformaciones, permite pipeline editable, resuelve estaciones con confirmación y patentes faltantes, valida factura/duplicados y confirma la carga. Los servicios reales encapsulan Supabase.
+El wizard conserva estado, muestra preview de hasta 10 filas, recomienda columnas y transformaciones, permite pipeline editable, resuelve estaciones con confirmación y patentes faltantes, valida el subtotal de factura contra las pasadas con tolerancia de $5, persiste percepciones, IVA y total declarados, y confirma la carga. Los servicios reales encapsulan Supabase.
 
 ## Estructura
 

@@ -7,6 +7,8 @@ import {
   PlantillaConfiguracion,
   PeajesPlantillasService,
   PasadaEstandarizada,
+  PEAJES_CATALOGO_SERVICE,
+  PeajesCatalogoService,
 } from '../../models';
 import { PeajesMotorTransformacionService } from '../../plantillas/motor/peajes-motor-transformacion.service';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
@@ -25,12 +27,15 @@ import { PeajesWizardStateService } from '../services/peajes-wizard-state.servic
 export class Paso4PlantillaComponent implements OnInit {
   @Output() completado = new EventEmitter<void>();
   @Output() atras = new EventEmitter<void>();
+  /** Salto controlado: solo cuando plantilla + catálogos dejan cero excepciones. */
+  @Output() facturaDirecta = new EventEmitter<void>();
 
   private readonly motor = inject(PeajesMotorTransformacionService);
   readonly state = inject(PeajesWizardStateService);
 
   constructor(
-    @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService
+    @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService,
+    @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
   ) {}
 
   plantillas: PlantillaConfiguracion[] = [];
@@ -129,6 +134,13 @@ export class Paso4PlantillaComponent implements OnInit {
     const filas = this.filasParaMotor(columnas);
     const algoritmos = await firstValueFrom(this.plantillasSvc.listarAlgoritmos());
     const transformadas = this.motor.aplicarPipeline(filas, configs, algoritmos);
+    this.state.setMapeos(plantilla.mapeos ?? this.mapeosDesdeConfiguraciones(configs));
+    this.state.setRelacionesEstacion(
+      (plantilla.estaciones_reconocidas ?? []).map((r) => ({
+        valorProveedor: r.valor_proveedor,
+        estacionId: r.estacion_id,
+      }))
+    );
     this.state.setPasadasEstandarizadas(transformadas);
     this.state.setPlantillaId(plantilla.id);
     this.info = `Plantilla «${plantilla.nombre}» aplicada vía motor (${transformadas.length} filas).`;
@@ -137,6 +149,11 @@ export class Paso4PlantillaComponent implements OnInit {
   async continuar(): Promise<void> {
     await this.aplicarSeleccionada();
     if (this.errores.length) {
+      return;
+    }
+    if (this.plantillaId && await this.puedeIrDirectoAFactura()) {
+      this.info = 'Plantilla aplicada sin excepciones: se omiten Mapeo y Estaciones.';
+      this.facturaDirecta.emit();
       return;
     }
     this.completado.emit();
@@ -158,5 +175,46 @@ export class Paso4PlantillaComponent implements OnInit {
       this.info = `Continuando con pipeline draft (${transformadas.length} filas).`;
     }
     this.completado.emit();
+  }
+
+  private mapeosDesdeConfiguraciones(configs: PlantillaConfiguracion['configuraciones']): {
+    columnaOrigen: string; columnaDestino: any; excluida: boolean;
+  }[] {
+    return (configs ?? [])
+      .filter((c) => c.tipo === 'mapeo' || !!c.columna_destino)
+      .map((c) => ({ columnaOrigen: c.nombre_columna, columnaDestino: c.columna_destino ?? null, excluida: false }));
+  }
+
+  private async puedeIrDirectoAFactura(): Promise<boolean> {
+    const snap = this.state.snapshot();
+    const mapeados = this.state.mapeosActivos();
+    const obligatorias = ['FECHA_HORA', 'PASE_ID', 'PATENTE_ID', 'ESTACION_ID', 'PRECIO'];
+    if (obligatorias.some((destino) => !mapeados.some((m) => m.columnaDestino === destino))) {
+      this.info = 'La plantilla se aplicó, pero faltan mapeos requeridos: revisá Paso 5.';
+      return false;
+    }
+    const estaciones = await firstValueFrom(this.catalogo.listarEstaciones());
+    const idsEstacion = new Set(estaciones.map((e) => e.id));
+    const filas = this.state.construirPasadasDesdeMapeo();
+    if (!filas.length || filas.some((f) => !f.ESTACION_ID || !idsEstacion.has(String(f.ESTACION_ID)))) {
+      this.info = 'La plantilla se aplicó, pero hay estaciones nuevas o sin reconocer: revisá Paso 6.';
+      return false;
+    }
+    const patentes = await firstValueFrom(this.catalogo.listarPatentes());
+    const porPatente = new Map(patentes.map((p) => [this.normalizarPatente(p.patente), p.id]));
+    for (const fila of filas) {
+      const patenteId = porPatente.get(this.normalizarPatente(fila.PATENTE_ID));
+      if (!patenteId) {
+        this.info = 'La plantilla se aplicó, pero hay patentes fuera del catálogo: revisá Paso 5.';
+        return false;
+      }
+      fila.PATENTE_ID = patenteId;
+    }
+    this.state.setPasadasEstandarizadas(filas);
+    return true;
+  }
+
+  private normalizarPatente(valor: unknown): string {
+    return String(valor ?? '').replace(/[\s-]/g, '').toUpperCase();
   }
 }

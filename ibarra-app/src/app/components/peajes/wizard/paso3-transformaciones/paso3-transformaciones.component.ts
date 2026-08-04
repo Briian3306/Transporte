@@ -426,6 +426,9 @@ export class Paso3TransformacionesComponent implements OnInit {
         if (field.nombre === 'valor' && this.editParams['valor'] === undefined) {
           this.editParams['valor'] = 1;
         }
+        if (field.nombre === 'operacion' && this.editParams['operacion'] === undefined) {
+          this.editParams['operacion'] = field.opciones?.[0] ?? 'sumar';
+        }
       }
       if (desc.codigo === 'ASIGNAR_VALOR') {
         this.editSalida = this.editSalida || 'QUANTITY';
@@ -441,9 +444,12 @@ export class Paso3TransformacionesComponent implements OnInit {
           this.editParams['formato_hora'] = 'HHMMSS';
         }
       }
-      if (desc.codigo === 'CALCULAR_IMPORTE_NETO') {
+      if (desc.codigo === 'CALCULAR_IMPORTE_NETO' || desc.codigo === 'ELIMINAR_IVA') {
         this.editSalida = this.editSalida || 'IMPORTE_NETO';
         this.editSalidaCustom = false;
+        if (desc.codigo === 'ELIMINAR_IVA') {
+          this.editEntradas = ['IMPORTE_NETO'];
+        }
       }
     }
     this.aplicarEdicion();
@@ -667,7 +673,9 @@ export class Paso3TransformacionesComponent implements OnInit {
     this.errorMsg = '';
     try {
       const saved = await firstValueFrom(
-        this.plantillasSvc.guardarPlantilla(meta, configsOmit)
+        this.plantillasSvc.guardarPlantilla(meta, configsOmit, snap.mapeos, snap.relacionesEstacion
+          .filter((r) => !!r.estacionId)
+          .map((r) => ({ estacion_id: r.estacionId!, valor_proveedor: r.valorProveedor, valor_normalizado: r.valorProveedor.trim().toUpperCase(), origen: 'plantilla' as const })))
       );
       await firstValueFrom(
         this.plantillasSvc.sobrescribirConfiguraciones(saved.id, configsOmit)

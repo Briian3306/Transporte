@@ -10,7 +10,7 @@ export type ColumnRecommendationKind =
   | 'patente'
   | 'tarifa'
   | 'bonificacion'
-  | 'estacion'
+  | 'eliminar_iva'
   | 'dispositivo';
 
 export type ColumnRecommendationStatus = 'pending' | 'accepted' | 'dismissed';
@@ -35,8 +35,6 @@ export const COLUMN_ALIASES = {
   discount: ['BONIFICACION', 'BONIFICACION_IMPORTE'],
   date: ['FECHA'],
   time: ['HORA'],
-  station: ['ESTACION'],
-  via: ['VIA'],
   device: ['DISPOSITIVO', 'DISPOSITIVON'],
 } as const;
 
@@ -335,22 +333,17 @@ export function recipeBonificacion(
   return steps;
 }
 
-export function recipeEstacionVia(
-  estacionCol: string,
-  viaCol: string | undefined,
-  ordenStart = 25
-): ConfiguracionPlantillaDraft[] {
-  if (!viaCol) return [];
+export function recipeEliminarIva(orden = 100): ConfiguracionPlantillaDraft[] {
   return [
     draftBase({
-      orden: ordenStart,
+      orden,
       tipo: 'transformacion',
-      nombre_columna: estacionCol,
-      columna_destino: 'ESTACION',
+      nombre_columna: 'IMPORTE_NETO',
+      columna_destino: 'IMPORTE_NETO',
       configuracion: {
-        algoritmo_codigo: 'COMBINAR_COLUMNAS',
-        columnas_entrada: [estacionCol, viaCol],
-        parametros: { columnas: [estacionCol, viaCol], separador: '-' },
+        algoritmo_codigo: 'ELIMINAR_IVA',
+        columnas_entrada: ['IMPORTE_NETO'],
+        parametros: { columna: 'IMPORTE_NETO' },
         habilitado: true,
       },
       obligatoria: false,
@@ -396,8 +389,6 @@ export function detectColumnRecommendations(
   const plateCol = resolveAlias(lookup, COLUMN_ALIASES.plate);
   const fareCol = resolveAlias(lookup, COLUMN_ALIASES.fare);
   const discountCol = resolveAlias(lookup, COLUMN_ALIASES.discount);
-  const stationCol = resolveAlias(lookup, COLUMN_ALIASES.station);
-  const viaCol = resolveAlias(lookup, COLUMN_ALIASES.via);
   const deviceCol = resolveAlias(lookup, COLUMN_ALIASES.device);
 
   if (fechaCol && horaCol) {
@@ -485,20 +476,17 @@ export function detectColumnRecommendations(
     });
   }
 
-  if (stationCol) {
-    const viaPart = viaCol ? ` (+ ${viaCol})` : '';
+  if (fareCol && discountCol) {
     recs.push({
-      id: 'rec-estacion',
-      kind: 'estacion',
-      title: `Recomendado: Preparar ${stationCol}${viaPart} para reconocimiento`,
-      detail: viaCol
-        ? 'Combinar ESTACION+VIA y dejar lista para el reconocedor de estaciones (Paso 6).'
-        : 'Incluir ESTACION para el reconocedor de catálogo en Paso 6 (sin Strategy nueva).',
+      id: 'rec-eliminar-iva',
+      kind: 'eliminar_iva',
+      title: 'Opcional: Eliminar IVA de IMPORTE_NETO',
+      detail: 'Divide IMPORTE_NETO por 1,21 y redondea cada pasada a dos decimales.',
       status: 'pending',
-      columnasEntrada: viaCol ? [stationCol, viaCol] : [stationCol],
-      draftSteps: recipeEstacionVia(stationCol, viaCol, 25),
-      incluirColumnas: viaCol ? [stationCol, viaCol] : [stationCol],
-      mapeoHints: [hint(stationCol, 'ESTACION_ID')],
+      columnasEntrada: ['IMPORTE_NETO'],
+      draftSteps: recipeEliminarIva(100),
+      incluirColumnas: [fareCol, discountCol],
+      mapeoHints: [hint('IMPORTE_NETO', 'IMPORTE_NETO')],
     });
   }
 
