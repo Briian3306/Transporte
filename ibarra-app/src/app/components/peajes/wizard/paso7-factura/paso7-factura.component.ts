@@ -1,4 +1,15 @@
-import { Component, EventEmitter, Inject, OnInit, Output, inject } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Inject,
+  OnInit,
+  Output,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -34,9 +45,11 @@ import {
   templateUrl: './paso7-factura.component.html',
   styleUrl: './paso7-factura.component.css',
 })
-export class Paso7FacturaComponent implements OnInit {
+export class Paso7FacturaComponent implements OnInit, AfterViewInit {
   @Output() completado = new EventEmitter<void>();
   @Output() atras = new EventEmitter<void>();
+
+  @ViewChild('facturaInput') facturaInput?: ElementRef<HTMLInputElement>;
 
   private readonly fb = inject(FormBuilder);
   readonly state = inject(PeajesWizardStateService);
@@ -91,6 +104,23 @@ export class Paso7FacturaComponent implements OnInit {
       snap.mapeos.length &&
       snap.relacionesEstacion.length
     );
+  }
+
+  ngAfterViewInit(): void {
+    queueMicrotask(() => this.facturaInput?.nativeElement.focus());
+  }
+
+  @HostListener('document:peajes-wizard-advance')
+  onWizardAdvanceShortcut(): void {
+    this.continuar();
+  }
+
+  @HostListener('keydown', ['$event'])
+  onPasoKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      this.continuar();
+    }
   }
 
   async guardarPlantillaDesdeWizard(): Promise<void> {
@@ -181,6 +211,7 @@ export class Paso7FacturaComponent implements OnInit {
   continuar(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) {
+      this.focusFirstInvalid();
       return;
     }
     const v = this.form.getRawValue();
@@ -201,6 +232,31 @@ export class Paso7FacturaComponent implements OnInit {
   invalid(ctrl: string): boolean {
     const c = this.form.get(ctrl);
     return !!(c && c.touched && c.invalid);
+  }
+
+  private focusFirstInvalid(): void {
+    const order = [
+      'factura',
+      'cuenta',
+      'fecha_factura',
+      'importe_sin_iva',
+      'percepciones',
+      'iva',
+      'importe_total',
+    ] as const;
+    for (const key of order) {
+      const ctrl = this.form.controls[key];
+      if (ctrl.invalid) {
+        if (key === 'fecha_factura') {
+          const dateEl = document.getElementById('fecha_factura') as HTMLInputElement | null;
+          dateEl?.focus();
+          return;
+        }
+        const el = document.getElementById(key) as HTMLInputElement | null;
+        el?.focus();
+        return;
+      }
+    }
   }
 
   private aCentavos(valor: unknown): number {

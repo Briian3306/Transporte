@@ -1,0 +1,8 @@
+[     895ms] [WARNING] cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation @ https://cdn.tailwindcss.com/:63
+[    8156ms] [LOG] Navigator LockManager deshabilitado para evitar errores de bloqueo @ http://127.0.0.1:4200/chunk-J7DL3KPJ.js:307
+[    8204ms] [LOG] Angular is running in development mode. @ http://127.0.0.1:4200/@fs/C:/Users/FRANCIS/Documents/progamacion/Transporte/ibarra-app/.angular/cache/19.2.17/ibarra-app/vite/deps/chunk-FI22UAEO.js?v=94cb3fb3:15065
+[    9039ms] [LOG] LoginGuard: Usuario no autenticado, permitiendo acceso al login @ http://127.0.0.1:4200/main.js:31693
+[   78364ms] [WARNING] cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation @ https://cdn.tailwindcss.com/:63
+[   80948ms] [LOG] Navigator LockManager deshabilitado para evitar errores de bloqueo @ http://127.0.0.1:4200/chunk-FVADC37Z.js:307
+[   80961ms] [LOG] Angular is running in development mode. @ http://127.0.0.1:4200/@fs/C:/Users/FRANCIS/Documents/progamacion/Transporte/ibarra-app/.angular/cache/19.2.17/ibarra-app/vite/deps/chunk-FI22UAEO.js?v=94cb3fb3:15065
+[   81129ms] [LOG] LoginGuard: Usuario no autenticado, permitiendo acceso al login @ http://127.0.0.1:4200/main.js:31693

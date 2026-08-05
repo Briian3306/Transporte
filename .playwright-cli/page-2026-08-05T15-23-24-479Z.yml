@@ -1,0 +1,29 @@
+- generic [ref=f3e1]:
+  - banner [ref=f3e2]:
+    - generic [ref=f3e3]:
+      - link [ref=f3e5] [cursor=pointer]:
+        - /url: https://telepase.com.ar
+      - navigation [ref=f3e7]:
+        - link "Volver a la web" [ref=f3e8] [cursor=pointer]:
+          - /url: https://telepase.com.ar
+  - generic [ref=f3e13]:
+    - heading "Ingresá a tu cuenta de autogestión de TelePASE" [level=1] [ref=f3e14]
+    - generic [ref=f3e15]:
+      - generic [ref=f3e16]:
+        - generic [ref=f3e17]: Email
+        - textbox "Ingrese su email" [active] [ref=f3e18]: briantransporteibarra.com.ar
+      - generic [ref=f3e19]:
+        - generic [ref=f3e20]: Contraseña
+        - textbox "Ingrese su contraseña" [ref=f3e21]: Tibarra2020
+      - generic [ref=f3e22]:
+        - generic [ref=f3e24]:
+          - checkbox "Recordame" [ref=f3e25]
+          - text: Recordame
+        - button "Ingresar" [ref=f3e27] [cursor=pointer]
+    - generic [ref=f3e28]:
+      - link "Olvidó su contraseña?" [ref=f3e30] [cursor=pointer]:
+        - /url: https://telepase.com.ar/forgot-password
+      - paragraph [ref=f3e32]: Si tenés TelePASE y querés registrarte en Autogestión has CLICK AQUÍ!
+  - iframe [ref=f3e33]:
+    - button [ref=f4e2] [cursor=pointer]:
+      - img "TELEPASE Chatbot" [ref=f4e3]

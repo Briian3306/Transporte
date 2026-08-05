@@ -23,11 +23,15 @@ export { DateRangePickerComponent } from './date-range-picker/date-range-picker.
 export type { DateRangeValue } from './date-range-picker/date-range.types';
 export {
   formatRangeLabel,
+  formatDateInputDisplay,
   rangeToIsoFilters,
   startOfDay,
   endOfDay,
   toDateInputValue,
   parseDateInputValue,
+  parseFlexibleDateInput,
+  parseFlexibleDateRangeInput,
+  createValidLocalDate,
 } from './date-range-picker/date-range.types';
 export { SearchMultiSelectComponent } from './search-multi-select/search-multi-select.component';
 export type {

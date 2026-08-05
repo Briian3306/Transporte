@@ -1,4 +1,4 @@
-import { Component, Inject, inject, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, HostListener, Inject, inject, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import {
@@ -19,6 +19,7 @@ import { Paso7FacturaComponent } from './paso7-factura/paso7-factura.component';
 import { Paso8ValidacionComponent } from './paso8-validacion/paso8-validacion.component';
 import { Paso9RevisionComponent } from './paso9-revision/paso9-revision.component';
 import { PEAJES_SUPABASE_PROVIDERS } from '../peajes.providers';
+import { PEAJES_WIZARD_ADVANCE_EVENT } from './wizard-keyboard';
 
 interface PasoMeta {
   id: WizardPasoId;
@@ -79,6 +80,35 @@ export class PeajesWizardComponent implements OnInit {
     return this.state.pasoActual;
   }
 
+  @HostListener('document:keydown', ['$event'])
+  onWizardKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+      return;
+    }
+
+    const shiftNav =
+      event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey && !this.isEditableTarget(event.target);
+    // Alt+Arrow works inside inputs (Shift+Arrow keeps native text selection).
+    const altNav = event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey;
+    if (!shiftNav && !altNav) {
+      return;
+    }
+
+    event.preventDefault();
+    if (event.key === 'ArrowLeft') {
+      this.atras();
+      return;
+    }
+
+    const next = Math.min(9, this.pasoActual + 1) as WizardPasoId;
+    if (this.puedeAvanzarA(next)) {
+      this.state.setPaso(next);
+      return;
+    }
+    // Ask the active step to validate/commit (e.g. Paso 7 factura form).
+    document.dispatchEvent(new CustomEvent(PEAJES_WIZARD_ADVANCE_EVENT));
+  }
+
   irA(paso: WizardPasoId): void {
     if (paso < this.pasoActual || this.puedeAvanzarA(paso)) {
       this.state.setPaso(paso);
@@ -96,6 +126,14 @@ export class PeajesWizardComponent implements OnInit {
     if (this.pasoActual > 1) {
       this.state.setPaso((this.pasoActual - 1) as WizardPasoId);
     }
+  }
+
+  private isEditableTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    const tag = target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (target.isContentEditable) return true;
+    return !!target.closest('[contenteditable="true"]');
   }
 
   puedeAvanzarA(paso: WizardPasoId): boolean {

@@ -241,6 +241,32 @@
   color: var(--pw-muted);
 }
 
+.pw__kbd-hint {
+  margin: 0.85rem 0 0;
+  color: var(--pw-muted);
+  font-size: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.35rem;
+}
+
+.pw__kbd-hint kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.35rem;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--pw-line);
+  border-bottom-width: 2px;
+  border-radius: 0.35rem;
+  background: #fff;
+  color: var(--pw-ink);
+  font-family: var(--pw-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
 .pw__footer-actions {
   display: flex;
   gap: 0.55rem;

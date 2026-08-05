@@ -1,0 +1,8 @@
+[     248ms] [ERROR] The Content-Security-Policy directive name ':' contains one or more invalid characters. Only ASCII alphanumeric characters or dashes '-' are allowed in directive names. @ https://telepase.com.ar/login:0
+[    1361ms] [ERROR] The Content-Security-Policy directive name ':' contains one or more invalid characters. Only ASCII alphanumeric characters or dashes '-' are allowed in directive names. @ https://d45mmfengfo52uwkbepmzpzj.agents.do-ai.run/static/chatbot/widget.js:176
+[  854774ms] [LOG] 0 @ https://telepase.com.ar/assets/js/validacionRegistro.js?n=6:349
+[  863227ms] [LOG] 11 @ https://telepase.com.ar/assets/js/validacionRegistro.js?n=6:349
+[ 5704173ms] [ERROR] Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://cloud.digitalocean.com/gen-ai/auth/agents/c6723872-1945-11f0-bf8f-4e013e2ddde4/token?refresh_token=eyJhbGciOiJFUzI1NiIsImtpZCI6Imdlbi1haV8xNzIyMzY1MDAwIiwidHlwIjoiSldUIn0.eyJhdWQiOiJnZW4tYWktYXBpIiwiZXhwIjoxNzg2MDMwOTcwLCJpYXQiOjE3ODU5NDQ1NzAsImlzcyI6Imdlbi1haS1hcGkiLCJqdGkiOiI1NDAzMDg3YS03NTY5LTQ0NzgtYThmNy0wNTMxMzBlN2JhNWYiLCJuYmYiOjE3ODU5NDQ1NzAsInN1YiI6IjIwMS4yMjIuNDMuNjgifQ.zP-8uzJWv4oD8tUjX4a-5XJYcI2ZavEIO4MvkdZiDFNkm-jtQtwDFjNrXjr2LP2J3k_Zkq6PBIerOdTKaCa1SA:0
+[ 5704174ms] [ERROR] Failed to refresh access token TypeError: Failed to fetch
+    at https://d45mmfengfo52uwkbepmzpzj.agents.do-ai.run/static/chatbot/assets/index.js:83:11027
+    at https://d45mmfengfo52uwkbepmzpzj.agents.do-ai.run/static/chatbot/assets/index.js:83:11384 @ https://d45mmfengfo52uwkbepmzpzj.agents.do-ai.run/static/chatbot/assets/index.js:82

@@ -1,0 +1,6 @@
+[     435ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://telepase.com.ar/admin/login:0
+[     436ms] [ERROR] The Content-Security-Policy directive name ':' contains one or more invalid characters. Only ASCII alphanumeric characters or dashes '-' are allowed in directive names. @ https://telepase.com.ar/admin/login:0
+[     579ms] [ERROR] The Content-Security-Policy directive name ':' contains one or more invalid characters. Only ASCII alphanumeric characters or dashes '-' are allowed in directive names. @ https://telepase.com.ar/admin/login:35
+[     582ms] [ERROR] The Content-Security-Policy directive name ':' contains one or more invalid characters. Only ASCII alphanumeric characters or dashes '-' are allowed in directive names. @ https://telepase.com.ar/admin/login:35
+[     700ms] [ERROR] The Content-Security-Policy directive name ':' contains one or more invalid characters. Only ASCII alphanumeric characters or dashes '-' are allowed in directive names. @ https://telepase.com.ar/cdn-cgi/challenge-platform/scripts/jsd/main.js:0
+[     701ms] [ERROR] The Content-Security-Policy directive name ':' contains one or more invalid characters. Only ASCII alphanumeric characters or dashes '-' are allowed in directive names. @ https://telepase.com.ar/cdn-cgi/challenge-platform/scripts/jsd/main.js:0

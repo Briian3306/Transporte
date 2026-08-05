@@ -67,4 +67,11 @@
     <app-paso8-validacion *ngIf="pasoActual === 8" (completado)="siguiente()" (atras)="atras()" (irAPaso)="state.setPaso($event)" />
     <app-paso9-revision *ngIf="pasoActual === 9" (atras)="atras()" (reiniciar)="reiniciar()" />
   </section>
+
+  <p class="pw__kbd-hint" aria-live="polite">
+    Atajos:
+    <kbd>Shift</kbd>/<kbd>Alt</kbd>+<kbd>←</kbd> anterior ·
+    <kbd>Shift</kbd>/<kbd>Alt</kbd>+<kbd>→</kbd> continuar ·
+    <kbd>Tab</kbd> entre campos
+  </p>
 </div>

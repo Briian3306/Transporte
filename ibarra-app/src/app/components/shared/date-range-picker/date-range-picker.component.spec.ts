@@ -43,4 +43,29 @@ describe('DateRangePickerComponent', () => {
     expect(component.open).toBeFalse();
     expect(component.buttonLabel).toContain('2026');
   });
+
+  it('accepts typed Argentine dates and formats on blur', () => {
+    component.mode = 'single';
+    component.allowTypedInput = true;
+    const changes: unknown[] = [];
+    component.valueChange.subscribe((v) => changes.push(v));
+
+    component.textDraft = '13/6/2020';
+    component.onTextBlur();
+
+    expect(component.parseError).toBeFalse();
+    expect(component.value.from?.getFullYear()).toBe(2020);
+    expect(component.value.from?.getMonth()).toBe(5);
+    expect(component.value.from?.getDate()).toBe(13);
+    expect(component.textDraft).toBe('13/06/2020');
+    expect(changes.length).toBe(1);
+  });
+
+  it('marks parse error for invalid typed dates', () => {
+    component.mode = 'single';
+    component.textDraft = '31/02/2020';
+    component.onTextBlur();
+    expect(component.parseError).toBeTrue();
+    expect(component.value.from).toBeNull();
+  });
 });

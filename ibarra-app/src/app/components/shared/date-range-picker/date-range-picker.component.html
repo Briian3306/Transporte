@@ -1,19 +1,56 @@
-<div class="drp" [class.drp--disabled]="disabled">
-  <label *ngIf="label" class="drp__label">{{ label }}</label>
+<div class="drp" [class.drp--disabled]="disabled" [class.drp--error]="parseError">
+  <label *ngIf="label" class="drp__label" [attr.for]="inputId || null">{{ label }}</label>
+
   <div class="drp__trigger-row">
-    <button
-      type="button"
-      class="drp__trigger"
-      [disabled]="disabled"
-      [attr.aria-expanded]="open"
-      aria-haspopup="dialog"
-      (click)="toggle()"
-    >
+    <div class="drp__field" *ngIf="allowTypedInput; else buttonTrigger">
       <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-      <span class="drp__trigger-text" [class.drp__trigger-text--placeholder]="!value.from">
-        {{ buttonLabel }}
-      </span>
-    </button>
+      <input
+        #dateInput
+        type="text"
+        class="drp__input"
+        [id]="inputId || null"
+        [value]="textDraft"
+        [placeholder]="inputPlaceholder"
+        [disabled]="disabled"
+        autocomplete="off"
+        inputmode="numeric"
+        spellcheck="false"
+        [attr.aria-invalid]="parseError"
+        [attr.aria-expanded]="open"
+        aria-haspopup="dialog"
+        [attr.aria-label]="label || (isSingle ? 'Fecha' : 'Rango de fechas')"
+        (input)="onTextInput($event)"
+        (blur)="onTextBlur()"
+        (keydown)="onTextKeydown($event)"
+      />
+      <button
+        type="button"
+        class="drp__cal-btn"
+        [disabled]="disabled"
+        tabindex="-1"
+        aria-label="Abrir calendario"
+        (click)="toggle()"
+      >
+        <i class="fas fa-caret-down" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <ng-template #buttonTrigger>
+      <button
+        type="button"
+        class="drp__trigger"
+        [disabled]="disabled"
+        [attr.aria-expanded]="open"
+        aria-haspopup="dialog"
+        (click)="toggle()"
+      >
+        <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+        <span class="drp__trigger-text" [class.drp__trigger-text--placeholder]="!value.from">
+          {{ buttonLabel }}
+        </span>
+      </button>
+    </ng-template>
+
     <button
       *ngIf="value.from && !disabled"
       type="button"
@@ -25,7 +62,18 @@
     </button>
   </div>
 
-  <div *ngIf="open" class="drp__popover" [class.drp__popover--single]="isSingle" role="dialog" [attr.aria-label]="isSingle ? 'Calendario' : 'Calendario de rango'">
+  <p class="drp__hint" *ngIf="parseError">Usá el formato dd/mm/aaaa{{ isSingle ? '' : ' – dd/mm/aaaa' }}</p>
+  <p class="drp__hint drp__hint--quiet" *ngIf="allowTypedInput && !parseError && !value.from">
+    Escribí {{ isSingle ? '13/6/2020' : '13/6/2020 – 20/6/2020' }} o Abrí el calendario con ↓
+  </p>
+
+  <div
+    *ngIf="open"
+    class="drp__popover"
+    [class.drp__popover--single]="isSingle"
+    role="dialog"
+    [attr.aria-label]="isSingle ? 'Calendario' : 'Calendario de rango'"
+  >
     <div class="drp__nav">
       <button type="button" class="drp__nav-btn" (click)="prevMonth()" aria-label="Mes anterior">
         <i class="fas fa-chevron-left" aria-hidden="true"></i>

@@ -47,6 +47,7 @@ Cuando exista una skill instalada equivalente, debe leerse antes de actuar:
 | Supabase, migraciones, RLS y persistencia | skill local de Supabase del proyecto, si está instalada; si no, seguir este AGENTS y validar localmente |
 | Documentación de arquitectura y PRD | `notion:notion-spec-to-implementation` solo si la fuente está en Notion; para este repo, documentar en `docs/` y usar el PRD |
 | Verificación de hojas Excel | `spreadsheets:Spreadsheets` para artefactos `.xlsx` aislados; no sustituye las pruebas del módulo |
+| Scraper Telepase (scripts, no Angular) | `scripts/.agents/skills/telepase-scraper` + `playwright-cli` + `playwright-best-practices` |
 | Descubrimiento de skills | `find-skills`, únicamente para localizar una skill faltante; no instalarla automáticamente |
 
 La ausencia de una skill no bloquea el trabajo: el contrato del repositorio, el PRD y las pruebas son obligatorios y tienen prioridad.
@@ -72,6 +73,17 @@ En planificación / MVP:
 
 - **Peajes (Module Automation Tool)** — carga de Excel de pasadas, transformaciones, mapeo a estructura estándar, factura y persistencia. Specs en `ibarra-app/docs/plan/`.
 
+### Scripts Telepase (fuera de Angular)
+
+Pipeline Node bajo `scripts/` para descargar facturas PDF y pasadas CSV desde Telepase. **No forma parte del runtime Angular**; no modificar `ibarra-app/` al trabajar aquí.
+
+Coordinación propia (no usar `ibarra-app/feature_list.json` ni `claude-progress.md` de Peajes):
+
+- `scripts/docs/telepase-downloader.md` — cómo ejecutar y requisitos
+- `scripts/docs/claude-progress-script.md` — bitácora
+- `scripts/feature-list-script.json` — features `TS*`
+- Skill: `scripts/.agents/skills/telepase-scraper/SKILL.md`
+
 ## Estructura del repo
 
 ```
@@ -79,6 +91,13 @@ Transporte/
 ├── AGENTS.md                 # Este archivo
 ├── netlify.toml              # Deploy Netlify (base = ibarra-app)
 ├── netlify/functions/        # Serverless (choferes, logística, config)
+├── scripts/                  # Telepase scraper (standalone; no Angular)
+│   ├── telepase/             # Node package (parse + download)
+│   ├── html/                 # HTML DataTables guardado
+│   ├── downloads/            # PDF/CSV de salida (gitignored)
+│   ├── docs/                 # docs + claude-progress-script.md
+│   ├── feature-list-script.json
+│   └── .agents/skills/       # skill telepase-scraper
 └── ibarra-app/               # App Angular 19 (código principal)
     ├── src/app/
     │   ├── components/       # Componentes standalone

@@ -1,0 +1,186 @@
+{
+  "project": "telepase-scraper-scripts",
+  "domain": "scripts-only",
+  "decoupled_from": "ibarra-app Angular / Peajes module",
+  "source_of_truth": "scripts/docs/telepase-downloader.md",
+  "progress_log": "scripts/docs/claude-progress-script.md",
+  "skill": "scripts/.agents/skills/telepase-scraper/SKILL.md",
+  "single_active_feature_per_agent": true,
+  "documentation_last_reviewed": "2026-08-05",
+  "documentation_status": "MVP operativo: parse + two-pass download + docs",
+  "agents": [
+    "script-scraper",
+    "script-docs"
+  ],
+  "boundaries": {
+    "may_modify": [
+      "scripts/telepase/**",
+      "scripts/html/**",
+      "scripts/downloads/**",
+      "scripts/docs/telepase-downloader.md",
+      "scripts/docs/claude-progress-script.md",
+      "scripts/feature-list-script.json",
+      "scripts/.agents/**"
+    ],
+    "must_not_modify": [
+      "ibarra-app/src/**",
+      "ibarra-app/supabase/**",
+      "ibarra-app/feature_list.json",
+      "ibarra-app/docs/claude-progress.md",
+      "netlify/**"
+    ]
+  },
+  "features": [
+    {
+      "id": "TS00-1",
+      "title": "Scaffold package scripts/telepase independiente de Angular",
+      "agent_owner": "script-scraper",
+      "depends_on": [],
+      "status": "passing",
+      "verification": [
+        "Existe scripts/telepase/package.json con cheerio, playwright, dotenv",
+        "paths.mjs apunta a html/, downloads/, auth.json bajo scripts/",
+        ".gitignore excluye .env, auth.json, node_modules"
+      ],
+      "evidence": [
+        "2026-08-05: package.json + paths.mjs + .gitignore + .env.example creados",
+        "npm install en scripts/telepase EXIT 0"
+      ]
+    },
+    {
+      "id": "TS00-2",
+      "title": "Parsear DataTables HTML de facturas Telepase",
+      "agent_owner": "script-scraper",
+      "depends_on": ["TS00-1"],
+      "status": "passing",
+      "verification": [
+        "parse-facturas.mjs lee scripts/html/facturas y emite rows.json",
+        "Extrae periodo, concesionario, numero, fechas, monto, facturaUrl, pasadaUrl, estado",
+        "Concesionario: data-concesionario || slug URL || clase tr || texto visible",
+        "Detecta anchors sin ga-descargar-* (AUMESA) vía href*=descargar-factura|pasadas"
+      ],
+      "evidence": [
+        "2026-08-05: 157 filas con ambas URLs (antes 37 solo con clases GA)",
+        "Fila 212490 → concesionario AUMESA, URLs aumesa correctas"
+      ]
+    },
+    {
+      "id": "TS01-1",
+      "title": "Login Telepase + storageState auth.json",
+      "agent_owner": "script-scraper",
+      "depends_on": ["TS00-1"],
+      "status": "passing",
+      "verification": [
+        "Login en https://telepase.com.ar/login con TELEPASE_USER/TELEPASE_PASS",
+        "Guarda auth.json vía context.storageState()",
+        "Reutiliza JWT si no expiró; --force fuerza re-login"
+      ],
+      "evidence": [
+        "2026-08-05: login.mjs guarda auth.json; re-login --force usado en pase AUSA",
+        "Confirmado /admin/login = 404; /login = formulario Email/Contraseña"
+      ]
+    },
+    {
+      "id": "TS01-2",
+      "title": "Descarga pública (--no-auth) vía fetch",
+      "agent_owner": "script-scraper",
+      "depends_on": ["TS00-2"],
+      "status": "passing",
+      "verification": [
+        "download-batch.mjs --no-auth descarga PDF/CSV sin browser",
+        "Extensión desde Content-Type/Content-Disposition",
+        "Ruta scripts/downloads/{CONCESIONARIO}/{facturas|pasadas}_{periodo}_{numero}.{ext}"
+      ],
+      "evidence": [
+        "2026-08-05: AUMESA factura application/pdf; pasadas text/plain → .csv",
+        "Pase full --no-auth: 297 saved, 12 skipped, 5 failed (AUSA auth-only)"
+      ]
+    },
+    {
+      "id": "TS01-3",
+      "title": "Descarga autenticada para URLs AUSA genéricas",
+      "agent_owner": "script-scraper",
+      "depends_on": ["TS01-1", "TS01-2"],
+      "status": "passing",
+      "verification": [
+        "Sin cookies, /admin/descargar-factura/{n}/DR/... redirige a /dashboard",
+        "Con auth.json, context.request.get obtiene application/pdf",
+        "Segundo pase node download-batch.mjs (sin --no-auth) completa fallos"
+      ],
+      "evidence": [
+        "2026-08-05: 5 PDF AUSA recuperados con sesión; fallos residuales 0",
+        "Total final 314 archivos (157 PDF + 157 CSV)"
+      ]
+    },
+    {
+      "id": "TS01-4",
+      "title": "Skip existente, reintentos, delays y errors.csv",
+      "agent_owner": "script-scraper",
+      "depends_on": ["TS01-2"],
+      "status": "passing",
+      "verification": [
+        "Skip si existe facturas|pasadas_{periodo}_{numero}.*",
+        "Hasta 3 reintentos con backoff",
+        "Delay aleatorio 300–600 ms entre requests",
+        "Fallos append a scripts/downloads/errors.csv (row_id,url,status_code)",
+        "Summary: total rows, saved, skipped, failed"
+      ],
+      "evidence": [
+        "2026-08-05: re-runs skip 312; errors.csv registró fallos AUSA intermedios",
+        "Summary impreso en cada ejecución de download-batch.mjs"
+      ]
+    },
+    {
+      "id": "TS02-1",
+      "title": "Documentación de ejecución y requisitos",
+      "agent_owner": "script-docs",
+      "depends_on": ["TS01-2", "TS01-3"],
+      "status": "passing",
+      "verification": [
+        "scripts/docs/telepase-downloader.md describe install, flags, two-pass, troubleshooting"
+      ],
+      "evidence": [
+        "2026-08-05: telepase-downloader.md creado y actualizado con flujo two-pass"
+      ]
+    },
+    {
+      "id": "TS02-2",
+      "title": "Coordinación multiagente scripts (progress + feature list + skill)",
+      "agent_owner": "script-docs",
+      "depends_on": ["TS02-1"],
+      "status": "passing",
+      "verification": [
+        "claude-progress-script.md existe bajo scripts/docs/",
+        "feature-list-script.json existe bajo scripts/",
+        "Skill telepase-scraper referencia playwright-cli + playwright-best-practices + scrape",
+        "Boundaries explícitos: no tocar ibarra-app producto"
+      ],
+      "evidence": [
+        "2026-08-05: artifacts + skill scripts/.agents/skills/telepase-scraper/ creados"
+      ]
+    },
+    {
+      "id": "TS03-1",
+      "title": "Refresco automático del HTML facturas vía Playwright",
+      "agent_owner": "script-scraper",
+      "depends_on": ["TS01-1"],
+      "status": "not_started",
+      "verification": [
+        "Tras login, navegar a /admin/facturas, aplicar filtros y guardar HTML en scripts/html/facturas",
+        "No requiere intervención manual salvo credenciales en .env"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "TS03-2",
+      "title": "Manifest JSON de descargas (metadata + hashes)",
+      "agent_owner": "script-scraper",
+      "depends_on": ["TS01-4"],
+      "status": "not_started",
+      "verification": [
+        "Genera manifest con rowId, urls, path local, content-type, tamaño, sha256 opcional"
+      ],
+      "evidence": []
+    }
+  ]
+}

@@ -4,14 +4,20 @@ import {
   EventEmitter,
   HostListener,
   Input,
+  OnChanges,
   Output,
+  SimpleChanges,
+  ViewChild,
   forwardRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import {
   DateRangeValue,
+  formatDateInputDisplay,
   formatRangeLabel,
+  parseFlexibleDateInput,
+  parseFlexibleDateRangeInput,
   sameDay,
   startOfDay,
 } from './date-range.types';
@@ -36,7 +42,7 @@ interface CalendarDay {
     },
   ],
 })
-export class DateRangePickerComponent implements ControlValueAccessor {
+export class DateRangePickerComponent implements ControlValueAccessor, OnChanges {
   @Input() value: DateRangeValue = { from: null, to: null };
   @Input() label = '';
   @Input() placeholder = 'Elegir fechas';
@@ -45,10 +51,17 @@ export class DateRangePickerComponent implements ControlValueAccessor {
   @Input() maxDate: Date | null = null;
   /** `range` = from/to; `single` = una fecha (from). */
   @Input() mode: 'range' | 'single' = 'range';
+  /** When true (default), the trigger is a text field that accepts typed dates. */
+  @Input() allowTypedInput = true;
+  @Input() inputId = '';
 
   @Output() valueChange = new EventEmitter<DateRangeValue>();
 
+  @ViewChild('dateInput') dateInput?: ElementRef<HTMLInputElement>;
+
   open = false;
+  textDraft = '';
+  parseError = false;
   /** Left month of the dual calendar. */
   viewMonth = startOfDay(new Date());
   readonly weekdays = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
@@ -58,6 +71,12 @@ export class DateRangePickerComponent implements ControlValueAccessor {
 
   constructor(private readonly host: ElementRef<HTMLElement>) {}
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['value'] && !this.isDraftDirty()) {
+      this.syncTextFromValue();
+    }
+  }
+
   get buttonLabel(): string {
     return formatRangeLabel(
       this.value,
@@ -66,6 +85,15 @@ export class DateRangePickerComponent implements ControlValueAccessor {
         : this.placeholder,
       this.mode
     );
+  }
+
+  get inputPlaceholder(): string {
+    if (this.mode === 'single') {
+      return this.placeholder === 'Elegir fechas' || this.placeholder === 'Elegir fecha'
+        ? 'dd/mm/aaaa'
+        : this.placeholder;
+    }
+    return this.placeholder === 'Elegir fechas' ? 'dd/mm/aaaa – dd/mm/aaaa' : this.placeholder;
   }
 
   get isSingle(): boolean {
@@ -94,6 +122,7 @@ export class DateRangePickerComponent implements ControlValueAccessor {
 
   writeValue(value: DateRangeValue | null): void {
     this.value = value ?? { from: null, to: null };
+    this.syncTextFromValue();
     if (this.value.from) {
       this.viewMonth = startOfDay(
         new Date(this.value.from.getFullYear(), this.value.from.getMonth(), 1)
@@ -118,6 +147,11 @@ export class DateRangePickerComponent implements ControlValueAccessor {
     this.open = !this.open;
     if (this.open) {
       this.onTouched();
+      if (this.value.from) {
+        this.viewMonth = startOfDay(
+          new Date(this.value.from.getFullYear(), this.value.from.getMonth(), 1)
+        );
+      }
     }
   }
 
@@ -140,6 +174,7 @@ export class DateRangePickerComponent implements ControlValueAccessor {
     if (this.mode === 'single') {
       this.emit({ from: picked, to: null });
       this.close();
+      this.focusInput();
       return;
     }
 
@@ -158,12 +193,46 @@ export class DateRangePickerComponent implements ControlValueAccessor {
     this.emit(next);
     if (next.from && next.to) {
       this.close();
+      this.focusInput();
     }
   }
 
   clear(event: Event): void {
     event.stopPropagation();
+    this.parseError = false;
     this.emit({ from: null, to: null });
+    this.focusInput();
+  }
+
+  onTextInput(event: Event): void {
+    const el = event.target as HTMLInputElement;
+    this.textDraft = el.value;
+    this.parseError = false;
+  }
+
+  onTextBlur(): void {
+    this.commitTextDraft();
+    this.onTouched();
+  }
+
+  onTextKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.commitTextDraft();
+      if (!this.parseError && this.value.from) {
+        this.close();
+      }
+      return;
+    }
+    if (event.key === 'ArrowDown' && !this.open) {
+      event.preventDefault();
+      this.toggle();
+      return;
+    }
+    if (event.key === 'Escape' && this.open) {
+      event.preventDefault();
+      this.close();
+    }
   }
 
   isStart(day: CalendarDay): boolean {
@@ -193,10 +262,81 @@ export class DateRangePickerComponent implements ControlValueAccessor {
     if (this.open) this.close();
   }
 
+  private commitTextDraft(): void {
+    const raw = this.textDraft.trim();
+    if (!raw) {
+      this.parseError = false;
+      this.emit({ from: null, to: null });
+      return;
+    }
+
+    if (this.mode === 'single') {
+      const parsed = parseFlexibleDateInput(raw);
+      if (!parsed || this.isOutOfBounds(parsed)) {
+        this.parseError = true;
+        return;
+      }
+      this.parseError = false;
+      this.emit({ from: parsed, to: null });
+      return;
+    }
+
+    const expectsRange = /[–—]/.test(raw) || /\s-\s/.test(raw);
+    const range = parseFlexibleDateRangeInput(raw);
+    if (
+      !range.from ||
+      this.isOutOfBounds(range.from) ||
+      (expectsRange && !range.to) ||
+      (range.to != null && this.isOutOfBounds(range.to))
+    ) {
+      this.parseError = true;
+      return;
+    }
+
+    let from = range.from;
+    let to = range.to;
+    if (from && to && to < from) {
+      [from, to] = [to, from];
+    }
+    this.parseError = false;
+    this.emit({ from, to });
+  }
+
   private emit(next: DateRangeValue): void {
     this.value = next;
+    this.syncTextFromValue();
     this.valueChange.emit(next);
     this.onChange(next);
+  }
+
+  private syncTextFromValue(): void {
+    if (this.mode === 'single') {
+      this.textDraft = formatDateInputDisplay(this.value.from);
+      return;
+    }
+    if (this.value.from && this.value.to) {
+      this.textDraft = `${formatDateInputDisplay(this.value.from)} – ${formatDateInputDisplay(this.value.to)}`;
+      return;
+    }
+    if (this.value.from) {
+      this.textDraft = formatDateInputDisplay(this.value.from);
+      return;
+    }
+    this.textDraft = '';
+  }
+
+  private isDraftDirty(): boolean {
+    const expected =
+      this.mode === 'single'
+        ? formatDateInputDisplay(this.value.from)
+        : this.value.from && this.value.to
+          ? `${formatDateInputDisplay(this.value.from)} – ${formatDateInputDisplay(this.value.to)}`
+          : formatDateInputDisplay(this.value.from);
+    return this.textDraft.trim() !== expected.trim() && this.textDraft.trim() !== '';
+  }
+
+  private focusInput(): void {
+    queueMicrotask(() => this.dateInput?.nativeElement.focus());
   }
 
   private monthTitle(d: Date): string {

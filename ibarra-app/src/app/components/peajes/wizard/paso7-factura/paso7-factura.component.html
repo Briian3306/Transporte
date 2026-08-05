@@ -1,9 +1,9 @@
-<div class="paso7">
+<div class="paso7" tabindex="-1">
   <div class="pw__head">
     <div>
       <div class="pw__eyebrow">Paso 07 · asociación contable</div>
       <h2>Ingresar factura</h2>
-      <p>Asociá el lote con una factura. En el siguiente paso se valida el importe sin IVA.</p>
+      <p>Asociá el lote con una factura. Tab entre campos; escribí la fecha como 13/6/2020.</p>
     </div>
     <span class="pw__status pw__status--warn">Pendiente de confirmación</span>
   </div>
@@ -15,7 +15,13 @@
         <p>Guardá transformaciones, mapeos y estaciones reconocidas para que la próxima importación llegue directo a Factura.</p>
       </div>
       <div class="paso7__template-actions">
-        <input class="pw__input" [(ngModel)]="nombrePlantilla" placeholder="Nombre de la plantilla" [disabled]="guardandoPlantilla" />
+        <input
+          class="pw__input"
+          [(ngModel)]="nombrePlantilla"
+          placeholder="Nombre de la plantilla"
+          [disabled]="guardandoPlantilla"
+          aria-label="Nombre de la plantilla"
+        />
         <button type="button" class="pw__btn pw__btn--primary" (click)="guardarPlantillaDesdeWizard()" [disabled]="guardandoPlantilla">
           {{ guardandoPlantilla ? 'Guardando…' : 'Crear plantilla' }}
         </button>
@@ -23,19 +29,32 @@
       </div>
       <div class="pw__field-error" *ngIf="plantillaError">{{ plantillaError }}</div>
     </section>
+
     <div class="paso7__layout">
       <div class="paso7__form-card">
-        <h3>Datos de la factura</h3>
-        <form [formGroup]="form" class="pw__form-grid" (ngSubmit)="continuar()">
+        <div class="paso7__form-head">
+          <h3>Datos de la factura</h3>
+          <span class="paso7__form-chip">Teclado primero</span>
+        </div>
+
+        <form [formGroup]="form" class="pw__form-grid paso7__form" (ngSubmit)="continuar()">
           <div class="pw__field">
             <label for="factura">Número de factura *</label>
-            <input id="factura" formControlName="factura" autocomplete="off" />
+            <input
+              #facturaInput
+              id="factura"
+              formControlName="factura"
+              autocomplete="off"
+              enterkeyhint="next"
+            />
             <div class="pw__field-error" *ngIf="invalid('factura')">Obligatorio</div>
           </div>
+
           <div class="pw__field">
             <label for="cuenta">Cuenta</label>
-            <input id="cuenta" formControlName="cuenta" autocomplete="off" placeholder="Opcional" />
+            <input id="cuenta" formControlName="cuenta" autocomplete="off" placeholder="Opcional" enterkeyhint="next" />
           </div>
+
           <div class="pw__field paso7__field--full">
             <app-search-multi-select
               label="Empresa *"
@@ -50,43 +69,70 @@
             <p class="paso7__hint">Definida en Paso 1 · no se modifica aquí</p>
             <div class="pw__field-error" *ngIf="invalid('empresa_id')">Obligatorio (elegí empresa en Paso 1)</div>
           </div>
-          <div class="pw__field">
+
+          <div class="pw__field paso7__field--date">
             <app-date-range-picker
               label="Fecha de factura *"
               mode="single"
-              placeholder="Elegir fecha"
+              inputId="fecha_factura"
+              placeholder="dd/mm/aaaa"
               [value]="fechaRange"
               (valueChange)="onFechaChange($event)"
             ></app-date-range-picker>
             <div class="pw__field-error" *ngIf="invalid('fecha_factura')">Obligatorio</div>
           </div>
+
           <div class="pw__field">
             <label for="importe_sin_iva">Subtotal *</label>
-            <input id="importe_sin_iva" type="number" step="0.01" formControlName="importe_sin_iva" />
+            <input
+              id="importe_sin_iva"
+              type="number"
+              step="0.01"
+              formControlName="importe_sin_iva"
+              enterkeyhint="next"
+            />
             <div class="pw__field-error" *ngIf="invalid('importe_sin_iva')">Obligatorio</div>
           </div>
+
           <div class="pw__field">
             <label for="percepciones">Percepciones *</label>
-            <input id="percepciones" type="number" min="0" step="0.01" formControlName="percepciones" />
+            <input
+              id="percepciones"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="percepciones"
+              enterkeyhint="next"
+            />
             <div class="pw__field-error" *ngIf="invalid('percepciones')">Ingresá un importe válido</div>
           </div>
+
           <div class="pw__field">
             <label for="iva">IVA *</label>
-            <input id="iva" type="number" min="0" step="0.01" formControlName="iva" />
-            <div class="pw__field-error" *ngIf="invalid('iva')">IngresÃ¡ un importe válido</div>
+            <input id="iva" type="number" min="0" step="0.01" formControlName="iva" enterkeyhint="next" />
+            <div class="pw__field-error" *ngIf="invalid('iva')">Ingresá un importe válido</div>
           </div>
+
           <div class="pw__field">
             <label for="importe_total">Total *</label>
-            <input id="importe_total" type="number" min="0" step="0.01" formControlName="importe_total" />
+            <input
+              id="importe_total"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="importe_total"
+              enterkeyhint="done"
+            />
             <div class="pw__field-error" *ngIf="invalid('importe_total')">Obligatorio</div>
           </div>
         </form>
-        <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" style="margin-top: 0.85rem" (click)="cargarFacturaMvp()">
+
+        <button type="button" class="pw__btn pw__btn--ghost pw__btn--small paso7__mvp" (click)="cargarFacturaMvp()">
           Prefijar factura del ejemplo MVP
         </button>
       </div>
 
-      <aside class="paso7__side">
+      <aside class="paso7__side" aria-live="polite">
         <div class="paso7__label">Suma estimada de importes netos</div>
         <div class="paso7__money">{{ sumaNetos | number: '1.2-2' }}</div>
         <div class="paso7__comparison">
@@ -110,7 +156,13 @@
   </div>
 
   <div class="pw__footer">
-    <div class="pw__footer-hint">Ejemplo MVP: F-A-0001-00004567 · sin IVA 102060.00</div>
+    <div class="pw__footer-hint">
+      <span class="paso7__kbd-line">
+        <kbd>Ctrl</kbd>+<kbd>Enter</kbd> continuar ·
+        <kbd>Alt</kbd>+<kbd>←</kbd> volver
+      </span>
+      <span>Ejemplo MVP: F-A-0001-00004567 · sin IVA 102060.00</span>
+    </div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
       <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>

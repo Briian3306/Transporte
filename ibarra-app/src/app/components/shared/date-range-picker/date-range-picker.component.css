@@ -1,16 +1,21 @@
 .drp {
-  --drp-signal: #004ac6;
+  --drp-signal: #1769e0;
   --drp-rail: #f2f4f6;
   --drp-line: #e2e8f0;
-  --drp-ink: #0f172a;
-  --drp-muted: #434655;
+  --drp-ink: #17283e;
+  --drp-muted: #6f8197;
   --drp-surface: #ffffff;
+  --drp-danger: #bd4b4b;
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   font-size: 0.875rem;
   color: var(--drp-ink);
+}
+
+.drp--disabled {
+  opacity: 0.7;
 }
 
 .drp__label {
@@ -23,6 +28,90 @@
   display: flex;
   align-items: stretch;
   gap: 0.35rem;
+}
+
+.drp__field {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.35rem 0.2rem 0.65rem;
+  border: 1px solid var(--drp-line);
+  border-radius: 0.5rem;
+  background: var(--drp-surface);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.drp__field:focus-within {
+  border-color: color-mix(in srgb, var(--drp-signal) 55%, var(--drp-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--drp-signal) 16%, transparent);
+}
+
+.drp--error .drp__field {
+  border-color: color-mix(in srgb, var(--drp-danger) 70%, var(--drp-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--drp-danger) 14%, transparent);
+}
+
+.drp__field > .fa-calendar-alt {
+  color: var(--drp-signal);
+  flex-shrink: 0;
+}
+
+.drp__input {
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--drp-ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  padding: 0.35rem 0;
+}
+
+.drp__input::placeholder {
+  color: var(--drp-muted);
+}
+
+.drp__input:disabled {
+  cursor: not-allowed;
+}
+
+.drp__cal-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--drp-muted);
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.drp__cal-btn:hover:not(:disabled) {
+  color: var(--drp-ink);
+  background: var(--drp-rail);
+}
+
+.drp__cal-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--drp-signal) 50%, transparent);
+  outline-offset: 1px;
+}
+
+.drp__hint {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--drp-danger);
+}
+
+.drp__hint--quiet {
+  color: var(--drp-muted);
 }
 
 .drp__trigger {

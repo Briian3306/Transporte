@@ -1,0 +1,17 @@
+{
+  "name": "telepase-downloader",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "parse": "node parse-facturas.mjs",
+    "download": "node download-batch.mjs",
+    "pilot": "node download-batch.mjs --limit 3 --diverse",
+    "login": "node login.mjs",
+    "login:cli": "node login-via-cli.mjs"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "playwright": "^1.51.0"
+  }
+}
