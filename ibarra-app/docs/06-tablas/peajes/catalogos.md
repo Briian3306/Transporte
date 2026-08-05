@@ -117,7 +117,7 @@ Detalle UI: [docs/06-components/peajes/catalogos.md](../../06-components/peajes/
 
 ### Estaciones y aliases de proveedor
 
-`estaciones` incorpora coordenadas, camino y estado geográfico `OK`/`REVIEW`. `estaciones_alias_proveedor` conserva equivalencias normalizadas y confirmadas por empresa; es la fuente de resolución reutilizable antes de sugerir coincidencias parciales.
+`estaciones` incorpora coordenadas, camino y estado geográfico `OK`/`REVIEW`. `estaciones_alias_proveedor` conserva equivalencias normalizadas y confirmadas por empresa; es la fuente de resolución reutilizable antes de sugerir coincidencias parciales
 
 - SQL: `supabase/migrations/20260730125513_peajes_catalogos.sql`, `supabase/migrations/20260731124502_peajes_empresas.sql`
 - SQL fuente: `supabase/migrations/`.
