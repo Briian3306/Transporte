@@ -96,8 +96,28 @@ describe('Paso5MapeoComponent', () => {
     await component.ngOnInit();
 
     expect(component.mapeos.map((m) => `${m.columnaOrigen}:${m.columnaDestino}`)).toEqual([
-      'PATENTE:PATENTE_ID', 'TARIFA:PRECIO', 'BONIFICACION:BONIFICACION',
+      'PATENTE:PATENTE_ID',
+      'TARIFA:PRECIO',
+      'BONIFICACION:BONIFICACION',
+      'QUANTITY:QUANTITY',
     ]);
+    expect(component.etiquetaOrigen('QUANTITY')).toContain('valor generado');
+    expect(component.faltantes()).not.toContain('QUANTITY');
+  });
+
+  it('exige QUANTITY en faltantes si se quita el mapeo', async () => {
+    state.setMapeos([
+      { columnaOrigen: 'DOMINIO', columnaDestino: 'PATENTE_ID', excluida: false },
+      { columnaOrigen: 'TARIFA', columnaDestino: 'PRECIO', excluida: false },
+    ]);
+    await component.ngOnInit();
+    // asegurarMapeosObligatorios agrega QUANTITY; lo quitamos para forzar faltante
+    state.setMapeos(
+      state.snapshot().mapeos.map((m) =>
+        m.columnaDestino === 'QUANTITY' ? { ...m, columnaDestino: null } : m
+      )
+    );
+    expect(component.faltantes()).toContain('QUANTITY');
   });
 
   it('F02-14: lista patentes sin resolver y permite quitarlas', async () => {

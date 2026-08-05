@@ -10,7 +10,9 @@
 
 ## Estado actual
 
-Fecha: 2026-08-05 — **F11 tolerancia ±1% + Search Select Paso 1**: `peajes_validar_factura_pasadas` usa `abs(subtotal)*0.01` por defecto; `app-search-select` en Empresa/Plantilla.
+Fecha: 2026-08-05 — **QUANTITY mapping / AUSOL-7-2026**: Paso 5 exige mapeo QUANTITY (fila sintética + `ASIGNAR_VALOR=1`); apply repara plantillas legacy sin QUANTITY; DESARROLLO plantilla `AUSOL-7-2026` (`7c42ac64-…`) actualizada con config orden 100 + mapeo `QUANTITY→QUANTITY`.
+
+Fecha previa: 2026-08-05 — **F11 tolerancia ±1% + Search Select Paso 1**: `peajes_validar_factura_pasadas` usa `abs(subtotal)*0.01` por defecto; `app-search-select` en Empresa/Plantilla.
 
 Fecha previa: 2026-08-04 — **F09 early skip from Paso 1**: con archivo+empresa+plantilla, `PeajesPlantillaApplyService` aplica y salta a Factura (o 5/6). Paso 4 reutiliza el mismo servicio.
 
@@ -79,6 +81,13 @@ Decisiones vigentes:
 F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `passing` (2026-08-03). **F02-12/13/14** `passing` (2026-08-04). **F02-15** + **F02-16** `passing` (2026-08-04).
 
 ## Registro de sesiones
+
+### 2026-08-05 — QUANTITY mapping + AUSOL-7-2026 DESARROLLO
+
+- **Bug:** aplicar `AUSOL-7-2026` fallaba con `QUANTITY: Columna obligatoria no mapeada`.
+- **Código:** `asegurarQuantityMapeoYPipeline` en wizard state; Paso 5 exige QUANTITY (etiqueta «valor generado»); `PeajesPlantillaApplyService` inyecta `ASIGNAR_VALOR { valor: 1 }` + mapeo si falta.
+- **DESARROLLO:** plantilla `7c42ac64-e7b3-4c9d-9085-039f576d0e02` — config orden 100 `ASIGNAR_VALOR` valor=1; mapeos `QUANTITY→QUANTITY`.
+- **Verify:** `ng test` apply+wizard-state+paso5 → **17 SUCCESS**.
 
 ### 2026-08-05 — F11 tolerancia 1% + Search Select Paso 1
 

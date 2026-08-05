@@ -190,13 +190,13 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
       nombreArchivo: 'a.xlsx',
       tamanioBytes: 1,
       totalFilas: 1,
-      columnas: ['ESTACION'],
-      filasPreview: [{ ESTACION: 'E1' }],
+      columnas: ['PATENTE'],
+      filasPreview: [{ PATENTE: 'AB123CD' }],
       filasOrigen: [],
       tiposInferidos: {},
     });
-    expect(state.descartarRecomendacion('rec-estacion')).toBeTrue();
-    expect(state.recomendacionesPendientes().some((r) => r.id === 'rec-estacion')).toBeFalse();
+    expect(state.descartarRecomendacion('rec-patente')).toBeTrue();
+    expect(state.recomendacionesPendientes().some((r) => r.id === 'rec-patente')).toBeFalse();
   });
 
   it('F02-12: setPreview incluye solo columnas reconocidas', () => {
@@ -217,5 +217,27 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
     expect(s.columnasIncluidas).toContain('PATENTE');
     expect(s.columnasExcluidas).toContain('NOTA_EXTRA');
     expect(s.columnasExcluidas).toContain('RUIDO');
+  });
+
+  it('RN-07: asegurarMapeosObligatorios agrega QUANTITY mapeo + ASIGNAR_VALOR', () => {
+    state.setPreview({
+      nombreArchivo: 'ausol.csv',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['FECHA', 'PATENTE', 'TARIFA', 'BONIFICACION'],
+      filasPreview: [],
+      filasOrigen: [],
+      tiposInferidos: {},
+    });
+    state.setMapeos([]);
+    state.asegurarMapeosObligatorios();
+
+    expect(
+      state.mapeosActivos().some((m) => m.columnaOrigen === 'QUANTITY' && m.columnaDestino === 'QUANTITY')
+    ).toBeTrue();
+    const qtyDraft = state
+      .getConfiguracionesDraft()
+      .find((d) => d.columna_destino === 'QUANTITY');
+    expect(qtyDraft?.configuracion?.algoritmo_codigo).toBe('ASIGNAR_VALOR');
   });
 });

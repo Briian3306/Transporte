@@ -1,6 +1,7 @@
 import { Inject, Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
+  ConfiguracionPlantilla,
   PEAJES_CATALOGO_SERVICE,
   PEAJES_PLANTILLAS_SERVICE,
   PeajesCatalogoService,
@@ -79,11 +80,13 @@ export class PeajesPlantillaApplyService {
   private async aplicarAlEstado(
     plantilla: PlantillaConfiguracion
   ): Promise<Omit<ResultadoAplicarPlantilla, 'excepcion'>> {
-    const configs = plantilla.configuraciones ?? [];
+    const configsBase = [...(plantilla.configuraciones ?? [])];
     const columnas = this.state.columnasParaMapeo();
-    const mapeosPlantilla = plantilla.mapeos?.length
-      ? plantilla.mapeos
-      : this.mapeosDesdeConfiguraciones(configs);
+    let mapeosPlantilla = plantilla.mapeos?.length
+      ? [...plantilla.mapeos]
+      : this.mapeosDesdeConfiguraciones(configsBase);
+    const { configs, mapeos } = this.asegurarQuantityEnPlantilla(configsBase, mapeosPlantilla);
+    mapeosPlantilla = mapeos;
     const algoritmos = await firstValueFrom(this.plantillasSvc.listarAlgoritmos());
     const erroresValidacion = this.motor.validarDefinicionPlantilla(
       configs,
@@ -103,6 +106,19 @@ export class PeajesPlantillaApplyService {
     const filas = this.filasParaMotor(columnas);
     const transformadas = this.motor.aplicarPipeline(filas, configs, algoritmos);
     this.state.setMapeos(mapeosPlantilla);
+    // Persistir draft con QUANTITY reparado para que Paso 3/7 puedan guardar la plantilla completa.
+    this.state.setConfiguracionesDraft(
+      configs.map((c) => ({
+        clientId: c.id || `cfg-${c.orden}-${c.nombre_columna}`,
+        orden: c.orden,
+        tipo: c.tipo,
+        nombre_columna: c.nombre_columna,
+        columna_destino: c.columna_destino ?? null,
+        algoritmo_combinado_id: c.algoritmo_combinado_id ?? null,
+        configuracion: (c.configuracion as Record<string, unknown> | null) ?? null,
+        obligatoria: c.obligatoria,
+      }))
+    );
     this.state.setRelacionesEstacion(
       (plantilla.estaciones_reconocidas ?? []).map((r) => ({
         valorProveedor: r.valor_proveedor,
@@ -182,6 +198,70 @@ export class PeajesPlantillaApplyService {
         columnaDestino: (c.columna_destino as PlantillaMapeoColumna['columnaDestino']) ?? null,
         excluida: false,
       }));
+  }
+
+  /**
+   * RN-07 / plantillas legacy (p. ej. AUSOL-7-2026): si falta QUANTITY en
+   * pipeline o mapeos, inyecta ASIGNAR_VALOR=1 + mapeo QUANTITY→QUANTITY.
+   */
+  private asegurarQuantityEnPlantilla(
+    configs: ConfiguracionPlantilla[],
+    mapeos: PlantillaMapeoColumna[]
+  ): { configs: ConfiguracionPlantilla[]; mapeos: PlantillaMapeoColumna[] } {
+    const cubiertoPipeline = configs.some(
+      (c) =>
+        c.configuracion?.['habilitado'] !== false &&
+        (c.columna_destino === 'QUANTITY' || c.nombre_columna === 'QUANTITY')
+    );
+    const cubiertoMapeo = mapeos.some((m) => !m.excluida && m.columnaDestino === 'QUANTITY');
+    if (cubiertoPipeline && cubiertoMapeo) {
+      return { configs, mapeos };
+    }
+
+    let nextConfigs = configs;
+    if (!cubiertoPipeline) {
+      const maxOrden = configs.length ? Math.max(...configs.map((c) => c.orden)) : 0;
+      const plantillaId = configs[0]?.plantilla_id ?? 'runtime';
+      nextConfigs = [
+        ...configs,
+        {
+          id: `qty-repair-${plantillaId}`,
+          plantilla_id: plantillaId,
+          nombre_columna: 'QUANTITY',
+          columna_destino: 'QUANTITY',
+          orden: maxOrden + 10,
+          tipo: 'transformacion',
+          algoritmo_combinado_id: null,
+          obligatoria: true,
+          configuracion: {
+            algoritmo_codigo: 'ASIGNAR_VALOR',
+            valor: 1,
+            parametros: { valor: 1 },
+            habilitado: true,
+          },
+        },
+      ];
+    }
+
+    let nextMapeos = [...mapeos];
+    if (!cubiertoMapeo) {
+      const idx = nextMapeos.findIndex((m) => m.columnaOrigen === 'QUANTITY');
+      if (idx >= 0) {
+        nextMapeos[idx] = {
+          ...nextMapeos[idx],
+          columnaDestino: 'QUANTITY',
+          excluida: false,
+        };
+      } else {
+        nextMapeos.push({
+          columnaOrigen: 'QUANTITY',
+          columnaDestino: 'QUANTITY',
+          excluida: false,
+        });
+      }
+    }
+
+    return { configs: nextConfigs, mapeos: nextMapeos };
   }
 
   private normalizarPatente(valor: unknown): string {

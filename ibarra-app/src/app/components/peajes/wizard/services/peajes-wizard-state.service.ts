@@ -25,6 +25,7 @@ import {
   ColumnRecommendation,
   buildDemoPipelineSeeds,
   detectColumnRecommendations,
+  recipeQuantity,
   tieneHeadersParaSeedDemo,
 } from './column-recognition';
 import { ConfiguracionPlantillaDraft } from './wizard-draft.types';
@@ -691,12 +692,15 @@ export class PeajesWizardStateService {
       (c) => !this.columnasGeneradasPipeline().includes(c)
     );
     this.state.columnasExcluidas = excl;
+
+    this.asegurarQuantityMapeoYPipeline();
   }
 
   /**
    * Una plantilla puede transformar solo una parte del archivo. Conservamos en
    * Paso 5 las columnas necesarias para completar el Structure Goal aunque no
    * sean salidas del pipeline (caso Acceso Oeste: PATENTE, TARIFA y BONIFICACION).
+   * QUANTITY (RN-07): fila sintética + ASIGNAR_VALOR=1 si el archivo no la trae.
    */
   asegurarMapeosObligatorios(): void {
     const candidatos: Partial<Record<PasadaColumnKey, string[]>> = {
@@ -724,6 +728,48 @@ export class PeajesWizardStateService {
         this.state.mapeos.push({ columnaOrigen: origen, columnaDestino: destino, excluida: false });
       }
       usados.add(destino);
+    }
+
+    this.asegurarQuantityMapeoYPipeline();
+  }
+
+  /**
+   * RN-07: cada fila = 1 pasada. Si no hay cobertura de QUANTITY en mapeo/pipeline,
+   * agrega origen sintético QUANTITY→QUANTITY y paso ASIGNAR_VALOR { valor: 1 }.
+   */
+  asegurarQuantityMapeoYPipeline(): void {
+    const tieneMapeoQuantity = this.state.mapeos.some(
+      (m) => !m.excluida && m.columnaDestino === 'QUANTITY'
+    );
+    if (!tieneMapeoQuantity) {
+      const existente = this.state.mapeos.find((m) => m.columnaOrigen === 'QUANTITY');
+      if (existente) {
+        existente.excluida = false;
+        existente.columnaDestino = 'QUANTITY';
+      } else {
+        this.state.mapeos.push({
+          columnaOrigen: 'QUANTITY',
+          columnaDestino: 'QUANTITY',
+          excluida: false,
+        });
+      }
+    }
+
+    const tienePipelineQuantity = this.state.configuracionesDraft.some(
+      (d) =>
+        d.configuracion?.habilitado !== false &&
+        (d.columna_destino === 'QUANTITY' || d.nombre_columna === 'QUANTITY')
+    );
+    if (!tienePipelineQuantity) {
+      const maxOrden =
+        this.state.configuracionesDraft.length === 0
+          ? 0
+          : Math.max(...this.state.configuracionesDraft.map((d) => d.orden));
+      const [qtyDraft] = recipeQuantity(maxOrden + 10);
+      this.state.configuracionesDraft = renumerarOrden([
+        ...this.state.configuracionesDraft,
+        qtyDraft,
+      ]);
     }
   }
 

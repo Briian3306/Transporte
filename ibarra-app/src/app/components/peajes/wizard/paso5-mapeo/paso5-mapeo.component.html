@@ -153,7 +153,9 @@
       <strong>Nota de modelo:</strong>
       PASADA_ID lo genera el sistema. Las columnas marcadas «(pipeline)» vienen del Paso 3
       (p. ej. <span class="pw__mono">FECHA_HORA</span>); FECHA/HORA quedan resueltas y no requieren mapeo.
-      QUANTITY e IMPORTE_NETO se completan al estandarizar si faltan.
+      QUANTITY se mapea explícitamente (RN-07: valor generado <span class="pw__mono">1</span> vía
+      <span class="pw__mono">ASIGNAR_VALOR</span> cuando el archivo no trae la columna).
+      IMPORTE_NETO se completa al estandarizar si falta.
     </div>
 
     <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>

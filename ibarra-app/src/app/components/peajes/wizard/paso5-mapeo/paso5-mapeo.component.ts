@@ -93,6 +93,10 @@ export class Paso5MapeoComponent implements OnInit {
   }
 
   etiquetaOrigen(col: string): string {
+    // RN-07: QUANTITY sintético (ASIGNAR_VALOR) — priorizar "valor generado" sobre "(pipeline)".
+    if (col === 'QUANTITY' && !this.origenEnArchivo(col)) {
+      return 'QUANTITY (valor generado)';
+    }
     if (this.esSalidaPipeline(col)) {
       return `${col} (pipeline)`;
     }
@@ -101,6 +105,12 @@ export class Paso5MapeoComponent implements OnInit {
 
   esSalidaPipeline(col: string): boolean {
     return this.state.columnasGeneradasPipeline().includes(col);
+  }
+
+  /** Origen sintético / no presente como columna del Excel. */
+  private origenEnArchivo(col: string): boolean {
+    const cols = this.state.snapshot().preview?.columnas ?? this.state.columnasParaMapeo();
+    return cols.some((c) => c.trim().toUpperCase() === col.toUpperCase());
   }
 
   descripcionTransform(m: MapeoColumna): string {
@@ -151,9 +161,7 @@ export class Paso5MapeoComponent implements OnInit {
     const mapeados = new Set(
       this.mapeos.filter((m) => m.columnaDestino).map((m) => m.columnaDestino!)
     );
-    return this.obligatorias.filter(
-      (k) => !mapeados.has(k) && k !== 'QUANTITY' && k !== 'IMPORTE_NETO'
-    );
+    return this.obligatorias.filter((k) => !mapeados.has(k) && k !== 'IMPORTE_NETO');
   }
 
   async agregarPatente(patente: string): Promise<void> {
