@@ -12,10 +12,8 @@
 
 # Configuración de Funciones Serverless (si las usas)
 [functions]
-  node_bundler = "nft"
-  # Directorio donde están las funciones
-  directory = "../netlify/functions"
-  node_bundler = "nft"
+directory = "../netlify/functions"
+node_bundler = "nft"
 
 # Configuración de Headers HTTP para seguridad y optimización
 [[headers]]
