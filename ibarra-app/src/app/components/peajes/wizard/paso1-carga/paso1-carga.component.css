@@ -79,10 +79,17 @@
 }
 
 .paso1__template-box {
+  display: grid;
+  gap: 0.75rem;
   padding: 1rem;
   border: 1px solid #c8dcf7;
   border-radius: 12px;
   background: #f3f8ff;
+}
+
+.paso1__template-box app-search-select {
+  display: block;
+  width: 100%;
 }
 
 .paso1__template-select {

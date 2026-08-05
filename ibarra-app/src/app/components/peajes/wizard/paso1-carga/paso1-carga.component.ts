@@ -11,7 +11,7 @@ import {
   PlantillaConfiguracion,
   PeajesPlantillasService,
 } from '../../models';
-import { DialogComponent } from '../../../shared';
+import { DialogComponent, SearchSelectComponent, SearchSelectOption } from '../../../shared';
 import { MVP_EJEMPLO_NOMBRE_ARCHIVO } from '../fixtures/mvp-ejemplo.fixture';
 import { PeajesExcelService } from '../services/peajes-excel.service';
 import {
@@ -23,7 +23,7 @@ import { PeajesWizardStateService } from '../services/peajes-wizard-state.servic
 @Component({
   selector: 'app-paso1-carga',
   standalone: true,
-  imports: [CommonModule, FormsModule, DialogComponent],
+  imports: [CommonModule, FormsModule, DialogComponent, SearchSelectComponent],
   templateUrl: './paso1-carga.component.html',
   styleUrl: './paso1-carga.component.css',
 })
@@ -64,14 +64,27 @@ export class Paso1CargaComponent implements OnInit {
     await this.cargarPlantillas();
   }
 
-  seleccionarPlantilla(): void {
-    this.state.setPlantillaId(this.plantillaId || null);
+  get empresaOptions(): SearchSelectOption[] {
+    return this.empresas.map((e) => ({ id: e.id, label: e.nombre }));
+  }
+
+  get plantillaOptions(): SearchSelectOption[] {
+    return this.plantillas.map((p) => ({
+      id: p.id,
+      label: `${p.nombre} · ${p.estado}`,
+    }));
+  }
+
+  onPlantillaChange(id: string | null): void {
+    this.plantillaId = id ?? '';
+    this.state.setPlantillaId(id);
     this.erroresPlantilla = [];
     this.info = null;
   }
 
-  async seleccionarEmpresa(): Promise<void> {
-    this.state.setEmpresaId(this.empresaId || null);
+  async onEmpresaChange(id: string | null): Promise<void> {
+    this.empresaId = id ?? '';
+    this.state.setEmpresaId(id);
     this.plantillaId = '';
     this.state.setPlantillaId(null);
     this.erroresPlantilla = [];
@@ -88,9 +101,10 @@ export class Paso1CargaComponent implements OnInit {
       })
     );
     this.empresas = [...this.empresas, empresa];
-    this.empresaId = empresa.id;
     this.crearEmpresaAbierto = false;
-    await this.seleccionarEmpresa();
+    this.nuevaEmpresaNombre = '';
+    this.nuevaEmpresaDescripcion = '';
+    await this.onEmpresaChange(empresa.id);
   }
 
   private async cargarPlantillas(): Promise<void> {

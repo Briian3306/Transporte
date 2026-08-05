@@ -35,9 +35,9 @@ RLS: policy authenticated ALL (MVP §5.2).
 
 | RPC | Feature | Propósito |
 |-----|---------|-----------|
-| `peajes_tolerancia_importe()` | — | Constante `0.01` |
+| `peajes_tolerancia_importe()` | — | Constante `0.01` (centavo RN-11 por fila) |
 | `peajes_calcular_importe_neto(precio, bonificacion)` | F01-5 | `precio - bonificacion` |
-| `peajes_validar_factura_pasadas(importe, importes[], tolerancia?)` | F01-5 | Compara suma vs factura |
+| `peajes_validar_factura_pasadas(importe, importes[], tolerancia?)` | F01-5 / F11 | Compara suma vs subtotal; default tolerancia = 1% del subtotal |
 | `peajes_validar_factura_id(factura_id, tolerancia?)` | F01-5 | Variante por id |
 | `peajes_detectar_duplicados(pasadas jsonb)` | F01-6 | Clave PASE+FECHA_HORA+ESTACION+PATENTE |
 | `peajes_sobrescribir_configuraciones_plantilla(plantilla_id, configs jsonb)` | F01-7 | Replace transaccional |
@@ -56,7 +56,7 @@ Schema auxiliar: `peajes_private` (uso interno de migraciones).
 
 1. Detecta duplicados.
 2. Calcula/valida importes netos por fila.
-3. Valida suma vs importe de factura (tolerancia).
+3. Valida suma vs subtotal de factura (tolerancia por defecto = 1% del subtotal).
 4. Persiste factura + pasadas + fila en `registros_carga_peajes`.
 
 Consumido por `PeajesCargaSupabaseService.confirmarCarga`.

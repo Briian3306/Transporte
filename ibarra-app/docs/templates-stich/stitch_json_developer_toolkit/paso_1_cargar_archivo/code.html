@@ -119,19 +119,27 @@
 <h3 class="font-headline-md text-headline-md text-on-surface mb-2">Arrastra un archivo .xlsx</h3>
 <p class="font-body-md text-body-md text-on-surface-variant text-center max-w-xs mb-8">
                             O selecciona manualmente desde tu ordenador para comenzar la validación.
-                        </p><div class="w-full max-w-xs mb-8 p-4 bg-surface-container-low rounded-lg border border-outline-variant">
-<div class="flex items-center justify-between mb-2">
-<label class="font-label-md text-label-md text-on-surface">¿Qué configuración aplicar?</label>
+                        </p><div class="w-full max-w-xs mb-8 p-4 bg-surface-container-low rounded-lg border border-outline-variant space-y-4">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface">Configuración de carga</label>
 <span class="px-2 py-0.5 rounded-full bg-status-warning/10 text-status-warning text-[10px] font-bold uppercase tracking-wider">Requerido</span>
 </div>
-<p class="text-xs text-on-surface-variant mb-3">La plantilla cargará automáticamente sus filtros y mapeos en los pasos siguientes.</p>
-<div class="relative">
-<select class="w-full bg-white border border-outline-variant rounded-lg px-3 py-2 text-sm appearance-none focus:ring-1 focus:ring-primary cursor-pointer">
-<option selected="">Corredores Viales Demo SA · Excel junio 2026</option>
-<option>Autopistas del Sur · formato A</option>
-<option>Sin plantilla (Manual)</option>
-</select>
-<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant text-lg">expand_more</span>
+<p class="text-xs text-on-surface-variant">Elegí empresa y plantilla con búsqueda (una opción cada una).</p>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">Empresa</label>
+<div class="relative flex items-center bg-white border border-outline-variant rounded-lg px-3 py-2 focus-within:ring-1 focus-within:ring-primary">
+<span class="material-symbols-outlined text-on-surface-variant text-lg mr-2">search</span>
+<input class="flex-1 border-none bg-transparent text-sm focus:ring-0 p-0" placeholder="Buscar o seleccionar empresa…" type="search" value="Corredores Viales Demo SA"/>
+<button class="material-symbols-outlined text-on-surface-variant text-base ml-1" type="button" aria-label="Quitar empresa">close</button>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">Plantilla a aplicar</label>
+<div class="relative flex items-center bg-white border border-outline-variant rounded-lg px-3 py-2 focus-within:ring-1 focus-within:ring-primary">
+<span class="material-symbols-outlined text-on-surface-variant text-lg mr-2">search</span>
+<input class="flex-1 border-none bg-transparent text-sm focus:ring-0 p-0" placeholder="Elegir más adelante / buscar…" type="search" value="Excel junio 2026 · activa"/>
+<button class="material-symbols-outlined text-on-surface-variant text-base ml-1" type="button" aria-label="Quitar plantilla">close</button>
+</div>
 </div>
 </div>
 <button class="bg-white border border-border-low-contrast px-6 py-2.5 rounded-lg font-medium text-text-high-contrast shadow-sm hover:bg-surface-container-low transition-colors">

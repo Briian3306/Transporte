@@ -74,7 +74,7 @@ Listado paginado: RPC `peajes_listar_pasadas`. CRUD: `peajes_crear_pasada`, `pea
 |----|----------------|
 | RN-05 | Peaje derivado; no se persiste en pasada |
 | RN-08/09 | Precio/bonificación validados en CHECK y en servicio/RPC |
-| RN-13/17 | Suma de importes vs factura con tolerancia 0.01 |
+| RN-13/17 | Suma de importes vs subtotal con tolerancia 1% del subtotal |
 | RN-16 | Duplicados por clave de negocio |
 
 Confirmación atómica: RPC `peajes_confirmar_carga` (ver [auditoria-y-rpcs.md](./auditoria-y-rpcs.md)).

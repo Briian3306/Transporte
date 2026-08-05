@@ -1,0 +1,190 @@
+.ss {
+  --ss-signal: #004ac6;
+  --ss-rail: #f2f4f6;
+  --ss-line: #e2e8f0;
+  --ss-ink: #0f172a;
+  --ss-muted: #434655;
+  --ss-surface: #ffffff;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: var(--ss-ink);
+}
+
+.ss__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ss-muted);
+}
+
+.ss__field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.4rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--ss-line);
+  border-radius: 0.5rem;
+  background: var(--ss-surface);
+  cursor: text;
+}
+
+.ss__field--open,
+.ss__field:focus-within {
+  border-color: color-mix(in srgb, var(--ss-signal) 45%, var(--ss-line));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ss-signal) 18%, transparent);
+}
+
+.ss__field--filled {
+  background: color-mix(in srgb, var(--ss-signal) 4%, var(--ss-surface));
+}
+
+.ss--disabled .ss__field {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ss__value {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: ss-value-in 140ms ease-out;
+  pointer-events: none;
+}
+
+/* Keep caret/keys on the input without hiding the selected company name. */
+.ss__input--ghost {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  caret-color: transparent;
+}
+
+.ss--searching .ss__input--ghost {
+  position: static;
+  inset: auto;
+  width: auto;
+  height: auto;
+  opacity: 1;
+  caret-color: auto;
+  flex: 1 1 auto;
+}
+
+.ss__input {
+  flex: 1 1 auto;
+  min-width: 4rem;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: var(--ss-ink);
+  padding: 0.2rem 0;
+}
+
+.ss__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.ss__clear {
+  appearance: none;
+  border: none;
+  background: color-mix(in srgb, var(--ss-ink) 8%, transparent);
+  color: var(--ss-muted);
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.55rem;
+  padding: 0;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.ss__clear:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ss-signal) 20%, transparent);
+  color: var(--ss-ink);
+}
+
+.ss__icon {
+  color: var(--ss-muted);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.ss__dropdown {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  max-height: 14rem;
+  overflow-y: auto;
+  background: var(--ss-surface);
+  border: 1px solid var(--ss-line);
+  border-radius: 0.65rem;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--ss-ink) 12%, transparent);
+  animation: ss-in 120ms ease-out;
+}
+
+.ss__option {
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.ss__option--active,
+.ss__option:hover {
+  background: color-mix(in srgb, var(--ss-signal) 10%, var(--ss-rail));
+}
+
+.ss__empty {
+  padding: 0.55rem;
+  color: var(--ss-muted);
+  font-size: 0.8125rem;
+}
+
+@keyframes ss-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ss-value-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ss__dropdown,
+  .ss__value {
+    animation: none;
+  }
+}

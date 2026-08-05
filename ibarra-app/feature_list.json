@@ -1083,13 +1083,15 @@
       "verification": [
         "facturas persiste subtotal, percepciones, IVA y total declarado; RAE queda fuera del desglose",
         "Paso 7 suma importes por centavos, permite ingresar los cuatro importes y muestra diferencia de subtotal con pasadas",
-        "La validación de factura acepta una desviación absoluta de hasta $5",
+        "La validación de factura acepta una desviación de hasta el 1% del subtotal (p_tolerancia NULL)",
         "La factura real AUSOL 0840-0557074 del archivo 557074.csv queda cubierta como fixture y prueba SQL"
       ],
       "evidence": [
         "2026-08-04: npx supabase migration up --local EXIT 0; aplicó 20260804172030_peajes_facturas_percepciones.sql y 20260804175001_peajes_facturas_iva_total_manual.sql.",
         "2026-08-04: npx supabase test db: peajes_f01_test.sql OK (46 pruebas, incluye factura real 0840-0557074). La suite global queda roja por un seed AUSOL preexistente: REVIEW 19 vs esperado 18.",
-        "2026-08-04: npx tsc --noEmit -p tsconfig.app.json y git diff --check EXIT 0. ng test focalizado generó el bundle sin error TS, pero ChromeHeadless no termina en el host."
+        "2026-08-04: npx tsc --noEmit -p tsconfig.app.json y git diff --check EXIT 0. ng test focalizado generó el bundle sin error TS, pero ChromeHeadless no termina en el host.",
+        "2026-08-05: migración 20260805113339_peajes_tolerancia_factura_uno_por_ciento.sql; tolerancia default = abs(subtotal)*0.01.",
+        "2026-08-05: npx supabase db reset --local --no-seed EXIT 0; npx supabase test db PASS (70 tests, peajes_f01 50 OK incl. F11 1%). npx tsc --noEmit OK. ng test search-select+paso1: 9 SUCCESS."
       ]
     },
     {

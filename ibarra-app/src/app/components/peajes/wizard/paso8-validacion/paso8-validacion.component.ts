@@ -110,8 +110,8 @@ export class Paso8ValidacionComponent implements OnInit {
         diagnostico: {
           id: 'importe', titulo: 'Importe de factura', estado: falla ? 'error' : 'ok', paso: 7,
           detalle: falla
-            ? `El subtotal esperado es ${this.moneda(factura.importe_sin_iva)} y las pasadas suman ${this.moneda(this.sumarNetos(pasadas))}. Diferencia: ${this.moneda(resultado.diferenciaFactura ?? 0)}.`
-            : 'El subtotal de la factura coincide con las pasadas dentro de la tolerancia de $ 5,00.',
+            ? `El subtotal esperado es ${this.moneda(factura.importe_sin_iva)} y las pasadas suman ${this.moneda(this.sumarNetos(pasadas))}. Diferencia: ${this.moneda(resultado.diferenciaFactura ?? 0)} (tolerancia 1% = ${this.moneda(Math.abs(Number(factura.importe_sin_iva)) * 0.01)}).`
+            : `El subtotal de la factura coincide con las pasadas dentro de la tolerancia del 1% (${this.moneda(Math.abs(Number(factura.importe_sin_iva)) * 0.01)}).`,
           accion: falla ? 'Volvé a Factura y verificá el subtotal; después revisá que el mapeo haya generado importes válidos.' : 'No requiere acción.',
           tecnico: { rpc: 'peajes_validar_factura_pasadas', request: { p_importe_sin_iva: factura.importe_sin_iva, registros: pasadas.length }, response: resultado },
         },

@@ -12,6 +12,7 @@ Primitivas UI reutilizables bajo `src/app/components/shared/`. El `data-table` e
 | [filter-system.md](./filter-system.md) | Composición filtros + chip rail + data-table (Pasadas y catálogos) |
 | [date-range-picker.md](./date-range-picker.md) | Fecha: modo `range` (2 meses) o `single` (1 mes) |
 | [search-multi-select.md](./search-multi-select.md) | Búsqueda multi/single con chips (≤10 resultados) |
+| [search-select.md](./search-select.md) | Búsqueda single scalar (`string \| null`, ≤10 resultados) |
 | [dialog.md](./dialog.md) | Modal compartido (altas de catálogo / wizard) |
 
 ## Código fuente
@@ -21,6 +22,7 @@ src/app/components/shared/
   data-table/
   date-range-picker/
   search-multi-select/
+  search-select/
   dialog/
   filter-bar/          # FilterChipRail
   index.ts             # barrel
@@ -33,4 +35,4 @@ src/app/components/shared/
 
 ---
 
-> Última actualización: 2026-08-04
+> Última actualización: 2026-08-05

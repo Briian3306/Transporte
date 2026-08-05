@@ -10,7 +10,9 @@
 
 ## Estado actual
 
-Fecha: 2026-08-04 — **F09 early skip from Paso 1**: con archivo+empresa+plantilla, `PeajesPlantillaApplyService` aplica y salta a Factura (o 5/6). Paso 4 reutiliza el mismo servicio.
+Fecha: 2026-08-05 — **F11 tolerancia ±1% + Search Select Paso 1**: `peajes_validar_factura_pasadas` usa `abs(subtotal)*0.01` por defecto; `app-search-select` en Empresa/Plantilla.
+
+Fecha previa: 2026-08-04 — **F09 early skip from Paso 1**: con archivo+empresa+plantilla, `PeajesPlantillaApplyService` aplica y salta a Factura (o 5/6). Paso 4 reutiliza el mismo servicio.
 
 Fecha previa: 2026-08-04 — **F09 plantilla restore**: `validarDefinicionPlantilla` acepta `mapeos` (cubre `ESTACION_ID` sin paso de pipeline; caso AUSOL-V2-08-2026). Paso 4 restaura mapeos/estaciones, salta a Factura o `irAExcepcion` 5|6. Saves Paso 3/builder no pisan snapshot incompleto. PRD §4/§7.4 + wizard/estaciones docs.
 
@@ -77,6 +79,12 @@ Decisiones vigentes:
 F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `passing` (2026-08-03). **F02-12/13/14** `passing` (2026-08-04). **F02-15** + **F02-16** `passing` (2026-08-04).
 
 ## Registro de sesiones
+
+### 2026-08-05 — F11 tolerancia 1% + Search Select Paso 1
+
+- **Tolerancia:** migración `20260805113339_peajes_tolerancia_factura_uno_por_ciento.sql` — default `abs(subtotal)*0.01`; `p_tolerancia` explícito sigue como override. Paso 7/8/mock y docs (`validacion-carga`, wizard, auditoria, SQL task) alineados. F11-1 verification actualizada.
+- **Search Select:** `app-search-select` (CVA `string | null`) en `shared/search-select`; Paso 1 Empresa + Plantilla; stitch mock + docs `docs/06-components/shared/search-select.md`.
+- **Verify:** `npx supabase db reset --local --no-seed` OK; `npx supabase test db` **70 PASS**; `npx tsc --noEmit` OK; `ng test` search-select+paso1 **9 SUCCESS**. DESARROLLO no tocado.
 
 ### 2026-08-04 — F09 fix: restore mapeos (AUSOL ESTACION_ID)
 

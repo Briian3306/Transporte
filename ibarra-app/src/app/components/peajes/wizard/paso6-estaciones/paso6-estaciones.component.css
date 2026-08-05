@@ -124,6 +124,12 @@
   color: #9a6700;
 }
 
+.paso6__search-select {
+  display: block;
+  min-width: 12rem;
+  max-width: 22rem;
+}
+
 .paso6__row--need td {
   background: #fffbeb;
 }

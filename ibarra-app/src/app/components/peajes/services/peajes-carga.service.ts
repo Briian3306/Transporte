@@ -54,7 +54,7 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
           const netoCalculado = precio - bonif;
           const declarado = p.IMPORTE_NETO != null ? Number(p.IMPORTE_NETO) : null;
           // AUSOL entrega el neto ya bonificado. La consistencia que autoriza
-          // la carga es el subtotal total de la factura (± $5), no exigir que
+          // la carga es el subtotal total de la factura (±1%), no exigir que
           // cada fila replique PRECIO - BONIFICACION.
           const neto = declarado !== null && Number.isFinite(declarado) ? declarado : netoCalculado;
           importes.push(neto);

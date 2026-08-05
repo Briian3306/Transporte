@@ -51,16 +51,14 @@
               <tr *ngFor="let r of relaciones" [class.paso6__row--need]="necesitaCrear(r.valorProveedor)">
                 <td class="pw__mono">{{ r.valorProveedor }}</td>
                 <td>
-                  <select
-                    class="pw__select"
-                    [ngModel]="r.estacionId || ''"
-                    (ngModelChange)="seleccionar(r.valorProveedor, $event)"
-                  >
-                    <option value="">— Seleccionar —</option>
-                    <option *ngFor="let e of estaciones" [value]="e.id">
-                      {{ e.nombre }}
-                    </option>
-                  </select>
+                  <app-search-select
+                    class="paso6__search-select"
+                    placeholder="Buscar estación…"
+                    [options]="estacionOptions"
+                    [value]="r.estacionId"
+                    [showAllWhenEmpty]="true"
+                    (valueChange)="onEstacionChange(r.valorProveedor, $event)"
+                  ></app-search-select>
                   <div class="paso6__sug" *ngIf="sugerencias[r.valorProveedor]?.length">
                     <button
                       type="button"
@@ -157,11 +155,14 @@
         />
       </div>
       <div class="pw__field" *ngIf="!peajeUnicoEmpresa">
-        <label for="nueva-estacion-peaje">Peaje *</label>
-        <select id="nueva-estacion-peaje" class="pw__select" [(ngModel)]="nuevaEstacionPeajeId">
-          <option value="" disabled>— Seleccioná un peaje —</option>
-          <option *ngFor="let p of peajesUnicos" [value]="p.id">{{ p.nombre }}</option>
-        </select>
+        <app-search-select
+          label="Peaje *"
+          placeholder="Buscar peaje…"
+          [options]="peajeOptions"
+          [value]="nuevaEstacionPeajeId || null"
+          [showAllWhenEmpty]="true"
+          (valueChange)="onPeajeChange($event)"
+        ></app-search-select>
       </div>
       <div class="pw__field" *ngIf="peajeUnicoEmpresa">
         <label>Peaje</label>

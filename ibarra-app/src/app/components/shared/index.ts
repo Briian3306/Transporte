@@ -35,4 +35,6 @@ export type {
   SearchMultiSelectBadgeTone,
   SearchMultiSelectMode,
 } from './search-multi-select/search-multi-select.types';
+export { SearchSelectComponent } from './search-select/search-select.component';
+export type { SearchSelectOption } from './search-select/search-select.types';
 export { DialogComponent } from './dialog/dialog.component';

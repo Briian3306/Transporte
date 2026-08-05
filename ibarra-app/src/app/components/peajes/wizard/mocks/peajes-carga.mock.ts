@@ -11,7 +11,10 @@ import {
   ResultadoValidacionCarga,
 } from '../../models';
 
-const TOLERANCIA_FACTURA = 5;
+/** Tolerancia por fila (centavo) al contrastar neto vs PRECIO-BONIFICACION. */
+const TOLERANCIA_FILA = 0.01;
+/** Fracción del subtotal admitida en la conciliación factura vs suma de pasadas. */
+const TOLERANCIA_FACTURA_PCT = 0.01;
 
 /**
  * Mock tipado de PeajesCargaService.
@@ -68,7 +71,7 @@ export class PeajesCargaMockService implements PeajesCargaService {
       }
       if (Number.isFinite(neto) && Number.isFinite(precio) && Number.isFinite(bonif)) {
         const esperado = (precio - bonif) * (Number.isFinite(qty) && qty > 0 ? qty : 1);
-        if (Math.abs(esperado - neto) > TOLERANCIA_FACTURA) {
+        if (Math.abs(esperado - neto) > TOLERANCIA_FILA) {
           errores.push({
             fila,
             columna: 'IMPORTE_NETO',
@@ -95,15 +98,17 @@ export class PeajesCargaMockService implements PeajesCargaService {
     });
 
     const sumaNetos = validas.reduce((acc, p) => acc + Number(p.IMPORTE_NETO || 0), 0);
-    const diferenciaFactura = Number(factura.importe_sin_iva) - sumaNetos;
-    const dentroTolerancia = Math.abs(diferenciaFactura) <= TOLERANCIA_FACTURA;
+    const subtotal = Number(factura.importe_sin_iva);
+    const toleranciaFactura = Math.abs(subtotal) * TOLERANCIA_FACTURA_PCT;
+    const diferenciaFactura = subtotal - sumaNetos;
+    const dentroTolerancia = Math.abs(diferenciaFactura) <= toleranciaFactura;
 
     if (!dentroTolerancia) {
       errores.push({
         fila: 0,
         columna: 'FACTURA.importe_sin_iva',
         valor: factura.importe_sin_iva,
-        motivo: `Diferencia factura vs suma pasadas: ${diferenciaFactura.toFixed(2)} (tolerancia ${TOLERANCIA_FACTURA})`,
+        motivo: `Diferencia factura vs suma pasadas: ${diferenciaFactura.toFixed(2)} (tolerancia ${toleranciaFactura.toFixed(2)} = 1% del subtotal)`,
       });
     }
 

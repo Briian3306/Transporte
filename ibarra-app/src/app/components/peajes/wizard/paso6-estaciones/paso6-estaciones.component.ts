@@ -10,13 +10,13 @@ import {
   RelacionEstacionProveedor,
   ResultadoReconocimientoEstacion,
 } from '../../models';
-import { DialogComponent } from '../../../shared';
+import { DialogComponent, SearchSelectComponent, SearchSelectOption } from '../../../shared';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 
 @Component({
   selector: 'app-paso6-estaciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, DialogComponent],
+  imports: [CommonModule, FormsModule, DialogComponent, SearchSelectComponent],
   templateUrl: './paso6-estaciones.component.html',
   styleUrl: './paso6-estaciones.component.css',
 })
@@ -49,6 +49,22 @@ export class Paso6EstacionesComponent implements OnInit {
 
   get peajeNombreUnico(): string {
     return this.peajesUnicos[0]?.nombre ?? '';
+  }
+
+  get estacionOptions(): SearchSelectOption[] {
+    return this.estaciones.map((e) => ({ id: e.id, label: e.nombre }));
+  }
+
+  get peajeOptions(): SearchSelectOption[] {
+    return this.peajesUnicos.map((p) => ({ id: p.id, label: p.nombre }));
+  }
+
+  onEstacionChange(valorProveedor: string, estacionId: string | null): void {
+    void this.seleccionar(valorProveedor, estacionId ?? '');
+  }
+
+  onPeajeChange(peajeId: string | null): void {
+    this.nuevaEstacionPeajeId = peajeId ?? '';
   }
 
   async ngOnInit(): Promise<void> {

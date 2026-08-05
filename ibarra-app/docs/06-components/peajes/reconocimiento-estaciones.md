@@ -23,7 +23,8 @@ El formulario **no** replica el catálogo completo (`ubicacion`, geo, `camino`, 
 | Campo | Comportamiento |
 |-------|----------------|
 | Nombre | Prefill = código proveedor; editable |
-| Peaje | Oculto si la empresa tiene 1 peaje; select si hay varios |
+| Peaje | Oculto si la empresa tiene 1 peaje; `app-search-select` si hay varios |
+| Estación interna | `app-search-select` con listado completo al enfocar (`showAllWhenEmpty`) |
 | Código proveedor | Implícito (`codigos_proveedor: [valor]`) |
 
 Crear peajes nuevos queda en Catálogos → Peajes.

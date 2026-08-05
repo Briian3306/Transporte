@@ -1,6 +1,6 @@
 -- pgTAP: F01-1 … F01-9 (Peajes backend)
 BEGIN;
-SELECT plan(46);
+SELECT plan(50);
 
 -- -----------------------------------------------------------------------------
 -- F01-1: catálogos + FK estacion → peaje
@@ -253,8 +253,28 @@ SELECT is(
 );
 SELECT is(
   (public.peajes_validar_factura_pasadas(105, ARRAY[100]::numeric[], NULL)->>'valido')::boolean,
+  false,
+  'F11 diff $5 sobre subtotal 105 supera 1% ($1.05) → invalido'
+);
+SELECT is(
+  (public.peajes_validar_factura_pasadas(100, ARRAY[99.5]::numeric[], NULL)->>'valido')::boolean,
   true,
-  'F11 la validación de factura admite desviación de $5'
+  'F11 diff $0.50 dentro de 1% del subtotal → valido'
+);
+SELECT is(
+  (public.peajes_validar_factura_pasadas(100, ARRAY[98]::numeric[], NULL)->>'valido')::boolean,
+  false,
+  'F11 diff $2 supera 1% del subtotal → invalido'
+);
+SELECT is(
+  (public.peajes_validar_factura_pasadas(560832.27, ARRAY[560832.29]::numeric[], NULL)->>'valido')::boolean,
+  true,
+  'F11 AUSOL-scale: $0.02 dentro de 1% del subtotal → valido'
+);
+SELECT is(
+  (public.peajes_validar_factura_pasadas(100, ARRAY[50, 50]::numeric[], NULL)->>'tolerancia')::numeric,
+  1::numeric,
+  'F11 tolerancia por defecto = 1% del subtotal'
 );
 
 SELECT lives_ok(

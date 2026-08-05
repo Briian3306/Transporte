@@ -152,6 +152,15 @@ export class Paso7FacturaComponent implements OnInit {
     return this.aCentavos(Number(this.form.controls.importe_sin_iva.value ?? 0) - this.sumaNetos) / 100;
   }
 
+  /** Tolerancia adaptativa: 1% del subtotal declarado. */
+  get toleranciaFactura(): number {
+    return Math.abs(Number(this.form.controls.importe_sin_iva.value ?? 0)) * 0.01;
+  }
+
+  get diferenciaDentroTolerancia(): boolean {
+    return Math.abs(this.diferenciaNetoPasadas) <= this.toleranciaFactura;
+  }
+
   onFechaChange(range: DateRangeValue): void {
     this.fechaRange = range;
     this.form.patchValue({ fecha_factura: toDateInputValue(range.from) });

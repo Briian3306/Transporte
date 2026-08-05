@@ -39,7 +39,8 @@ Regla clave (PRD §12 / RN-05): la **pasada referencia `estacion_id`**; el peaje
 | Pasada → estación (no peaje directo) | Columna `pasadas.estacion_id` + vista `pasadas_con_peaje` |
 | Anti-duplicados (RN-16) | `UNIQUE (pase_id, fecha_hora, estacion_id, patente_id)` + RPC `peajes_detectar_duplicados` |
 | Importe neto = precio − bonificación | CHECK en tabla + RPC `peajes_calcular_importe_neto` |
-| Tolerancia factura (RN-13/17) | `peajes_tolerancia_importe()` = `0.01` |
+| Tolerancia factura (RN-13/17) | `peajes_validar_factura_pasadas`: default `abs(subtotal) * 0.01` |
+| Tolerancia fila (RN-11) | `peajes_tolerancia_importe()` = `0.01` |
 | Recurso global plantillas/algoritmos | `empresa_id text` admite `'__global__'` |
 | Algoritmos: solo códigos de catálogo (RN-20) | FK a `peajes_algoritmos_catalogo`; motor TS usa `StrategyRegistry` |
 | RLS MVP (§5.2) | Policies `*_authenticated_all` (acceso pleno a `authenticated`) |
