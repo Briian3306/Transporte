@@ -276,7 +276,7 @@ export function buildAuMapeos(): MapeoColumna[] {
 
 /**
  * Parsea TARIFA formato AR (`19.985,09` → 19985.09).
- * Usado en tests de pipeline hasta que CONVERTIR_NUMERO soporte locale AR nativo.
+ * Preferir `CONVERTIR_NUMERO_ARS` en plantillas; este helper queda para fixtures/tests.
  */
 export function parseTarifaArAu(valor: unknown): number | null {
   if (valor == null || valor === '') return null;
@@ -416,7 +416,7 @@ export function buildAuPlantillaConfigs(): Array<{
       tipo: 'transformacion',
       algoritmo_combinado_id: null,
       configuracion: {
-        algoritmo_codigo: 'CONVERTIR_NUMERO',
+        algoritmo_codigo: 'CONVERTIR_NUMERO_ARS',
         columnas_entrada: ['TARIFA'],
         columna: 'TARIFA',
       },

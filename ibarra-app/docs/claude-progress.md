@@ -10,7 +10,15 @@
 
 ## Estado actual
 
-Fecha: 2026-08-05 — **QUANTITY mapping / AUSOL-7-2026**: Paso 5 exige mapeo QUANTITY (fila sintética + `ASIGNAR_VALOR=1`); apply repara plantillas legacy sin QUANTITY; DESARROLLO plantilla `AUSOL-7-2026` (`7c42ac64-…`) actualizada con config orden 100 + mapeo `QUANTITY→QUANTITY`.
+Fecha: 2026-08-06 — **CSV AR + CONVERTIR_NUMERO_ARS**: SheetJS coerceaba `19.985,09` → `19.98509`; `PeajesExcelService` parsea CSV como texto. Tras reload, `CONVERTIR_NUMERO_ARS` produce `19985.09`.
+
+Fecha previa: 2026-08-06 — **CONVERTIR_NUMERO_ARS**: estrategia + catálogo SQL; Paso 2 recomienda ARS si muestra `19.985,09` y `CONVERTIR_NUMERO` si decimal con punto; plantilla DESARROLLO `AUSA-8-2026` (`efec4fd3-…`) paso TARIFA→PRECIO actualizado. Docs plantillas/reconocimiento/AU + `docs/08-sql/peajes/convertir-numero-ars/`.
+
+Fecha previa: 2026-08-05 — **Paso 5 BONIFICACION opcional**: si el archivo no trae descuento (Telepase/Autopistas), `asegurarMapeosObligatorios` inyecta mapeo sintético + `ASIGNAR_VALOR=0` (mismo patrón que QUANTITY); `construirPasadasDesdeMapeo` default 0 e `IMPORTE_NETO=PRECIO`; apply repara plantillas sin BONIFICACION.
+
+Fecha previa: 2026-08-05 — **FECHA_HORA ISO / duplicados 22008**: `COMBINAR_COLUMNAS` FECHA+HORA → ISO; Excel Date → `yyyy-MM-dd`; `toPostgresFechaHora` en RPC duplicados/confirmar; AUSOL-7-2026 paso 10 → `FORMATEAR_FECHA_HORA` (`DD/MM/YYYY HH:MM:SS`). Corrige `2026-13-07` por DateStyle MDY.
+
+Fecha previa: 2026-08-05 — **QUANTITY mapping / AUSOL-7-2026**: Paso 5 exige mapeo QUANTITY (fila sintética + `ASIGNAR_VALOR=1`); apply repara plantillas legacy sin QUANTITY; DESARROLLO plantilla `AUSOL-7-2026` (`7c42ac64-…`) actualizada con config orden 100 + mapeo `QUANTITY→QUANTITY`.
 
 Fecha previa: 2026-08-05 — **F11 tolerancia ±1% + Search Select Paso 1**: `peajes_validar_factura_pasadas` usa `abs(subtotal)*0.01` por defecto; `app-search-select` en Empresa/Plantilla.
 
@@ -81,6 +89,13 @@ Decisiones vigentes:
 F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `passing` (2026-08-03). **F02-12/13/14** `passing` (2026-08-04). **F02-15** + **F02-16** `passing` (2026-08-04).
 
 ## Registro de sesiones
+
+### 2026-08-05 — FECHA_HORA ISO (duplicados 22008)
+
+- **Bug:** `peajes_detectar_duplicados` → `date/time field value out of range: "2026-13-07 …"` (Postgres DateStyle MDY ante `13/07/2026` concatenado por `COMBINAR_COLUMNAS`).
+- **Fix:** Excel Date → `yyyy-MM-dd`; COMBINAR FECHA+HORA → `FORMATEAR_FECHA_HORA` ISO; `toPostgresFechaHora` en carga RPC; AUSOL-7-2026 orden 10 → `FORMATEAR_FECHA_HORA` / `DD/MM/YYYY HH:MM:SS`.
+- **UI factura:** Paso 7 sigue mostrando `dd/MM/yyyy` en el date picker; persistencia interna `yyyy-MM-dd`.
+- **Verify:** `ng test` peajes-fecha.util + motor → **28 SUCCESS**.
 
 ### 2026-08-05 — QUANTITY mapping + AUSOL-7-2026 DESARROLLO
 

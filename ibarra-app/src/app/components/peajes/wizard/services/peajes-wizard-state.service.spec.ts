@@ -240,4 +240,59 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
       .find((d) => d.columna_destino === 'QUANTITY');
     expect(qtyDraft?.configuracion?.algoritmo_codigo).toBe('ASIGNAR_VALOR');
   });
+
+  it('sin BONIFICACION en archivo: inyecta ASIGNAR_VALOR=0 y estandariza neto=PRECIO', () => {
+    state.setPreview({
+      nombreArchivo: 'telepase.csv',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['FECHA', 'HORA', 'PATENTE', 'DISPOSITIVO', 'ESTACION', 'TARIFA'],
+      filasPreview: [
+        {
+          FECHA: '2026-07-29',
+          HORA: '10:00:00',
+          PATENTE: 'AB123CD',
+          DISPOSITIVO: '9',
+          ESTACION: 'E1',
+          TARIFA: '19985.09',
+        },
+      ],
+      filasOrigen: [
+        {
+          FECHA: '2026-07-29',
+          HORA: '10:00:00',
+          PATENTE: 'AB123CD',
+          DISPOSITIVO: '9',
+          ESTACION: 'E1',
+          TARIFA: '19985.09',
+        },
+      ],
+      tiposInferidos: {},
+    });
+    state.setMapeos([
+      { columnaOrigen: 'FECHA', columnaDestino: 'FECHA_HORA', excluida: false },
+      { columnaOrigen: 'PATENTE', columnaDestino: 'PATENTE_ID', excluida: false },
+      { columnaOrigen: 'DISPOSITIVO', columnaDestino: 'PASE_ID', excluida: false },
+      { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID', excluida: false },
+      { columnaOrigen: 'TARIFA', columnaDestino: 'PRECIO', excluida: false },
+    ]);
+    state.asegurarMapeosObligatorios();
+
+    expect(
+      state.mapeosActivos().some(
+        (m) => m.columnaOrigen === 'BONIFICACION' && m.columnaDestino === 'BONIFICACION'
+      )
+    ).toBeTrue();
+    const bonifDraft = state
+      .getConfiguracionesDraft()
+      .find((d) => d.columna_destino === 'BONIFICACION');
+    expect(bonifDraft?.configuracion?.algoritmo_codigo).toBe('ASIGNAR_VALOR');
+    expect(bonifDraft?.configuracion?.parametros?.['valor']).toBe(0);
+
+    const pasadas = state.construirPasadasDesdeMapeo();
+    expect(pasadas.length).toBe(1);
+    expect(pasadas[0].BONIFICACION).toBe(0);
+    expect(pasadas[0].PRECIO).toBe(19985.09);
+    expect(pasadas[0].IMPORTE_NETO).toBe(19985.09);
+  });
 });

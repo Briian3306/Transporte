@@ -12,6 +12,7 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
   let apply: PeajesPlantillaApplyService;
   let state: PeajesWizardStateService;
   let plantillaSinQuantity: PlantillaConfiguracion;
+  let plantillaActual: PlantillaConfiguracion;
 
   const estacionId = 'est-campana';
   const patenteId = 'pat-ae751pa';
@@ -118,6 +119,7 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
         },
       ],
     };
+    plantillaActual = plantillaSinQuantity;
 
     TestBed.configureTestingModule({
       providers: [
@@ -126,7 +128,7 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
         {
           provide: PEAJES_PLANTILLAS_SERVICE,
           useValue: {
-            obtenerPlantilla: () => of(plantillaSinQuantity),
+            obtenerPlantilla: () => of(plantillaActual),
             listarAlgoritmos: () => of([]),
           },
         },
@@ -193,5 +195,68 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
     const pasadas = state.snapshot().pasadasEstandarizadas;
     expect(pasadas.length).toBe(1);
     expect(pasadas[0].QUANTITY).toBe(1);
+  });
+
+  it('repara plantilla sin BONIFICACION con ASIGNAR_VALOR=0', async () => {
+    plantillaActual = {
+      ...plantillaSinQuantity,
+      id: 'plt-telepase',
+      nombre: 'TELEPASE-SIN-BONIF',
+      mapeos: [
+        ...plantillaSinQuantity.mapeos!.filter(
+          (m) => m.columnaDestino !== 'BONIFICACION' && m.columnaDestino !== 'IMPORTE_NETO'
+        ),
+        { columnaOrigen: 'PRECIO', columnaDestino: 'IMPORTE_NETO', excluida: false },
+      ],
+      configuraciones: plantillaSinQuantity.configuraciones!.filter(
+        (c) =>
+          c.columna_destino !== 'BONIFICACION' &&
+          c.nombre_columna !== 'BONIFICACION' &&
+          c.columna_destino !== 'IMPORTE_NETO'
+      ),
+    };
+
+    state.setPreview({
+      nombreArchivo: 'telepase.csv',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['FECHA', 'HORA', 'ESTACION', 'DISPOSITIVO', 'PATENTE', 'TARIFA'],
+      filasPreview: [
+        {
+          FECHA: '2026-07-29',
+          HORA: '10:00:00',
+          ESTACION: 'CAMPANA',
+          DISPOSITIVO: '1',
+          PATENTE: 'AE751PA',
+          TARIFA: '3976.59',
+        },
+      ],
+      filasOrigen: [
+        {
+          FECHA: '2026-07-29',
+          HORA: '10:00:00',
+          ESTACION: 'CAMPANA',
+          DISPOSITIVO: '1',
+          PATENTE: 'AE751PA',
+          TARIFA: '3976.59',
+        },
+      ],
+      tiposInferidos: {},
+    });
+
+    const result = await apply.aplicarYEvaluar(plantillaActual.id);
+
+    expect(result.ok).toBeTrue();
+    expect(result.errores).toEqual([]);
+    expect(state.mapeosActivos().some((m) => m.columnaDestino === 'BONIFICACION')).toBeTrue();
+    expect(
+      state.getConfiguracionesDraft().some(
+        (d) =>
+          d.columna_destino === 'BONIFICACION' &&
+          d.configuracion?.['algoritmo_codigo'] === 'ASIGNAR_VALOR' &&
+          (d.configuracion?.['valor'] === 0 ||
+            (d.configuracion?.['parametros'] as { valor?: number } | undefined)?.valor === 0)
+      )
+    ).toBeTrue();
   });
 });

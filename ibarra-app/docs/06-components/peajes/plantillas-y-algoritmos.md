@@ -49,7 +49,8 @@ Flujo:
 | `BORRAR_ESPACIOS` | Trim (legacy: TRIM) |
 | `ELIMINAR_GUIONES` | Quita guiones |
 | `CONVERTIR_MAYUSCULAS` | Upper (legacy: UPPER) |
-| `CONVERTIR_TEXTO` / `CONVERTIR_NUMERO` | Cast |
+| `CONVERTIR_TEXTO` / `CONVERTIR_NUMERO` | Cast (decimal con punto, sin miles) |
+| `CONVERTIR_NUMERO_ARS` | Cast locale AR (`19.985,09` → `19985.09`) |
 | `ASIGNAR_VALOR` | Default / assign |
 | `COPIAR_COLUMNA` | Copy |
 | `FORMATEAR_FECHA_HORA` | Fecha/hora |
@@ -94,6 +95,7 @@ En Paso 5 el origen del mapeo es `PATENTE_ID` (salida del pipeline).
 |--------|----------------------|
 | `ELIMINAR_IVA` | Divide una columna numérica —normalmente `IMPORTE_NETO`— por `1,21` y redondea cada pasada a dos decimales. Es opcional y se guarda en la plantilla de la empresa. |
 | `OPERAR_NUMERO` | Opera una columna contra un valor fijo mediante `sumar`, `restar`, `multiplicar` o `dividir`. Rechaza valores inválidos y división por cero. |
+| `CONVERTIR_NUMERO_ARS` | Parsea montos argentinos (`19.985,09`). Usar en Telepase / Autopistas Urbanas. `CONVERTIR_NUMERO` queda para enteros o decimal con punto (`19985.09`). |
 
 Estas estrategias se ejecutan únicamente desde el `StrategyRegistry`; los parámetros persistidos declaran operación, valor y columna, sin ejecutar código dinámico.
 

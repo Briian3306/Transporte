@@ -336,6 +336,7 @@ function necesitaColumnaOrigen(cfg: ConfiguracionPlantilla): boolean {
     codigo === 'COPIAR_COLUMNA' ||
     codigo === 'CONVERTIR_TEXTO' ||
     codigo === 'CONVERTIR_NUMERO' ||
+    codigo === 'CONVERTIR_NUMERO_ARS' ||
     cfg.tipo === 'mapeo'
   );
 }

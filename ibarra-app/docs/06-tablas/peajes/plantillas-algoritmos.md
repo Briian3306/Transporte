@@ -94,7 +94,9 @@ RLS: SELECT para `authenticated` (catálogo de solo lectura).
 
 Catálogo activo alineado a `StrategyRegistry`:
 
-`BORRAR_ESPACIOS`, `ELIMINAR_GUIONES`, `CONVERTIR_MAYUSCULAS`, `COMBINAR_COLUMNAS`, `FORMATEAR_FECHA_HORA`, `CALCULAR_IMPORTE_NETO`, `CONVERTIR_NUMERO`, `CONVERTIR_TEXTO`, `ASIGNAR_VALOR`, `COPIAR_COLUMNA`
+`BORRAR_ESPACIOS`, `ELIMINAR_GUIONES`, `CONVERTIR_MAYUSCULAS`, `COMBINAR_COLUMNAS`, `FORMATEAR_FECHA_HORA`, `CALCULAR_IMPORTE_NETO`, `CONVERTIR_NUMERO`, `CONVERTIR_NUMERO_ARS`, `CONVERTIR_TEXTO`, `ASIGNAR_VALOR`, `COPIAR_COLUMNA`, `ELIMINAR_IVA`, `OPERAR_NUMERO`, `REEMPLAZAR_TEXTO`
+
+Migración `20260806120000_peajes_algoritmo_convertir_numero_ars.sql`: agrega `CONVERTIR_NUMERO_ARS` (locale AR). Plantilla DESARROLLO `AUSA-8-2026` usa `TARIFA → CONVERTIR_NUMERO_ARS → PRECIO`.
 
 Códigos legacy (`TRIM`, `UPPER`, `COMBINAR_FECHA_HORA` como atómico, etc.) quedan con `activo = false`. Los nombres `COMBINAR_FECHA_HORA` / `NORMALIZAR_PATENTE` son algoritmos combinados (filas en `algoritmos_combinados`), no códigos de paso.
 

@@ -155,6 +155,8 @@
       (p. ej. <span class="pw__mono">FECHA_HORA</span>); FECHA/HORA quedan resueltas y no requieren mapeo.
       QUANTITY se mapea explícitamente (RN-07: valor generado <span class="pw__mono">1</span> vía
       <span class="pw__mono">ASIGNAR_VALOR</span> cuando el archivo no trae la columna).
+      Si el archivo no trae descuento, BONIFICACION se genera en <span class="pw__mono">0</span>
+      (mismo patrón) e IMPORTE_NETO queda igual a PRECIO.
       IMPORTE_NETO se completa al estandarizar si falta.
     </div>
 

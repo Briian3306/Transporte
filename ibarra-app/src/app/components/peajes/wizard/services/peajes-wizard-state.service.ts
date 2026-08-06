@@ -25,6 +25,7 @@ import {
   ColumnRecommendation,
   buildDemoPipelineSeeds,
   detectColumnRecommendations,
+  recipeBonificacionCero,
   recipeQuantity,
   tieneHeadersParaSeedDemo,
 } from './column-recognition';
@@ -701,6 +702,7 @@ export class PeajesWizardStateService {
    * Paso 5 las columnas necesarias para completar el Structure Goal aunque no
    * sean salidas del pipeline (caso Acceso Oeste: PATENTE, TARIFA y BONIFICACION).
    * QUANTITY (RN-07): fila sintética + ASIGNAR_VALOR=1 si el archivo no la trae.
+   * BONIFICACION: fila sintética + ASIGNAR_VALOR=0 si el proveedor no trae descuento.
    */
   asegurarMapeosObligatorios(): void {
     const candidatos: Partial<Record<PasadaColumnKey, string[]>> = {
@@ -731,6 +733,7 @@ export class PeajesWizardStateService {
     }
 
     this.asegurarQuantityMapeoYPipeline();
+    this.asegurarBonificacionMapeoYPipeline();
   }
 
   /**
@@ -769,6 +772,49 @@ export class PeajesWizardStateService {
       this.state.configuracionesDraft = renumerarOrden([
         ...this.state.configuracionesDraft,
         qtyDraft,
+      ]);
+    }
+  }
+
+  /**
+   * Proveedores sin descuento (Autopistas / Telepase): si no hay mapeo a
+   * BONIFICACION (tampoco desde encabezado), agrega origen sintético +
+   * ASIGNAR_VALOR { valor: 0 }. No pisa un mapeo desde columna real del archivo.
+   */
+  asegurarBonificacionMapeoYPipeline(): void {
+    const tieneMapeoBonif = this.state.mapeos.some(
+      (m) => !m.excluida && m.columnaDestino === 'BONIFICACION'
+    );
+    if (tieneMapeoBonif) {
+      return;
+    }
+
+    const existente = this.state.mapeos.find((m) => m.columnaOrigen === 'BONIFICACION');
+    if (existente) {
+      existente.excluida = false;
+      existente.columnaDestino = 'BONIFICACION';
+    } else {
+      this.state.mapeos.push({
+        columnaOrigen: 'BONIFICACION',
+        columnaDestino: 'BONIFICACION',
+        excluida: false,
+      });
+    }
+
+    const tienePipelineBonif = this.state.configuracionesDraft.some(
+      (d) =>
+        d.configuracion?.habilitado !== false &&
+        (d.columna_destino === 'BONIFICACION' || d.nombre_columna === 'BONIFICACION')
+    );
+    if (!tienePipelineBonif) {
+      const maxOrden =
+        this.state.configuracionesDraft.length === 0
+          ? 0
+          : Math.max(...this.state.configuracionesDraft.map((d) => d.orden));
+      const [bonifDraft] = recipeBonificacionCero(maxOrden + 10);
+      this.state.configuracionesDraft = renumerarOrden([
+        ...this.state.configuracionesDraft,
+        bonifDraft,
       ]);
     }
   }
@@ -863,6 +909,22 @@ export class PeajesWizardStateService {
         if (out['QUANTITY'] === null || out['QUANTITY'] === undefined) {
           out['QUANTITY'] = 1;
         }
+        if (out['BONIFICACION'] === null || out['BONIFICACION'] === undefined) {
+          out['BONIFICACION'] = 0;
+        }
+        if (
+          (out['IMPORTE_NETO'] === null || out['IMPORTE_NETO'] === undefined) &&
+          out['PRECIO'] !== null &&
+          out['PRECIO'] !== undefined
+        ) {
+          const precio = Number(out['PRECIO']);
+          const bonif = Number(out['BONIFICACION'] ?? 0);
+          const qty = Number(out['QUANTITY'] ?? 1);
+          if (Number.isFinite(precio)) {
+            out['IMPORTE_NETO'] =
+              (precio - (Number.isFinite(bonif) ? bonif : 0)) * (Number.isFinite(qty) ? qty : 1);
+          }
+        }
 
         return out as PasadaEstandarizada;
       });
@@ -915,6 +977,9 @@ export class PeajesWizardStateService {
 
         if (out.QUANTITY === null || out.QUANTITY === undefined) {
           out.QUANTITY = 1;
+        }
+        if (out.BONIFICACION === null || out.BONIFICACION === undefined) {
+          out.BONIFICACION = 0;
         }
 
         if (out.IMPORTE_NETO === null && out.PRECIO !== null) {

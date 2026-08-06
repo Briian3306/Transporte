@@ -63,7 +63,8 @@ Atomic codes in this repo (`ALGORITMO_CODIGOS`):
 | `COMBINAR_COLUMNAS` | Concat columns |
 | `FORMATEAR_FECHA_HORA` | FECHA + HORA → datetime |
 | `CALCULAR_IMPORTE_NETO` | PRECIO − BONIFICACION |
-| `CONVERTIR_NUMERO` / `CONVERTIR_TEXTO` | Casts |
+| `CONVERTIR_NUMERO` / `CONVERTIR_TEXTO` | Casts (punto decimal) |
+| `CONVERTIR_NUMERO_ARS` | Cast locale AR (`19.985,09`) |
 | `ASIGNAR_VALOR` | Constant (e.g. QUANTITY=1) |
 | `COPIAR_COLUMNA` | Pass-through / mapeo |
 
@@ -115,7 +116,7 @@ interface IProviderAdapter {
 | Patente | `DOMINIO` / patente | Combined `NORMALIZAR_PATENTE` | `BORRAR_ESPACIOS` → `ELIMINAR_GUIONES` → `CONVERTIR_MAYUSCULAS` |
 | Estación | station code | Catalog match (Paso 5) | Lookup via catálogo; not always a strategy code yet |
 | Estación compuesta | `ESTACION` + `VIA` (Autopistas) | Join then catalog | `COMBINAR_COLUMNAS` `{ separador: '-' }` → match `codigos_proveedor` |
-| Moneda | `TARIFA` / `BONIFICACION` | — | `CONVERTIR_NUMERO` |
+| Moneda | `TARIFA` / `BONIFICACION` | — | `CONVERTIR_NUMERO` (punto) o `CONVERTIR_NUMERO_ARS` (`19.985,09`) |
 | Importe neto | derived | — | `CALCULAR_IMPORTE_NETO` (omit if no discount; copy `PRECIO`) |
 | Pase / dispositivo | `DISPOSITIVON` / `DISPOSITIVO` | — | `CONVERTIR_TEXTO` / `COPIAR_COLUMNA` |
 | Quantity | always 1 | — | `ASIGNAR_VALOR` `{ valor: 1 }` |

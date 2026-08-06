@@ -85,7 +85,8 @@ export class PeajesPlantillaApplyService {
     let mapeosPlantilla = plantilla.mapeos?.length
       ? [...plantilla.mapeos]
       : this.mapeosDesdeConfiguraciones(configsBase);
-    const { configs, mapeos } = this.asegurarQuantityEnPlantilla(configsBase, mapeosPlantilla);
+    const qty = this.asegurarQuantityEnPlantilla(configsBase, mapeosPlantilla);
+    const { configs, mapeos } = this.asegurarBonificacionEnPlantilla(qty.configs, qty.mapeos);
     mapeosPlantilla = mapeos;
     const algoritmos = await firstValueFrom(this.plantillasSvc.listarAlgoritmos());
     const erroresValidacion = this.motor.validarDefinicionPlantilla(
@@ -259,6 +260,70 @@ export class PeajesPlantillaApplyService {
           excluida: false,
         });
       }
+    }
+
+    return { configs: nextConfigs, mapeos: nextMapeos };
+  }
+
+  /**
+   * Plantillas sin descuento (Autopistas / Telepase): si falta BONIFICACION en
+   * mapeos, inyecta ASIGNAR_VALOR=0 + mapeo BONIFICACION→BONIFICACION.
+   * No agrega pipeline si ya hay mapeo (columna real del proveedor).
+   */
+  private asegurarBonificacionEnPlantilla(
+    configs: ConfiguracionPlantilla[],
+    mapeos: PlantillaMapeoColumna[]
+  ): { configs: ConfiguracionPlantilla[]; mapeos: PlantillaMapeoColumna[] } {
+    const cubiertoMapeo = mapeos.some((m) => !m.excluida && m.columnaDestino === 'BONIFICACION');
+    if (cubiertoMapeo) {
+      return { configs, mapeos };
+    }
+
+    const cubiertoPipeline = configs.some(
+      (c) =>
+        c.configuracion?.['habilitado'] !== false &&
+        (c.columna_destino === 'BONIFICACION' || c.nombre_columna === 'BONIFICACION')
+    );
+
+    let nextConfigs = configs;
+    if (!cubiertoPipeline) {
+      const maxOrden = configs.length ? Math.max(...configs.map((c) => c.orden)) : 0;
+      const plantillaId = configs[0]?.plantilla_id ?? 'runtime';
+      nextConfigs = [
+        ...configs,
+        {
+          id: `bonif-repair-${plantillaId}`,
+          plantilla_id: plantillaId,
+          nombre_columna: 'BONIFICACION',
+          columna_destino: 'BONIFICACION',
+          orden: maxOrden + 10,
+          tipo: 'transformacion',
+          algoritmo_combinado_id: null,
+          obligatoria: true,
+          configuracion: {
+            algoritmo_codigo: 'ASIGNAR_VALOR',
+            valor: 0,
+            parametros: { valor: 0 },
+            habilitado: true,
+          },
+        },
+      ];
+    }
+
+    const nextMapeos = [...mapeos];
+    const idx = nextMapeos.findIndex((m) => m.columnaOrigen === 'BONIFICACION');
+    if (idx >= 0) {
+      nextMapeos[idx] = {
+        ...nextMapeos[idx],
+        columnaDestino: 'BONIFICACION',
+        excluida: false,
+      };
+    } else {
+      nextMapeos.push({
+        columnaOrigen: 'BONIFICACION',
+        columnaDestino: 'BONIFICACION',
+        excluida: false,
+      });
     }
 
     return { configs: nextConfigs, mapeos: nextMapeos };

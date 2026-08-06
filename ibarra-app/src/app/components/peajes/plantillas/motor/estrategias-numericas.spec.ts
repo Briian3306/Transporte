@@ -1,8 +1,11 @@
 import { getAlgorithmDescriptor } from './algorithm-descriptor';
 import {
   calcularImporteNetoStrategy,
+  convertirNumeroArsStrategy,
+  convertirNumeroStrategy,
   eliminarIvaStrategy,
   operarNumeroStrategy,
+  parseNumeroArs,
 } from './strategies/estrategias-atomicas';
 
 describe('estrategias numéricas F10', () => {
@@ -29,5 +32,32 @@ describe('estrategias numéricas F10', () => {
     const descriptor = getAlgorithmDescriptor('OPERAR_NUMERO')!;
     expect(descriptor.validar({ columna: 'PRECIO', operacion: 'dividir', valor: 0 })
       .some((error) => /cero/i.test(error.motivo))).toBeTrue();
+  });
+
+  it('CONVERTIR_NUMERO_ARS parsea 19.985,09 → 19985.09; CONVERTIR_NUMERO no', () => {
+    expect(parseNumeroArs('19.985,09')).toBe(19985.09);
+    expect(parseNumeroArs('44.494,48')).toBe(44494.48);
+    expect(parseNumeroArs('1234,56')).toBe(1234.56);
+    expect(
+      convertirNumeroArsStrategy.ejecutar({
+        fila: { TARIFA: '19.985,09' },
+        resultado: {},
+        parametros: { columna: 'TARIFA' },
+      })
+    ).toBe(19985.09);
+    expect(
+      convertirNumeroStrategy.ejecutar({
+        fila: { TARIFA: '19.985,09' },
+        resultado: {},
+        parametros: { columna: 'TARIFA' },
+      })
+    ).toBeNull();
+    expect(
+      convertirNumeroStrategy.ejecutar({
+        fila: { TARIFA: '19985.09' },
+        resultado: {},
+        parametros: { columna: 'TARIFA' },
+      })
+    ).toBe(19985.09);
   });
 });

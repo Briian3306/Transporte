@@ -16,10 +16,11 @@ export type FormatoFechaHora = (typeof FORMATOS_FECHA_HORA)[number];
 function asString(value: unknown): string {
   if (value == null) return '';
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    const dd = String(value.getDate()).padStart(2, '0');
-    const mm = String(value.getMonth() + 1).padStart(2, '0');
+    // ISO date-only: unambiguous for Postgres (evita DD/MM vs MDY).
     const yyyy = value.getFullYear();
-    return `${dd}/${mm}/${yyyy}`;
+    const mm = String(value.getMonth() + 1).padStart(2, '0');
+    const dd = String(value.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
   return String(value);
 }
@@ -137,7 +138,7 @@ export const convertirTextoStrategy: TransformStrategy = {
 export const convertirNumeroStrategy: TransformStrategy = {
   codigo: 'CONVERTIR_NUMERO',
   nombre: 'Convertir a número',
-  descripcion: 'Convierte el valor a número decimal.',
+  descripcion: 'Convierte el valor a número decimal (punto decimal, sin miles).',
   ejecutar(ctx: StrategyContext): unknown {
     const origen =
       (ctx.parametros?.['columna'] as string | undefined) ??
@@ -145,11 +146,50 @@ export const convertirNumeroStrategy: TransformStrategy = {
       '';
     const raw = origen in ctx.resultado ? ctx.resultado[origen] : ctx.fila[origen];
     if (raw == null || raw === '') return null;
+    if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
     const normalized = asString(raw).replace(',', '.').replace(/\s/g, '');
     const n = Number(normalized);
     return Number.isFinite(n) ? n : null;
   },
 };
+
+/**
+ * Locale AR: miles `.` + decimal `,` (p. ej. `19.985,09` → `19985.09`).
+ * Usar en proveedores Telepase / Autopistas Urbanas; no reemplaza CONVERTIR_NUMERO.
+ */
+export const convertirNumeroArsStrategy: TransformStrategy = {
+  codigo: 'CONVERTIR_NUMERO_ARS',
+  nombre: 'Convertir a número (ARS)',
+  descripcion: 'Convierte número con formato argentino (miles . y decimal ,).',
+  ejecutar(ctx: StrategyContext): unknown {
+    const origen =
+      (ctx.parametros?.['columna'] as string | undefined) ??
+      ctx.columnaOrigen ??
+      '';
+    const raw = origen in ctx.resultado ? ctx.resultado[origen] : ctx.fila[origen];
+    return parseNumeroArs(raw);
+  },
+};
+
+/** `19.985,09` → 19985.09; también acepta `1234,56` o número ya parseado. */
+export function parseNumeroArs(raw: unknown): number | null {
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  const s = asString(raw).trim().replace(/\s/g, '');
+  if (!s) return null;
+  // 19.985,09 / 1.234.567,89
+  if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s) || (s.includes('.') && s.includes(','))) {
+    const n = Number(s.replace(/\./g, '').replace(',', '.'));
+    return Number.isFinite(n) ? n : null;
+  }
+  // Solo decimal coma: 1234,56
+  if (s.includes(',') && !s.includes('.')) {
+    const n = Number(s.replace(',', '.'));
+    return Number.isFinite(n) ? n : null;
+  }
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
 
 export const asignarValorStrategy: TransformStrategy = {
   codigo: 'ASIGNAR_VALOR',
@@ -205,12 +245,33 @@ export const formatearFechaHoraStrategy: TransformStrategy = {
 export const combinarColumnasStrategy: TransformStrategy = {
   codigo: 'COMBINAR_COLUMNAS',
   nombre: 'Combinar columnas',
-  descripcion: 'Concatena columnas; si formato_hora=HHMMSS delega a fecha/hora.',
+  descripcion:
+    'Concatena columnas; si parecen FECHA+HORA produce FECHA_HORA ISO (evita DD/MM ambiguo en Postgres).',
   ejecutar(ctx: StrategyContext): unknown {
-    if (ctx.parametros?.['formato_hora'] === 'HHMMSS') {
-      return formatearFechaHoraStrategy.ejecutar(ctx);
-    }
     const columnas = resolverColumnasEntrada(ctx.parametros);
+    const formatoHora = ctx.parametros?.['formato_hora'];
+    // Fecha+hora (2 columnas) o formato explícito → ISO yyyy-MM-dd HH:mm:ss
+    if (
+      formatoHora === 'HHMMSS' ||
+      formatoHora === 'HH:MM:SS' ||
+      formatoHora === 'YYYY-MM-DD HH:MM:SS' ||
+      formatoHora === 'DD/MM/YYYY HH:MM:SS' ||
+      formatoHora === 'DD/MM/YY HHMMSS' ||
+      formatoHora === 'MM/DD/YY HHMMSS' ||
+      (columnas.length === 2 && pareceParFechaHora(columnas, ctx))
+    ) {
+      const formatted = formatearFechaHoraStrategy.ejecutar({
+        ...ctx,
+        parametros: {
+          ...ctx.parametros,
+          columnas_entrada: columnas.length ? columnas : ['FECHA', 'HORA'],
+          formato_hora: (formatoHora as string | undefined) ?? 'DD/MM/YYYY HH:MM:SS',
+        },
+      });
+      if (formatted != null && formatted !== '') {
+        return formatted;
+      }
+    }
     const sep = (ctx.parametros?.['separador'] as string | undefined) ?? ' ';
     return columnas
       .map((c) => asString(ctx.fila[c] ?? ctx.resultado[c]).trim())
@@ -218,6 +279,33 @@ export const combinarColumnasStrategy: TransformStrategy = {
       .join(sep);
   },
 };
+
+/** Heurística: columnas FECHA/HORA o valores parseables como fecha + hora. */
+function pareceParFechaHora(columnas: string[], ctx: StrategyContext): boolean {
+  const upper = columnas.map((c) => c.trim().toUpperCase());
+  if (
+    (upper.includes('FECHA') || upper.includes('DATE')) &&
+    (upper.includes('HORA') || upper.includes('TIME'))
+  ) {
+    return true;
+  }
+  if (ctx.columnaDestino?.toUpperCase() === 'FECHA_HORA') {
+    return true;
+  }
+  const fechaVal = ctx.fila[columnas[0]] ?? ctx.resultado[columnas[0]];
+  const horaVal = ctx.fila[columnas[1]] ?? ctx.resultado[columnas[1]];
+  const fechaStr = asString(fechaVal).trim();
+  const horaStr = asString(horaVal).trim();
+  const fechaOk =
+    fechaVal instanceof Date ||
+    /^\d{4}-\d{2}-\d{2}/.test(fechaStr) ||
+    /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(fechaStr);
+  const horaOk =
+    horaVal instanceof Date ||
+    /^\d{1,2}:\d{2}(:\d{2})?$/.test(horaStr) ||
+    /^\d{4,6}$/.test(horaStr.replace(/\D/g, ''));
+  return fechaOk && horaOk;
+}
 
 /**
  * IMPORTE_NETO = PRECIO - BONIFICACION (RN-10).
@@ -341,22 +429,34 @@ function parseFechaDdMmYyyy(fecha: string, formato?: string): string | null {
     const yyyy = yy >= 70 ? 1900 + yy : 2000 + yy;
     return `${yyyy}-${mm}-${dd}`;
   }
-  // dd/mm/yyyy o dd-mm-yyyy
+  // dd/mm/yyyy o dd-mm-yyyy (es-AR). Si el 2.º token > 12, interpretar como MM/DD.
   let m = t.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+.*)?$/);
   if (m) {
-    const dd = m[1].padStart(2, '0');
-    const mm = m[2].padStart(2, '0');
+    let day = Number(m[1]);
+    let month = Number(m[2]);
     const yyyy = m[3];
-    return `${yyyy}-${mm}-${dd}`;
+    if (month > 12 && day >= 1 && day <= 12) {
+      const swap = day;
+      day = month;
+      month = swap;
+    }
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return `${yyyy}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
   // dd/mm/yy
   m = t.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})(?:\s+.*)?$/);
   if (m) {
-    const dd = m[1].padStart(2, '0');
-    const mm = m[2].padStart(2, '0');
+    let day = Number(m[1]);
+    let month = Number(m[2]);
     const yy = Number(m[3]);
     const yyyy = yy >= 70 ? 1900 + yy : 2000 + yy;
-    return `${yyyy}-${mm}-${dd}`;
+    if (month > 12 && day >= 1 && day <= 12) {
+      const swap = day;
+      day = month;
+      month = swap;
+    }
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return `${yyyy}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
   // yyyy-mm-dd already
   if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
@@ -449,6 +549,7 @@ export const ESTRATEGIAS_ATOMICAS: TransformStrategy[] = [
   reemplazarTextoStrategy,
   convertirTextoStrategy,
   convertirNumeroStrategy,
+  convertirNumeroArsStrategy,
   asignarValorStrategy,
   copiarColumnaStrategy,
   formatearFechaHoraStrategy,

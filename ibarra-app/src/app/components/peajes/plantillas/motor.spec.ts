@@ -124,6 +124,26 @@ describe('peajes/plantillas/motor', () => {
     expect(row['QUANTITY']).toBe(1);
   });
 
+  it('COMBINAR_COLUMNAS FECHA+HORA (dd/MM/yyyy) produce ISO para Postgres', () => {
+    const motor = crearMotor();
+    const [row] = motor.aplicarPipeline(
+      [{ FECHA: '13/07/2026', HORA: '15:54:17' }],
+      [
+        cfg({
+          nombre_columna: 'FECHA',
+          columna_destino: 'FECHA_HORA',
+          orden: 10,
+          configuracion: {
+            algoritmo_codigo: 'COMBINAR_COLUMNAS',
+            columnas_entrada: ['FECHA', 'HORA'],
+            separador: ' ',
+          },
+        }),
+      ]
+    );
+    expect(row['FECHA_HORA']).toBe('2026-07-13 15:54:17');
+  });
+
   it('F09: AUSOL-like — ESTACION_ID solo en mapeos no falla validarDefinicionPlantilla', () => {
     const motor = crearMotor();
     // Pipeline como AUSOL-V2-08-2026: sin paso con columna_destino ESTACION_ID

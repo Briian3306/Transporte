@@ -65,7 +65,7 @@ Primeras 10 filas (resumen):
 | Patente | `DOMINIO` → `NORMALIZAR_PATENTE` | `PATENTE` → **mismo** `NORMALIZAR_PATENTE` |
 | Pase | `DISPOSITIVON` | `DISPOSITIVO` → `PASE_ID` |
 | Estación | Solo `ESTACION` (código numérico) | `ESTACION` + `VIA` → código compuesto |
-| Precio | Entero + `BONIFICACION` → `CALCULAR_IMPORTE_NETO` | Solo `TARIFA` (formato AR) → `CONVERTIR_NUMERO`; `IMPORTE_NETO = PRECIO` |
+| Precio | Entero + `BONIFICACION` → `CALCULAR_IMPORTE_NETO` | Solo `TARIFA` (formato AR) → `CONVERTIR_NUMERO_ARS`; `IMPORTE_NETO = PRECIO` |
 | Complejidad | Media | **Más simple** |
 
 ---
@@ -123,7 +123,7 @@ Este ejemplo usa los **tres patrones** del skill:
 | Patente | `PATENTE` | `NORMALIZAR_PATENTE` *(combinado)* | `BORRAR_ESPACIOS` → `ELIMINAR_GUIONES` → `CONVERTIR_MAYUSCULAS` |
 | Dispositivo / pase | `DISPOSITIVO` | Normalizar pase | `CONVERTIR_TEXTO` (o `COPIAR_COLUMNA` + trim) |
 | Estación | `ESTACION` + `VIA` | Combinar código + mapeo catálogo | `COMBINAR_COLUMNAS` luego resolución de catálogo (Paso 5) |
-| Moneda | `TARIFA` con `.` miles y `,` decimal | Formato número | `CONVERTIR_NUMERO` |
+| Moneda | `TARIFA` con `.` miles y `,` decimal | Formato número AR | `CONVERTIR_NUMERO_ARS` |
 | Importe neto | = precio | Sin resta | `COPIAR_COLUMNA` desde `PRECIO` **o** `ASIGNAR_VALOR` no aplica; copiar resultado numérico |
 | Cantidad | fila = 1 pasada | Valor fijo | `ASIGNAR_VALOR` `{ valor: 1 }` |
 
@@ -197,7 +197,7 @@ Patrones: **Adapter** (define el separador y el uso de `VIA`) + **Strategy** `CO
 
 ```text
 TARIFA = 19.985,09
-→ CONVERTIR_NUMERO { separadorMiles: '.', separadorDecimal: ',' }
+→ CONVERTIR_NUMERO_ARS  (`19.985,09` → `19985.09`)
 PRECIO = 19985.09
 IMPORTE_NETO = 19985.09   # sin BONIFICACION en este proveedor
 QUANTITY = 1
@@ -224,7 +224,7 @@ No se usa `CALCULAR_IMPORTE_NETO` (no hay columna de descuento).
 | 30 | `PASE_ID` | transformación | `CONVERTIR_TEXTO` | columna `DISPOSITIVO` |
 | 40 | `CODIGO_ESTACION` | transformación | `COMBINAR_COLUMNAS` | `ESTACION`, `VIA`, separador `-` |
 | 50 | `ESTACION_ID` | mapeo | catálogo / `codigos_proveedor` | match sobre `CODIGO_ESTACION` |
-| 60 | `PRECIO` / `IMPORTE_NETO` | transformación | `CONVERTIR_NUMERO` | locale AR sobre `TARIFA` |
+| 60 | `PRECIO` / `IMPORTE_NETO` | transformación | `CONVERTIR_NUMERO_ARS` | locale AR sobre `TARIFA` |
 | 70 | `QUANTITY` | cálculo | `ASIGNAR_VALOR` | `{ valor: 1 }` |
 
 Ejecución conceptual:
@@ -327,7 +327,7 @@ flowchart TD
     E --> F[CONVERTIR_TEXTO DISPOSITIVO]
     F --> G[COMBINAR_COLUMNAS ESTACION-VIA]
     G --> H[Mapear ESTACION_ID catálogo]
-    H --> I[CONVERTIR_NUMERO TARIFA]
+    H --> I[CONVERTIR_NUMERO_ARS TARIFA]
     I --> J[QUANTITY=1 / IMPORTE_NETO=PRECIO]
     J --> K[Validar vs factura]
     K --> L[Confirmar carga]

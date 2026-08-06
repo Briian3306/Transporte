@@ -14,6 +14,7 @@ import {
   ResultadoValidacionCarga,
 } from '../models/peajes-services.contracts';
 import { SupabaseService } from '../../../services/supabase.service';
+import { toPostgresFechaHora } from '../wizard/services/peajes-fecha.util';
 
 @Injectable({ providedIn: 'root' })
 export class PeajesCargaSupabaseService implements PeajesCargaService {
@@ -86,7 +87,7 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
           pase_id: p.PASE_ID,
           patente_id: p.PATENTE_ID,
           estacion_id: p.ESTACION_ID,
-          fecha_hora: p.FECHA_HORA,
+          fecha_hora: toPostgresFechaHora(p.FECHA_HORA) ?? p.FECHA_HORA,
         }));
         const { data, error } = await client.rpc('peajes_detectar_duplicados', {
           p_pasadas: payload,
@@ -102,7 +103,7 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
       this.supabase.executeWithRetry(async () => {
         const client = await this.supabase.getClient();
         const pasadasPayload = input.pasadas.map((p) => ({
-          fecha_hora: p.FECHA_HORA,
+          fecha_hora: toPostgresFechaHora(p.FECHA_HORA) ?? p.FECHA_HORA,
           pase_id: p.PASE_ID,
           patente_id: p.PATENTE_ID,
           estacion_id: p.ESTACION_ID,

@@ -105,6 +105,62 @@ describe('Paso5MapeoComponent', () => {
     expect(component.faltantes()).not.toContain('QUANTITY');
   });
 
+  it('sin columna BONIFICACION: genera mapeo ASIGNAR_VALOR=0 y no queda en faltantes', async () => {
+    state.setPreview({
+      nombreArchivo: 'pasadas_telepase.csv',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['PATENTE', 'TARIFA', 'ESTACION', 'DISPOSITIVO', 'FECHA', 'HORA'],
+      filasPreview: [
+        {
+          PATENTE: 'AB123CD',
+          TARIFA: '100',
+          ESTACION: 'E1',
+          DISPOSITIVO: '1',
+          FECHA: '2026-07-29',
+          HORA: '10:00:00',
+        },
+      ],
+      filasOrigen: [
+        {
+          PATENTE: 'AB123CD',
+          TARIFA: '100',
+          ESTACION: 'E1',
+          DISPOSITIVO: '1',
+          FECHA: '2026-07-29',
+          HORA: '10:00:00',
+        },
+      ],
+      tiposInferidos: {},
+    });
+    state.setMapeos([
+      { columnaOrigen: 'FECHA', columnaDestino: 'FECHA_HORA', excluida: false },
+      { columnaOrigen: 'PATENTE', columnaDestino: 'PATENTE_ID', excluida: false },
+      { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID', excluida: false },
+      { columnaOrigen: 'DISPOSITIVO', columnaDestino: 'PASE_ID', excluida: false },
+      { columnaOrigen: 'TARIFA', columnaDestino: 'PRECIO', excluida: false },
+    ]);
+    await component.ngOnInit();
+
+    expect(
+      component.mapeos.some(
+        (m) => m.columnaOrigen === 'BONIFICACION' && m.columnaDestino === 'BONIFICACION'
+      )
+    ).toBeTrue();
+    expect(component.faltantes()).not.toContain('BONIFICACION');
+    expect(component.etiquetaOrigen('BONIFICACION')).toContain('valor generado');
+    expect(
+      state
+        .getConfiguracionesDraft()
+        .some(
+          (d) =>
+            d.columna_destino === 'BONIFICACION' &&
+            d.configuracion?.algoritmo_codigo === 'ASIGNAR_VALOR' &&
+            d.configuracion?.parametros?.['valor'] === 0
+        )
+    ).toBeTrue();
+  });
+
   it('exige QUANTITY en faltantes si se quita el mapeo', async () => {
     state.setMapeos([
       { columnaOrigen: 'DOMINIO', columnaDestino: 'PATENTE_ID', excluida: false },

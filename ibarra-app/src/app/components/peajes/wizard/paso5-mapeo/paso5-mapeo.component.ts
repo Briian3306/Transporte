@@ -97,6 +97,10 @@ export class Paso5MapeoComponent implements OnInit {
     if (col === 'QUANTITY' && !this.origenEnArchivo(col)) {
       return 'QUANTITY (valor generado)';
     }
+    // Sin columna de descuento: BONIFICACION = 0 (ASIGNAR_VALOR).
+    if (col === 'BONIFICACION' && !this.origenEnArchivo(col)) {
+      return 'BONIFICACION (valor generado)';
+    }
     if (this.esSalidaPipeline(col)) {
       return `${col} (pipeline)`;
     }
@@ -115,6 +119,13 @@ export class Paso5MapeoComponent implements OnInit {
 
   descripcionTransform(m: MapeoColumna): string {
     const dest = m.columnaDestino;
+    if (
+      m.columnaOrigen === 'BONIFICACION' &&
+      !this.origenEnArchivo('BONIFICACION') &&
+      dest === 'BONIFICACION'
+    ) {
+      return 'Asignar 0';
+    }
     if (this.esSalidaPipeline(m.columnaOrigen)) {
       return dest
         ? `Salida del pipeline → ${dest}`

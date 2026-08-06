@@ -43,6 +43,21 @@ describe('column-recognition (F02-11)', () => {
     expect(detectaNumeroAr(['19985.09', '100'])).toBeFalse();
   });
 
+  it('recomienda CONVERTIR_NUMERO_ARS si TARIFA es 19.985,09; CONVERTIR_NUMERO si decimal con punto', () => {
+    const ar = detectColumnRecommendations(
+      previewOf(['TARIFA'], [{ TARIFA: '19.985,09' }])
+    ).find((r) => r.kind === 'tarifa')!;
+    expect(ar.detail).toContain('CONVERTIR_NUMERO_ARS');
+    expect(ar.draftSteps[0].configuracion?.algoritmo_codigo).toBe('CONVERTIR_NUMERO_ARS');
+
+    const us = detectColumnRecommendations(
+      previewOf(['TARIFA'], [{ TARIFA: '19985.09' }])
+    ).find((r) => r.kind === 'tarifa')!;
+    expect(us.detail).toContain('CONVERTIR_NUMERO');
+    expect(us.detail).not.toContain('CONVERTIR_NUMERO_ARS');
+    expect(us.draftSteps[0].configuracion?.algoritmo_codigo).toBe('CONVERTIR_NUMERO');
+  });
+
   it('AUSOL-like headers generan patente + fecha_hora + dispositivo sin DOMINIO', () => {
     const recs = detectColumnRecommendations(
       previewOf(

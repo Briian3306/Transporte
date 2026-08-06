@@ -418,7 +418,8 @@
       ],
       "evidence": [
         "ng test paso5* / paso6*: no avanza sin obligatorias; no continúa con estaciones sin relacionar",
-        "Mocks tipados hasta F01-1"
+        "Mocks tipados hasta F01-1",
+        "2026-08-05: sin columna BONIFICACION → ASIGNAR_VALOR=0 + mapeo sintético; Continuar habilitado; IMPORTE_NETO=PRECIO"
       ]
     },
     {
@@ -562,7 +563,9 @@
         "2026-08-03: column-recognition.ts + PeajesColumnRecognitionService; state aceptar/descartar/aceptarTodas; Paso 2 rail UI",
         "2026-08-03: ng test column-recognition + paso2-preview + peajes-wizard-state — 19 SUCCESS",
         "2026-08-03: ng build --configuration=development OK",
-        "2026-08-03: docs reconocimiento-columnas.md + INDEX/wizard/plantillas/testing_plan §10a"
+        "2026-08-03: docs reconocimiento-columnas.md + INDEX/wizard/plantillas/testing_plan §10a",
+        "2026-08-06: TARIFA AR → CONVERTIR_NUMERO_ARS; decimal punto → CONVERTIR_NUMERO; recipeTarifa/Bonificacion actualizadas",
+        "2026-08-06: PeajesExcelService CSV texto — evita coerce SheetJS 19.985,09→19.98509; ng test peajes-excel + recognition + numericas"
       ]
     },
     {
@@ -844,7 +847,7 @@
       ],
       "status": "passing",
       "verification": [
-        "getAlgorithmDescriptors() expone metadata de los 10 códigos atómicos",
+        "getAlgorithmDescriptors() expone metadata 1:1 con ALGORITMO_CODIGOS (incluye CONVERTIR_NUMERO_ARS)",
         "construirPipeline/aplicarPipeline omiten configuracion.habilitado === false",
         "validarDependenciasPipeline detecta use-before-create y ciclos",
         "previsualizarPaso aplica pipeline hasta orden N",
@@ -854,7 +857,8 @@
       "evidence": [
         "2026-07-31: algorithm-descriptor.ts (10 códigos) + dependencias-pipeline.ts + motor APIs",
         "2026-07-31: motor.spec U-P01…U-P08 + I-P09/I-P10; motor.verify.ts PASS (skip-disabled, deps, preview, §21)",
-        "2026-07-31: Demo 102060 / AU 132940.19 assertados en motor.verify"
+        "2026-07-31: Demo 102060 / AU 132940.19 assertados en motor.verify",
+        "2026-08-06: CONVERTIR_NUMERO_ARS en registry + catalogo SQL; AUSA-8-2026 TARIFA→PRECIO en DESARROLLO"
       ]
     },
     {
@@ -1134,7 +1138,8 @@
         "2026-08-04: Fix AUSOL ESTACION_ID — motor valida mapeos+pipeline; Paso 4 irAExcepcion 5|6; save paths no pisan mapeos incompletos. Specs motor + paso4.",
         "2026-08-04: node ng.js test --include=**/peajes/plantillas/motor.spec.ts --include=**/peajes/wizard/paso4-plantilla/paso4-plantilla.component.spec.ts --watch=false --browsers=ChromeHeadless → 23 SUCCESS.",
         "2026-08-04: Paso 1 early apply — PeajesPlantillaApplyService; con plantilla salta a Factura. Specs paso1+paso4 → 6 SUCCESS.",
-        "2026-08-05: QUANTITY RN-07 — wizard asegura mapeo+ASIGNAR_VALOR; apply repara plantillas sin QUANTITY; Paso 5 exige QUANTITY. DESARROLLO: AUSOL-7-2026 (7c42ac64-…) config orden 100 ASIGNAR_VALOR valor=1 + mapeo QUANTITY→QUANTITY. ng test apply+wizard-state+paso5 → 17 SUCCESS."
+        "2026-08-05: QUANTITY RN-07 — wizard asegura mapeo+ASIGNAR_VALOR; apply repara plantillas sin QUANTITY; Paso 5 exige QUANTITY. DESARROLLO: AUSOL-7-2026 (7c42ac64-…) config orden 100 ASIGNAR_VALOR valor=1 + mapeo QUANTITY→QUANTITY. ng test apply+wizard-state+paso5 → 17 SUCCESS.",
+        "2026-08-05: FECHA_HORA ISO — COMBINAR→FORMATEAR, toPostgresFechaHora en RPC, Excel yyyy-MM-dd; AUSOL-7-2026 paso 10 FORMATEAR_FECHA_HORA. Corrige 22008 2026-13-07. ng test fecha.util+motor → 28 SUCCESS."
       ]
     },
     {

@@ -215,49 +215,22 @@ export function recipeDispositivo(deviceCol: string, ordenStart = 20): Configura
 }
 
 export function recipeTarifa(fareCol: string, arStyle: boolean, ordenStart = 80): ConfiguracionPlantillaDraft[] {
-  const steps: ConfiguracionPlantillaDraft[] = [];
-  let entrada = fareCol;
-  let orden = ordenStart;
-
-  if (arStyle) {
-    steps.push(
-      draftBase({
-        orden,
-        tipo: 'transformacion',
-        nombre_columna: fareCol,
-        columna_destino: `${fareCol}_NUM`,
-        configuracion: {
-          algoritmo_codigo: 'REEMPLAZAR_TEXTO',
-          columnas_entrada: [fareCol],
-          parametros: {
-            columna: fareCol,
-            reglas: [{ buscar: '.', reemplazar: '', modo: 'contiene' }],
-          },
-          habilitado: true,
-        },
-        obligatoria: false,
-      })
-    );
-    orden += 10;
-    entrada = `${fareCol}_NUM`;
-  }
-
-  steps.push(
+  const codigo = arStyle ? 'CONVERTIR_NUMERO_ARS' : 'CONVERTIR_NUMERO';
+  return [
     draftBase({
-      orden,
+      orden: ordenStart,
       tipo: 'transformacion',
-      nombre_columna: entrada,
+      nombre_columna: fareCol,
       columna_destino: 'PRECIO',
       configuracion: {
-        algoritmo_codigo: 'CONVERTIR_NUMERO',
-        columnas_entrada: [entrada],
-        parametros: { columna: entrada },
+        algoritmo_codigo: codigo,
+        columnas_entrada: [fareCol],
+        parametros: { columna: fareCol },
         habilitado: true,
       },
       obligatoria: true,
-    })
-  );
-  return steps;
+    }),
+  ];
 }
 
 export function recipeBonificacion(
@@ -267,42 +240,22 @@ export function recipeBonificacion(
   ordenStart = 90
 ): ConfiguracionPlantillaDraft[] {
   const steps: ConfiguracionPlantillaDraft[] = [];
-  let entrada = discountCol;
   let orden = ordenStart;
-
-  if (arStyle) {
-    steps.push(
-      draftBase({
-        orden,
-        tipo: 'transformacion',
-        nombre_columna: discountCol,
-        columna_destino: `${discountCol}_NUM`,
-        configuracion: {
-          algoritmo_codigo: 'REEMPLAZAR_TEXTO',
-          columnas_entrada: [discountCol],
-          parametros: {
-            columna: discountCol,
-            reglas: [{ buscar: '.', reemplazar: '', modo: 'contiene' }],
-          },
-          habilitado: true,
-        },
-        obligatoria: false,
-      })
-    );
-    orden += 10;
-    entrada = `${discountCol}_NUM`;
-  }
+  const codigo = arStyle ? 'CONVERTIR_NUMERO_ARS' : 'CONVERTIR_NUMERO';
+  const destinoBonif = discountCol.toUpperCase().includes('BONIFICACION')
+    ? 'BONIFICACION'
+    : discountCol;
 
   steps.push(
     draftBase({
       orden,
       tipo: 'transformacion',
-      nombre_columna: entrada,
-      columna_destino: discountCol.toUpperCase().includes('BONIFICACION') ? 'BONIFICACION' : discountCol,
+      nombre_columna: discountCol,
+      columna_destino: destinoBonif,
       configuracion: {
-        algoritmo_codigo: 'CONVERTIR_NUMERO',
-        columnas_entrada: [entrada],
-        parametros: { columna: entrada },
+        algoritmo_codigo: codigo,
+        columnas_entrada: [discountCol],
+        parametros: { columna: discountCol },
         habilitado: true,
       },
       obligatoria: true,
@@ -311,6 +264,8 @@ export function recipeBonificacion(
   orden += 10;
 
   if (fareCol) {
+    const precioCol = arStyle ? 'PRECIO' : fareCol;
+    const bonifCol = arStyle ? 'BONIFICACION' : discountCol;
     steps.push(
       draftBase({
         orden,
@@ -319,10 +274,10 @@ export function recipeBonificacion(
         columna_destino: 'IMPORTE_NETO',
         configuracion: {
           algoritmo_codigo: 'CALCULAR_IMPORTE_NETO',
-          columnas_entrada: [fareCol, discountCol],
+          columnas_entrada: [precioCol, bonifCol],
           parametros: {
-            precio_columna: fareCol,
-            bonificacion_columna: discountCol,
+            precio_columna: precioCol,
+            bonificacion_columna: bonifCol,
           },
           habilitado: true,
         },
@@ -361,6 +316,24 @@ export function recipeQuantity(ordenStart = 60): ConfiguracionPlantillaDraft[] {
       configuracion: {
         algoritmo_codigo: 'ASIGNAR_VALOR',
         parametros: { valor: 1 },
+        habilitado: true,
+      },
+      obligatoria: true,
+    }),
+  ];
+}
+
+/** Proveedores sin columna de descuento (Autopistas / Telepase): BONIFICACION = 0. */
+export function recipeBonificacionCero(ordenStart = 70): ConfiguracionPlantillaDraft[] {
+  return [
+    draftBase({
+      orden: ordenStart,
+      tipo: 'transformacion',
+      nombre_columna: 'BONIFICACION',
+      columna_destino: 'BONIFICACION',
+      configuracion: {
+        algoritmo_codigo: 'ASIGNAR_VALOR',
+        parametros: { valor: 0 },
         habilitado: true,
       },
       obligatoria: true,
@@ -443,8 +416,8 @@ export function detectColumnRecommendations(
       kind: 'tarifa',
       title: `Recomendado: Convertir ${fareCol} a PRECIO`,
       detail: ar
-        ? 'Quitar separador de miles y CONVERTIR_NUMERO → PRECIO.'
-        : 'CONVERTIR_NUMERO → PRECIO.',
+        ? 'CONVERTIR_NUMERO_ARS → PRECIO (formato 19.985,09).'
+        : 'CONVERTIR_NUMERO → PRECIO (decimal con punto).',
       status: 'pending',
       columnasEntrada: [fareCol],
       draftSteps: recipeTarifa(fareCol, ar, 80),
@@ -463,8 +436,12 @@ export function detectColumnRecommendations(
         ? `Recomendado: Transformar ${discountCol} y calcular IMPORTE_NETO`
         : `Recomendado: Transformar ${discountCol}`,
       detail: withNeto
-        ? 'CONVERTIR_NUMERO + CALCULAR_IMPORTE_NETO (tarifa − bonificación).'
-        : 'CONVERTIR_NUMERO sobre la columna de bonificación.',
+        ? ar
+          ? 'CONVERTIR_NUMERO_ARS + CALCULAR_IMPORTE_NETO (PRECIO − BONIFICACION).'
+          : 'CONVERTIR_NUMERO + CALCULAR_IMPORTE_NETO (tarifa − bonificación).'
+        : ar
+          ? 'CONVERTIR_NUMERO_ARS sobre la columna de bonificación.'
+          : 'CONVERTIR_NUMERO sobre la columna de bonificación.',
       status: 'pending',
       columnasEntrada: withNeto ? [discountCol, fareCol!] : [discountCol],
       draftSteps: recipeBonificacion(discountCol, fareCol, ar, 90),

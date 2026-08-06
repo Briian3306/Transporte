@@ -402,7 +402,7 @@ const DESCRIPTORES: AlgorithmDescriptor[] = [
   {
     codigo: 'CONVERTIR_NUMERO',
     nombre: 'Convertir a número',
-    descripcion: 'Convierte el valor a número decimal.',
+    descripcion: 'Convierte el valor a número decimal (punto decimal, sin miles).',
     categoria: 'numero',
     inputs: { arity: 1, required: true },
     parametrosSchema: [
@@ -418,6 +418,27 @@ const DESCRIPTORES: AlgorithmDescriptor[] = [
     },
     resumen(config) {
       return `Número(${colUnaria(config) ?? '?'})`;
+    },
+  },
+  {
+    codigo: 'CONVERTIR_NUMERO_ARS',
+    nombre: 'Convertir a número (ARS)',
+    descripcion: 'Convierte número argentino: miles con punto y decimal con coma (19.985,09).',
+    categoria: 'numero',
+    inputs: { arity: 1, required: true },
+    parametrosSchema: [
+      { nombre: 'columna', tipo: 'string', requerido: false },
+    ],
+    outputType: 'number',
+    validar(config) {
+      const col = colUnaria(config);
+      if (!col) {
+        return [err('columna', null, 'CONVERTIR_NUMERO_ARS: falta columna de entrada')];
+      }
+      return [];
+    },
+    resumen(config) {
+      return `NúmeroARS(${colUnaria(config) ?? '?'})`;
     },
   },
   {

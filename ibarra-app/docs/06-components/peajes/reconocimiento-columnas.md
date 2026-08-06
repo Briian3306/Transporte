@@ -36,8 +36,8 @@ Feature: **F02-11** · Owner: `02-frontend-wizard-tablas`.
 | `fecha_hora` | `FECHA` + `HORA` | `FORMATEAR_FECHA_HORA` (si `HORA` es HHMMSS) o `COMBINAR_COLUMNAS` (si tiene `:`) → `FECHA_HORA` |
 | `patente` | alias de patente | `BORRAR_ESPACIOS` → `ELIMINAR_GUIONES` → `CONVERTIR_MAYUSCULAS` → `PATENTE_ID` |
 | `dispositivo` | alias de dispositivo | `COPIAR_COLUMNA` → `PASE_ID` |
-| `tarifa` | alias de tarifa | `CONVERTIR_NUMERO` → `PRECIO` (opcional `REEMPLAZAR_TEXTO` si número AR) |
-| `bonificacion` | alias de descuento | `CONVERTIR_NUMERO`; si hay tarifa, también `CALCULAR_IMPORTE_NETO` |
+| `tarifa` | alias de tarifa | Si muestra AR (`19.985,09`) → `CONVERTIR_NUMERO_ARS` → `PRECIO`; si decimal con punto → `CONVERTIR_NUMERO` → `PRECIO`. El CSV se carga como texto (no SheetJS numérico) para no perder la coma decimal. |
+| `bonificacion` | alias de descuento | Misma regla AR/US que tarifa; si hay tarifa, también `CALCULAR_IMPORTE_NETO` |
 
 Catálogo de códigos atómicos: [plantillas-y-algoritmos.md](./plantillas-y-algoritmos.md).
 
@@ -76,4 +76,4 @@ Ver también [wizard.md](./wizard.md) y `feature_list.json` → F02-11 / F02-12.
 
 ---
 
-> Última actualización: 2026-08-04
+> Última actualización: 2026-08-06
