@@ -10,9 +10,43 @@
 
 ## Estado actual
 
-Fecha: 2026-08-06 — **CSV AR + CONVERTIR_NUMERO_ARS**: SheetJS coerceaba `19.985,09` → `19.98509`; `PeajesExcelService` parsea CSV como texto. Tras reload, `CONVERTIR_NUMERO_ARS` produce `19985.09`.
+Fecha: 2026-08-11 — **`pwbi_estacion` + Latitud/Longitud**: columnas `Latitud` / `Longitud` desde `estaciones.latitud` / `estaciones.longitud`. Migración `20260811131009_peajes_pwbi_estacion_lat_long.sql` aplicada en DESARROLLO. Refrescar consulta Power BI `pwbi_estacion`.
 
-Fecha previa: 2026-08-06 — **CONVERTIR_NUMERO_ARS**: estrategia + catálogo SQL; Paso 2 recomienda ARS si muestra `19.985,09` y `CONVERTIR_NUMERO` si decimal con punto; plantilla DESARROLLO `AUSA-8-2026` (`efec4fd3-…`) paso TARIFA→PRECIO actualizado. Docs plantillas/reconocimiento/AU + `docs/08-sql/peajes/convertir-numero-ars/`.
+Fecha previa: 2026-08-11 — **`pwbi_documentos` en DESARROLLO**: vista dimensión documentos (FC|NC + empresa + importes cabecera); `security_invoker=false` + `GRANT SELECT` a `anon`. Migración `20260811121811_peajes_pwbi_documentos.sql`. Relación Power BI: `pwbi_pasadas.Documento_ID` → `pwbi_documentos.Documento_ID`. Docs actualizados (`pwbi-views.md`, `powerbi-supabase.md`).
+
+Fecha previa: 2026-08-11 — **Power BI API-only**: docs `05-configuracion/powerbi-supabase.md` (URL + anon key, Power Query M). DESARROLLO: migración `peajes_pwbi_anon_api_access` aplicada (`security_invoker=false` + `GRANT SELECT` a `anon` en `pwbi_*`). Archivo local `20260811114646_…`. CLI verify pendiente (Docker).
+
+Fecha previa: 2026-08-10 — **Docs: conectar Power BI ↔ Supabase DESARROLLO**: guía `docs/05-configuracion/powerbi-supabase.md` (API URL, host Postgres, anon key vía MCP; Session pooler + vistas `pwbi_*`). Enlaces desde `05-configuracion/INDEX`, `backend/supabase/index`, `pwbi-views.md`. Password DB y `service_role` fuera del doc.
+
+Fecha previa: 2026-08-10 — **DESARROLLO: vistas Power BI `pwbi_*` aplicadas**: `db push --linked` → `20260810194113_peajes_pwbi_views.sql` en `kfffigvyvtzyczeiadxh`. Para alinear historial, archivo local bonificación renombrado `20260810151849_*` → `20260810191639_peajes_documentos_bonificacion.sql` (mismo SQL; version ID remoto). Vistas: `pwbi_estacion`, `pwbi_patentes`, `pwbi_pasadas`. Docs: `docs/backend/peajes/pwbi-views.md`. Verify CLI previo: `supabase test db` → **103 PASS**.
+
+Fecha previa: 2026-08-10 — **DESARROLLO: bonificación cabecera aplicada (PGRST202)**: migración local `20260810151849_peajes_documentos_bonificacion.sql` aplicada en `kfffigvyvtzyczeiadxh` (registro remoto `20260810191639_peajes_documentos_bonificacion`); `NOTIFY pgrst, 'reload schema'`. Causa del fallo Paso 8: app enviaba `p_bonificacion` contra RPC 3-arg antigua. Verify remoto: firma `p_importe_sin_iva, p_importes_neto, p_tolerancia, p_bonificacion`; `documentos.bonificacion` existe; smoke AUSA `peajes_validar_factura_pasadas(1656836.19, [1833574.47], NULL, 176737.7)` → `valido=true`, `diferencia=0.58`, `dentro_tolerancia=true`.
+
+Fecha previa: 2026-08-10 — **AUSOL/AUSA `fecha_hora` −1 día**: evidencia en `docs/plan/ausa-ausol-fecha-hora-minus-one-day.md`. Fix preventivo motor/plantillas; **DESARROLLO data repair aplicado**: `UPDATE pasadas … +1 day` → **185 filas** (`493556`=162, `493557`=23). Spot-check `1851b71d-…` → `2026-07-13 14:13:49` (match CSV).
+
+Fecha previa: 2026-08-10 — **Bonificación de cabecera en documento**: columna `documentos.bonificacion`; Paso 7 input manual; RN-13/17 = `Σ IMPORTE_NETO − bonificacion ≈ subtotal` (±1%); migración `20260810151849_peajes_documentos_bonificacion.sql`; docs backend/validacion + stitch paso_7. Verify: `db reset --local --no-seed` OK; `supabase test db` → **85 PASS**; ng test focalizado → **39 SUCCESS**; `tsc --noEmit` OK.
+
+Fecha previa: 2026-08-10 — **F08-2 passing**: vista `/peajes/pasadas-pendientes` (estaciones PENDING agregadas + expand pasadas + drawer ubicación). RPC `peajes_listar_estaciones_pendientes` (`20260810142350_…`); docs `docs/backend/peajes/estaciones-pendientes.md` + index + functions catalog. Verify: `db reset --local --no-seed` OK; `supabase test db` → **81 PASS**.
+
+Fecha previa: 2026-08-10 — **F04-5 passing**: documentación `docs/backend/` (catálogo RPC + peajes + workflow/testing), sync `documentos-pasadas` / índices, PRD `peaje-prd-es.md` alineado F13 (masiva, FC|NC, RN-16 hora). `docs/08-sql/` eliminada (canonical = backend + migrations).
+
+Fecha previa: 2026-08-10 — **Docs: eliminado `docs/08-sql/`** (incl. `peajes/`). Skills `documentacion-proyecto`, `backend-documenter`, `backend-supabase-write` + `AGENTS.md` documentan SQL/RPC solo en `docs/backend/` + fuente `supabase/migrations/`.
+
+Fecha previa: 2026-08-10 — **F13-RN16-FECHA + F13-5 passing**: (1) Excel `Date` → `yyyy-MM-dd HH:mm:ss` vía `normalizarCeldaExcel` (ya no trunca a medianoche; cierra falsos RN-16 en ConsumosResumen). (2) Importación masiva: omitir documentos inválidos en Paso 7 y continuar con válidos; Paso 8/9 respetan `omitido`; Paso 9 resume importados / omitidos+errores. Verify: `ng test` peajes-excel + fecha.util + paso7/8/9 → **29 SUCCESS**. (3) DESARROLLO: migración F13 aplicada (`20260807140000_peajes_documentos_tipo_nc`), cache PostgREST recargada y carga `ConsumosResumen-202607-1.xlsx` preservada con **696 pasadas / 11 documentos**. (4) Hardening: `confirmarCarga` ya no hace SELECTs posteriores al RPC confirmado; evita mostrar fallo tras commit. Verify: spec focalizada **1 SUCCESS** + `tsc --noEmit` OK.
+
+Fecha previa: 2026-08-07 — **Issue abierta F13-RN16-FECHA** (ver registro abajo): al cargar el sample Telepase `scripts/telepeaje plus/202607-2/ConsumosResumen.xlsx` (1040 filas) en importación masiva, Paso 8 / `peajes_detectar_duplicados` reporta cientos de `Duplicado dentro del lote (RN-16)` porque `FECHA_HORA` llega con hora `00:00:00`. El Excel **no** tiene filas duplicadas (`Fecha` trae `MM/DD/YYYY HH:mm:ss`). Decisión owner: **no** agregar paso de transformación para alterar `FECHA_HORA`; queda asentado para regresión/tests.
+
+Fecha previa: 2026-08-07 — **F13-4 / RN-26**: `Concesion`→Peaje→Estaciones por empresa. PRD + `wizard.md`; Paso 5 recomienda peaje; Paso 6 filtra estaciones al peaje (corregible). No listar estaciones ajenas por defecto.
+
+Fecha previa: 2026-08-07 — **F13-3 ConsumosResumen**: aliases Tag Nº→PASE_ID, Estación→ESTACION_ID, Concesion→empresa/peaje; Paso 7 FC fijo + autofill FACTURA + Quitar/Agregar IVA por accordion; Paso 6 masiva permite estaciones cross-empresa. Guía: `docs/06-components/peajes/importacion-masiva-consumos-resumen.md`. Sample: `scripts/telepeaje plus/202607-2/ConsumosResumen.xlsx`.
+
+Fecha previa: 2026-08-07 — **F13-2 masiva multi-empresa**: en importación masiva la empresa del Paso 1 es opcional; en Paso 7 cada panel FACTURA permite elegir/cambiar empresa y saltar a mapeo (5) o estaciones (6) según el archivo. Referencia UI stitch: `docs/templates-stich/stitch_json_developer_toolkit/paso_1_cargar_archivo/`. Feature `F13-2` en `feature_list.json`.
+
+Fecha previa: 2026-08-07 — **Documentos + importación masiva (F13)**: migración `facturas`→`documentos` + `tipo` FC|NC + `documento_id`; normalización de signos NC; wizard modo masiva con columna `FACTURA`; shared `app-accordion` (sin PrimeNG, ledger style); Paso 7 accordion multi-documento. Docs: migración `20260807140000_peajes_documentos_tipo_nc.sql` (canonical docs → `docs/backend/`; `docs/08-sql/` eliminada). Verificación: `ng build` OK; unit tests (17) OK; `db reset --local --no-seed` + `supabase test db` → 75 PASS. DESARROLLO aplicado el 2026-08-10.
+
+Fecha previa: 2026-08-06 — **CSV AR + CONVERTIR_NUMERO_ARS**: SheetJS coerceaba `19.985,09` → `19.98509`; `PeajesExcelService` parsea CSV como texto. Tras reload, `CONVERTIR_NUMERO_ARS` produce `19985.09`.
+
+Fecha previa: 2026-08-06 — **CONVERTIR_NUMERO_ARS**: estrategia + catálogo SQL; Paso 2 recomienda ARS si muestra `19.985,09` y `CONVERTIR_NUMERO` si decimal con punto; plantilla DESARROLLO `AUSA-8-2026` (`efec4fd3-…`) paso TARIFA→PRECIO actualizado. Docs plantillas/reconocimiento/AU + migración `20260806120000_peajes_algoritmo_convertir_numero_ars.sql` (docs → `docs/backend/`).
 
 Fecha previa: 2026-08-05 — **Paso 5 BONIFICACION opcional**: si el archivo no trae descuento (Telepase/Autopistas), `asegurarMapeosObligatorios` inyecta mapeo sintético + `ASIGNAR_VALOR=0` (mismo patrón que QUANTITY); `construirPasadasDesdeMapeo` default 0 e `IMPORTE_NETO=PRECIO`; apply repara plantillas sin BONIFICACION.
 
@@ -90,6 +124,134 @@ F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `
 
 ## Registro de sesiones
 
+### 2026-08-10 — AUSOL/AUSA fecha_hora −1 día (evidencia + fix)
+
+**Agente:** integrador / motor
+**Scope:** revisión `verification-pasadas-files` + fix preventivo algoritmo/plantilla
+**Docs:** `docs/plan/ausa-ausol-fecha-hora-minus-one-day.md` (evidencia, SQL preview/apply +1 day, plantillas)
+**Código:** `peajes-fecha.util.ts`, `estrategias-atomicas.ts`, fixtures AUSOL/Acceso Oeste, specs
+**DESARROLLO plantillas:** `AUSOL-7-2026`, `AUSA-8-2026`, `AUSA-V2` → `FORMATEAR_FECHA_HORA` + `YYYY-MM-DD HH:MM:SS`  
+**DESARROLLO data repair:** `UPDATE pasadas SET fecha_hora = fecha_hora + interval '1 day'` → **185** filas (`493556`+`493557`); spot-check `1851b71d-…` = `2026-07-13 14:13:49`
+
+### 2026-08-10 — F04-5 Documentación backend + PRD sync
+
+**Agente:** 04-documentador
+
+- Creado `docs/backend/` (functions catalog, peajes RPC detail, supabase workflow/testing, edge stub).
+- Sync tablas: `documentos-pasadas.md`; `auditoria-y-rpcs.md` → pointer a backend; eliminado `facturas-pasadas.md`.
+- Actualizado `peaje-prd-es.md` (Paso 1/7/8/9 masiva+documentos, §11–14 DOCUMENTOS, RF-19–22, RN-12/13/16/17).
+- Índices: `docs/INDEX.md`, `modulos/peajes.md`, `06-components/peajes/INDEX.md`, `06-tablas/*`.
+- `feature_list.json`: F04-5 `passing`; `documentation_*` → 2026-08-10.
+- Confirmado: sin `docs/08-sql/`.
+
+### 2026-08-10 — Fix F13-RN16-FECHA + F13-5 omitir documentos inválidos (masiva)
+
+**Agente:** 02-frontend-wizard-tablas
+
+#### F13-RN16-FECHA
+
+- **Causa:** `PeajesExcelService.normalizarCelda` convertía todo `Date` a `yyyy-MM-dd` (fix MDY 2026-08-05). ConsumosResumen mapea `Fecha`→`FECHA_HORA` sin transform; `toPostgresFechaHora` paddea `00:00:00` → falsos RN-16.
+- **Fix:** `formatLocalDateTime` + `normalizarCeldaExcel` exportados en `peajes-fecha.util.ts`; Excel Date → `yyyy-MM-dd HH:mm:ss`. Sin paso de transformación.
+- **Tests:** ZARATE 07/24 cuatro horas distintas; `ng test` peajes-excel + fecha.util OK.
+
+#### F13-5 omitir documentos
+
+- `WizardDocumentoGrupo.omitido` + `documentosIncluidos` / `documentosOmitidos` / `pasadasDeDocumentosIncluidos`.
+- Paso 7: «Omitir documento» + «Omitir documentos con error y continuar».
+- `puedeAvanzarA` / Paso 8 / Paso 9 ignoran omitidos; resumen final importados / omitidos+errores / confirm failures.
+- **Verify:** `ng test` include peajes-excel, fecha.util, paso7, paso8, paso9 → **29 SUCCESS**.
+
+### 2026-08-07 — Issue RN-16 / FECHA_HORA con ConsumosResumen.xlsx (rastreo)
+
+**ID:** `F13-RN16-FECHA`  
+**Sample:** `scripts/telepeaje plus/202607-2/ConsumosResumen.xlsx` (hoja `RESULTADO_1`, **1040** filas).  
+**Síntoma:** Paso 8 → RPC `peajes_detectar_duplicados` (RN-16 / PRD).  
+**Origen archivo:** Telepase (`scripts/telepeaje plus/`); el scraper no está en duda.
+
+#### Motivo (causa raíz)
+
+Clave de negocio RN-16:
+
+```text
+PASE_ID + FECHA_HORA + ESTACION_ID + PATENTE_ID
+```
+
+En la respuesta del wizard, `FECHA_HORA` aparece truncada a medianoche. Varias pasadas legítimas del mismo tag/dominio/estación el **mismo día** (distinta hora / vía) colapsan a la misma clave.
+
+Ejemplo de valor en la respuesta:
+
+```text
+5e2f1508-d268-44f8-b142-98d6550b9bf9|2026-07-24 00:00:00+00|e5cce2bb-fb8e-4712-bd38-9419a2abbfd9|475d37b6-3b41-42ca-867d-510951b08475
+motivo: Duplicado dentro del lote (RN-16)
+columna: CLAVE_DUPLICADO
+```
+
+En el Excel, `Fecha` **sí trae hora** (`07/24/2026 13:37:24`, etc.).
+
+#### Análisis del sample (resultados reales, 2026-08-07)
+
+Inspección Node + `xlsx` sobre el archivo:
+
+| Check sobre el XLSX | Resultado |
+|---|---|
+| Filas totales | **1040** |
+| Filas 100% idénticas | **0** |
+| Duplicados Tag Nº + **Fecha completa** + Estación + Dominio | **0** |
+| Duplicados Tag Nº + **solo día** + Estación + Dominio | **165** filas “extra” / **138** grupos n>1 |
+| Duplicados Tag + Fecha completa + Estación + Dominio + Vía | **0** |
+
+Columnas: `Tag Nº`, `Dominio`, `Concesion`, `FACTURA`, `Estación`, `Vía`, `Fecha`, importes.
+
+**Ejemplo real (filas Excel 2–5) — no son duplicados en origen:**
+
+| Fila | Tag Nº | Dominio | Estación | Fecha (origen) | Vía |
+|---|---|---|---|---|---|
+| 2 | 99779063 | AG533MF | ZARATE - RUTA 9 KM. 95 | 07/24/2026 **13:37:24** | VIA 09 |
+| 3 | 99779063 | AG533MF | ZARATE - RUTA 9 KM. 95 | 07/24/2026 **14:08:28** | VIA 52 |
+| 4 | 99779063 | AG533MF | ZARATE - RUTA 9 KM. 95 | 07/24/2026 **23:26:45** | VIA 09 |
+| 5 | 99779063 | AG533MF | ZARATE - RUTA 9 KM. 95 | 07/24/2026 **23:54:02** | VIA 53 |
+
+Tras perder la hora → `…|2026-07-24 00:00:00+00|…` → RN-16 marca duplicados (alineado con filas 3–5 de la respuesta del wizard).
+
+**Grupos más grandes (clave día-only):**
+
+| Grupo | n |
+|---|---:|
+| `99779063\|07/22/2026\|ZARATE…\|AG533MF` | 6 |
+| `99738712\|07/14/2026\|ZARATE…\|AG309CH` | 5 |
+| `99779063\|07/24/2026\|ZARATE…\|AG533MF` | 4 |
+
+#### Respuesta observada del wizard
+
+Entrada asociada: `{ "registros": 1040 }`.  
+Salida: errores `motivo: "Duplicado dentro del lote (RN-16)"`, `columna: "CLAVE_DUPLICADO"`, `valor` siempre con `00:00:00+00` (cientos de filas; patrón ZARATE / mismos tags del sample).
+
+#### Decisión (2026-08-07)
+
+- **No** se aplicó un paso de transformación en el wizard para alterar/reconstruir `FECHA_HORA` (decisión explícita del owner; se dejó igual).
+- El sample en `scripts/telepeaje plus/202607-2/` queda como **fixture de evidencia / regresión**.
+- Fix futuro: lectura/mapeo correcto de `Fecha` → `FECHA_HORA` (preservar `HH:mm:ss`), no un “parche” de transformación acordado fuera de alcance.
+
+#### Cierre (2026-08-10)
+
+- Fix aplicado en lectura Excel: `normalizarCeldaExcel` → `yyyy-MM-dd HH:mm:ss` (sin transform Paso 3). Feature `F13-RN16-FECHA` → `passing`.
+
+#### Tests de regresión esperados (mismos resultados; que no vuelva a pasar)
+
+Contra `scripts/telepeaje plus/202607-2/ConsumosResumen.xlsx` (o copia en fixtures si se mueve):
+
+1. **Integridad del sample:**
+   - `rows.length === 1040`
+   - 0 filas JSON-idénticas
+   - 0 colisiones Tag+FechaCompleta+Estación+Dominio
+   - Baseline bug date-only: exactamente **165** colisiones Tag+día+Estación+Dominio
+2. **Wizard / motor (cuando se corrija):**
+   - Tras mapear `Fecha` → `FECHA_HORA`, ninguna pasada con hora origen ≠ medianoche debe quedar en `00:00:00`
+   - Paso 8 / `peajes_detectar_duplicados` sobre las 1040: **0** errores RN-16 por pérdida de hora (el sample no tiene dups con fecha completa)
+3. **Caso ZARATE 07/24/2026 Tag 99779063:** las 4 horas `13:37:24`, `14:08:28`, `23:26:45`, `23:54:02` → **4 claves RN-16 distintas**
+
+Criterio de cierre: (2) y (3) en verde sin paso de transformación parche no acordado.
+
 ### 2026-08-05 — FECHA_HORA ISO (duplicados 22008)
 
 - **Bug:** `peajes_detectar_duplicados` → `date/time field value out of range: "2026-13-07 …"` (Postgres DateStyle MDY ante `13/07/2026` concatenado por `COMBINAR_COLUMNAS`).
@@ -156,7 +318,7 @@ F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `
 - **Cuenta opcional:** migración `20260804141122_peajes_facturas_cuenta_nullable.sql`; RPC `peajes_confirmar_carga` NULLIF vacío; frontend sin `Validators.required` en cuenta.
 - **Empresa:** `app-search-multi-select` `mode=single` disabled/clearable=false (empresa Paso 1).
 - **Fecha:** `app-date-range-picker` `mode=single`.
-- **Docs:** shared date-range/SMS, facturas-pasadas, wizard, `docs/08-sql/peajes/facturas-cuenta-opcional/`.
+- **Docs:** shared date-range/SMS, facturas-pasadas, wizard; cuenta opcional vía migración `20260804141122_peajes_facturas_cuenta_nullable.sql` (docs → `docs/backend/`).
 - **Verify:** ng test paso7+SMS+DRP **8 SUCCESS**; build OK; `supabase test db` **55 PASS** (CLI).
 
 ### 2026-08-04 — F02-15 / F02-16 (fix VIA + bulk patentes)
@@ -282,6 +444,7 @@ F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `
 
 - Schema Peajes **no** está en DESARROLLO remoto: `db push --linked` autorizado pero **bloqueado por ACL**.
 - `init.sh` no ejecutable en este host Windows sin bash/WSL (evidencia F05-3).
+- ~~**F13-RN16-FECHA**~~ cerrado 2026-08-10: `normalizarCeldaExcel` preserva HMS.
 
 ### 2026-07-30 — Intento `db push --linked` DESARROLLO (BLOCKED)
 

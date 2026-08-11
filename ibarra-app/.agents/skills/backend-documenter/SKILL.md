@@ -45,13 +45,13 @@ When writing or updating `docs/backend/`:
 
 | Artifact | Typical locations |
 |----------|-------------------|
-| RPC / SQL | `supabase/functions/*.sql`, `sql/`, `docs/08-sql/{task}/`, `docs/08 - SQLs/` |
+| RPC / SQL | `supabase/migrations/*`, detail under `docs/backend/` |
 | Edge Functions | `supabase/functions/*/index.ts` |
 | RLS / policies | `sql/rls_*.sql` |
 | Angular services (context) | `src/app/features/{modulo}/services/` |
 | DB types | `src/app/core/models/database.type.ts` |
 
-4. Search existing docs in `docs/backend/`, `docs/08-sql/`, and `docs/08 - SQLs/`. One idea, one canonical location.
+4. Search existing docs in `docs/backend/` first. One idea, one canonical location. **Do not use `docs/08-sql/`.**
 5. Omit empty sections with `—` or remove them when not applicable.
 
 ## Structure
@@ -130,7 +130,7 @@ When adding a document:
 
 When documentation is created or updated:
 
-1. Verify links, code paths, and no duplication with `docs/08 - SQLs/` or `docs/modulos/`.
+1. Verify links, code paths, and no duplication with `docs/modulos/` or `docs/06-tablas/`.
 2. Confirm all new or changed prose in `docs/backend/` is in **Spanish**.
 3. Invoke skill **`backend-tester`** to execute verification and fill the **Testing** section (commands, outputs, evidence).
 4. If `backend-tester` is not available, leave **Testing** as `pendiente` with concrete scenarios in Spanish — do not mark verification as passed.

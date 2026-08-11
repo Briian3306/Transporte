@@ -38,6 +38,51 @@
       </span>
     </div>
 
+    <section class="paso9__resumen" *ngIf="esMasiva" aria-label="Resumen de importación masiva">
+      <h3 class="paso9__resumen-title">Resumen de documentos</h3>
+
+      <div class="paso9__resumen-block" *ngIf="documentosIncluidos.length">
+        <h4>A importar ({{ documentosIncluidos.length }})</h4>
+        <ul>
+          <li *ngFor="let d of documentosIncluidos">
+            <strong>{{ d.factura || '(sin número)' }}</strong>
+            · {{ d.rowIndexes?.length || 0 }} pasadas
+          </li>
+        </ul>
+      </div>
+
+      <div class="paso9__resumen-block paso9__resumen-block--omitidos" *ngIf="documentosOmitidos.length">
+        <h4>Omitidos ({{ documentosOmitidos.length }})</h4>
+        <ul>
+          <li *ngFor="let d of documentosOmitidos">
+            <strong>{{ d.factura || '(sin número)' }}</strong>
+            <ul class="paso9__errores" *ngIf="d.errores?.length">
+              <li *ngFor="let err of d.errores">{{ err }}</li>
+            </ul>
+            <span *ngIf="!d.errores?.length" class="paso9__sin-motivo">Sin detalle de error</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="paso9__resumen-block paso9__resumen-block--ok" *ngIf="importadosResumen.length">
+        <h4>Importados correctamente ({{ importadosResumen.length }})</h4>
+        <ul>
+          <li *ngFor="let d of importadosResumen">
+            <strong>{{ d.numero }}</strong> · {{ d.pasadas }} pasadas
+          </li>
+        </ul>
+      </div>
+
+      <div class="paso9__resumen-block paso9__resumen-block--error" *ngIf="erroresPorDocumento.length">
+        <h4>Errores de confirmación ({{ erroresPorDocumento.length }})</h4>
+        <ul>
+          <li *ngFor="let e of erroresPorDocumento">
+            <strong>{{ e.numero }}</strong>: {{ e.error }}
+          </li>
+        </ul>
+      </div>
+    </section>
+
     <div class="pw__table-wrap" style="margin-top: 1rem">
       <table class="pw__table">
         <thead>
@@ -73,14 +118,23 @@
 
     <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
     <div class="pw__alert pw__alert--ok" *ngIf="resultado as res">
-      Carga confirmada. Factura {{ res.factura.id }} · {{ res.pasadas.length }} pasadas ·
-      registro {{ res.registro.id }}.
+      Carga confirmada.
+      <ng-container *ngIf="resultados.length > 1; else oneDoc">
+        {{ resultados.length }} documentos persistidos.
+      </ng-container>
+      <ng-template #oneDoc>
+        Documento {{ res.documento.id }} · {{ res.pasadas.length }} pasadas · registro {{ res.registro.id }}.
+      </ng-template>
+      <span *ngIf="documentosOmitidos.length">
+        · {{ documentosOmitidos.length }} documento(s) omitido(s) no se guardaron.
+      </span>
     </div>
   </div>
 
   <div class="pw__footer">
     <div class="pw__footer-hint">
-      <strong>Importante:</strong> confirmar guardará las pasadas asociadas a la factura.
+      <strong>Importante:</strong> confirmar guardará las pasadas asociadas a cada documento incluido.
+      <span *ngIf="documentosOmitidos.length"> Los omitidos no se persisten.</span>
     </div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn" (click)="atras.emit()" [disabled]="!!resultado">Volver</button>

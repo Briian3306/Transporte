@@ -54,7 +54,12 @@ describe('Paso5MapeoComponent', () => {
           provide: PEAJES_CATALOGO_SERVICE,
           useValue: {
             listarPatentes: () => of([]),
+            listarPeajes: () => of([]),
+            listarEmpresas: () => of([{ id: 'EMP-001', nombre: 'Empresa Demo' }]),
+            crearEmpresa: (data: { nombre: string }) =>
+              of({ id: 'EMP-NEW', nombre: data.nombre, descripcion: null }),
             crearPatente: crearPatenteSpy,
+            crearPeaje: () => of({ id: 'PEA-1', nombre: 'X', empresa_id: 'EMP-001' }),
           },
         },
       ],

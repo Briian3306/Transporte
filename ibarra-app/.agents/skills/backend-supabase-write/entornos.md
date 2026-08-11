@@ -58,7 +58,7 @@ Get-Content supabase\.temp\project-ref
 2. Validar SQL contra Supabase CLI (testing)
 3. Registrar evidencia en feature_list.json
 4. Push / link a DESARROLLO solo tras CLI verde y con autorización explícita del usuario cuando corresponda
-5. Documentar en docs/08-sql/{task}/
+5. Documentar en `docs/backend/` (no `docs/08-sql/`)
 ```
 
 ## Forbidden

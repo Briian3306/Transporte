@@ -22,7 +22,7 @@
       <dl class="pfd__audit" *ngIf="mode !== 'create' && row">
         <div>
           <dt>Creado</dt>
-          <dd>{{ row.created_at | date: 'yyyy-MM-dd HH:mm' }}</dd>
+          <dd>{{ formatCreatedAt(row.created_at) }}</dd>
         </div>
         <div>
           <dt>Usuario</dt>
@@ -33,8 +33,8 @@
           <dd>{{ row.file_upload_name || '—' }}</dd>
         </div>
         <div>
-          <dt>Factura</dt>
-          <dd>{{ row.factura_numero }}</dd>
+          <dt>Documento</dt>
+          <dd>{{ row.documento_numero || row.factura_numero }}</dd>
         </div>
         <div>
           <dt>Coords</dt>
@@ -74,8 +74,8 @@
           </select>
         </label>
         <label>
-          Factura
-          <select formControlName="factura_id">
+          Documento
+          <select formControlName="documento_id">
             <option value="">Seleccionar…</option>
             <option *ngFor="let f of facturas" [value]="f.id">{{ f.factura }}</option>
           </select>

@@ -2,7 +2,8 @@
 
 | Documento | Dominio |
 |---|---|
-| [peajes](./peajes.md) | Carga, transformación y gestión de pasadas |
+| [peajes](./peajes.md) | Carga, transformación y gestión de pasadas / documentos |
+| [../backend/index.md](../backend/index.md) | RPCs y workflow Supabase (Peajes) |
 | [checklists](./checklists.md) | Inspecciones operativas |
 | [incidentes](./incidentes.md) | Registro y seguimiento de incidentes |
 | [flota](./flota.md) | Vehículos y logística |

@@ -1,15 +1,28 @@
 import { Injectable } from '@angular/core';
 import {
+  AccordionPanelStatus,
+} from '../../../shared';
+import {
+  COLUMNA_FACTURA_MASIVA,
+  CONSUMOS_RESUMEN_ALIASES,
   ConfiguracionPlantilla,
   ConfirmacionCargaResultado,
+  Documento,
+  DocumentoTipo,
   ExcelCargaPreview,
-  Factura,
   MapeoColumna,
   PASADA_COLUMN_KEYS,
   PasadaColumnKey,
   PasadaEstandarizada,
+  RecomendacionPeajeConcesion,
   RelacionEstacionProveedor,
   ResultadoValidacionCarga,
+  agruparFilasPorFactura,
+  buscarColumnaPorAliases,
+  concesionDominanteDeFilas,
+  esColumnaMetadataMasiva,
+  excelTieneColumnaFactura,
+  normalizarImportesDocumento,
 } from '../../models';
 import {
   MVP_COLUMNAS_EXCLUIDAS,
@@ -36,15 +49,38 @@ export type { ColumnRecommendation } from './column-recognition';
 
 export type WizardPasoId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
+export type ModoImportacion = 'simple' | 'masiva';
+
 export interface WizardFacturaForm {
+  /** Número de documento (FACTURA). */
   factura: string;
+  /** Default FC si se omite (cargas legacy / tests). */
+  tipo?: DocumentoTipo;
   cuenta: string;
   empresa_id: string;
   fecha_factura: string;
+  /** Bonificación de cabecera (manual; no viene del Excel). Default 0. */
+  bonificacion: number | null;
   importe_sin_iva: number | null;
   percepciones: number | null;
   iva: number | null;
   importe_total: number | null;
+}
+
+/** Documento del wizard (simple = 1; masiva = N grupos por FACTURA). */
+export interface WizardDocumentoGrupo extends WizardFacturaForm {
+  rowIndexes: number[];
+  status: AccordionPanelStatus;
+  errores: string[];
+  /** Valor dominante de columna Concesión (Telepase Plus / ConsumosResumen). */
+  concesionProveedor?: string;
+  /** Si se aplicó quitar/agregar IVA a las pasadas de este documento. */
+  ivaPasadasModo?: 'original' | 'sin_iva' | 'con_iva';
+  /**
+   * Masiva: documento excluido del resto del flujo (validación/confirmación).
+   * Se conserva en `documentos` para el resumen final.
+   */
+  omitido?: boolean;
 }
 
 export interface PlantillaWizardMeta {
@@ -63,10 +99,16 @@ export interface PeajesWizardState {
   columnasExcluidas: string[];
   mapeos: MapeoColumna[];
   relacionesEstacion: RelacionEstacionProveedor[];
+  /** Documento activo / primero (compat flujo simple). */
   factura: WizardFacturaForm;
+  /** Grupos de documento (1 en simple; N en masiva). */
+  documentos: WizardDocumentoGrupo[];
+  modoImportacion: ModoImportacion;
   pasadasEstandarizadas: PasadaEstandarizada[];
   validacion: ResultadoValidacionCarga | null;
   confirmacion: ConfirmacionCargaResultado | null;
+  /** Resultados por documento en confirmación masiva. */
+  confirmaciones: ConfirmacionCargaResultado[];
   plantillaId: string | null;
   empresaId: string | null;
   /** Pipeline editable (Paso 3) — draft local. */
@@ -79,20 +121,36 @@ export interface PeajesWizardState {
   recomendaciones: ColumnRecommendation[];
   /** Patentes normalizadas excluidas del import (F02-14). */
   patentesExcluidas: string[];
+  /** RN-26: Concesion → Peaje detectado en Paso 5. */
+  recomendacionesPeajeConcesion: RecomendacionPeajeConcesion[];
 }
 
 const FACTURA_VACIA: WizardFacturaForm = {
   factura: '',
+  tipo: 'FC',
   cuenta: '',
   empresa_id: '',
   fecha_factura: '',
+  bonificacion: 0,
   importe_sin_iva: null,
   percepciones: 0,
   iva: 0,
   importe_total: null,
 };
 
+function documentoVacio(partial?: Partial<WizardDocumentoGrupo>): WizardDocumentoGrupo {
+  return {
+    ...FACTURA_VACIA,
+    rowIndexes: [],
+    status: 'neutral',
+    errores: [],
+    omitido: false,
+    ...partial,
+  };
+}
+
 function estadoInicial(): PeajesWizardState {
+  const doc = documentoVacio();
   return {
     pasoActual: 1,
     preview: null,
@@ -101,9 +159,12 @@ function estadoInicial(): PeajesWizardState {
     mapeos: [],
     relacionesEstacion: [],
     factura: { ...FACTURA_VACIA },
+    documentos: [doc],
+    modoImportacion: 'simple',
     pasadasEstandarizadas: [],
     validacion: null,
     confirmacion: null,
+    confirmaciones: [],
     plantillaId: null,
     empresaId: null,
     configuracionesDraft: [],
@@ -112,6 +173,7 @@ function estadoInicial(): PeajesWizardState {
     pipelineSnapshotSaved: null,
     recomendaciones: [],
     patentesExcluidas: [],
+    recomendacionesPeajeConcesion: [],
   };
 }
 
@@ -167,12 +229,33 @@ export class PeajesWizardStateService {
     this.state.pasadasEstandarizadas = [];
     this.state.validacion = null;
     this.state.confirmacion = null;
+    this.state.confirmaciones = [];
     this.state.configuracionesDraft = [];
     this.state.pipelineSnapshotSaved = null;
     this.state.patentesExcluidas = [];
+    this.state.recomendacionesPeajeConcesion = [];
     this.state.recomendaciones = detectColumnRecommendations(preview);
     this.aplicarSeleccionPorReconocimiento(preview, this.state.recomendaciones);
     this.aplicarSugerenciasSiPareceMvp(preview);
+    // FACTURA / Concesión son metadata de documento/empresa, no Structure Goal.
+    const metadataCols = preview.columnas.filter((c) => esColumnaMetadataMasiva(c));
+    if (metadataCols.length) {
+      const metaSet = new Set(metadataCols);
+      const incluidas = this.state.columnasIncluidas.filter((c) => !metaSet.has(c));
+      const excluidas = Array.from(new Set([...this.state.columnasExcluidas, ...metadataCols]));
+      this.setSeleccionColumnas(incluidas, excluidas);
+    }
+    if (this.state.modoImportacion === 'masiva') {
+      this.rebuildDocumentosDesdeFactura();
+    } else {
+      this.setDocumentos([
+        documentoVacio({
+          ...this.state.factura,
+          empresa_id: this.state.empresaId ?? this.state.factura.empresa_id,
+          rowIndexes: preview.filasOrigen.map((_, i) => i),
+        }),
+      ]);
+    }
   }
 
   /**
@@ -264,12 +347,99 @@ export class PeajesWizardStateService {
     this.state.mapeos = mapeos.map((m) => ({ ...m }));
   }
 
+  setRecomendacionesPeajeConcesion(items: RecomendacionPeajeConcesion[]): void {
+    this.state.recomendacionesPeajeConcesion = items.map((i) => ({ ...i }));
+  }
+
   setRelacionesEstacion(relaciones: RelacionEstacionProveedor[]): void {
     this.state.relacionesEstacion = relaciones.map((r) => ({ ...r }));
   }
 
+  setModoImportacion(modo: ModoImportacion): void {
+    this.state.modoImportacion = modo;
+    if (modo === 'simple' && this.state.documentos.length === 0) {
+      this.state.documentos = [documentoVacio({ empresa_id: this.state.empresaId ?? '' })];
+    }
+  }
+
   setFactura(factura: WizardFacturaForm): void {
-    this.state.factura = { ...factura };
+    const next: WizardFacturaForm = { ...factura, tipo: factura.tipo ?? 'FC' };
+    this.state.factura = { ...next };
+    const head = this.state.documentos[0] ?? documentoVacio();
+    this.state.documentos = [
+      {
+        ...head,
+        ...next,
+        rowIndexes: head.rowIndexes,
+        status: head.status,
+        errores: head.errores,
+      },
+      ...this.state.documentos.slice(1),
+    ];
+  }
+
+  setDocumentos(documentos: WizardDocumentoGrupo[]): void {
+    this.state.documentos = documentos.map((d) => ({
+      ...d,
+      tipo: d.tipo ?? 'FC',
+      errores: [...(d.errores ?? [])],
+      rowIndexes: [...(d.rowIndexes ?? [])],
+      omitido: !!d.omitido,
+    }));
+    if (this.state.documentos[0]) {
+      const { rowIndexes: _r, status: _s, errores: _e, omitido: _o, ...form } = this.state.documentos[0];
+      this.state.factura = { ...form };
+    }
+  }
+
+  patchDocumento(index: number, patch: Partial<WizardDocumentoGrupo>): void {
+    const docs = [...this.state.documentos];
+    if (!docs[index]) return;
+    docs[index] = { ...docs[index], ...patch };
+    this.setDocumentos(docs);
+  }
+
+  /**
+   * Construye grupos desde la columna FACTURA (modo masiva).
+   * Autocompleta número de documento; tipo default FC.
+   */
+  rebuildDocumentosDesdeFactura(): void {
+    const preview = this.state.preview;
+    const empresaId = this.state.empresaId ?? '';
+    if (!preview || this.state.modoImportacion !== 'masiva') {
+      this.setDocumentos([
+        documentoVacio({
+          ...this.state.factura,
+          empresa_id: empresaId || this.state.factura.empresa_id,
+          rowIndexes: preview?.filasOrigen.map((_, i) => i) ?? [],
+        }),
+      ]);
+      return;
+    }
+    const grupos = agruparFilasPorFactura(preview.filasOrigen, COLUMNA_FACTURA_MASIVA);
+    const colConcesion = buscarColumnaPorAliases(
+      preview.columnas,
+      CONSUMOS_RESUMEN_ALIASES.concesion
+    );
+    this.setDocumentos(
+      grupos.map((g) => {
+        const concesion = colConcesion
+          ? concesionDominanteDeFilas(g.filas, colConcesion)
+          : '';
+        return documentoVacio({
+          factura: g.numeroFactura,
+          tipo: 'FC',
+          empresa_id: empresaId,
+          rowIndexes: g.rowIndexes,
+          concesionProveedor: concesion || undefined,
+          ivaPasadasModo: 'original',
+        });
+      })
+    );
+  }
+
+  tieneColumnaFactura(): boolean {
+    return excelTieneColumnaFactura(this.state.preview?.columnas ?? []);
   }
 
   setPasadasEstandarizadas(pasadas: PasadaEstandarizada[]): void {
@@ -705,21 +875,25 @@ export class PeajesWizardStateService {
    * BONIFICACION: fila sintética + ASIGNAR_VALOR=0 si el proveedor no trae descuento.
    */
   asegurarMapeosObligatorios(): void {
-    const candidatos: Partial<Record<PasadaColumnKey, string[]>> = {
-      PATENTE_ID: ['PATENTE', 'DOMINIO', 'PATENTE_ID'],
-      PRECIO: ['PRECIO', 'TARIFA'],
-      BONIFICACION: ['BONIFICACION', 'BONIFICACION_IMPORTE'],
+    const candidatos: Partial<Record<PasadaColumnKey, readonly string[]>> = {
+      PATENTE_ID: CONSUMOS_RESUMEN_ALIASES.patente,
+      PRECIO: CONSUMOS_RESUMEN_ALIASES.precio,
+      BONIFICACION: CONSUMOS_RESUMEN_ALIASES.bonificacion,
+      PASE_ID: CONSUMOS_RESUMEN_ALIASES.pase,
+      ESTACION_ID: CONSUMOS_RESUMEN_ALIASES.estacion,
+      FECHA_HORA: CONSUMOS_RESUMEN_ALIASES.fecha,
     };
     const disponibles = this.state.preview?.columnas ?? this.columnasParaMapeo();
     const usados = new Set(
       this.state.mapeos.filter((m) => !m.excluida && m.columnaDestino).map((m) => m.columnaDestino)
     );
 
-    for (const [destino, nombres] of Object.entries(candidatos) as [PasadaColumnKey, string[]][]) {
+    for (const [destino, nombres] of Object.entries(candidatos) as [
+      PasadaColumnKey,
+      readonly string[],
+    ][]) {
       if (usados.has(destino)) continue;
-      const origen = disponibles.find((columna) =>
-        nombres.includes(columna.trim().toUpperCase())
-      );
+      const origen = buscarColumnaPorAliases(disponibles, nombres);
       if (!origen) continue;
 
       const existente = this.state.mapeos.find((m) => m.columnaOrigen === origen);
@@ -823,19 +997,103 @@ export class PeajesWizardStateService {
     return this.state.mapeos.filter((m) => !m.excluida);
   }
 
-  facturaComoPersistible(): Omit<Factura, 'id' | 'created_at'> {
-    const f = this.state.factura;
-    const cuenta = (f.cuenta ?? '').trim();
+  documentoComoPersistible(
+    doc: WizardFacturaForm = this.state.factura
+  ): Omit<Documento, 'id' | 'created_at'> {
+    const tipo: DocumentoTipo = doc.tipo ?? 'FC';
+    const cuenta = (doc.cuenta ?? '').trim();
+    const importes = normalizarImportesDocumento(tipo, {
+      importe_sin_iva: Number(doc.importe_sin_iva ?? 0),
+      bonificacion: Number(doc.bonificacion ?? 0),
+      percepciones: Number(doc.percepciones ?? 0),
+      iva: Number(doc.iva ?? 0),
+      importe_total: Number(doc.importe_total ?? 0),
+    });
     return {
-      factura: f.factura,
+      factura: doc.factura,
+      tipo,
       cuenta: cuenta.length ? cuenta : null,
-      empresa_id: f.empresa_id,
-      fecha_factura: f.fecha_factura,
-      importe_sin_iva: Number(f.importe_sin_iva ?? 0),
-      percepciones: Number(f.percepciones ?? 0),
-      iva: Number(f.iva ?? 0),
-      importe_total: Number(f.importe_total ?? 0),
+      empresa_id: doc.empresa_id,
+      fecha_factura: doc.fecha_factura,
+      ...importes,
     };
+  }
+
+  /** @deprecated usar documentoComoPersistible */
+  facturaComoPersistible(): Omit<Documento, 'id' | 'created_at'> {
+    return this.documentoComoPersistible();
+  }
+
+  /** Pasadas asociadas a los índices de fila de un documento (masiva). */
+  pasadasDeDocumento(doc: WizardDocumentoGrupo, pasadas: PasadaEstandarizada[]): PasadaEstandarizada[] {
+    if (this.state.modoImportacion !== 'masiva' || !doc.rowIndexes?.length) {
+      return pasadas;
+    }
+    const set = new Set(doc.rowIndexes);
+    return pasadas.filter((_, idx) => set.has(idx));
+  }
+
+  /** Documentos que siguen en el flujo (no omitidos). */
+  documentosIncluidos(docs?: WizardDocumentoGrupo[]): WizardDocumentoGrupo[] {
+    const list = docs ?? this.state.documentos;
+    return list.filter((d) => !d.omitido);
+  }
+
+  /** Documentos omitidos (conservados para resumen final). */
+  documentosOmitidos(docs?: WizardDocumentoGrupo[]): WizardDocumentoGrupo[] {
+    const list = docs ?? this.state.documentos;
+    return list.filter((d) => !!d.omitido);
+  }
+
+  /** Unión de pasadas de todos los documentos no omitidos (masiva). */
+  pasadasDeDocumentosIncluidos(pasadas: PasadaEstandarizada[]): PasadaEstandarizada[] {
+    if (this.state.modoImportacion !== 'masiva') {
+      return pasadas;
+    }
+    const incluidos = this.documentosIncluidos();
+    if (!incluidos.length) {
+      return [];
+    }
+    const set = new Set<number>();
+    for (const doc of incluidos) {
+      for (const idx of doc.rowIndexes ?? []) {
+        set.add(idx);
+      }
+    }
+    return pasadas.filter((_, idx) => set.has(idx));
+  }
+
+  /**
+   * Ajusta PRECIO / BONIFICACION / IMPORTE_NETO de las pasadas de un documento
+   * (×1,21 o /1,21). Idempotente respecto de `ivaPasadasModo`.
+   */
+  ajustarIvaPasadasDocumento(
+    index: number,
+    modo: 'sin_iva' | 'con_iva',
+    transform: (n: number) => number
+  ): void {
+    const doc = this.state.documentos[index];
+    if (!doc?.rowIndexes?.length) return;
+    if (doc.ivaPasadasModo === modo) return;
+
+    const pasadas =
+      this.state.pasadasEstandarizadas.length > 0
+        ? [...this.state.pasadasEstandarizadas]
+        : this.construirPasadasDesdeMapeo();
+    const set = new Set(doc.rowIndexes);
+    for (let i = 0; i < pasadas.length; i++) {
+      if (!set.has(i)) continue;
+      const p = { ...pasadas[i] } as Record<string, unknown>;
+      for (const key of ['PRECIO', 'BONIFICACION', 'IMPORTE_NETO'] as const) {
+        const v = Number(p[key]);
+        if (Number.isFinite(v)) {
+          p[key] = transform(v);
+        }
+      }
+      pasadas[i] = p as PasadaEstandarizada;
+    }
+    this.setPasadasEstandarizadas(pasadas);
+    this.patchDocumento(index, { ivaPasadasModo: modo });
   }
 
   /**

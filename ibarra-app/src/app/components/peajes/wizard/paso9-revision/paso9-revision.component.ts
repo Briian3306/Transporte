@@ -5,8 +5,12 @@ import {
   ConfirmacionCargaResultado,
   PEAJES_CARGA_SERVICE,
   PeajesCargaService,
+  normalizarImportesPasada,
 } from '../../models';
-import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+import {
+  PeajesWizardStateService,
+  WizardDocumentoGrupo,
+} from '../services/peajes-wizard-state.service';
 
 @Component({
   selector: 'app-paso9-revision',
@@ -24,6 +28,10 @@ export class Paso9RevisionComponent {
   guardando = false;
   error: string | null = null;
   resultado: ConfirmacionCargaResultado | null = null;
+  resultados: ConfirmacionCargaResultado[] = [];
+  erroresPorDocumento: Array<{ numero: string; error: string }> = [];
+  /** Números de documentos confirmados OK (para el resumen). */
+  importadosResumen: Array<{ numero: string; pasadas: number }> = [];
 
   constructor(@Inject(PEAJES_CARGA_SERVICE) private readonly carga: PeajesCargaService) {}
 
@@ -31,16 +39,47 @@ export class Paso9RevisionComponent {
     return this.state.snapshot();
   }
 
+  get esMasiva(): boolean {
+    return this.snap.modoImportacion === 'masiva';
+  }
+
+  get documentosOmitidos(): WizardDocumentoGrupo[] {
+    return this.state.documentosOmitidos();
+  }
+
+  get documentosIncluidos(): WizardDocumentoGrupo[] {
+    const docs = this.snap.documentos;
+    if (!docs?.length) {
+      return [
+        {
+          ...this.snap.factura,
+          rowIndexes: [],
+          status: 'neutral' as const,
+          errores: [],
+          omitido: false,
+        },
+      ];
+    }
+    return this.state.documentosIncluidos(docs);
+  }
+
+  /**
+   * Pasadas a previsualizar / confirmar.
+   * Siempre sobre `pasadasEstandarizadas`: `doc.rowIndexes` son índices del Excel.
+   * No usar `validacion.validas` (concatenación por documento de Paso 8) — rompería
+   * el filtro por índice y RN-17 en `peajes_confirmar_carga`.
+   */
   get pasadas() {
     const s = this.snap;
-    if (s.validacion?.validas?.length) {
-      return s.validacion.validas;
+    const base = s.pasadasEstandarizadas ?? [];
+    if (s.modoImportacion === 'masiva') {
+      return this.state.pasadasDeDocumentosIncluidos(base);
     }
-    return s.pasadasEstandarizadas;
+    return base;
   }
 
   get validas(): number {
-    return this.snap.validacion?.validas?.length ?? this.pasadas.length;
+    return this.pasadas.length;
   }
 
   get rechazados(): number {
@@ -54,28 +93,73 @@ export class Paso9RevisionComponent {
   async confirmar(): Promise<void> {
     this.guardando = true;
     this.error = null;
+    this.erroresPorDocumento = [];
+    this.resultados = [];
+    this.importadosResumen = [];
     try {
       const s = this.state.snapshot();
-      const pasadas = s.validacion?.validas?.length
-        ? s.validacion.validas
-        : s.pasadasEstandarizadas;
+      // rowIndexes apuntan al Excel / pasadasEstandarizadas, no a validacion.validas.
+      const pasadasBase = s.pasadasEstandarizadas ?? [];
+      const docs = this.documentosIncluidos;
 
-      const res = await firstValueFrom(
-        this.carga.confirmarCarga({
-          factura: this.state.facturaComoPersistible(),
-          pasadas,
-          plantillaId: s.plantillaId,
-          mapeos: s.mapeos,
-          relacionesEstacion: s.relacionesEstacion,
-          nombreArchivo: s.preview?.nombreArchivo ?? null,
-          parametrosEfectivos: {
-            archivo: s.preview?.nombreArchivo,
-            totalFilas: s.preview?.totalFilas,
-          },
-        })
-      );
-      this.resultado = res;
-      this.state.setConfirmacion(res);
+      for (const doc of docs) {
+        const subset = this.state.pasadasDeDocumento(doc, pasadasBase);
+        const tipo = doc.tipo ?? 'FC';
+        const pasadasNorm = subset.map((p) => {
+          const norm = normalizarImportesPasada(tipo, {
+            precio: Number(p.PRECIO),
+            bonificacion: Number(p.BONIFICACION ?? 0),
+            importe_neto: p.IMPORTE_NETO != null ? Number(p.IMPORTE_NETO) : undefined,
+          });
+          return {
+            ...p,
+            PRECIO: norm.precio,
+            BONIFICACION: norm.bonificacion,
+            IMPORTE_NETO: norm.importe_neto,
+          };
+        });
+        try {
+          const res = await firstValueFrom(
+            this.carga.confirmarCarga({
+              documento: this.state.documentoComoPersistible(doc),
+              pasadas: pasadasNorm,
+              plantillaId: s.plantillaId,
+              mapeos: s.mapeos,
+              relacionesEstacion: s.relacionesEstacion,
+              nombreArchivo: s.preview?.nombreArchivo ?? null,
+              parametrosEfectivos: {
+                archivo: s.preview?.nombreArchivo,
+                totalFilas: subset.length,
+                documento: doc.factura,
+              },
+            })
+          );
+          this.resultados.push(res);
+          this.importadosResumen.push({
+            numero: doc.factura || '(sin número)',
+            pasadas: res.pasadas?.length ?? subset.length,
+          });
+        } catch (e) {
+          this.erroresPorDocumento.push({
+            numero: doc.factura || '(sin número)',
+            error: e instanceof Error ? e.message : 'Error al confirmar',
+          });
+        }
+      }
+
+      if (this.resultados.length) {
+        this.resultado = this.resultados[this.resultados.length - 1];
+        this.state.setConfirmacion(this.resultado);
+      }
+      if (!this.resultados.length) {
+        this.error =
+          this.erroresPorDocumento.map((e) => `${e.numero}: ${e.error}`).join(' · ') ||
+          'No se pudo confirmar la carga';
+      } else if (this.erroresPorDocumento.length) {
+        this.error = `Confirmados ${this.resultados.length}; con error: ${this.erroresPorDocumento
+          .map((e) => e.numero)
+          .join(', ')}`;
+      }
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'No se pudo confirmar la carga';
     } finally {

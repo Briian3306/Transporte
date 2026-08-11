@@ -1,0 +1,49 @@
+<section
+  class="app-acc-panel"
+  [class.app-acc-panel--open]="expanded"
+  [attr.data-status]="status"
+>
+  <h3 class="app-acc-panel__heading">
+    <button
+      type="button"
+      class="app-acc-panel__trigger"
+      [id]="headerId"
+      [attr.aria-expanded]="expanded"
+      [attr.aria-controls]="contentId"
+      (click)="toggle()"
+    >
+      <span class="app-acc-panel__lead">
+        <span
+          class="app-acc-panel__status"
+          *ngIf="status !== 'neutral'"
+          [attr.aria-label]="statusLabel()"
+          [attr.title]="statusLabel()"
+        >
+          <i class="fas" [ngClass]="{
+            'fa-check': status === 'ok',
+            'fa-exclamation-triangle': status === 'warn',
+            'fa-times-circle': status === 'error'
+          }" aria-hidden="true"></i>
+        </span>
+        <span class="app-acc-panel__title">
+          <ng-content select="[appAccordionHeader]"></ng-content>
+        </span>
+      </span>
+      <span class="app-acc-panel__chevron" aria-hidden="true">
+        <i class="fas fa-chevron-down"></i>
+      </span>
+    </button>
+  </h3>
+
+  <div
+    class="app-acc-panel__body"
+    [id]="contentId"
+    role="region"
+    [attr.aria-labelledby]="headerId"
+    [attr.hidden]="expanded ? null : true"
+  >
+    <div class="app-acc-panel__content">
+      <ng-content select="[appAccordionContent]"></ng-content>
+    </div>
+  </div>
+</section>

@@ -7,21 +7,17 @@ Mapa oficial para ubicar documentación. Respetar numeración existente; extende
 ```
 docs/
 ├── INDEX.md                      # Índice maestro del repositorio (crear/mantener)
-├── PRD-OrdenCompraIbarra.md      # Requisitos de producto
 │
-├── 01-tests/                     # Tests unitarios e integración
-├── 02-git/                       # Flujo Git, ramas, commits
-├── 03-versionamiento/            # Versiones, releases, changelog
-├── 04-lazy-loading/              # Carga diferida Angular
+├── plan/                         # PRD y planes (peajes)
 ├── 05-configuracion/             # Secrets, entorno, despliegue
-├── 06-components/                # Componentes shared (buttons, cards, inputs…)
-├── 06-tablas/                    # Documentación de tablas UI
-├── 07-testing-adicional/         # Tests E2E, datos de prueba, escenarios extra
-└── 08-sql/                       # Scripts SQL y esquema de BD. 
-└── backend                       # Documentación de supabase / backend
+├── 06-components/                # Componentes (peajes + shared)
+├── 06-tablas/                    # Modelo de datos / tablas de dominio
+└── backend/                      # RPCs, Edge, workflow y testing Supabase
 ```
 
 > **Nota**: `06-components` y `06-tablas` comparten prefijo `06` por historial del repo. No renumerar sin autorización del usuario.
+
+> **`docs/08-sql/`**: **no usar** en este proyecto (Peajes). Eliminada. Fuente SQL = `supabase/migrations/`; documentación = `docs/backend/`.
 
 ## 01-tests — Tests
 
@@ -90,65 +86,41 @@ Subnumeración interna para tipos de UI:
 
 Priorizar enlace al README en `src/app/shared/tables/{nombre}/README.md` si existe; la guía en `docs/` amplía con contexto de negocio y ejemplos de features.
 
-## 08-sql — Base de datos
+## backend — Lógica de backend (canónico para SQL/RPC)
 
-```
-08-sql/
-├── INDEX.md
-├── 152_table_condiciones_pago.sql
-├── 152_table_condiciones_pago.md    # Companion opcional
-└── migraciones/
-    └── 2025-06-09_add_campo_x.sql
-```
+No documentar bajo `docs/08-sql/`. Usar:
 
-Convención de nombre SQL: `{numero}_{accion}_{objeto}.sql` (número secuencial o timestamp).
-
-## Documentos en raíz de `docs/`
-
-Solo para temas **transversales** (varias features):
-
-- `IMPORT_EXCEL_WORKFLOW.md`
-- `PRD-OrdenCompraIbarra.md`
-
-Si un workflow es de una sola feature, moverlo a la subcarpeta correspondiente.
-
-## backend — Logica de backend 
-Logica relacionada con backend tablas, logica de negocio, funciones y testing. 
 ```
 backend/
-├── api/                         # Documentación relacionada con API
-├── functions/                   # Catálogo RPC y Edge Functions
-├── {modulo}/                    # pedidos, ordenes-compra, productos, etc.
-├── kanban/                      # Contrato card / adapters Kanban (cross-domain)
-└── supabase/                    # Transversal Supabase
-    ├── index.md                 # RLS, auth, enlaces
-    ├── backend-workflow.md      # Flujo CLI (migraciones, deploy)
-    ├── backend-testing.md       # pgTAP, RLS, tests
-    └── auth-roles-globales.md
+├── index.md
+├── functions/                   # Catálogo RPC (+ edge/ stub si aplica)
+├── peajes/                      # Detalle de dominio Peajes
+├── api/                         # Contratos HTTP si existen Edge Functions
+└── supabase/                    # Transversal: workflow CLI, testing, RLS
+    ├── index.md
+    ├── backend-workflow.md
+    └── backend-testing.md
 ```
+
+Fuente de migraciones: `supabase/migrations/`.
 
 ## modulos/ — Dominios de negocio
 
 ```
 modulos/
 ├── INDEX.md
-├── pedidos/
-├── ordenes-compra/
-├── kanban/                      # Board Kanban (UI, filtros, formato; Future Features)
-├── facturas/
-├── proveedores/
-├── productos/
-└── presupuesto/
+└── peajes.md
 ```
+
 ## INDEX.md — Cadena de índices
 
 Cada nivel debe enlazar al siguiente:
 
 ```
 docs/INDEX.md
-  └── 01-tests/INDEX.md
-        └── 01-tests/orden-compra/INDEX.md
-              └── 01-tests/orden-compra/generacion/GENERACION_OC_TESTS.md
+  └── docs/backend/index.md
+        └── docs/backend/peajes/index.md
+              └── docs/backend/peajes/confirmar-carga.md
 ```
 
 Al agregar un documento, **siempre** actualizar el INDEX del nivel inmediatamente superior.
@@ -157,11 +129,8 @@ Al agregar un documento, **siempre** actualizar el INDEX del nivel inmediatament
 
 | El usuario dice… | Ruta |
 |------------------|------|
-| "documenta los tests de pedidos" | `docs/01-tests/pedidos/` |
-| "documenta generación de OC" | `docs/01-tests/orden-compra/generacion/` o `docs/06-components/` según si es test o UI |
-| "documenta table-generic" | `docs/06-tablas/table-generic/` |
-| "documenta el botón split" | `docs/06-components/08-buttons/` |
-| "documenta la tabla SQL condiciones_pago" | `docs/08-sql/` |
-| "documenta input-modal-selector" | `docs/06-components/10-inputs/` |
-| "documenta el kanban" | `docs/modulos/kanban/` |
-| "documenta contrato card kanban" | `docs/backend/kanban/` |
+| "documenta RPCs / funciones Supabase" | `docs/backend/functions/` + `docs/backend/peajes/` |
+| "documenta el wizard peajes" | `docs/06-components/peajes/` |
+| "documenta tablas peajes" | `docs/06-tablas/peajes/` |
+| "documenta el módulo peajes" | `docs/modulos/peajes.md` |
+| "documenta workflow Supabase" | `docs/backend/supabase/` |

@@ -2,13 +2,14 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, injec
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
+  Documento,
   Estacion,
-  Factura,
   PasadaGestion,
   Pase,
   Patente,
   stationBadgeFromCoords,
 } from '../models';
+import { formatUtcDateTime } from '../wizard/services/peajes-fecha.util';
 
 export type PasadasDrawerMode = 'view' | 'edit' | 'create';
 
@@ -17,7 +18,7 @@ export interface PasadasFormPayload {
   pase_id: string;
   patente_id: string;
   estacion_id: string;
-  factura_id: string;
+  documento_id: string;
   precio: number;
   bonificacion: number;
   quantity: number;
@@ -39,7 +40,7 @@ export class PasadasFormDrawerComponent implements OnChanges {
   @Input() estaciones: Estacion[] = [];
   @Input() patentes: Patente[] = [];
   @Input() pases: Pase[] = [];
-  @Input() facturas: Pick<Factura, 'id' | 'factura' | 'empresa_id'>[] = [];
+  @Input() facturas: Pick<Documento, 'id' | 'factura' | 'empresa_id'>[] = [];
   @Input() saving = false;
   @Input() error: string | null = null;
 
@@ -53,9 +54,9 @@ export class PasadasFormDrawerComponent implements OnChanges {
     estacion_id: ['', Validators.required],
     patente_id: ['', Validators.required],
     pase_id: ['', Validators.required],
-    factura_id: ['', Validators.required],
-    precio: [0, [Validators.required, Validators.min(0)]],
-    bonificacion: [0, [Validators.min(0)]],
+    documento_id: ['', Validators.required],
+    precio: [0, [Validators.required]],
+    bonificacion: [0],
     quantity: [1, [Validators.required, Validators.min(1)]],
   });
 
@@ -77,10 +78,14 @@ export class PasadasFormDrawerComponent implements OnChanges {
     return stationBadgeFromCoords(this.row?.estacion_latitud, this.row?.estacion_longitud);
   }
 
+  formatCreatedAt(value: string | null | undefined): string {
+    return formatUtcDateTime(value, false);
+  }
+
   get netoPreview(): number {
     const p = Number(this.form.controls.precio.value ?? 0);
     const b = Number(this.form.controls.bonificacion.value ?? 0);
-    return Math.max(0, p - b);
+    return p - b;
   }
 
   get pasesFiltrados(): Pase[] {
@@ -102,7 +107,7 @@ export class PasadasFormDrawerComponent implements OnChanges {
         estacion_id: '',
         patente_id: '',
         pase_id: '',
-        factura_id: '',
+        documento_id: '',
         precio: 0,
         bonificacion: 0,
         quantity: 1,
@@ -119,7 +124,7 @@ export class PasadasFormDrawerComponent implements OnChanges {
       estacion_id: this.row.estacion_id,
       patente_id: this.row.patente_id,
       pase_id: this.row.pase_id,
-      factura_id: this.row.factura_id,
+      documento_id: this.row.documento_id,
       precio: Number(this.row.precio),
       bonificacion: Number(this.row.bonificacion),
       quantity: Number(this.row.quantity),
@@ -136,7 +141,8 @@ export class PasadasFormDrawerComponent implements OnChanges {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return '';
     const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    // datetime-local shows the same UTC wall-clock as Supabase (no browser TZ shift).
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
   }
 
   submit(): void {
@@ -145,12 +151,16 @@ export class PasadasFormDrawerComponent implements OnChanges {
       return;
     }
     const v = this.form.getRawValue();
+    const fecha = String(v.fecha_hora || '').trim();
+    const fechaHora = fecha.includes('T')
+      ? `${fecha.replace('T', ' ')}${fecha.length === 16 ? ':00' : ''}`
+      : fecha;
     this.save.emit({
       ...v,
+      fecha_hora: fechaHora,
       precio: Number(v.precio),
       bonificacion: Number(v.bonificacion),
       quantity: Number(v.quantity),
-      fecha_hora: new Date(v.fecha_hora).toISOString(),
     });
   }
 }

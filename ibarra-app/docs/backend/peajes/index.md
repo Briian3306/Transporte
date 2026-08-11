@@ -1,0 +1,37 @@
+# Backend Peajes — Índice
+
+## Summary
+
+Detalle de RPCs y flujos backend del dominio Peajes (documentos FC|NC, pasadas, plantillas, aliases). El catálogo resumido está en [functions/index.md](../functions/index.md).
+
+## Index
+
+- [Summary](#summary)
+- [Documentos](#documentos)
+- [Referencias](#referencias)
+
+## Documentos
+
+| Documento | Contenido |
+|-----------|-----------|
+| [confirmar-carga.md](./confirmar-carga.md) | `peajes_confirmar_carga` |
+| [validacion-importes.md](./validacion-importes.md) | Neto, tolerancia, validación documento |
+| [detectar-duplicados.md](./detectar-duplicados.md) | RN-16 |
+| [gestion-pasadas.md](./gestion-pasadas.md) | List/CRUD pasadas |
+| [estaciones-pendientes.md](./estaciones-pendientes.md) | Listado agregado estaciones PENDING (coords) |
+| [plantillas-y-algoritmos-rpc.md](./plantillas-y-algoritmos-rpc.md) | Plantillas y algoritmos combinados |
+| [aliases-estaciones.md](./aliases-estaciones.md) | Normalización y aliases AUSOL |
+| [pwbi-views.md](./pwbi-views.md) | Vistas Power BI `pwbi_estacion` / `pwbi_patentes` / `pwbi_pasadas` |
+
+## Referencias
+
+- Tablas: [docs/06-tablas/peajes/](../../06-tablas/peajes/INDEX.md)
+- UI wizard: [docs/06-components/peajes/wizard.md](../../06-components/peajes/wizard.md)
+- PRD: [peaje-prd-es.md](../../plan/peaje-prd-es.md)
+- Migración F13: `supabase/migrations/20260807140000_peajes_documentos_tipo_nc.sql`
+- Migración F08-2: `supabase/migrations/20260810142350_peajes_listar_estaciones_pendientes.sql`
+- Migración Power BI: `supabase/migrations/20260810194113_peajes_pwbi_views.sql` + `20260811121811_peajes_pwbi_documentos.sql` (aplicadas en DESARROLLO)
+
+---
+
+> Última actualización: agosto 2026

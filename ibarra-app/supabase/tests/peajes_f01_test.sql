@@ -1,6 +1,6 @@
 -- pgTAP: F01-1 … F01-9 (Peajes backend)
 BEGIN;
-SELECT plan(50);
+SELECT plan(59);
 
 -- -----------------------------------------------------------------------------
 -- F01-1: catálogos + FK estacion → peaje
@@ -18,22 +18,24 @@ SELECT has_column('public', 'empresas', 'descripcion', 'empresas.descripcion exi
 SELECT col_is_unique('public', 'empresas', ARRAY['nombre'], 'empresas.nombre UK');
 
 -- -----------------------------------------------------------------------------
--- F01-2: facturas + pasadas (estacion_id, sin peaje_id)
+-- F01-2 / F13: documentos + pasadas (estacion_id, sin peaje_id)
 -- -----------------------------------------------------------------------------
-SELECT has_table('public', 'facturas', 'F01-2 facturas existe');
+SELECT has_table('public', 'documentos', 'F13 documentos existe (ex facturas)');
+SELECT hasnt_table('public', 'facturas', 'F13 facturas fue renombrada');
 SELECT has_table('public', 'pasadas', 'F01-2 pasadas existe');
-SELECT fk_ok('pasadas', 'factura_id', 'facturas', 'id', 'F01-2 pasadas.factura_id → facturas.id');
+SELECT fk_ok('pasadas', 'documento_id', 'documentos', 'id', 'F13 pasadas.documento_id → documentos.id');
 SELECT fk_ok('pasadas', 'estacion_id', 'estaciones', 'id', 'F01-2 pasadas.estacion_id → estaciones.id');
 SELECT hasnt_column('public', 'pasadas', 'peaje_id', 'F01-2 pasadas no tiene peaje_id directo');
+SELECT has_column('public', 'documentos', 'tipo', 'F13 documentos.tipo existe');
 SELECT ok(
   (
     SELECT is_nullable = 'YES'
     FROM information_schema.columns
     WHERE table_schema = 'public'
-      AND table_name = 'facturas'
+      AND table_name = 'documentos'
       AND column_name = 'cuenta'
   ),
-  'facturas.cuenta es opcional'
+  'documentos.cuenta es opcional'
 );
 
 -- -----------------------------------------------------------------------------
@@ -113,15 +115,15 @@ SELECT is(
 -- -----------------------------------------------------------------------------
 -- F01-6: duplicados
 -- -----------------------------------------------------------------------------
-INSERT INTO public.facturas (id, factura, cuenta, empresa_id, fecha_factura, importe_sin_iva, percepciones, importe_total)
+INSERT INTO public.documentos (id, factura, cuenta, empresa_id, fecha_factura, tipo, importe_sin_iva, percepciones, importe_total)
 VALUES (
   '55555555-5555-5555-5555-555555555555',
   'F-1', 'C-1', '66666666-6666-6666-6666-666666666666',
-  CURRENT_DATE, 90, 18.9, 108.9
+  CURRENT_DATE, 'FC', 90, 18.9, 108.9
 );
 
 INSERT INTO public.pasadas (
-  fecha_hora, pase_id, patente_id, estacion_id, factura_id,
+  fecha_hora, pase_id, patente_id, estacion_id, documento_id,
   precio, bonificacion, quantity, importe_neto
 ) VALUES (
   '2026-07-01 10:00:00+00',
@@ -234,22 +236,27 @@ SELECT col_is_unique(
   'public', 'plantilla_estaciones_reconocidas', ARRAY['plantilla_id', 'valor_normalizado'],
   'F09 un valor normalizado es único por plantilla'
 );
-SELECT has_column('public', 'facturas', 'percepciones', 'F11 facturas.percepciones existe');
-SELECT has_column('public', 'facturas', 'iva', 'F12 facturas.iva existe');
+SELECT has_column('public', 'documentos', 'percepciones', 'F11 documentos.percepciones existe');
+SELECT has_column('public', 'documentos', 'iva', 'F12 documentos.iva existe');
 SELECT lives_ok(
-  $$INSERT INTO public.facturas (factura, empresa_id, fecha_factura, importe_sin_iva, percepciones, importe_total)
+  $$INSERT INTO public.documentos (factura, empresa_id, fecha_factura, importe_sin_iva, percepciones, importe_total)
     VALUES ('F-IMPORTE-INVALIDO', 'empresa-test', CURRENT_DATE, 100, 10, 109)$$,
   'F12 permite total declarado distinto del desglose'
 );
 SELECT lives_ok(
-  $$INSERT INTO public.facturas (factura, empresa_id, fecha_factura, importe_sin_iva, percepciones, iva, importe_total)
+  $$INSERT INTO public.documentos (factura, empresa_id, fecha_factura, importe_sin_iva, percepciones, iva, importe_total)
     VALUES ('0840-0557074', 'AUSOL', '2026-08-01', 560832.27, 24676.62, 117774.78, 703283.67)$$,
   'F12 persiste la factura real AUSOL 0840-0557074 sin RAE'
 );
 SELECT is(
-  (SELECT importe_total FROM public.facturas WHERE factura = '0840-0557074'),
+  (SELECT importe_total FROM public.documentos WHERE factura = '0840-0557074'),
   703283.67::numeric,
   'F12 conserva el total declarado de la factura real AUSOL'
+);
+SELECT is(
+  (SELECT tipo FROM public.documentos WHERE factura = '0840-0557074'),
+  'FC',
+  'F13 documentos existentes migran / default tipo = FC'
 );
 SELECT is(
   (public.peajes_validar_factura_pasadas(105, ARRAY[100]::numeric[], NULL)->>'valido')::boolean,
@@ -275,6 +282,28 @@ SELECT is(
   (public.peajes_validar_factura_pasadas(100, ARRAY[50, 50]::numeric[], NULL)->>'tolerancia')::numeric,
   1::numeric,
   'F11 tolerancia por defecto = 1% del subtotal'
+);
+
+-- Bonificación de cabecera: Σ neto − bonificacion ≈ subtotal
+SELECT is(
+  (public.peajes_validar_factura_pasadas(100, ARRAY[80, 70]::numeric[], NULL, 50)->>'valido')::boolean,
+  true,
+  'Doc bonificacion: suma 150 − bonif 50 = subtotal 100 → valido'
+);
+SELECT is(
+  (public.peajes_validar_factura_pasadas(100, ARRAY[80, 70]::numeric[], NULL, 0)->>'valido')::boolean,
+  false,
+  'Doc bonificacion: suma 150 vs subtotal 100 sin bonif → invalido'
+);
+SELECT is(
+  (public.peajes_validar_factura_pasadas(100, ARRAY[80, 70]::numeric[], NULL, 50)->>'bonificacion')::numeric,
+  50::numeric,
+  'Doc bonificacion: respuesta JSON incluye bonificacion'
+);
+SELECT is(
+  (public.peajes_validar_factura_pasadas(100, ARRAY[80, 70]::numeric[], NULL, 50)->>'esperado')::numeric,
+  150::numeric,
+  'Doc bonificacion: esperado = subtotal + bonificacion'
 );
 
 SELECT lives_ok(
@@ -339,10 +368,62 @@ SELECT ok(
       AND r.filas_procesadas >= 1
       AND r.parametros_efectivos ? 'fuente'
       AND jsonb_array_length(r.algoritmos_efectivos) >= 1
-      AND (SELECT f.percepciones FROM public.facturas f WHERE f.id = r.factura_id) = 18.9
-      AND (SELECT f.iva FROM public.facturas f WHERE f.id = r.factura_id) = 0
+      AND (SELECT d.percepciones FROM public.documentos d WHERE d.id = r.documento_id) = 18.9
+      AND (SELECT d.iva FROM public.documentos d WHERE d.id = r.documento_id) = 0
+      AND (SELECT d.tipo FROM public.documentos d WHERE d.id = r.documento_id) = 'FC'
   ),
   'F01-9 registro carga persiste plantilla, parámetros, algoritmos y filas'
+);
+
+-- -----------------------------------------------------------------------------
+-- F13: nota de crédito (NC) normaliza PRECIO negativo
+-- -----------------------------------------------------------------------------
+SELECT lives_ok(
+  $$SELECT public.peajes_confirmar_carga(
+      jsonb_build_object(
+        'factura', 'NC-AUDIT',
+        'cuenta', 'C-NC',
+        'empresa_id', '66666666-6666-6666-6666-666666666666',
+        'fecha_factura', CURRENT_DATE::text,
+        'tipo', 'NC',
+        'importe_sin_iva', 90,
+        'percepciones', 0,
+        'iva', 0,
+        'importe_total', 90
+      ),
+      jsonb_build_array(
+        jsonb_build_object(
+          'fecha_hora', '2026-07-03T11:00:00Z',
+          'pase_id', '44444444-4444-4444-4444-444444444444',
+          'patente_id', '33333333-3333-3333-3333-333333333333',
+          'estacion_id', '22222222-2222-2222-2222-222222222222',
+          'precio', 100,
+          'bonificacion', 10,
+          'quantity', 1,
+          'importe_neto', 90
+        )
+      ),
+      NULL,
+      '{}'::jsonb,
+      '[]'::jsonb,
+      '[]'::jsonb,
+      'nc-test.xlsx'
+    )$$,
+  'F13 confirmar carga NC ok'
+);
+
+SELECT ok(
+  EXISTS (
+    SELECT 1
+    FROM public.documentos d
+    JOIN public.pasadas p ON p.documento_id = d.id
+    WHERE d.factura = 'NC-AUDIT'
+      AND d.tipo = 'NC'
+      AND d.importe_sin_iva = -90
+      AND p.precio = -100
+      AND p.importe_neto = -90
+  ),
+  'F13 NC persiste importes negativos en documento y pasadas'
 );
 
 SELECT * FROM finish();

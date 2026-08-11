@@ -1,3 +1,47 @@
+.paso1__modo {
+  margin: 0 0 1.15rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--pw-line, #dce5ee);
+  border-radius: 12px;
+  background: #fbfcfe;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.paso1__modo legend {
+  padding: 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pw-muted, #6f8197);
+}
+
+.paso1__modo-option {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.paso1__modo-option strong {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.paso1__modo-option small {
+  display: block;
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.78rem;
+}
+
+.paso1__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--pw-muted, #6f8197);
+  line-height: 1.4;
+}
+
 .paso1__layout {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;

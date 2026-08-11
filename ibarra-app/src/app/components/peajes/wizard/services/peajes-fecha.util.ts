@@ -49,7 +49,8 @@ export function toPostgresFechaHora(value: unknown): string | null {
   return null;
 }
 
-function formatLocalDateTime(d: Date): string {
+/** Local `yyyy-MM-dd HH:mm:ss` (preserves HMS; used by Excel normalize + Postgres). */
+export function formatLocalDateTime(d: Date): string {
   const y = d.getFullYear();
   const mo = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -57,4 +58,74 @@ function formatLocalDateTime(d: Date): string {
   const mm = String(d.getMinutes()).padStart(2, '0');
   const ss = String(d.getSeconds()).padStart(2, '0');
   return `${y}-${mo}-${day} ${hh}:${mm}:${ss}`;
+}
+
+/** True when the instant is UTC midnight (typical SheetJS/Excel date-only cell). */
+export function isUtcDateOnly(d: Date): boolean {
+  return (
+    d.getUTCHours() === 0 &&
+    d.getUTCMinutes() === 0 &&
+    d.getUTCSeconds() === 0 &&
+    d.getUTCMilliseconds() === 0
+  );
+}
+
+/** UTC calendar date `yyyy-MM-dd` (no browser TZ shift). */
+export function formatUtcDateOnly(d: Date): string {
+  const y = d.getUTCFullYear();
+  const mo = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${mo}-${day}`;
+}
+
+/**
+ * Display timestamptz / ISO strings as UTC wall-clock (matches Supabase dashboard),
+ * without shifting to the browser local timezone.
+ */
+export function formatUtcDateTime(
+  value: string | Date | null | undefined,
+  withSeconds = true
+): string {
+  if (value == null || value === '') return '—';
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) {
+    const s = String(value).trim();
+    return s.replace('T', ' ').replace(/\+00(:00)?$/, '').replace(/Z$/i, '').slice(0, withSeconds ? 19 : 16);
+  }
+  const y = d.getUTCFullYear();
+  const mo = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const mm = String(d.getUTCMinutes()).padStart(2, '0');
+  const ss = String(d.getUTCSeconds()).padStart(2, '0');
+  return withSeconds ? `${y}-${mo}-${day} ${hh}:${mm}:${ss}` : `${y}-${mo}-${day} ${hh}:${mm}`;
+}
+
+/**
+ * UTC calendar date `dd/MM/yyyy` for range labels (no local TZ shift).
+ */
+export function formatUtcDateShort(value: string | Date | null | undefined): string {
+  if (value == null || value === '') return '—';
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const mo = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${day}/${mo}/${d.getUTCFullYear()}`;
+}
+
+/**
+ * Normaliza celdas Excel para el motor: Date → yyyy-MM-dd HH:mm:ss.
+ * - Date-only (UTC midnight, SheetJS/Excel): UTC calendar day + `00:00:00`
+ *   (avoids ART −1 day when local getters run on UTC midnight).
+ * - Datetime cells: local wall-clock (F13-RN16-FECHA / ConsumosResumen).
+ */
+export function normalizarCeldaExcel(value: unknown): unknown {
+  if (value == null || value === '') return value ?? null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    if (isUtcDateOnly(value)) {
+      return `${formatUtcDateOnly(value)} 00:00:00`;
+    }
+    return formatLocalDateTime(value);
+  }
+  return value;
 }

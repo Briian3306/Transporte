@@ -15,7 +15,7 @@ import {
 import {
   Empresa,
   Estacion,
-  Factura,
+  Documento,
   PEAJES_CATALOGO_SERVICE,
   PEAJES_PASADAS_SERVICE,
   PasadaGestion,
@@ -25,6 +25,7 @@ import {
   PeajesPasadasService,
   stationBadgeFromCoords,
 } from '../models';
+import { formatUtcDateTime } from '../wizard/services/peajes-fecha.util';
 import { SupabaseService } from '../../../services/supabase.service';
 import {
   PasadasFilterState,
@@ -71,7 +72,7 @@ export class PasadasListComponent implements OnInit, OnDestroy {
   patentes: Patente[] = [];
   empresas: Empresa[] = [];
   pases: Pase[] = [];
-  facturas: Pick<Factura, 'id' | 'factura' | 'empresa_id'>[] = [];
+  facturas: Pick<Documento, 'id' | 'factura' | 'empresa_id'>[] = [];
 
   drawerOpen = false;
   drawerMode: PasadasDrawerMode = 'view';
@@ -146,6 +147,10 @@ export class PasadasListComponent implements OnInit, OnDestroy {
     return stationBadgeFromCoords(r.estacion_latitud, r.estacion_longitud);
   }
 
+  formatFechaHora(value: string | null | undefined, withSeconds = true): string {
+    return formatUtcDateTime(value, withSeconds);
+  }
+
   asPasada(row: Record<string, unknown>): PasadaGestion {
     return row as unknown as PasadaGestion;
   }
@@ -167,12 +172,12 @@ export class PasadasListComponent implements OnInit, OnDestroy {
     try {
       const client = await this.supabase.getClient();
       const { data, error } = await client
-        .from('facturas')
-        .select('id, factura, empresa_id')
+        .from('documentos')
+        .select('id, factura, empresa_id, tipo')
         .order('created_at', { ascending: false })
         .limit(200);
       if (error) throw error;
-      this.facturas = (data ?? []) as Pick<Factura, 'id' | 'factura' | 'empresa_id'>[];
+      this.facturas = (data ?? []) as Pick<Documento, 'id' | 'factura' | 'empresa_id'>[];
     } catch {
       this.facturas = [];
     }

@@ -116,4 +116,43 @@ describe('Paso6EstacionesComponent', () => {
     expect(component.creandoPara).toBe('99');
     expect(component.nuevaEstacionNombre).toBe('99');
   });
+
+  it('oculta Peaje relacionado en importación masiva', async () => {
+    await crearConPreview({
+      columnas: ['ESTACION'],
+      filas: [{ ESTACION: 'A' }, { ESTACION: 'B' }],
+      incluidas: ['ESTACION'],
+      excluidas: [],
+    });
+    // reiniciar() deja modo simple; aplicar masiva después del setup.
+    state.setModoImportacion('masiva');
+    fixture.detectChanges();
+    expect(component.esCargaDensa).toBeTrue();
+    expect(component.mostrarPeajeRelacionado).toBeFalse();
+    const catalog = fixture.nativeElement.querySelector('.paso6__catalog');
+    expect(catalog).toBeNull();
+  });
+
+  it('muestra Peaje relacionado en carga simple con pocas filas', () => {
+    state.setModoImportacion('simple');
+    fixture.detectChanges();
+    expect(component.esCargaDensa).toBeFalse();
+    expect(component.mostrarPeajeRelacionado).toBe(component.relaciones.length > 0);
+  });
+
+  it('filtra y pagina la lista de estaciones', async () => {
+    const filas = Array.from({ length: 45 }, (_, i) => ({ ESTACION: `EST-${i}` }));
+    await crearConPreview({
+      columnas: ['ESTACION'],
+      filas,
+      incluidas: ['ESTACION'],
+      excluidas: [],
+    });
+    expect(component.relaciones.length).toBe(45);
+    expect(component.relacionesPagina.length).toBe(40);
+    expect(component.totalRowPages).toBe(2);
+    component.onFiltroChange('EST-4');
+    expect(component.relacionesFiltradas.some((r) => r.valorProveedor === 'EST-4')).toBeTrue();
+    expect(component.rowPage).toBe(0);
+  });
 });

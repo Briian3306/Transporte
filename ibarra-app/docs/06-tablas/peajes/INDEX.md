@@ -2,32 +2,34 @@
 
 ## Resumen
 
-Documentación del esquema persistente del módulo Peajes implementado en Fase 1 (F01-1…F01-9, `passing`). Describe tablas, relaciones, RPCs y reglas verificadas en Supabase CLI. No documenta features no implementadas (E2E §21, merge de rutas, push DESARROLLO).
+Documentación del esquema persistente del módulo Peajes (F01 + F13 documentos). Describe tablas, relaciones y apunta a RPCs en `docs/backend/`.
 
 ## Documentos
 
 | Documento | Descripción |
 |-----------|-------------|
 | [modelo-datos.md](./modelo-datos.md) | Vista general, relaciones y reglas de dominio |
-| [catalogos.md](./catalogos.md) | `peajes`, `estaciones`, `patentes`, `pases` |
-| [facturas-pasadas.md](./facturas-pasadas.md) | `facturas`, `pasadas`, vista `pasadas_con_peaje` |
-| [plantillas-algoritmos.md](./plantillas-algoritmos.md) | Plantillas, configuraciones, algoritmos y catálogo |
-| [auditoria-y-rpcs.md](./auditoria-y-rpcs.md) | `registros_carga_peajes` y RPCs de validación/carga |
+| [catalogos.md](./catalogos.md) | `peajes`, `estaciones`, `patentes`, `pases`, empresas |
+| [documentos-pasadas.md](./documentos-pasadas.md) | `documentos`, `pasadas`, vistas |
+| [plantillas-algoritmos.md](./plantillas-algoritmos.md) | Plantillas, configuraciones, algoritmos |
+| [auditoria-y-rpcs.md](./auditoria-y-rpcs.md) | `registros_carga_peajes` + enlace a RPCs |
 
-## SQL companion (Agente 01)
+## Backend (RPCs)
 
 | Path | Contenido |
 |------|-----------|
-| `supabase/migrations/*peajes*.sql` | Migraciones y RPCs fuente |
+| [docs/backend/](../../backend/index.md) | Catálogo y detalle de funciones Supabase |
 
-## Verificación ejecutada
+## Verificación
 
 ```powershell
 cd ibarra-app
-npx supabase db reset --local --no-seed   # OK — 5 migraciones
-npx supabase test db                      # PASS 30/30 (peajes_f01_test.sql)
+npx supabase db reset --local --no-seed
+npx supabase test db
 ```
+
+Evidencia reciente: F13 → 75 PASS (`feature_list.json`).
 
 ---
 
-> Última actualización: julio 2026
+> Última actualización: agosto 2026

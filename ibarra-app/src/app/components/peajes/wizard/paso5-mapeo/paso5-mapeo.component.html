@@ -149,6 +149,213 @@
       </app-data-table>
     </section>
 
+    <section
+      class="paso5__unresolved paso5__unresolved--peaje"
+      *ngIf="tieneConcesionPeaje"
+      aria-label="Concesión y peaje"
+    >
+      <div class="paso5__unresolved-head">
+        <div>
+          <div class="pw__eyebrow">Catálogo · RN-26</div>
+          <h3>Peajes sin resolver desde Concesión</h3>
+          <p>
+            <span class="pw__mono">{{ columnaConcesion }}</span> = peaje del proveedor.
+            {{ peajesSinResolver.length }} sin match exacto ·
+            {{ recomendacionesPeaje.length - peajesSinResolver.length }} identificados.
+            Si no hay coincidencia, creá la <strong>empresa</strong> (y peaje) o solo el peaje.
+          </p>
+        </div>
+        <label class="paso5__filtro-rapido" *ngIf="peajesSinResolver.length">
+          <span>Filtro rápido</span>
+          <input
+            type="search"
+            class="pw__input"
+            [(ngModel)]="filtroConcesionRapido"
+            placeholder="Buscar concesión…"
+            [disabled]="accionesPeajeOcupadas"
+          />
+        </label>
+      </div>
+
+      <div class="paso5__ok-strip" *ngIf="recomendacionesPeaje.length - peajesSinResolver.length">
+        <span
+          class="paso5__ok-chip"
+          *ngFor="let r of recomendacionesPeaje"
+          [hidden]="!r.peajeId"
+        >
+          {{ r.concesion }} → {{ r.peajeNombre }}
+        </span>
+      </div>
+
+      <ng-container *ngIf="peajesSinResolver.length">
+        <div class="paso5__bulk-toolbar" role="toolbar" aria-label="Acciones de peajes">
+          <button
+            type="button"
+            class="pw__btn pw__btn--small pw__btn--primary"
+            (click)="agregarTodosPeajesPendientes()"
+            [disabled]="accionesPeajeOcupadas || !peajesSinResolverVisibles.length"
+          >
+            {{ agregandoPeajes ? 'Agregando…' : 'Agregar peajes sin coincidencia' }}
+          </button>
+          <span class="paso5__bulk-hint">
+            Crea peajes con el nombre de la Concesión (empresa del Paso 1).
+          </span>
+        </div>
+
+        <app-data-table
+          [columns]="peajeUnresolvedColumns"
+          [rows]="peajeUnresolvedRows"
+          [total]="peajeUnresolvedRows.length"
+          [pageSize]="25"
+          [pageSizeOptions]="[10, 25, 50]"
+          emptyMessage="No hay peajes pendientes con ese filtro."
+          rowIdKey="id"
+        >
+          <ng-template appDataTableColumn="estado" let-row>
+            <span
+              class="pw__status"
+              [class.pw__status--warn]="true"
+            >
+              {{
+                row['tipo'] === 'sugerencias'
+                  ? 'Revisar sugerencias'
+                  : '— Sin coincidencia en catálogo —'
+              }}
+            </span>
+          </ng-template>
+          <ng-template appDataTableColumn="sugerencias" let-row>
+            <div class="paso5__sug" *ngIf="sugerenciasDeFila(row).length">
+              <button
+                type="button"
+                class="pw__chip"
+                *ngFor="let s of sugerenciasDeFila(row)"
+                (click)="$event.stopPropagation(); confirmarSugerenciaPeaje(asConcesion(row), s.id, s.nombre)"
+              >
+                {{ s.nombre }}
+              </button>
+            </div>
+            <span class="paso5__sug-empty" *ngIf="!sugerenciasDeFila(row).length">
+              — Sin coincidencia en catálogo —
+            </span>
+          </ng-template>
+          <ng-template appDataTableColumn="acciones" let-row>
+            <div class="paso5__row-actions">
+              <button
+                *ngIf="necesitaAgregarEmpresa(row)"
+                type="button"
+                class="pw__btn pw__btn--small pw__btn--primary"
+                (click)="$event.stopPropagation(); abrirCrearEmpresa(asConcesion(row))"
+                [disabled]="accionesPeajeOcupadas"
+              >
+                {{ accionEmpresa === asConcesion(row) ? '…' : 'Agregar empresa' }}
+              </button>
+              <button
+                type="button"
+                class="pw__btn pw__btn--small"
+                [class.pw__btn--primary]="!necesitaAgregarEmpresa(row)"
+                [class.pw__btn--ghost]="necesitaAgregarEmpresa(row)"
+                (click)="$event.stopPropagation(); abrirCrearPeaje(asConcesion(row))"
+                [disabled]="accionesPeajeOcupadas"
+              >
+                {{ accionPeaje === asConcesion(row) ? '…' : 'Agregar peaje' }}
+              </button>
+            </div>
+          </ng-template>
+        </app-data-table>
+      </ng-container>
+    </section>
+
+    <app-dialog
+      [open]="crearEmpresaAbierto"
+      eyebrow="Catálogo de empresas"
+      title="Agregar empresa desde Concesión"
+      description="Sin empresa no podés crear peajes ni estaciones. Se creará también un peaje con el mismo nombre."
+      (closed)="crearEmpresaAbierto = false"
+    >
+      <div class="pw__form-grid">
+        <div class="pw__field">
+          <label for="crear-empresa-nombre">Nombre de empresa *</label>
+          <input
+            id="crear-empresa-nombre"
+            class="pw__input"
+            [(ngModel)]="crearEmpresaNombre"
+            autocomplete="organization"
+          />
+          <p class="paso5__field-hint">Valor Excel: {{ crearEmpresaConcesion }}</p>
+        </div>
+        <div class="pw__field">
+          <label for="crear-empresa-desc">Descripción</label>
+          <input
+            id="crear-empresa-desc"
+            class="pw__input"
+            [(ngModel)]="crearEmpresaDescripcion"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+      <div appDialogActions class="pw__footer-actions">
+        <button type="button" class="pw__btn" (click)="crearEmpresaAbierto = false">Cancelar</button>
+        <button
+          type="button"
+          class="pw__btn pw__btn--primary"
+          [disabled]="!crearEmpresaNombre.trim() || accionesPeajeOcupadas"
+          (click)="crearEmpresaDesdeConcesion()"
+        >
+          Crear empresa y peaje
+        </button>
+      </div>
+    </app-dialog>
+
+    <app-dialog
+      [open]="crearPeajeAbierto"
+      eyebrow="Catálogo de peajes"
+      title="Agregar peaje desde Concesión"
+      description="Se usará en el Paso 6 para filtrar estaciones de este peaje."
+      (closed)="crearPeajeAbierto = false"
+    >
+      <div class="pw__form-grid">
+        <div class="pw__field">
+          <label for="crear-peaje-nombre">Nombre *</label>
+          <input
+            id="crear-peaje-nombre"
+            class="pw__input"
+            [(ngModel)]="crearPeajeNombre"
+            autocomplete="off"
+          />
+        </div>
+        <div class="pw__field">
+          <app-search-select
+            label="Empresa *"
+            placeholder="Buscar empresa…"
+            [options]="empresaOptions"
+            [value]="crearPeajeEmpresaId"
+            [showAllWhenEmpty]="true"
+            (valueChange)="onEmpresaPeajeChange($event)"
+          ></app-search-select>
+        </div>
+        <div class="pw__field">
+          <label for="crear-peaje-desc">Descripción</label>
+          <input
+            id="crear-peaje-desc"
+            class="pw__input"
+            [(ngModel)]="crearPeajeDescripcion"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+      <div appDialogActions class="pw__footer-actions">
+        <button type="button" class="pw__btn" (click)="crearPeajeAbierto = false">Cancelar</button>
+        <button
+          type="button"
+          class="pw__btn pw__btn--primary"
+          [disabled]="!crearPeajeNombre.trim() || !crearPeajeEmpresaId || accionesPeajeOcupadas"
+          (click)="crearPeajeDesdeConcesion()"
+        >
+          Crear y relacionar
+        </button>
+      </div>
+    </app-dialog>
+
     <div class="pw__note">
       <strong>Nota de modelo:</strong>
       PASADA_ID lo genera el sistema. Las columnas marcadas «(pipeline)» vienen del Paso 3
@@ -158,6 +365,7 @@
       Si el archivo no trae descuento, BONIFICACION se genera en <span class="pw__mono">0</span>
       (mismo patrón) e IMPORTE_NETO queda igual a PRECIO.
       IMPORTE_NETO se completa al estandarizar si falta.
+      Si hay <span class="pw__mono">Concesion</span>, ese valor es peaje (RN-26), no estación.
     </div>
 
     <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>

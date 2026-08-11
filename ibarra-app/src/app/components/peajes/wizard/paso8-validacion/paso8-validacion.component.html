@@ -4,6 +4,9 @@
       <div class="pw__eyebrow">Paso 08 · diagnóstico de carga</div>
       <h2>Validación</h2>
       <p>Cada control informa qué ocurrió, cómo resolverlo y, si hace falta, su respuesta técnica.</p>
+      <p class="paso8__omitidos" *ngIf="documentosOmitidosCount">
+        {{ documentosOmitidosCount }} documento(s) omitido(s) en Paso 7 — no se validan ni se confirman.
+      </p>
     </div>
     <span class="pw__status" *ngIf="resultado" [class.pw__status--valid]="puedeContinuar" [class.pw__status--error]="!puedeContinuar">
       {{ puedeContinuar ? 'Lista para confirmar' : 'Requiere revisión' }}
@@ -17,8 +20,8 @@
     <section class="paso8__summary" *ngIf="resultado as r">
       <div><span>Pasadas válidas</span><strong>{{ r.validas.length }}</strong></div>
       <div><span>Importado</span><strong>{{ moneda(sumaNetos) }}</strong></div>
-      <div><span>Subtotal factura</span><strong>{{ moneda(state.snapshot().factura.importe_sin_iva) }}</strong></div>
-      <div><span>Diferencia</span><strong [class.paso8__money-error]="!r.dentroTolerancia">{{ moneda(r.diferenciaFactura) }}</strong></div>
+      <div><span>{{ etiquetaSubtotal }}</span><strong>{{ moneda(subtotalDocumentos) }}</strong></div>
+      <div><span>Diferencia máx.</span><strong [class.paso8__money-error]="!r.dentroTolerancia">{{ moneda(r.diferenciaFactura) }}</strong></div>
     </section>
 
     <section class="paso8__checklist" *ngIf="diagnosticos.length" aria-label="Resultados de validación">

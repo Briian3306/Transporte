@@ -213,9 +213,11 @@ export const AU_IMPORTE_SIN_IVA = 132940.19;
 
 export const AU_FACTURA: WizardFacturaForm = {
   factura: 'F-AU-0001-00001001',
+  tipo: 'FC',
   cuenta: 'CTA-AU-001',
   empresa_id: 'EMP-AU-DEMO',
   fecha_factura: '2026-07-31',
+  bonificacion: 0,
   importe_sin_iva: AU_IMPORTE_SIN_IVA,
   percepciones: 0,
   iva: 0,

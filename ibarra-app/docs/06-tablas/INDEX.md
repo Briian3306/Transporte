@@ -8,8 +8,8 @@ Documentación de tablas (modelo de datos y/o UI de tablas) por dominio.
 
 | Carpeta | Descripción |
 |---------|-------------|
-| [peajes/](./peajes/INDEX.md) | Esquema Peajes: catálogos, facturas/pasadas, plantillas, RPCs |
+| [peajes/](./peajes/INDEX.md) | Esquema Peajes: catálogos, documentos/pasadas, plantillas; RPCs en `docs/backend/` |
 
 ---
 
-> Última actualización: julio 2026
+> Última actualización: agosto 2026

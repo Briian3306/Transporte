@@ -1,1 +1,72 @@
 /* Layout uses shared .pw__* classes from peajes-wizard */
+
+.paso9__resumen {
+  margin-top: 1.1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--pw-line, #dce5ee);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.paso9__resumen-title {
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+}
+
+.paso9__resumen-block {
+  margin-bottom: 0.85rem;
+}
+
+.paso9__resumen-block:last-child {
+  margin-bottom: 0;
+}
+
+.paso9__resumen-block h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.86rem;
+  color: var(--pw-muted, #6f8197);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.paso9__resumen-block ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.paso9__resumen-block li {
+  margin: 0.25rem 0;
+  font-size: 0.92rem;
+}
+
+.paso9__resumen-block--omitidos {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: #fff9eb;
+  border: 1px solid #f0d48a;
+}
+
+.paso9__resumen-block--ok {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: #eefaf1;
+  border: 1px solid #b7e4c2;
+}
+
+.paso9__resumen-block--error {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: #fff1f0;
+  border: 1px solid #f0b8b4;
+}
+
+.paso9__errores {
+  margin-top: 0.2rem;
+  color: #8a5a00;
+  font-size: 0.85rem;
+}
+
+.paso9__sin-motivo {
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.85rem;
+}

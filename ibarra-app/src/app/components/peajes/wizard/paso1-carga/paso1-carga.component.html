@@ -15,6 +15,37 @@
   </div>
 
   <div class="pw__body">
+    <fieldset class="paso1__modo">
+      <legend>Modo de importación</legend>
+      <label class="paso1__modo-option">
+        <input
+          type="radio"
+          name="modoImportacion"
+          [checked]="modoImportacion === 'simple'"
+          (change)="onModoImportacionChange('simple')"
+        />
+        <span>
+          <strong>Importación simple</strong>
+          <small>Un documento por archivo (flujo actual)</small>
+        </span>
+      </label>
+      <label class="paso1__modo-option">
+        <input
+          type="radio"
+          name="modoImportacion"
+          [checked]="modoImportacion === 'masiva'"
+          (change)="onModoImportacionChange('masiva')"
+        />
+        <span>
+          <strong>Importación masiva</strong>
+          <small>
+            Varios documentos por columna FACTURA. Puede incluir múltiples empresas;
+            la empresa se elige por documento en el paso Documento.
+          </small>
+        </span>
+      </label>
+    </fieldset>
+
     <div class="paso1__layout">
       <label
         class="pw__drop"
@@ -59,13 +90,20 @@
           </div>
           <div class="paso1__template-box">
             <app-search-select
-              label="Empresa"
-              placeholder="Buscar o seleccionar empresa…"
+              [label]="modoImportacion === 'masiva' ? 'Empresa (opcional / default)' : 'Empresa'"
+              [placeholder]="
+                modoImportacion === 'masiva'
+                  ? 'Opcional: default; se puede cambiar por documento…'
+                  : 'Buscar o seleccionar empresa…'
+              "
               [options]="empresaOptions"
               [value]="empresaId || null"
               (valueChange)="onEmpresaChange($event)"
             ></app-search-select>
             <button type="button" class="pw__btn pw__btn--small" (click)="crearEmpresaAbierto = true">+ Crear empresa</button>
+            <p class="paso1__hint" *ngIf="modoImportacion === 'masiva'">
+              En masiva podés dejar la empresa vacía y asignarla por cada FACTURA en el paso Documento.
+            </p>
             <div class="paso1__template-head">
               <div>
                 <strong>Importación con plantilla</strong>

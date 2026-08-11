@@ -334,72 +334,43 @@ columns = [
 
 ---
 
-## Plantilla: SQL (`08-sql`)
+## Plantilla: SQL / RPC (`docs/backend/`)
+
+**No usar `docs/08-sql/`.** Documentar migraciones y RPCs con la skill `backend-documenter` bajo `docs/backend/`. Ver también `backend-supabase-write/plantilla-sql-task.md`.
 
 ```markdown
-# SQL — {Descripción breve}
+# {Título}
 
-## Resumen
+## Summary
 
-Script `{numero}_{descripcion}.sql` que {crea|modifica|elimina} {objeto} en la base de datos para soportar {feature}.
+{Cambio de esquema o RPC y propósito de negocio.}
 
-## Índice
+## Purpose
 
-- [Resumen](#resumen)
-- [Funcionalidad](#funcionalidad)
-- [Objetos afectados](#objetos-afectados)
-- [Script](#script)
-- [Migración](#migración)
-- [Referencias](#referencias)
+{Problema que resuelve.}
 
----
+## Tables / Functions
 
-## Funcionalidad
+| Objeto | Rol |
+|--------|-----|
+| `{tabla_o_rpc}` | {lectura / escritura / validación} |
 
-{Qué cambio de esquema o datos introduce y por qué.}
+## Migration
 
----
+`supabase/migrations/<timestamp>_<name>.sql`
 
-## Objetos afectados
+## Testing
 
-| Objeto | Tipo | Acción |
-|--------|------|--------|
-| `{tabla}` | Tabla | CREATE / ALTER |
+| Tipo | Archivo / comando | Escenario |
+|------|-------------------|-----------|
+| `supabase_db_test` | `supabase/tests/...` | {qué validar} |
 
-### Columnas ({tabla})
+**Estado:** pendiente
 
-| Columna | Tipo | Nullable | Descripción |
-|---------|------|----------|-------------|
-| `{col}` | `{tipo}` | No | {descripción} |
+## Notes
 
----
-
-## Script
-
-Ver archivo: [152_table_condiciones_pago.sql](./152_table_condiciones_pago.sql)
-
-```sql
--- Fragmento relevante o script completo
-```
-
----
-
-## Migración
-
-1. {Paso 1 — backup}
-2. {Paso 2 — ejecutar script}
-3. {Paso 3 — verificación}
-
----
-
-## Referencias
-
-- Feature relacionada: `{ruta en src/app/features/}`
-- PRD: [PRD-OrdenCompraIbarra.md](../PRD-OrdenCompraIbarra.md)
-
----
-
-> Última actualización: {mes año}
+- Código: `supabase/migrations/`
+- Catálogo: [functions/index.md](../functions/index.md)
 ```
 
 ---

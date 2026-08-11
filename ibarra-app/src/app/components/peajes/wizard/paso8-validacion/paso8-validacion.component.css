@@ -3,6 +3,7 @@
 .paso8__summary div:last-child { border-right: 0; }
 .paso8__summary span { display: block; color: var(--pw-muted, #62758a); font-size: .75rem; margin-bottom: .25rem; }
 .paso8__summary strong { font-family: var(--pw-mono, monospace); font-size: .9rem; }
+.paso8__omitidos { margin: 0.35rem 0 0; color: #8a5a00; font-size: 0.86rem; }
 .paso8__money-error { color: var(--pw-red, #bd4b4b); }
 .paso8__checklist { display: grid; gap: .75rem; }
 .paso8__check { display: grid; grid-template-columns: 2.4rem 1fr; gap: .8rem; padding: 1rem; border: 1px solid var(--pw-line, #dce5ee); border-left: 4px solid #a7b5c3; border-radius: 12px; background: #fff; }

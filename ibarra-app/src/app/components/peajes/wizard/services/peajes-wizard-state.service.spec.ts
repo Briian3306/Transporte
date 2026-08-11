@@ -47,6 +47,7 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
       cuenta: 'C-1',
       empresa_id: 'E-1',
       fecha_factura: '2026-01-01',
+      bonificacion: 0,
       importe_sin_iva: 10,
       percepciones: 2,
       iva: 0,

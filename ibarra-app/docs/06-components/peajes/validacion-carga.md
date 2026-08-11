@@ -4,7 +4,11 @@
 
 El Paso 8 valida una carga sin reducir el resultado a «Error al validar». Cada control conserva estado, explicación, acción sugerida y —cuando interviene Supabase— detalles técnicos expandibles.
 
-La regla que habilita avanzar es el contraste entre el **subtotal declarado** de la factura y la suma de `IMPORTE_NETO` de las pasadas: la diferencia absoluta debe ser menor o igual al **1% del subtotal** (`abs(subtotal) * 0.01`).
+La regla que habilita avanzar es el contraste entre el **subtotal declarado** del documento y la suma de `IMPORTE_NETO` de las pasadas, descontando la **bonificación de cabecera** (manual, no viene del Excel): la diferencia absoluta debe ser menor o igual al **1% del subtotal** (`abs(subtotal) * 0.01`).
+
+```text
+abs(Σ IMPORTE_NETO − (importe_sin_iva + bonificacion)) ≤ abs(importe_sin_iva) * 0.01
+```
 
 ## Flujo
 
@@ -24,7 +28,7 @@ El CSV puede traer códigos operativos, como `DISPOSITIVO=94891934`; no son UUID
 
 | Control | Éxito | Bloquea | Paso sugerido |
 |---|---|---|---|
-| Importe de factura | `abs(subtotal - suma_neta) <= abs(subtotal) * 0.01` | Sí | 7 |
+| Importe de factura | `abs(suma_neta − (subtotal + bonificacion)) <= abs(subtotal) * 0.01` | Sí | 7 |
 | Detección de duplicados | No hay claves repetidas en lote ni en base | Sí | 5 |
 | Campos obligatorios | Fecha, pase, patente, estación, precio, bonificación, cantidad e importe neto presentes | Sí | 5 |
 | Estaciones | `ESTACION_ID` es UUID del catálogo | Sí | 6 |
@@ -61,7 +65,7 @@ Fuentes:
 
 | Artefacto | Responsabilidad |
 |---|---|
-| `peajes_validar_factura_pasadas` | Suma el arreglo de netos y devuelve `valido`, `diferencia`, `tolerancia` (1% del subtotal por defecto), `suma_pasadas` y `dentro_tolerancia` |
+| `peajes_validar_factura_pasadas` | Suma el arreglo de netos y lo contrasta con `subtotal + bonificacion`; devuelve `valido`, `diferencia`, `tolerancia` (1% del subtotal por defecto), `suma_pasadas`, `bonificacion`, `esperado` y `dentro_tolerancia` |
 | `peajes_detectar_duplicados` | Detecta la clave de negocio en lote y contra `pasadas` persistidas; requiere UUIDs |
 | `peajes_confirmar_carga` | Inserta factura, pasadas y auditoría solo si el subtotal total cumple la tolerancia |
 
@@ -92,5 +96,6 @@ El test SQL `peajes_f01_test.sql` incluye casos F11 de tolerancia porcentual. La
 
 - [Wizard](./wizard.md)
 - [Auditoría y RPCs](../../06-tablas/peajes/auditoria-y-rpcs.md)
-- [SQL task](../../08-sql/peajes/tolerancia-factura-uno-por-ciento/README.md)
+- Backend / RPC: `docs/backend/` (catálogo y detalle; no `docs/08-sql/`)
+- Migración tolerancia: `supabase/migrations/20260805113339_peajes_tolerancia_factura_uno_por_ciento.sql`
 - [Workflow AUSOL](../../plan/prueba-workflow-557074-ausol.md)

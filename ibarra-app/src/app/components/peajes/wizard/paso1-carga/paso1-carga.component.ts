@@ -12,13 +12,17 @@ import {
   PeajesPlantillasService,
 } from '../../models';
 import { DialogComponent, SearchSelectComponent, SearchSelectOption } from '../../../shared';
+import { COLUMNA_FACTURA_MASIVA, excelTieneColumnaFactura } from '../../models';
 import { MVP_EJEMPLO_NOMBRE_ARCHIVO } from '../fixtures/mvp-ejemplo.fixture';
 import { PeajesExcelService } from '../services/peajes-excel.service';
 import {
   PeajesPlantillaApplyService,
   PlantillaExcepcionPaso,
 } from '../services/peajes-plantilla-apply.service';
-import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+import {
+  ModoImportacion,
+  PeajesWizardStateService,
+} from '../services/peajes-wizard-state.service';
 
 @Component({
   selector: 'app-paso1-carga',
@@ -41,6 +45,7 @@ export class Paso1CargaComponent implements OnInit {
   empresas: Empresa[] = [];
   plantillaId = '';
   empresaId = '';
+  modoImportacion: ModoImportacion = 'simple';
   crearEmpresaAbierto = false;
   nuevaEmpresaNombre = '';
   nuevaEmpresaDescripcion = '';
@@ -58,10 +63,24 @@ export class Paso1CargaComponent implements OnInit {
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.plantillaId = this.state.snapshot().plantillaId ?? '';
-    this.empresaId = this.state.snapshot().empresaId ?? '';
+    const snap = this.state.snapshot();
+    this.plantillaId = snap.plantillaId ?? '';
+    this.empresaId = snap.empresaId ?? '';
+    this.modoImportacion = snap.modoImportacion ?? 'simple';
     this.empresas = await firstValueFrom(this.catalogo.listarEmpresas());
     await this.cargarPlantillas();
+  }
+
+  onModoImportacionChange(modo: ModoImportacion): void {
+    this.modoImportacion = modo;
+    this.state.setModoImportacion(modo);
+    this.error = null;
+    if (modo === 'masiva' && this.meta && !excelTieneColumnaFactura(this.meta.columnas)) {
+      this.error =
+        `La importación masiva requiere la columna exacta «${COLUMNA_FACTURA_MASIVA}» en el Excel. No se puede continuar sin ella.`;
+    } else if (modo === 'masiva' && this.meta) {
+      this.state.rebuildDocumentosDesdeFactura();
+    }
   }
 
   get empresaOptions(): SearchSelectOption[] {
@@ -122,7 +141,9 @@ export class Paso1CargaComponent implements OnInit {
   }
 
   get puedeContinuar(): boolean {
-    return !!this.meta && !!this.empresaId && !this.cargando && !this.aplicandoPlantilla;
+    // Masiva: empresa se asigna por documento en Paso 7 (archivo multi-empresa).
+    const empresaOk = this.modoImportacion === 'masiva' || !!this.empresaId;
+    return !!this.meta && empresaOk && !this.cargando && !this.aplicandoPlantilla;
   }
 
   onFileInput(event: Event): void {
@@ -180,13 +201,27 @@ export class Paso1CargaComponent implements OnInit {
   }
 
   async continuar(): Promise<void> {
-    if (!this.meta || !this.empresaId) {
+    if (!this.meta) {
+      this.error = 'Seleccioná un archivo para continuar.';
+      return;
+    }
+    if (this.modoImportacion !== 'masiva' && !this.empresaId) {
       this.error = 'Seleccioná un archivo y una empresa para continuar.';
+      return;
+    }
+    if (this.modoImportacion === 'masiva' && !excelTieneColumnaFactura(this.meta.columnas)) {
+      this.error =
+        `Importación masiva bloqueada: el archivo no tiene la columna «${COLUMNA_FACTURA_MASIVA}». ` +
+        'Usá importación simple o cargá un Excel con esa columna.';
       return;
     }
     this.error = null;
     this.erroresPlantilla = [];
     this.info = null;
+    this.state.setModoImportacion(this.modoImportacion);
+    if (this.modoImportacion === 'masiva') {
+      this.state.rebuildDocumentosDesdeFactura();
+    }
 
     // Sin plantilla: flujo guiado desde preview (Paso 2).
     if (!this.plantillaId) {

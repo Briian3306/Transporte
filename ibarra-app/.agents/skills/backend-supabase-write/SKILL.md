@@ -4,8 +4,8 @@ description: >-
   Implements Supabase backend changes (RPC, SQL functions, views, triggers,
   policies, RLS, migrations) and Angular services that call Supabase for the
   Peajes / Transporte Ibarra project. Canonical flow: Supabase CLI (testing) ->
-  DESARROLLO (remote). No separate staging/prod in this workflow. Writes
-  reproducible SQL task scripts to docs/08-sql/{task}/. Requires skill supabase
+  DESARROLLO (remote). No separate staging/prod in this workflow. Documents
+  SQL/RPC under docs/backend/ (not docs/08-sql/). Requires skill supabase
   and supabase-postgres-best-practices for SQL. Does not replace
   backend-documenter or backend-tester.
 ---
@@ -41,7 +41,7 @@ Implement backend changes as migrations + SQL task docs:
 
 1. Write `supabase/migrations/`
 2. Validate against **Supabase CLI** (`npx supabase db reset --local --no-seed`, `npx supabase test db`)
-3. Document in `docs/08-sql/{task}/`
+3. Document under `docs/backend/` (RPC catalog + `peajes/` detail; **do not** use `docs/08-sql/`)
 4. Only then consider DESARROLLO (`db push --linked`) with explicit user authorization when needed
 
 After implementation, run:
@@ -71,7 +71,7 @@ You can:
 
 - Create/modify RPC, SQL functions, views, triggers, policies, RLS
 - Create tables when the feature requires it
-- Create migrations; write `docs/08-sql/{task}/`
+- Create migrations; document under `docs/backend/` (via `backend-documenter`)
 - Update Edge Functions under `supabase/functions/`
 - Implement Angular services under `src/app/components/peajes/**/services/*.service.ts` that call Supabase (agent 01 ownership)
 
@@ -103,9 +103,9 @@ npx supabase db push --linked --dry-run
 npx supabase db push --linked
 ```
 
-## SQL documentation
+## SQL / RPC documentation
 
-Every change → `docs/08-sql/{task}/` using [plantilla-sql-task.md](plantilla-sql-task.md).
+Every change → `docs/backend/` (see [plantilla-sql-task.md](plantilla-sql-task.md) and skill `backend-documenter`). **Do not create or update `docs/08-sql/`.**
 
 ## Peajes domain notes
 
@@ -118,7 +118,7 @@ Every change → `docs/08-sql/{task}/` using [plantilla-sql-task.md](plantilla-s
 - [ ] [entornos.md](entornos.md) followed (CLI = testing)
 - [ ] Migration in `supabase/migrations/`
 - [ ] CLI rebuild + tests green
-- [ ] `docs/08-sql/{task}/` written
+- [ ] `docs/backend/` updated (catalog + peajes detail as needed)
 - [ ] No OrdenCompra refs used
 - [ ] No secrets in migrations/docs
 - [ ] Invoke `backend-documenter` then `backend-tester`

@@ -42,3 +42,8 @@ export type {
 export { SearchSelectComponent } from './search-select/search-select.component';
 export type { SearchSelectOption } from './search-select/search-select.types';
 export { DialogComponent } from './dialog/dialog.component';
+export { AccordionComponent } from './accordion/accordion.component';
+export { AccordionPanelComponent } from './accordion/accordion-panel.component';
+export { AccordionHeaderDirective } from './accordion/accordion-header.directive';
+export { AccordionContentDirective } from './accordion/accordion-content.directive';
+export type { AccordionPanelStatus } from './accordion/accordion.types';

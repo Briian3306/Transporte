@@ -181,6 +181,22 @@
         "Genera manifest con rowId, urls, path local, content-type, tamaño, sha256 opcional"
       ],
       "evidence": []
+    },
+    {
+      "id": "TS-XREF-F13-2",
+      "title": "XREF Peajes: importación masiva multi-empresa (ConsumosResumen / FACTURA)",
+      "agent_owner": "script-docs",
+      "depends_on": [],
+      "status": "passing",
+      "verification": [
+        "Tracking canónico en ibarra-app/feature_list.json → F13-2 / F13-3 (no implementación Angular aquí)",
+        "Bitácora peajes: ibarra-app/docs/claude-progress.md",
+        "Guía: ibarra-app/docs/06-components/peajes/importacion-masiva-consumos-resumen.md",
+        "Sample Excel: Tag Nº, Concesion, FACTURA, Estación — scripts/telepeaje plus/202607-2/ConsumosResumen.xlsx"
+      ],
+      "evidence": [
+        "2026-08-07: XREF scripts↔wizard; F13-3 mapeos ConsumosResumen + IVA por documento + estaciones cross-empresa."
+      ]
     }
   ]
 }

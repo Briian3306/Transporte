@@ -124,6 +124,48 @@ describe('peajes/plantillas/motor', () => {
     expect(row['QUANTITY']).toBe(1);
   });
 
+  it('AUSOL: Date UTC midnight + HORA no pierde un día (regresión ART)', () => {
+    const motor = crearMotor();
+    const [row] = motor.aplicarPipeline(
+      [
+        {
+          FECHA: new Date(Date.UTC(2026, 6, 13)), // 2026-07-13T00:00:00Z
+          HORA: '14:13:49',
+          ESTACION: 'CAMPANA DECALADA',
+          DISPOSITIVO: '93423682',
+          PATENTE: 'AH033DL',
+          TARIFA: '3976.59',
+          BONIFICACION: '0.00',
+        },
+      ],
+      buildAusolPlantillaConfigs()
+    );
+    expect(row['FECHA_HORA']).toBe('2026-07-13 14:13:49');
+  });
+
+  it('AUSOL: recupera FECHA ya shiftada a 21:00:00 local', () => {
+    const motor = crearMotor();
+    const [row] = motor.aplicarPipeline(
+      [
+        {
+          FECHA: '2026-07-12 21:00:00',
+          HORA: '14:13:49',
+          ESTACION: 'CAMPANA DECALADA',
+          DISPOSITIVO: '93423682',
+          PATENTE: 'AH033DL',
+          TARIFA: '3976.59',
+          BONIFICACION: '0.00',
+        },
+      ],
+      buildAusolPlantillaConfigs()
+    );
+    // En TZ oeste (ART), 21:00 local = UTC midnight del día siguiente.
+    const offsetMin = new Date(2026, 6, 12, 21, 0, 0).getTimezoneOffset();
+    const expected =
+      offsetMin > 0 ? '2026-07-13 14:13:49' : '2026-07-12 14:13:49';
+    expect(row['FECHA_HORA']).toBe(expected);
+  });
+
   it('COMBINAR_COLUMNAS FECHA+HORA (dd/MM/yyyy) produce ISO para Postgres', () => {
     const motor = crearMotor();
     const [row] = motor.aplicarPipeline(
@@ -142,6 +184,26 @@ describe('peajes/plantillas/motor', () => {
       ]
     );
     expect(row['FECHA_HORA']).toBe('2026-07-13 15:54:17');
+  });
+
+  it('COMBINAR_COLUMNAS FECHA+HORA ISO yyyy-MM-dd (AUSA sin formato_hora)', () => {
+    const motor = crearMotor();
+    const [row] = motor.aplicarPipeline(
+      [{ FECHA: '2026-07-13', HORA: '14:13:49' }],
+      [
+        cfg({
+          nombre_columna: 'FECHA',
+          columna_destino: 'FECHA_HORA',
+          orden: 10,
+          configuracion: {
+            algoritmo_codigo: 'COMBINAR_COLUMNAS',
+            columnas_entrada: ['FECHA', 'HORA'],
+            separador: ' ',
+          },
+        }),
+      ]
+    );
+    expect(row['FECHA_HORA']).toBe('2026-07-13 14:13:49');
   });
 
   it('F09: AUSOL-like — ESTACION_ID solo en mapeos no falla validarDefinicionPlantilla', () => {

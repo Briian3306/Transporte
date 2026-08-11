@@ -1,3 +1,95 @@
+.paso7__masiva {
+  border: 1px solid var(--pw-line, #dce5ee);
+  border-radius: 14px;
+  padding: 0.35rem 1.1rem 0.5rem;
+  background: #fff;
+}
+
+.paso7__pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.65rem 0.15rem 0.85rem;
+  border-bottom: 1px solid #eef2f6;
+  margin-bottom: 0.35rem;
+}
+
+.paso7__pager-label {
+  font-size: 0.78rem;
+  color: var(--pw-muted, #6f8197);
+  font-weight: 600;
+}
+
+.paso7__pager-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.paso7__acc-meta {
+  font-weight: 500;
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.85rem;
+}
+
+.paso7__acc-badge {
+  margin-left: 0.45rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #8a5a00;
+  background: #fff4d6;
+  border: 1px solid #f0d48a;
+}
+
+.paso7__omitido-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #f0d48a;
+  background: #fff9eb;
+  color: #5c4500;
+  font-size: 0.86rem;
+}
+
+.paso7__omitido-banner p {
+  margin: 0;
+  flex: 1 1 14rem;
+}
+
+.paso7__form-card--flat {
+  border: none;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.paso7__money--sm {
+  font-size: 1.35rem;
+}
+
+.paso7__step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.paso7__iva-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
 .paso7__layout {
   display: grid;
   grid-template-columns: 1fr 0.92fr;

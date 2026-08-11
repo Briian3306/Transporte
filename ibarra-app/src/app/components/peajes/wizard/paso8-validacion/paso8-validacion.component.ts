@@ -52,21 +52,89 @@ export class Paso8ValidacionComponent implements OnInit {
       pasadas = await this.resolverReferenciasDeCatalogo(pasadas);
       this.state.setPasadasEstandarizadas(pasadas);
 
-      const factura = this.state.facturaComoPersistible();
-      const campos = this.validarCamposObligatorios(pasadas);
-      const estaciones = this.validarReferencias(pasadas, 'ESTACION_ID', 'Estaciones', 6);
-      const patentes = this.validarReferencias(pasadas, 'PATENTE_ID', 'Patentes', 5);
-      const importe = await this.ejecutarValidacionImporte(pasadas, factura);
-      const duplicados = await this.ejecutarDeteccionDuplicados(pasadas);
+      const docsAll = s.documentos?.length ? s.documentos : [];
+      const docs = this.state.documentosIncluidos(docsAll.length ? docsAll : undefined);
+      // Fallback flujo simple sin grupos: usar factura como único doc incluido.
+      const docsParaImporte =
+        docs.length > 0
+          ? docs
+          : docsAll.length === 0
+            ? [
+                {
+                  ...s.factura,
+                  rowIndexes: [] as number[],
+                  status: 'neutral' as const,
+                  errores: [] as string[],
+                  omitido: false,
+                },
+              ]
+            : [];
 
-      this.diagnosticos = [importe.diagnostico, duplicados.diagnostico, campos, estaciones, patentes];
+      const pasadasIncluidas = this.state.pasadasDeDocumentosIncluidos(pasadas);
+      const pasadasValidacion =
+        s.modoImportacion === 'masiva' ? pasadasIncluidas : pasadas;
+
+      const campos = this.validarCamposObligatorios(pasadasValidacion);
+      const estaciones = this.validarReferencias(pasadasValidacion, 'ESTACION_ID', 'Estaciones', 6);
+      const patentes = this.validarReferencias(pasadasValidacion, 'PATENTE_ID', 'Patentes', 5);
+      const duplicados = await this.ejecutarDeteccionDuplicados(pasadasValidacion);
+
+      const importesPorDoc = [];
+      const erroresImporte = [];
+      const validasAll = [];
+      let dentroTodos = true;
+      let diffMax: number | null = null;
+
+      for (const doc of docsParaImporte) {
+        const subset = this.state.pasadasDeDocumento(doc as never, pasadas);
+        const persistible = this.state.documentoComoPersistible(doc);
+        const importe = await this.ejecutarValidacionImporte(subset, persistible);
+        importesPorDoc.push(importe.diagnostico);
+        erroresImporte.push(
+          ...importe.errores.map((e) => ({
+            ...e,
+            motivo: `[${doc.factura || 'documento'}] ${e.motivo}`,
+          }))
+        );
+        validasAll.push(...importe.validas);
+        if (!importe.dentroTolerancia) {
+          dentroTodos = false;
+        }
+        if (importe.diferenciaFactura != null) {
+          diffMax =
+            diffMax == null
+              ? Math.abs(importe.diferenciaFactura)
+              : Math.max(diffMax, Math.abs(importe.diferenciaFactura));
+        }
+        const idx = s.documentos.findIndex((d) => d.factura === doc.factura);
+        if (idx >= 0) {
+          this.state.patchDocumento(idx, {
+            status: importe.dentroTolerancia && importe.errores.length === 0 ? 'ok' : 'error',
+            errores: importe.errores.map((e) => e.motivo),
+          });
+        }
+      }
+
+      this.diagnosticos = [
+        ...importesPorDoc,
+        duplicados.diagnostico,
+        campos,
+        estaciones,
+        patentes,
+      ];
       this.duplicados = duplicados.errores;
-      const errores = [...importe.errores, ...duplicados.errores, ...(campos.errores ?? []), ...(estaciones.errores ?? []), ...(patentes.errores ?? [])];
+      const errores = [
+        ...erroresImporte,
+        ...duplicados.errores,
+        ...(campos.errores ?? []),
+        ...(estaciones.errores ?? []),
+        ...(patentes.errores ?? []),
+      ];
       this.resultado = {
-        validas: importe.validas,
+        validas: validasAll,
         errores: this.deduplicarErrores(errores),
-        diferenciaFactura: importe.diferenciaFactura,
-        dentroTolerancia: importe.dentroTolerancia,
+        diferenciaFactura: diffMax,
+        dentroTolerancia: dentroTodos,
       };
       this.state.setValidacion(this.resultado);
     } catch (e) {
@@ -74,6 +142,10 @@ export class Paso8ValidacionComponent implements OnInit {
     } finally {
       this.cargando = false;
     }
+  }
+
+  get documentosOmitidosCount(): number {
+    return this.state.documentosOmitidos().length;
   }
 
   get puedeContinuar(): boolean {
@@ -84,11 +156,36 @@ export class Paso8ValidacionComponent implements OnInit {
   }
 
   get sumaNetos(): number {
-    const pasadas = this.state.snapshot().pasadasEstandarizadas;
+    const s = this.state.snapshot();
+    const pasadas =
+      s.modoImportacion === 'masiva'
+        ? this.state.pasadasDeDocumentosIncluidos(s.pasadasEstandarizadas)
+        : s.pasadasEstandarizadas;
     return pasadas.reduce((centavos, p) => {
       const importe = Number(p.IMPORTE_NETO ?? 0);
       return centavos + (Number.isFinite(importe) ? Math.round(importe * 100) : 0);
     }, 0) / 100;
+  }
+
+  /** Suma de subtotales de documentos incluidos (masiva) o el de `factura` (simple). */
+  get subtotalDocumentos(): number | null {
+    const s = this.state.snapshot();
+    if (s.modoImportacion === 'masiva') {
+      const docs = this.state.documentosIncluidos(s.documentos);
+      const sum = docs.reduce((acc, d) => {
+        const v = Number(d.importe_sin_iva);
+        return acc + (Number.isFinite(v) ? v : 0);
+      }, 0);
+      return docs.length ? sum : null;
+    }
+    const v = Number(s.factura?.importe_sin_iva);
+    return Number.isFinite(v) ? v : null;
+  }
+
+  get etiquetaSubtotal(): string {
+    return this.state.snapshot().modoImportacion === 'masiva'
+      ? 'Subtotal documentos'
+      : 'Subtotal documento';
   }
 
   continuar(): void {
@@ -100,26 +197,52 @@ export class Paso8ValidacionComponent implements OnInit {
 
   private async ejecutarValidacionImporte(
     pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>,
-    factura: ReturnType<PeajesWizardStateService['facturaComoPersistible']>
+    documento: ReturnType<PeajesWizardStateService['documentoComoPersistible']>
   ): Promise<ResultadoDiagnosticoImporte> {
     try {
-      const resultado = await firstValueFrom(this.carga.validarCarga(pasadas, factura));
+      const resultado = await firstValueFrom(this.carga.validarCarga(pasadas, documento));
       const falla = !resultado.dentroTolerancia;
+      const label = documento.factura ? `Documento ${documento.factura}` : 'Documento';
       return {
         ...resultado,
         diagnostico: {
-          id: 'importe', titulo: 'Importe de factura', estado: falla ? 'error' : 'ok', paso: 7,
+          id: `importe-${documento.factura || 'doc'}`,
+          titulo: `Importe · ${label}`,
+          estado: falla ? 'error' : 'ok',
+          paso: 7,
           detalle: falla
-            ? `El subtotal esperado es ${this.moneda(factura.importe_sin_iva)} y las pasadas suman ${this.moneda(this.sumarNetos(pasadas))}. Diferencia: ${this.moneda(resultado.diferenciaFactura ?? 0)} (tolerancia 1% = ${this.moneda(Math.abs(Number(factura.importe_sin_iva)) * 0.01)}).`
-            : `El subtotal de la factura coincide con las pasadas dentro de la tolerancia del 1% (${this.moneda(Math.abs(Number(factura.importe_sin_iva)) * 0.01)}).`,
-          accion: falla ? 'Volvé a Factura y verificá el subtotal; después revisá que el mapeo haya generado importes válidos.' : 'No requiere acción.',
-          tecnico: { rpc: 'peajes_validar_factura_pasadas', request: { p_importe_sin_iva: factura.importe_sin_iva, registros: pasadas.length }, response: resultado },
+            ? `Se espera Σ pasadas − bonificación ≈ subtotal. Subtotal ${this.moneda(documento.importe_sin_iva)}, bonificación ${this.moneda(documento.bonificacion ?? 0)}, pasadas ${this.moneda(this.sumarNetos(pasadas))}. Diferencia: ${this.moneda(resultado.diferenciaFactura ?? 0)} (tolerancia 1% = ${this.moneda(Math.abs(Number(documento.importe_sin_iva)) * 0.01)}).`
+            : `Σ pasadas − bonificación concilia con el subtotal dentro de la tolerancia del 1% (${this.moneda(Math.abs(Number(documento.importe_sin_iva)) * 0.01)}).`,
+          accion: falla
+            ? 'Volvé a Documentos y verificá subtotal y bonificación; después revisá que el mapeo haya generado importes válidos.'
+            : 'No requiere acción.',
+          tecnico: {
+            rpc: 'peajes_validar_factura_pasadas',
+            request: {
+              p_importe_sin_iva: documento.importe_sin_iva,
+              p_bonificacion: documento.bonificacion ?? 0,
+              registros: pasadas.length,
+              tipo: documento.tipo,
+            },
+            response: resultado,
+          },
         },
       };
     } catch (e) {
       return {
-        validas: [], errores: [], diferenciaFactura: null, dentroTolerancia: false,
-        diagnostico: this.diagnosticoError('importe', 'Importe de factura', 7, 'No se pudo contrastar el subtotal de la factura con las pasadas.', 'Verificá los importes y reintentá la validación.', 'peajes_validar_factura_pasadas', e),
+        validas: [],
+        errores: [],
+        diferenciaFactura: null,
+        dentroTolerancia: false,
+        diagnostico: this.diagnosticoError(
+          'importe',
+          'Importe de documento',
+          7,
+          'No se pudo contrastar el subtotal del documento con las pasadas.',
+          'Verificá los importes y reintentá la validación.',
+          'peajes_validar_factura_pasadas',
+          e
+        ),
       };
     }
   }

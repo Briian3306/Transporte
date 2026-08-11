@@ -45,9 +45,13 @@ docs/
 │   └── peajes.md
 ├── 06-components/peajes/
 ├── 06-tablas/peajes/
-├── 08-sql/{task}/
-└── backend/supabase/     # si existe workflow local
+└── backend/              # RPCs, Edge, workflow/testing Supabase (canónico)
+    ├── functions/
+    ├── peajes/
+    └── supabase/
 ```
+
+**No usar `docs/08-sql/`** para Peajes. La fuente SQL es `supabase/migrations/`; la documentación de funciones y lógica backend vive en `docs/backend/`.
 
 Para Peajes, el agente 04 documenta tras features `passing`. No inventar comportamiento no implementado.
 
@@ -102,7 +106,7 @@ Actualizar solo lo necesario según el tipo de cambio:
 | Cambia un componente shared | Su guía, el índice de su carpeta y los módulos que lo usan |
 | Cambia un módulo de negocio | Su documento, el índice del módulo y la arquitectura si afecta flujos |
 | Cambia una tabla o servicio reusable | Su guía y las referencias de los módulos consumidores |
-| Cambia un SQL | Su documento SQL y el documento del módulo afectado |
+| Cambia un SQL / RPC | `docs/backend/` (functions + peajes) y el módulo/tablas afectados |
 
 No reescribir documentación vecina si el comportamiento no cambió.
 

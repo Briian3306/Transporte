@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { PeajesExcelService } from './peajes-excel.service';
 import { parseNumeroArs } from '../../plantillas/motor/strategies/estrategias-atomicas';
+import { formatLocalDateTime, normalizarCeldaExcel } from './peajes-fecha.util';
 
 describe('PeajesExcelService CSV AR', () => {
   let service: PeajesExcelService;
@@ -30,5 +31,34 @@ describe('PeajesExcelService CSV AR', () => {
   it('splitCsvLine respeta comillas y delimitador ;', () => {
     expect(service.splitCsvLine('a;"b;c";d', ';')).toEqual(['a', 'b;c', 'd']);
     expect(service.splitCsvLine('19.985,09;x', ';')).toEqual(['19.985,09', 'x']);
+  });
+});
+
+describe('normalizarCeldaExcel Fecha datetime (F13-RN16-FECHA)', () => {
+  it('preserva HH:mm:ss (no colapsa a medianoche) — caso ZARATE 07/24', () => {
+    const fechas = [
+      new Date(2026, 6, 24, 13, 37, 24),
+      new Date(2026, 6, 24, 14, 8, 28),
+      new Date(2026, 6, 24, 23, 26, 45),
+      new Date(2026, 6, 24, 23, 54, 2),
+    ];
+    const normalizadas = fechas.map((d) => normalizarCeldaExcel(d));
+    expect(normalizadas[0]).toBe(formatLocalDateTime(fechas[0]));
+    expect(normalizadas).toEqual([
+      '2026-07-24 13:37:24',
+      '2026-07-24 14:08:28',
+      '2026-07-24 23:26:45',
+      '2026-07-24 23:54:02',
+    ]);
+    expect(new Set(normalizadas).size).toBe(4);
+    for (const f of normalizadas) {
+      expect(String(f)).not.toMatch(/00:00:00$/);
+    }
+  });
+
+  it('deja texto y números sin convertir', () => {
+    expect(normalizarCeldaExcel('07/24/2026 13:37:24')).toBe('07/24/2026 13:37:24');
+    expect(normalizarCeldaExcel(19.985)).toBe(19.985);
+    expect(normalizarCeldaExcel(null)).toBeNull();
   });
 });

@@ -47,6 +47,7 @@ const ROUTE_PERMISSIONS: { [key: string]: { module: string; action: string } } =
   '/peajes/catalogos/pases': { module: 'peajes', action: 'read' },
   '/peajes/plantillas': { module: 'peajes', action: 'read' },
   '/peajes/pasadas': { module: 'peajes', action: 'read' },
+  '/peajes/pasadas-pendientes': { module: 'peajes', action: 'read' },
   
   // Usuarios y Roles
   '/users': { module: 'users', action: 'read' },

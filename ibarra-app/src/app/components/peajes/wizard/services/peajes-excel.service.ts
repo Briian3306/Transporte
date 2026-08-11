@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import * as XLSX from 'xlsx';
 import { ExcelCargaPreview } from '../../models';
+import { normalizarCeldaExcel } from './peajes-fecha.util';
 
 const PREVIEW_MAX_ROWS = 10;
 
@@ -34,7 +35,7 @@ export class PeajesExcelService {
     }
 
     const sheet = workbook.Sheets[sheetName];
-    // raw:true conserva Date de cellDates (en el read); normalizarCelda → yyyy-MM-dd.
+    // raw:true conserva Date de cellDates; normalizarCelda → yyyy-MM-dd HH:mm:ss.
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
       defval: null,
       raw: true,
@@ -154,18 +155,12 @@ export class PeajesExcelService {
   }
 
   /**
-   * Normaliza celdas Excel para el motor: Date → yyyy-MM-dd (ISO, sin ambigüedad
-   * DD/MM vs MM/DD ante Postgres). Deja texto/números; evita Date.toString().
+   * Normaliza celdas Excel para el motor: Date → yyyy-MM-dd HH:mm:ss (ISO local,
+   * preserva hora para FECHA_HORA / RN-16; sin ambigüedad DD/MM vs MM/DD).
+   * Deja texto/números; evita Date.toString().
    */
   private normalizarCelda(value: unknown): unknown {
-    if (value == null || value === '') return value ?? null;
-    if (value instanceof Date && !Number.isNaN(value.getTime())) {
-      const yyyy = value.getFullYear();
-      const mm = String(value.getMonth() + 1).padStart(2, '0');
-      const dd = String(value.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    }
-    return value;
+    return normalizarCeldaExcel(value);
   }
 
   private detectarDelimitador(texto: string): string {

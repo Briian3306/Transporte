@@ -2,9 +2,13 @@
 
 ## Resumen
 
-En el wizard, tras elegir **empresa** en Paso 1, el Paso 6 solo ofrece estaciones de los **peajes de esa empresa**. Usa `reconocerEstacion` del catálogo para auto-seleccionar coincidencias exactas y recomendar alta cuando no hay match.
+En el wizard **simple**, tras elegir **empresa** en Paso 1, el Paso 6 solo ofrece estaciones de los **peajes de esa empresa**. Usa `reconocerEstacion` del catálogo para auto-seleccionar coincidencias exactas y recomendar alta cuando no hay match.
+
+Con columna Excel **`Concesion`** (RN-26): ese valor representa el **peaje**. Paso 5 recomienda el peaje; Paso 6 filtra estaciones a ese peaje/empresa. El usuario puede corregir peaje o estación. No se listan estaciones de peajes/empresas ajenos por defecto. Ver [importacion-masiva-consumos-resumen.md](./importacion-masiva-consumos-resumen.md) y [wizard.md](./wizard.md).
 
 ## Flujo
+
+### Simple (una empresa, sin Concesion)
 
 1. `listarPeajes(empresaId)` → ids de peaje.
 2. `listarEstaciones()` filtradas por `peaje_id` ∈ peajes de la empresa.
@@ -13,6 +17,17 @@ En el wizard, tras elegir **empresa** en Paso 1, el Paso 6 solo ofrece estacione
    - `exacta` → auto-selecciona **Estación interna**
    - `sugerencias` → chips; «Ninguna coincide» habilita crear
    - `sin_coincidencia` → banner **Recomendado: crear estación**
+
+### Con Concesion (RN-26 · ConsumosResumen)
+
+```text
+COMPANY → Concesion (Excel) → PEAJE recomendado → ESTACIONES de ese peaje
+```
+
+1. Paso 5 detecta `Concesion` y recomienda peajes del catálogo.
+2. Paso 6: por cada código `Estación`, toma la Concesión dominante de esas filas → `peajeIdAlcance`.
+3. Selector y chips: **solo** estaciones con `peaje_id = peajeIdAlcance`.
+4. El usuario puede cambiar el peaje de la fila (entonces se refresca el listado de estaciones).
 
 ## Alta mínima
 
@@ -62,8 +77,8 @@ Si el archivo es compatible y no hay estaciones ambiguas/nuevas ni patentes fuer
 
 ## Feature
 
-**F02-13** (passing) · **F02-15** (fix VIA exclusion) · ver `feature_list.json` y [wizard.md](./wizard.md).
+**F02-13** (passing) · **F02-15** (fix VIA exclusion) · **F13-4** (RN-26 Concesion→Peaje→Estaciones) · ver `feature_list.json` y [wizard.md](./wizard.md).
 
 ---
 
-> Última actualización: 2026-08-04
+> Última actualización: 2026-08-07

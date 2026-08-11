@@ -38,8 +38,8 @@
 | 2 | Preview | `paso2-preview` | Máx. 10 filas (RNF-03). Rail de recomendaciones semánticas (F02-11). Por defecto solo columnas reconocidas quedan incluidas (F02-12): ver [reconocimiento-columnas.md](./reconocimiento-columnas.md) |
 | 3 | Transformaciones | `paso3-transformaciones` | Motor 03 |
 | 4 | Plantilla | `paso4-plantilla` | Aplica pipeline + `mapeos` + estaciones (F09). Sin excepciones → `facturaDirecta` Paso 7; si no, `irAExcepcion` 5 o 6 |
-| 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal. Patentes sin catálogo: [patentes-sin-resolver.md](./patentes-sin-resolver.md) (F02-14) |
-| 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación vía `app-search-select`; alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13) |
+| 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal. Detecta `Concesion`→Peaje (RN-26). Patentes: [patentes-sin-resolver.md](./patentes-sin-resolver.md) (F02-14) |
+| 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación filtrada por peaje de `Concesion`/empresa (RN-26); alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13) |
 | 7 | Factura | `paso7-factura` | Cuenta opcional; subtotal, percepciones, IVA y total declarados; empresa SMS single (Paso 1); fecha DRP single. Recomienda crear plantilla completa (pipeline+mapeos+estaciones) |
 | 8 | Validación | `paso8-validacion` | Errores fila/columna/valor/motivo y diferencia neto de factura vs. pasadas |
 | 9 | Revisión | `paso9-revision` | Confirmación de carga |
@@ -126,9 +126,30 @@ ng test --watch=false --browsers=ChromeHeadless
 
 El Paso 6 normaliza el valor del proveedor y prioriza alias confirmado, nombre exacto y sugerencias parciales dentro de la empresa. Las sugerencias requieren confirmación; solo después de declarar que ninguna coincide se habilita crear una estación. Caso reproducible: [AUSOL 557074](../../plan/prueba-workflow-557074-ausol.md).
 
-- PRD §4 (pasos), §21 (caso E2E — pendiente Agente 05)
+### Company → Concesion → Peaje → Estaciones (RN-26 / RF-17)
+
+Para formatos con columna Excel `Concesion` (ConsumosResumen / Telepase Plus):
+
+```text
+COMPANY (Paso 1 / documento)
+   ↓
+Concesion (Excel)  →  PEAJE del catálogo
+   ↓
+ESTACIONES solo de ese Peaje
+```
+
+| Paso | Comportamiento |
+|------|----------------|
+| **5** | Detecta `Concesion` (metadata). Reconoce peajes con el mismo algoritmo que estaciones (exacta / sugerencias / sin_coincidencia). Panel estilo «patentes sin resolver»: chips de sugerencia + **Agregar peaje** (dialog con empresa). |
+| **6** | Filtra estaciones por peaje de Concesión. En **masiva** no muestra la tarjeta «Peaje relacionado» (muchas filas); en simple (≤12) la muestra **arriba** de la tabla. |
+
+No se muestran estaciones de peajes/empresas ajenos en el alcance por defecto. Relaciones: tablas `empresas` → `peajes` → `estaciones` (sin listas hardcodeadas).
+
+Guía operativa: [importacion-masiva-consumos-resumen.md](./importacion-masiva-consumos-resumen.md) · [reconocimiento-estaciones.md](./reconocimiento-estaciones.md).
+
+- PRD §4 (pasos), RN-26, RF-16/RF-17, §21 (caso E2E — pendiente Agente 05)
 - Código: `src/app/components/peajes/wizard/**`
 
 ---
 
-> Última actualización: julio 2026
+> Última actualización: 2026-08-07

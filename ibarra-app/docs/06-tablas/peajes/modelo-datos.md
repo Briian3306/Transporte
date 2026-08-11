@@ -2,7 +2,7 @@
 
 ## Resumen
 
-El dominio Peajes persiste catálogos, facturas/pasadas, plantillas de transformación, algoritmos combinados y registros de auditoría de carga. Es un dominio aislado: **no** reutiliza `checklist_templates` ni tablas de Checklists.
+El dominio Peajes persiste catálogos, **documentos**/pasadas, plantillas de transformación, algoritmos combinados y registros de auditoría de carga. Es un dominio aislado: **no** reutiliza `checklist_templates` ni tablas de Checklists.
 
 ## Índice
 
@@ -20,12 +20,12 @@ El dominio Peajes persiste catálogos, facturas/pasadas, plantillas de transform
 ```text
 peajes 1──* estaciones
 patentes 1──* pases
-estaciones ←── pasadas ──→ pases, patentes, facturas
+estaciones ←── pasadas ──→ pases, patentes, documentos
 plantillas_configuracion 1──* configuraciones_plantilla
 algoritmos_combinados 1──* algoritmo_combinado_pasos
 configuraciones_plantilla.algoritmo_combinado_id → algoritmos_combinados (nullable)
 peajes_algoritmos_catalogo ←── algoritmo_combinado_pasos.algoritmo_codigo
-facturas ←── registros_carga_peajes
+documentos ←── registros_carga_peajes
 ```
 
 Regla clave (PRD §12 / RN-05): la **pasada referencia `estacion_id`**; el peaje se deriva vía estación (`pasadas_con_peaje`). No existe `peaje_id` en `pasadas`.
@@ -39,7 +39,8 @@ Regla clave (PRD §12 / RN-05): la **pasada referencia `estacion_id`**; el peaje
 | Pasada → estación (no peaje directo) | Columna `pasadas.estacion_id` + vista `pasadas_con_peaje` |
 | Anti-duplicados (RN-16) | `UNIQUE (pase_id, fecha_hora, estacion_id, patente_id)` + RPC `peajes_detectar_duplicados` |
 | Importe neto = precio − bonificación | CHECK en tabla + RPC `peajes_calcular_importe_neto` |
-| Tolerancia factura (RN-13/17) | `peajes_validar_factura_pasadas`: default `abs(subtotal) * 0.01` |
+| Tolerancia documento (RN-13/17) | `peajes_validar_factura_pasadas`: default `abs(subtotal) * 0.01` |
+| Documento FC\|NC (F13) | Tabla `documentos.tipo`; FK `pasadas.documento_id` |
 | Tolerancia fila (RN-11) | `peajes_tolerancia_importe()` = `0.01` |
 | Recurso global plantillas/algoritmos | `empresa_id text` admite `'__global__'` |
 | Algoritmos: solo códigos de catálogo (RN-20) | FK a `peajes_algoritmos_catalogo`; motor TS usa `StrategyRegistry` |
@@ -81,11 +82,12 @@ Constante global: `PEAJES_GLOBAL_EMPRESA_ID === '__global__'` (alineada a `GLOBA
 
 La estación mantiene `latitud`, `longitud`, `camino` y `estado_geocodificacion`; los aliases proveedor-estación se modelan en una tabla relacional con alcance de empresa, no solo como texto libre.
 
-- Detalle tablas: [catalogos.md](./catalogos.md), [facturas-pasadas.md](./facturas-pasadas.md), [plantillas-algoritmos.md](./plantillas-algoritmos.md), [auditoria-y-rpcs.md](./auditoria-y-rpcs.md)
-- Migraciones: `supabase/migrations/20260730*_peajes_*.sql`
+- Detalle tablas: [catalogos.md](./catalogos.md), [documentos-pasadas.md](./documentos-pasadas.md), [plantillas-algoritmos.md](./plantillas-algoritmos.md), [auditoria-y-rpcs.md](./auditoria-y-rpcs.md)
+- Backend RPCs: [docs/backend/](../../backend/index.md)
+- Migraciones: `supabase/migrations/*peajes*.sql`
 - Módulo: [docs/modulos/peajes.md](../../modulos/peajes.md)
 - PRD: [docs/plan/peaje-prd-es.md](../../plan/peaje-prd-es.md) (§11–15)
 
 ---
 
-> Última actualización: julio 2026
+> Última actualización: agosto 2026

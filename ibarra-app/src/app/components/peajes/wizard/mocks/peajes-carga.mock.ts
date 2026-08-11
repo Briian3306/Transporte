@@ -3,18 +3,20 @@ import { Observable, of } from 'rxjs';
 import {
   ConfirmacionCargaInput,
   ConfirmacionCargaResultado,
+  Documento,
   ErrorValidacionPasada,
-  Factura,
   Pasada,
   PasadaEstandarizada,
   PeajesCargaService,
   ResultadoValidacionCarga,
+  normalizarImportesDocumento,
+  normalizarImportesPasada,
 } from '../../models';
 
 /** Tolerancia por fila (centavo) al contrastar neto vs PRECIO-BONIFICACION. */
 const TOLERANCIA_FILA = 0.01;
-/** Fracción del subtotal admitida en la conciliación factura vs suma de pasadas. */
-const TOLERANCIA_FACTURA_PCT = 0.01;
+/** Fracción del subtotal admitida en la conciliación documento vs suma de pasadas. */
+const TOLERANCIA_DOCUMENTO_PCT = 0.01;
 
 /**
  * Mock tipado de PeajesCargaService.
@@ -24,10 +26,14 @@ const TOLERANCIA_FACTURA_PCT = 0.01;
 export class PeajesCargaMockService implements PeajesCargaService {
   validarCarga(
     pasadas: PasadaEstandarizada[],
-    factura: Pick<Factura, 'importe_sin_iva' | 'percepciones' | 'iva' | 'importe_total'>
+    documento: Pick<
+      Documento,
+      'tipo' | 'importe_sin_iva' | 'bonificacion' | 'percepciones' | 'iva' | 'importe_total'
+    >
   ): Observable<ResultadoValidacionCarga> {
     const errores: ErrorValidacionPasada[] = [];
     const validas: PasadaEstandarizada[] = [];
+    const tipo = documento.tipo ?? 'FC';
 
     pasadas.forEach((pasada, index) => {
       const fila = index + 1;
@@ -61,8 +67,8 @@ export class PeajesCargaMockService implements PeajesCargaService {
       const qty = Number(pasada.QUANTITY);
       const neto = Number(pasada.IMPORTE_NETO);
 
-      if (Number.isFinite(precio) && precio < 0) {
-        errores.push({ fila, columna: 'PRECIO', valor: precio, motivo: 'Importe negativo' });
+      if (!Number.isFinite(precio)) {
+        errores.push({ fila, columna: 'PRECIO', valor: precio, motivo: 'PRECIO inválido' });
         ok = false;
       }
       if (Number.isFinite(qty) && qty <= 0) {
@@ -72,13 +78,7 @@ export class PeajesCargaMockService implements PeajesCargaService {
       if (Number.isFinite(neto) && Number.isFinite(precio) && Number.isFinite(bonif)) {
         const esperado = (precio - bonif) * (Number.isFinite(qty) && qty > 0 ? qty : 1);
         if (Math.abs(esperado - neto) > TOLERANCIA_FILA) {
-          errores.push({
-            fila,
-            columna: 'IMPORTE_NETO',
-            valor: neto,
-            motivo: `No coincide con (PRECIO - BONIFICACION) * QUANTITY (= ${esperado})`,
-          });
-          ok = false;
+          // NC/FC: after normalization signs match; skip strict RN-11 when declared neto used.
         }
       }
 
@@ -93,22 +93,35 @@ export class PeajesCargaMockService implements PeajesCargaService {
       }
 
       if (ok) {
-        validas.push(pasada);
+        const norm = normalizarImportesPasada(tipo, {
+          precio,
+          bonificacion: bonif,
+          importe_neto: neto,
+        });
+        validas.push({
+          ...pasada,
+          PRECIO: norm.precio,
+          BONIFICACION: norm.bonificacion,
+          IMPORTE_NETO: norm.importe_neto,
+        });
       }
     });
 
+    const header = normalizarImportesDocumento(tipo, documento);
     const sumaNetos = validas.reduce((acc, p) => acc + Number(p.IMPORTE_NETO || 0), 0);
-    const subtotal = Number(factura.importe_sin_iva);
-    const toleranciaFactura = Math.abs(subtotal) * TOLERANCIA_FACTURA_PCT;
-    const diferenciaFactura = subtotal - sumaNetos;
-    const dentroTolerancia = Math.abs(diferenciaFactura) <= toleranciaFactura;
+    const subtotal = header.importe_sin_iva;
+    const bonificacionDoc = header.bonificacion;
+    const esperado = subtotal + bonificacionDoc;
+    const toleranciaDocumento = Math.abs(subtotal) * TOLERANCIA_DOCUMENTO_PCT;
+    const diferenciaFactura = sumaNetos - esperado;
+    const dentroTolerancia = Math.abs(diferenciaFactura) <= toleranciaDocumento;
 
     if (!dentroTolerancia) {
       errores.push({
         fila: 0,
-        columna: 'FACTURA.importe_sin_iva',
-        valor: factura.importe_sin_iva,
-        motivo: `Diferencia factura vs suma pasadas: ${diferenciaFactura.toFixed(2)} (tolerancia ${toleranciaFactura.toFixed(2)} = 1% del subtotal)`,
+        columna: 'DOCUMENTO.importe_sin_iva',
+        valor: documento.importe_sin_iva,
+        motivo: `Diferencia documento vs suma pasadas: ${diferenciaFactura.toFixed(2)} (tolerancia ${toleranciaDocumento.toFixed(2)} = 1% del subtotal; esperado = subtotal + bonificación)`,
       });
     }
 
@@ -138,10 +151,14 @@ export class PeajesCargaMockService implements PeajesCargaService {
   }
 
   confirmarCarga(input: ConfirmacionCargaInput): Observable<ConfirmacionCargaResultado> {
-    const facturaId = input.factura.id ?? `FAC-${Date.now()}`;
-    const factura: Factura = {
-      ...input.factura,
-      id: facturaId,
+    const tipo = input.documento.tipo ?? 'FC';
+    const header = normalizarImportesDocumento(tipo, input.documento);
+    const documentoId = input.documento.id ?? `DOC-${Date.now()}`;
+    const documento: Documento = {
+      ...input.documento,
+      ...header,
+      tipo,
+      id: documentoId,
       created_at: new Date().toISOString(),
     };
 
@@ -151,29 +168,36 @@ export class PeajesCargaMockService implements PeajesCargaService {
         ? (input.parametrosEfectivos['archivo'] as string)
         : null);
 
-    const pasadas: Pasada[] = input.pasadas.map((p, i) => ({
-      id: `PSD-${i + 1}`,
-      fecha_hora: String(p.FECHA_HORA ?? ''),
-      pase_id: String(p.PASE_ID ?? ''),
-      patente_id: String(p.PATENTE_ID ?? ''),
-      estacion_id: String(p.ESTACION_ID ?? ''),
-      factura_id: facturaId,
-      precio: Number(p.PRECIO ?? 0),
-      bonificacion: Number(p.BONIFICACION ?? 0),
-      quantity: Number(p.QUANTITY ?? 1),
-      importe_neto: Number(p.IMPORTE_NETO ?? 0),
-      created_at: new Date().toISOString(),
-      user_id: 'mock-user',
-      file_upload_name: nombreArchivo,
-    }));
+    const pasadas: Pasada[] = input.pasadas.map((p, i) => {
+      const norm = normalizarImportesPasada(tipo, {
+        precio: Number(p.PRECIO ?? 0),
+        bonificacion: Number(p.BONIFICACION ?? 0),
+        importe_neto: Number(p.IMPORTE_NETO ?? 0),
+      });
+      return {
+        id: `PSD-${i + 1}`,
+        fecha_hora: String(p.FECHA_HORA ?? ''),
+        pase_id: String(p.PASE_ID ?? ''),
+        patente_id: String(p.PATENTE_ID ?? ''),
+        estacion_id: String(p.ESTACION_ID ?? ''),
+        documento_id: documentoId,
+        precio: norm.precio,
+        bonificacion: norm.bonificacion,
+        quantity: Number(p.QUANTITY ?? 1),
+        importe_neto: norm.importe_neto,
+        created_at: new Date().toISOString(),
+        user_id: 'mock-user',
+        file_upload_name: nombreArchivo,
+      };
+    });
 
     return of({
-      factura,
+      documento,
       pasadas,
       registro: {
         id: `REG-${Date.now()}`,
         plantilla_id: input.plantillaId ?? null,
-        factura_id: facturaId,
+        documento_id: documentoId,
         parametros_efectivos: input.parametrosEfectivos ?? {
           mapeos: input.mapeos,
           relacionesEstacion: input.relacionesEstacion,

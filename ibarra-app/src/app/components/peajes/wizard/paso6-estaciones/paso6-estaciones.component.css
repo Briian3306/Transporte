@@ -1,7 +1,10 @@
+/* Workbench mapping: table first, context secondary. Dense loads drop the peaje card. */
+
 .paso6__layout {
   display: grid;
-  grid-template-columns: 0.78fr 1.22fr;
-  gap: 1.25rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  min-width: 0;
 }
 
 .paso6__catalog,
@@ -10,6 +13,33 @@
   border-radius: 14px;
   padding: 1.15rem;
   background: #fbfcfe;
+  min-width: 0;
+}
+
+.paso6__catalog--top {
+  margin: 0 0 0.85rem;
+  padding: 0.75rem 1rem;
+  border-style: dashed;
+  background: linear-gradient(120deg, #eef5ff 0%, #fbfcfe 55%);
+}
+
+.paso6__catalog-top-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.65rem 1.1rem;
+  align-items: start;
+}
+
+.paso6__value--inline {
+  margin-bottom: 0;
+  font-size: 1.02rem;
+}
+
+.paso6__value--sm {
+  margin-bottom: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  word-break: break-all;
 }
 
 .paso6__catalog h3 {
@@ -38,32 +68,185 @@
 
 .paso6__hero {
   display: flex;
-  gap: 0.9rem;
+  gap: 0.85rem;
   align-items: center;
-  padding: 1rem;
+  padding: 0.95rem 1rem;
   border-radius: 12px;
   background: #eef8f6;
   color: #12665e;
-  margin-bottom: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.paso6__hero--compact {
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.7rem;
 }
 
 .paso6__link-icon {
-  width: 2.3rem;
-  height: 2.3rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: #ccebe5;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .paso6__hero strong {
   display: block;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.15rem;
 }
 
 .paso6__hero span {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.paso6__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.paso6__search {
+  position: relative;
+  flex: 1 1 14rem;
+  min-width: 12rem;
+  max-width: 28rem;
+}
+
+.paso6__search i {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.paso6__search .pw__input {
+  padding-left: 2rem;
+  width: 100%;
+}
+
+.paso6__pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--pw-muted, #6f8197);
+  font-weight: 600;
+}
+
+.paso6__compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.paso6__compact-id {
+  font-weight: 700;
+  color: var(--pw-blue-dark, #0d4da9);
+}
+
+.paso6__compact-name {
+  font-weight: 600;
+  color: #30445d;
+}
+
+.paso6__table-shell {
+  min-width: 0;
+}
+
+.paso6__table-wrap {
+  max-height: min(62vh, 34rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  background:
+    linear-gradient(#fff 30%, rgb(255 255 255 / 0)) center top,
+    linear-gradient(rgb(255 255 255 / 0), #fff 70%) center bottom,
+    linear-gradient(90deg, rgb(15 35 55 / 0.08), transparent 40%) left center,
+    linear-gradient(270deg, rgb(15 35 55 / 0.1), transparent 45%) right center;
+  background-repeat: no-repeat;
+  background-size: 100% 18px, 100% 18px, 18px 100%, 22px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+.paso6__scroll-hint {
+  margin-top: 0.4rem;
+  font-size: 0.68rem;
+  color: var(--pw-muted, #6f8197);
+  letter-spacing: 0.02em;
+}
+
+.paso6__table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 46rem;
+  white-space: normal;
+}
+
+.paso6__table--scoped {
+  min-width: 54rem;
+}
+
+.paso6__table th,
+.paso6__table td {
+  vertical-align: top;
+}
+
+.paso6__col-codigo {
+  width: 22%;
+}
+
+.paso6__col-peaje {
+  width: 22%;
+}
+
+.paso6__col-estacion {
+  width: 30%;
+}
+
+.paso6__col-derivado {
+  width: 14%;
+}
+
+.paso6__col-acciones {
+  width: 8.5rem;
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: #fff;
+  box-shadow: -10px 0 14px -12px rgb(15 35 55 / 0.35);
+}
+
+.paso6__table thead .paso6__col-acciones {
+  background: #f5f8fb;
+  z-index: 3;
+}
+
+.paso6__codigo {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.paso6__concesion-hint {
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--pw-muted, #6f8197);
+  font-family: var(--pw-sans, inherit);
+  font-weight: 500;
+  white-space: normal;
+  line-height: 1.3;
 }
 
 .paso6__sug {
@@ -119,23 +302,108 @@
 }
 
 .paso6__reco {
-  margin-top: 0.4rem;
-  font-size: 0.78rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  margin-top: 0.45rem;
+  font-size: 0.76rem;
   color: #9a6700;
+}
+
+.paso6__crear-inline {
+  flex: 0 0 auto;
+}
+
+.paso6__derivado-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 0.45rem;
+  font-size: 0.74rem;
+  color: #30445d;
+  line-height: 1.3;
+}
+
+.paso6__derivado-inline .paso6__label {
+  margin-bottom: 0;
 }
 
 .paso6__search-select {
   display: block;
-  min-width: 12rem;
-  max-width: 22rem;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.paso6__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: stretch;
+}
+
+.paso6__actions .pw__btn {
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .paso6__row--need td {
   background: #fffbeb;
 }
 
+.paso6__row--need .paso6__col-acciones {
+  background: #fffbeb;
+}
+
+/* Dense / massive: less chrome, more rows visible */
+.paso6--dense .paso6__relation {
+  padding: 0.85rem;
+}
+
+.paso6--dense .paso6__table-wrap {
+  max-height: min(70vh, 40rem);
+}
+
+.paso6--dense .paso6__table {
+  min-width: 40rem;
+}
+
+.paso6--dense .paso6__table--scoped {
+  min-width: 48rem;
+}
+
+.paso6--dense .paso6__col-codigo {
+  width: 24%;
+}
+
+.paso6--dense .paso6__col-peaje {
+  width: 26%;
+}
+
+.paso6--dense .paso6__col-estacion {
+  width: 34%;
+}
+
+.paso6--dense .pw__table th,
+.paso6--dense .pw__table td {
+  padding: 0.55rem 0.65rem;
+}
+
+.paso6--dense .paso6__scroll-hint {
+  display: none;
+}
+
 @media (max-width: 900px) {
-  .paso6__layout {
-    grid-template-columns: 1fr;
+  .paso6__table,
+  .paso6__table--scoped,
+  .paso6--dense .paso6__table,
+  .paso6--dense .paso6__table--scoped {
+    min-width: 36rem;
+  }
+
+  .paso6__col-acciones {
+    width: 7.5rem;
   }
 }

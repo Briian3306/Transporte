@@ -27,6 +27,7 @@ describe('Paso8ValidacionComponent', () => {
       cuenta: 'C-1',
       empresa_id: 'E-1',
       fecha_factura: '2026-06-30',
+      bonificacion: 0,
       importe_sin_iva: 100,
       percepciones: 21,
       iva: 0,
@@ -85,5 +86,71 @@ describe('Paso8ValidacionComponent', () => {
     state.setPasadasEstandarizadas([{ ...state.snapshot().pasadasEstandarizadas[0], PASE_ID: pase[0].pase }] as never);
     await component.validar();
     expect(state.snapshot().pasadasEstandarizadas[0].PASE_ID).toBe(pase[0].id);
+  });
+
+  it('masiva: no valida pasadas de documentos omitidos', async () => {
+    const uuid = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+    state.setModoImportacion('masiva');
+    state.setDocumentos([
+      {
+        factura: 'OK-1',
+        tipo: 'FC',
+        cuenta: '',
+        empresa_id: 'E-1',
+        fecha_factura: '2026-06-30',
+        bonificacion: 0,
+        importe_sin_iva: 100,
+        percepciones: 0,
+        iva: 21,
+        importe_total: 121,
+        rowIndexes: [0],
+        status: 'ok',
+        errores: [],
+        omitido: false,
+      },
+      {
+        factura: 'BAD-2',
+        tipo: 'FC',
+        cuenta: '',
+        empresa_id: '',
+        fecha_factura: '',
+        bonificacion: null,
+        importe_sin_iva: null,
+        percepciones: null,
+        iva: null,
+        importe_total: null,
+        rowIndexes: [1],
+        status: 'warn',
+        errores: ['Empresa obligatoria'],
+        omitido: true,
+      },
+    ]);
+    state.setPasadasEstandarizadas([
+      {
+        FECHA_HORA: '2026-06-25 20:50:05',
+        PASE_ID: uuid,
+        PATENTE_ID: uuid,
+        ESTACION_ID: uuid,
+        PRECIO: 100,
+        BONIFICACION: 0,
+        QUANTITY: 1,
+        IMPORTE_NETO: 100,
+      },
+      {
+        FECHA_HORA: '',
+        PASE_ID: 'not-uuid',
+        PATENTE_ID: '',
+        ESTACION_ID: 'bad',
+        PRECIO: 50,
+        BONIFICACION: 0,
+        QUANTITY: 1,
+        IMPORTE_NETO: 50,
+      },
+    ] as never);
+    await component.validar();
+    expect(component.documentosOmitidosCount).toBe(1);
+    // Errores de la fila omitida no deben aparecer
+    expect(component.resultado!.errores.some((e) => String(e.valor) === 'not-uuid')).toBeFalse();
+    expect(component.resultado!.errores.some((e) => e.columna === 'FECHA_HORA' && e.fila === 2)).toBeFalse();
   });
 });

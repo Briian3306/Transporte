@@ -27,7 +27,7 @@ Catálogos base del módulo (F01-1): peajes/corredores, estaciones, patentes y p
 | `descripcion` | text | Sí | — |
 | `created_at` | timestamptz | No | Default `now()` |
 
-Índice: `nombre`. Relación lógica: `peajes.empresa_id` / `facturas.empresa_id` / plantillas y algoritmos usan `empresas.id::text` o `'__global__'` (sin FK uuid; RN-23).
+Índice: `nombre`. Relación lógica: `peajes.empresa_id` / `documentos.empresa_id` / plantillas y algoritmos usan `empresas.id::text` o `'__global__'` (sin FK uuid; RN-23).
 
 ---
 

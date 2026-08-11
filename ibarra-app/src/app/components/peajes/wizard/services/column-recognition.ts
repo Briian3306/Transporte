@@ -2,7 +2,14 @@
  * Reconocimiento semántico de columnas de peaje (F02-11).
  * Independiente de la concesionaria: mismos aliases → mismas recetas de pipeline.
  */
-import { ExcelCargaPreview, MapeoColumna, PasadaColumnKey } from '../../models';
+import {
+  buscarColumnaPorAliases,
+  CONSUMOS_RESUMEN_ALIASES,
+  ExcelCargaPreview,
+  MapeoColumna,
+  normalizarEncabezadoColumna,
+  PasadaColumnKey,
+} from '../../models';
 import { ConfiguracionPlantillaDraft } from './wizard-draft.types';
 
 export type ColumnRecommendationKind =
@@ -11,7 +18,8 @@ export type ColumnRecommendationKind =
   | 'tarifa'
   | 'bonificacion'
   | 'eliminar_iva'
-  | 'dispositivo';
+  | 'dispositivo'
+  | 'estacion';
 
 export type ColumnRecommendationStatus = 'pending' | 'accepted' | 'dismissed';
 
@@ -30,12 +38,13 @@ export interface ColumnRecommendation {
 }
 
 export const COLUMN_ALIASES = {
-  plate: ['PATENTE', 'DOMINIO', 'PATENTE_ID'],
-  fare: ['TARIFA', 'PRECIO'],
-  discount: ['BONIFICACION', 'BONIFICACION_IMPORTE'],
-  date: ['FECHA'],
+  plate: [...CONSUMOS_RESUMEN_ALIASES.patente],
+  fare: [...CONSUMOS_RESUMEN_ALIASES.precio],
+  discount: [...CONSUMOS_RESUMEN_ALIASES.bonificacion],
+  date: [...CONSUMOS_RESUMEN_ALIASES.fecha],
   time: ['HORA'],
-  device: ['DISPOSITIVO', 'DISPOSITIVON'],
+  device: [...CONSUMOS_RESUMEN_ALIASES.pase],
+  station: [...CONSUMOS_RESUMEN_ALIASES.estacion],
 } as const;
 
 function nuevoClientId(): string {
@@ -60,11 +69,12 @@ function draftBase(
   };
 }
 
-/** Mapa upper → nombre original del archivo. */
+/** Mapa normalizado → nombre original del archivo (acentos / Tag Nº). */
 export function buildColumnLookup(columnas: string[]): Map<string, string> {
   const map = new Map<string, string>();
   for (const col of columnas) {
     map.set(col.trim().toUpperCase(), col);
+    map.set(normalizarEncabezadoColumna(col), col);
   }
   return map;
 }
@@ -73,8 +83,13 @@ export function resolveAlias(
   lookup: Map<string, string>,
   aliases: readonly string[]
 ): string | undefined {
+  const viaConsumos = buscarColumnaPorAliases([...new Set(lookup.values())], aliases);
+  if (viaConsumos) return viaConsumos;
   for (const alias of aliases) {
-    const found = lookup.get(alias);
+    const found =
+      lookup.get(alias) ??
+      lookup.get(alias.trim().toUpperCase()) ??
+      lookup.get(normalizarEncabezadoColumna(alias));
     if (found) return found;
   }
   return undefined;
@@ -363,6 +378,7 @@ export function detectColumnRecommendations(
   const fareCol = resolveAlias(lookup, COLUMN_ALIASES.fare);
   const discountCol = resolveAlias(lookup, COLUMN_ALIASES.discount);
   const deviceCol = resolveAlias(lookup, COLUMN_ALIASES.device);
+  const stationCol = resolveAlias(lookup, COLUMN_ALIASES.station);
 
   if (fechaCol && horaCol) {
     const formato = detectaFormatoHora(sampleValues(preview, horaCol));
@@ -378,6 +394,34 @@ export function detectColumnRecommendations(
       draftSteps: recipeFechaHora(fechaCol, horaCol, formato, 10),
       incluirColumnas: [fechaCol, horaCol],
       mapeoHints: [hint('FECHA_HORA', 'FECHA_HORA')],
+    });
+  } else if (fechaCol && !horaCol) {
+    // ConsumosResumen: columna Fecha con datetime completo (sin HORA separada).
+    recs.push({
+      id: 'rec-fecha_hora',
+      kind: 'fecha_hora',
+      title: `Recomendado: ${fechaCol} → FECHA_HORA`,
+      detail: 'Mapear la fecha/hora combinada del proveedor al destino estándar.',
+      status: 'pending',
+      columnasEntrada: [fechaCol],
+      draftSteps: [],
+      incluirColumnas: [fechaCol],
+      mapeoHints: [hint(fechaCol, 'FECHA_HORA')],
+    });
+  }
+
+  if (stationCol) {
+    recs.push({
+      id: 'rec-estacion',
+      kind: 'estacion',
+      title: `Recomendado: ${stationCol} → ESTACION_ID`,
+      detail:
+        'Mapear Estación del Excel al catálogo interno. Concesión puede ser empresa o peaje; la estación puede cruzar empresas.',
+      status: 'pending',
+      columnasEntrada: [stationCol],
+      draftSteps: [],
+      incluirColumnas: [stationCol],
+      mapeoHints: [hint(stationCol, 'ESTACION_ID')],
     });
   }
 

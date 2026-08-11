@@ -4,6 +4,11 @@ export type CategoriaPatente = 'TRANSPORTE' | 'REMIS';
 /** Estado de plantilla / algoritmo combinado. */
 export type EstadoRecursoPeaje = 'borrador' | 'activa' | 'inactiva';
 
+/** Tipo de documento de peajes (FC factura / NC nota de crédito). */
+export type DocumentoTipo = 'FC' | 'NC';
+
+export const DOCUMENTO_TIPOS: readonly DocumentoTipo[] = ['FC', 'NC'] as const;
+
 /** Tipo de fila en configuraciones_plantilla. */
 export type TipoConfiguracionPlantilla = 'transformacion' | 'mapeo' | 'validacion';
 

@@ -2,23 +2,42 @@ import { Component, EventEmitter, Inject, OnInit, Output, inject } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
+  buscarColumnaPorAliases,
+  coincidirPorNombreNormalizado,
+  CONSUMOS_RESUMEN_ALIASES,
+  Empresa,
   MapeoColumna,
   PEAJES_CATALOGO_SERVICE,
   PASADA_COLUMNAS_OBLIGATORIAS,
   PASADA_COLUMN_KEYS,
   PasadaColumnKey,
+  Peaje,
   PeajesCatalogoService,
+  RecomendacionPeajeConcesion,
+  reconocerPeajeDesdeConcesion,
 } from '../../models';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 import { firstValueFrom } from 'rxjs';
 import { DataTableComponent } from '../../../shared/data-table/data-table.component';
 import { DataTableColumnDirective } from '../../../shared/data-table/data-table-column.directive';
 import { DataTableColumn } from '../../../shared/data-table/data-table.types';
+import {
+  DialogComponent,
+  SearchSelectComponent,
+  SearchSelectOption,
+} from '../../../shared';
 
 @Component({
   selector: 'app-paso5-mapeo',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataTableComponent, DataTableColumnDirective],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DataTableComponent,
+    DataTableColumnDirective,
+    DialogComponent,
+    SearchSelectComponent,
+  ],
   templateUrl: './paso5-mapeo.component.html',
   styleUrl: './paso5-mapeo.component.css',
 })
@@ -37,6 +56,25 @@ export class Paso5MapeoComponent implements OnInit {
   /** Bulk Agregar todas en curso (F02-16). */
   agregandoTodas = false;
 
+  /** RN-26: columna Concesion detectada y peajes recomendados. */
+  columnaConcesion: string | null = null;
+  recomendacionesPeaje: RecomendacionPeajeConcesion[] = [];
+  peajesCatalogo: Peaje[] = [];
+  empresas: Empresa[] = [];
+  filtroConcesionRapido = '';
+  accionPeaje: string | null = null;
+  agregandoPeajes = false;
+  crearPeajeAbierto = false;
+  crearPeajeNombre = '';
+  crearPeajeConcesion = '';
+  crearPeajeEmpresaId: string | null = null;
+  crearPeajeDescripcion = '';
+  crearEmpresaAbierto = false;
+  crearEmpresaNombre = '';
+  crearEmpresaConcesion = '';
+  crearEmpresaDescripcion = '';
+  accionEmpresa: string | null = null;
+
   /** Mapa normalizado → id de catálogo. */
   private catalogoPatentes = new Map<string, string>();
   /** Patentes del archivo aún no en catálogo ni excluidas. */
@@ -48,12 +86,260 @@ export class Paso5MapeoComponent implements OnInit {
     { key: 'acciones', label: 'Acciones', templateOnly: true, width: '12rem', align: 'right' },
   ];
 
+  readonly peajeUnresolvedColumns: DataTableColumn[] = [
+    { key: 'CONCESION', label: 'CONCESIÓN' },
+    { key: 'estado', label: 'Estado', templateOnly: true, width: '11rem' },
+    { key: 'sugerencias', label: 'Sugerencias', templateOnly: true },
+    { key: 'acciones', label: 'Acciones', templateOnly: true, width: '14rem', align: 'right' },
+  ];
+
   constructor(@Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService) {}
 
   async ngOnInit(): Promise<void> {
     this.state.asegurarMapeosObligatorios();
-    await this.cargarCatalogoPatentes();
+    await Promise.all([this.cargarCatalogoPatentes(), this.detectarConcesionPeaje()]);
     this.recomputarUnresolved();
+  }
+
+  get tieneConcesionPeaje(): boolean {
+    return !!this.columnaConcesion && this.recomendacionesPeaje.length > 0;
+  }
+
+  get peajesSinResolver(): RecomendacionPeajeConcesion[] {
+    return this.recomendacionesPeaje.filter((r) => !r.peajeId);
+  }
+
+  get peajesSinResolverVisibles(): RecomendacionPeajeConcesion[] {
+    const q = this.filtroConcesionRapido.trim().toUpperCase();
+    const list = this.peajesSinResolver;
+    return q ? list.filter((r) => r.concesion.toUpperCase().includes(q)) : list;
+  }
+
+  get peajeUnresolvedRows(): Record<string, unknown>[] {
+    return this.peajesSinResolverVisibles.map((r) => ({
+      id: r.concesion,
+      CONCESION: r.concesion,
+      sugerencias: r.sugerencias ?? [],
+      tipo: r.tipo ?? 'sin_coincidencia',
+      tieneEmpresa: !!this.empresaParaConcesion(r.concesion),
+    }));
+  }
+
+  get empresaOptions(): SearchSelectOption[] {
+    return this.empresas.map((e) => ({ id: e.id, label: e.nombre }));
+  }
+
+  get accionesPeajeOcupadas(): boolean {
+    return this.agregandoPeajes || !!this.accionPeaje || !!this.accionEmpresa;
+  }
+
+  /** Empresa del catálogo cuyo nombre coincide con la Concesión (si existe). */
+  empresaParaConcesion(concesion: string): Empresa | null {
+    return coincidirPorNombreNormalizado(concesion, this.empresas);
+  }
+
+  necesitaAgregarEmpresa(row: Record<string, unknown>): boolean {
+    return row['tipo'] === 'sin_coincidencia' && !row['tieneEmpresa'];
+  }
+
+  /** RN-26: Concesion → Peaje con reconocedor tipo estaciones. */
+  private async detectarConcesionPeaje(): Promise<void> {
+    const preview = this.state.snapshot().preview;
+    const cols = preview?.columnas ?? [];
+    this.columnaConcesion =
+      buscarColumnaPorAliases(cols, CONSUMOS_RESUMEN_ALIASES.concesion) ?? null;
+    if (!this.columnaConcesion || !preview) {
+      this.recomendacionesPeaje = [];
+      this.state.setRecomendacionesPeajeConcesion([]);
+      return;
+    }
+
+    const empresaId = this.state.snapshot().empresaId;
+    this.empresas = await firstValueFrom(this.catalogo.listarEmpresas());
+    // Catálogo completo para matching parcial (RN-26 / reconocimiento).
+    this.peajesCatalogo = await firstValueFrom(this.catalogo.listarPeajes());
+
+    const valores = new Set<string>();
+    for (const fila of preview.filasOrigen) {
+      const raw = fila[this.columnaConcesion];
+      const v = raw == null ? '' : String(raw).trim();
+      if (v) valores.add(v);
+    }
+
+    this.recomendacionesPeaje = [...valores].sort().map((concesion) => {
+      const rec = reconocerPeajeDesdeConcesion(concesion, this.peajesCatalogo, empresaId);
+      const peaje =
+        rec.tipo === 'exacta'
+          ? rec.peaje
+          : rec.sugerencias.length === 1
+            ? rec.sugerencias[0]
+            : null;
+      return {
+        concesion,
+        peajeId: peaje?.id ?? null,
+        peajeNombre: peaje?.nombre ?? null,
+        empresaId: peaje?.empresa_id ?? empresaId ?? null,
+        tipo: peaje ? 'exacta' : rec.tipo,
+        sugerencias: rec.sugerencias.map((s) => ({ id: s.id, nombre: s.nombre })),
+      };
+    });
+    this.persistRecomendacionesPeaje();
+  }
+
+  private persistRecomendacionesPeaje(): void {
+    this.state.setRecomendacionesPeajeConcesion(this.recomendacionesPeaje);
+  }
+
+  confirmarSugerenciaPeaje(concesion: string, peajeId: string, peajeNombre: string): void {
+    const peaje = this.peajesCatalogo.find((p) => p.id === peajeId);
+    this.recomendacionesPeaje = this.recomendacionesPeaje.map((r) =>
+      r.concesion === concesion
+        ? {
+            ...r,
+            peajeId,
+            peajeNombre,
+            empresaId: peaje?.empresa_id ?? r.empresaId,
+            tipo: 'exacta',
+            sugerencias: [],
+          }
+        : r
+    );
+    this.persistRecomendacionesPeaje();
+  }
+
+  abrirCrearPeaje(concesion: string): void {
+    this.crearPeajeConcesion = concesion;
+    this.crearPeajeNombre = concesion;
+    this.crearPeajeDescripcion = `Creado desde Concesión del Excel (${concesion}).`;
+    const emp = this.empresaParaConcesion(concesion);
+    this.crearPeajeEmpresaId = emp?.id ?? this.state.snapshot().empresaId;
+    this.crearPeajeAbierto = true;
+    this.error = null;
+  }
+
+  abrirCrearEmpresa(concesion: string): void {
+    this.crearEmpresaConcesion = concesion;
+    this.crearEmpresaNombre = concesion;
+    this.crearEmpresaDescripcion = `Creada desde Concesión del Excel (${concesion}).`;
+    this.crearEmpresaAbierto = true;
+    this.error = null;
+  }
+
+  async crearEmpresaDesdeConcesion(): Promise<void> {
+    const nombre = this.crearEmpresaNombre.trim();
+    if (!nombre) {
+      this.error = 'Ingresá el nombre de la empresa.';
+      return;
+    }
+    const existente = coincidirPorNombreNormalizado(nombre, this.empresas);
+    if (existente) {
+      this.error = `Ya existe la empresa «${existente.nombre}». Usá Agregar peaje.`;
+      return;
+    }
+    this.accionEmpresa = this.crearEmpresaConcesion;
+    try {
+      const empresa = await firstValueFrom(
+        this.catalogo.crearEmpresa({
+          nombre,
+          descripcion: this.crearEmpresaDescripcion.trim() || null,
+        })
+      );
+      this.empresas = [...this.empresas, empresa];
+      // Peaje con el mismo nombre para poder relacionar estaciones en Paso 6.
+      const peaje = await firstValueFrom(
+        this.catalogo.crearPeaje({
+          nombre: this.crearEmpresaConcesion.trim() || nombre,
+          empresa_id: empresa.id,
+          descripcion: `Peaje/corredor creado desde Concesión «${this.crearEmpresaConcesion}».`,
+        })
+      );
+      this.peajesCatalogo = [...this.peajesCatalogo, peaje];
+      this.confirmarSugerenciaPeaje(this.crearEmpresaConcesion, peaje.id, peaje.nombre);
+      this.crearEmpresaAbierto = false;
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'No se pudo crear la empresa.';
+    } finally {
+      this.accionEmpresa = null;
+    }
+  }
+
+  onEmpresaPeajeChange(id: string | null): void {
+    this.crearPeajeEmpresaId = id;
+  }
+
+  async crearPeajeDesdeConcesion(): Promise<void> {
+    const nombre = this.crearPeajeNombre.trim();
+    const empresaId = this.crearPeajeEmpresaId || this.state.snapshot().empresaId;
+    if (!nombre || !empresaId) {
+      this.error = 'Elegí empresa y nombre del peaje para crearlo.';
+      return;
+    }
+    this.accionPeaje = this.crearPeajeConcesion;
+    try {
+      const creado = await firstValueFrom(
+        this.catalogo.crearPeaje({
+          nombre,
+          empresa_id: empresaId,
+          descripcion: this.crearPeajeDescripcion.trim() || null,
+        })
+      );
+      this.peajesCatalogo = [...this.peajesCatalogo, creado];
+      this.confirmarSugerenciaPeaje(this.crearPeajeConcesion, creado.id, creado.nombre);
+      this.crearPeajeAbierto = false;
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'No se pudo crear el peaje.';
+    } finally {
+      this.accionPeaje = null;
+    }
+  }
+
+  async agregarTodosPeajesPendientes(): Promise<void> {
+    const pendientes = this.peajesSinResolverVisibles.filter((r) => r.tipo === 'sin_coincidencia');
+    const empresaId = this.state.snapshot().empresaId;
+    if (!pendientes.length || !empresaId) {
+      this.error = empresaId
+        ? 'No hay concesiones sin coincidencia para agregar.'
+        : 'Seleccioná una empresa en Paso 1 para crear peajes en lote.';
+      return;
+    }
+    this.agregandoPeajes = true;
+    this.error = null;
+    let ok = 0;
+    const fallos: string[] = [];
+    try {
+      for (const r of pendientes) {
+        this.accionPeaje = r.concesion;
+        try {
+          const creado = await firstValueFrom(
+            this.catalogo.crearPeaje({
+              nombre: r.concesion,
+              empresa_id: empresaId,
+              descripcion: `Creado desde Concesión del Excel.`,
+            })
+          );
+          this.peajesCatalogo = [...this.peajesCatalogo, creado];
+          this.confirmarSugerenciaPeaje(r.concesion, creado.id, creado.nombre);
+          ok += 1;
+        } catch (e) {
+          fallos.push(`${r.concesion}: ${e instanceof Error ? e.message : 'error'}`);
+        }
+      }
+      if (fallos.length) {
+        this.error = `Agregados ${ok}/${pendientes.length}. Fallaron: ${fallos.slice(0, 2).join('; ')}`;
+      }
+    } finally {
+      this.accionPeaje = null;
+      this.agregandoPeajes = false;
+    }
+  }
+
+  asConcesion(row: Record<string, unknown>): string {
+    return String(row['CONCESION'] ?? '');
+  }
+
+  sugerenciasDeFila(row: Record<string, unknown>): Array<{ id: string; nombre: string }> {
+    const s = row['sugerencias'];
+    return Array.isArray(s) ? (s as Array<{ id: string; nombre: string }>) : [];
   }
 
   get mapeos(): MapeoColumna[] {

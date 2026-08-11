@@ -27,7 +27,9 @@ Los CSV/PDF descargados pueden usarse **después** como input manual del wizard 
 
 ## Estado actual
 
-Fecha: **2026-08-05** — Pipeline MVP **operativo**.
+Fecha: **2026-08-07** — XREF Peajes `TS-XREF-F13-2` en `feature-list-script.json`: el Excel sample `telepeaje plus/202607-2/ConsumosResumen.xlsx` (columna `FACTURA`) alimenta la importación masiva multi-empresa del wizard. Implementación canónica: `ibarra-app/feature_list.json` → **F13-2** + `ibarra-app/docs/claude-progress.md`. No hay cambios de código Angular bajo `scripts/`.
+
+Fecha previa: **2026-08-05** — Pipeline MVP **operativo**.
 
 - Parser DataTables: **157** filas con factura+pasada.
 - Descarga completa: **314** archivos (157 PDF + 157 CSV), fallos residuales **0**.

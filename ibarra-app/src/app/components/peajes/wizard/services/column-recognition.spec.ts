@@ -71,7 +71,8 @@ describe('column-recognition (F02-11)', () => {
     expect(kinds).toContain('dispositivo');
     expect(kinds).toContain('tarifa');
     expect(kinds).toContain('bonificacion');
-    expect(recs.some((r) => r.id === 'rec-estacion')).toBeFalse();
+    expect(kinds).toContain('estacion');
+    expect(recs.some((r) => r.id === 'rec-estacion')).toBeTrue();
     const iva = recs.find((r) => r.id === 'rec-eliminar-iva');
     expect(iva?.draftSteps[0].configuracion?.algoritmo_codigo).toBe('ELIMINAR_IVA');
 
@@ -85,6 +86,44 @@ describe('column-recognition (F02-11)', () => {
       'ELIMINAR_GUIONES',
       'CONVERTIR_MAYUSCULAS',
     ]);
+  });
+
+  it('ConsumosResumen: Tag Nº → PASE_ID, Estación → ESTACION_ID, Fecha sola → FECHA_HORA', () => {
+    const cols = [
+      'Tag Nº',
+      'Dominio',
+      'Concesion',
+      'FACTURA',
+      'Estación',
+      'Fecha',
+      'Importe Original',
+      'Descuento Importe',
+    ];
+    const lookup = buildColumnLookup(cols);
+    expect(resolveAlias(lookup, COLUMN_ALIASES.device)).toBe('Tag Nº');
+    expect(resolveAlias(lookup, COLUMN_ALIASES.station)).toBe('Estación');
+    expect(resolveAlias(lookup, COLUMN_ALIASES.fare)).toBe('Importe Original');
+    const recs = detectColumnRecommendations(
+      previewOf(cols, [
+        {
+          'Tag Nº': '91356520',
+          Dominio: 'AB456CP',
+          Concesion: 'CORREDORES VIALES SA',
+          FACTURA: '0104-00077675',
+          Estación: 'ZARATE - RUTA 9 KM. 95',
+          Fecha: '07/24/2026 13:37:24',
+          'Importe Original': '1500.00',
+          'Descuento Importe': '525.00',
+        },
+      ])
+    );
+    expect(recs.find((r) => r.kind === 'dispositivo')?.mapeoHints[0].columnaDestino).toBe('PASE_ID');
+    expect(recs.find((r) => r.kind === 'estacion')?.mapeoHints[0].columnaDestino).toBe('ESTACION_ID');
+    const fecha = recs.find((r) => r.kind === 'fecha_hora')!;
+    expect(fecha.draftSteps.length).toBe(0);
+    expect(fecha.mapeoHints[0]).toEqual(
+      jasmine.objectContaining({ columnaOrigen: 'Fecha', columnaDestino: 'FECHA_HORA' })
+    );
   });
 
   it('Demo headers usan FORMATEAR_FECHA_HORA HHMMSS', () => {

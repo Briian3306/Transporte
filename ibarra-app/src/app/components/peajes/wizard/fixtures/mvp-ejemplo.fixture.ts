@@ -159,9 +159,11 @@ export const MVP_FILAS_ORIGEN: Record<string, unknown>[] = [
 
 export const MVP_FACTURA: WizardFacturaForm = {
   factura: 'F-A-0001-00004567',
+  tipo: 'FC',
   cuenta: 'CTA-001',
   empresa_id: 'EMP-DEMO-001',
   fecha_factura: '2026-07-15',
+  bonificacion: 0,
   importe_sin_iva: 102060,
   percepciones: 21432.6,
   iva: 0,

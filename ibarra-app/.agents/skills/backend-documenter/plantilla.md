@@ -156,7 +156,8 @@ Catálogo de funciones RPC Postgres usadas por la aplicación. Detalle en cada m
 
 ## Notes
 
-- Scripts: `supabase/functions/`, `sql/`, `docs/08-sql/`, `docs/08 - SQLs/`
+- Scripts / migraciones: `supabase/migrations/`, `supabase/functions/`
+- Documentación canónica: `docs/backend/` (no `docs/08-sql/`)
 - Verificación: sección **Testing** en cada doc de detalle del módulo
 ```
 

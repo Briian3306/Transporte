@@ -27,7 +27,12 @@ export function buildAusolPlantillaConfigs(): ConfiguracionPlantilla[] {
     tipo: 'transformacion', algoritmo_combinado_id: null, configuracion, obligatoria: true,
   });
   return [
-    config('ausol-10', 'FECHA', 'FECHA_HORA', 10, { algoritmo_codigo: 'FORMATEAR_FECHA_HORA', columnas_entrada: ['FECHA', 'HORA'], formato_hora: 'YYYY-MM-DD HH:MM:SS' }),
+    config('ausol-10', 'FECHA', 'FECHA_HORA', 10, {
+      algoritmo_codigo: 'FORMATEAR_FECHA_HORA',
+      columnas_entrada: ['FECHA', 'HORA'],
+      // Telepase/AUSOL CSV: FECHA=yyyy-MM-dd, HORA=HH:mm:ss (no usar DD/MM aquí).
+      formato_hora: 'YYYY-MM-DD HH:MM:SS',
+    }),
     config('ausol-20', 'ESTACION', 'ESTACION_ID', 20, { algoritmo_codigo: 'REEMPLAZAR_TEXTO', columna: 'ESTACION', reglas: [{ buscar: 'BD', reemplazar: 'BLACK DECK' }] }),
     config('ausol-30', 'DISPOSITIVO', 'PASE_ID', 30, { algoritmo_codigo: 'CONVERTIR_TEXTO', columna: 'DISPOSITIVO' }),
     config('ausol-40', 'PATENTE', 'PATENTE_ID', 40, { algoritmo_codigo: 'BORRAR_ESPACIOS', columna: 'PATENTE' }),

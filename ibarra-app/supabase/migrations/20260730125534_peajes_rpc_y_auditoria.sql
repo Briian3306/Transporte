@@ -1,5 +1,5 @@
 -- F01-5..F01-9: RPCs transaccionales + auditoría de carga
--- Tolerancia monetaria MVP: 0.01 (centavo). Documentada en docs/08-sql/peajes.
+-- Tolerancia monetaria MVP: 0.01 (centavo). Documentar RPCs en docs/backend/.
 
 CREATE SCHEMA IF NOT EXISTS peajes_private;
 

@@ -2,8 +2,14 @@
   <div class="pw__head">
     <div>
       <div class="pw__eyebrow">Paso 07 · asociación contable</div>
-      <h2>Ingresar factura</h2>
-      <p>Asociá el lote con una factura. Tab entre campos; escribí la fecha como 13/6/2020.</p>
+      <h2>{{ esMasiva ? 'Ingresar documentos' : 'Ingresar documento' }}</h2>
+      <p *ngIf="!esMasiva">
+        Asociá el lote con un documento (factura o nota de crédito). Tab entre campos; escribí la fecha como 13/6/2020.
+      </p>
+      <p *ngIf="esMasiva">
+        Cada valor de FACTURA del Excel es un documento (FC o NC). El número se autocompleta;
+        la Concesión sugiere la empresa. Podés quitar o agregar IVA por panel.
+      </p>
     </div>
     <span class="pw__status pw__status--warn">Pendiente de confirmación</span>
   </div>
@@ -12,7 +18,7 @@
     <section class="paso7__template-recommendation" *ngIf="recomendacionVisible">
       <div>
         <strong>¿Reutilizás archivos de esta empresa?</strong>
-        <p>Guardá transformaciones, mapeos y estaciones reconocidas para que la próxima importación llegue directo a Factura.</p>
+        <p>Guardá transformaciones, mapeos y estaciones reconocidas para que la próxima importación llegue directo a Documento.</p>
       </div>
       <div class="paso7__template-actions">
         <input
@@ -30,129 +36,306 @@
       <div class="pw__field-error" *ngIf="plantillaError">{{ plantillaError }}</div>
     </section>
 
-    <div class="paso7__layout">
-      <div class="paso7__form-card">
-        <div class="paso7__form-head">
-          <h3>Datos de la factura</h3>
-          <span class="paso7__form-chip">Teclado primero</span>
+    <!-- Masiva: ledger accordion (paginated) -->
+    <div class="paso7__masiva" *ngIf="esMasiva; else simpleDoc">
+      <div class="paso7__pager" *ngIf="documentos.length > pageSize">
+        <span class="paso7__pager-label">{{ pageRangeLabel }} · página {{ docPage + 1 }} / {{ totalDocPages }}</span>
+        <div class="paso7__pager-actions">
+          <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="prevDocPage()" [disabled]="docPage === 0">
+            Anterior
+          </button>
+          <button
+            type="button"
+            class="pw__btn pw__btn--ghost pw__btn--small"
+            (click)="nextDocPage()"
+            [disabled]="docPage >= totalDocPages - 1"
+          >
+            Siguiente
+          </button>
         </div>
-
-        <form [formGroup]="form" class="pw__form-grid paso7__form" (ngSubmit)="continuar()">
-          <div class="pw__field">
-            <label for="factura">Número de factura *</label>
-            <input
-              #facturaInput
-              id="factura"
-              formControlName="factura"
-              autocomplete="off"
-              enterkeyhint="next"
-            />
-            <div class="pw__field-error" *ngIf="invalid('factura')">Obligatorio</div>
-          </div>
-
-          <div class="pw__field">
-            <label for="cuenta">Cuenta</label>
-            <input id="cuenta" formControlName="cuenta" autocomplete="off" placeholder="Opcional" enterkeyhint="next" />
-          </div>
-
-          <div class="pw__field paso7__field--full">
-            <app-search-multi-select
-              label="Empresa *"
-              [options]="empresaOptions"
-              [value]="empresaIds"
-              mode="single"
-              [disabled]="true"
-              [clearable]="false"
-              placeholder="Empresa del Paso 1"
-              emptyMessage="Sin empresa seleccionada en Paso 1"
-            ></app-search-multi-select>
-            <p class="paso7__hint">Definida en Paso 1 · no se modifica aquí</p>
-            <div class="pw__field-error" *ngIf="invalid('empresa_id')">Obligatorio (elegí empresa en Paso 1)</div>
-          </div>
-
-          <div class="pw__field paso7__field--date">
-            <app-date-range-picker
-              label="Fecha de factura *"
-              mode="single"
-              inputId="fecha_factura"
-              placeholder="dd/mm/aaaa"
-              [value]="fechaRange"
-              (valueChange)="onFechaChange($event)"
-            ></app-date-range-picker>
-            <div class="pw__field-error" *ngIf="invalid('fecha_factura')">Obligatorio</div>
-          </div>
-
-          <div class="pw__field">
-            <label for="importe_sin_iva">Subtotal *</label>
-            <input
-              id="importe_sin_iva"
-              type="number"
-              step="0.01"
-              formControlName="importe_sin_iva"
-              enterkeyhint="next"
-            />
-            <div class="pw__field-error" *ngIf="invalid('importe_sin_iva')">Obligatorio</div>
-          </div>
-
-          <div class="pw__field">
-            <label for="percepciones">Percepciones *</label>
-            <input
-              id="percepciones"
-              type="number"
-              min="0"
-              step="0.01"
-              formControlName="percepciones"
-              enterkeyhint="next"
-            />
-            <div class="pw__field-error" *ngIf="invalid('percepciones')">Ingresá un importe válido</div>
-          </div>
-
-          <div class="pw__field">
-            <label for="iva">IVA *</label>
-            <input id="iva" type="number" min="0" step="0.01" formControlName="iva" enterkeyhint="next" />
-            <div class="pw__field-error" *ngIf="invalid('iva')">Ingresá un importe válido</div>
-          </div>
-
-          <div class="pw__field">
-            <label for="importe_total">Total *</label>
-            <input
-              id="importe_total"
-              type="number"
-              min="0"
-              step="0.01"
-              formControlName="importe_total"
-              enterkeyhint="done"
-            />
-            <div class="pw__field-error" *ngIf="invalid('importe_total')">Obligatorio</div>
-          </div>
-        </form>
-
-        <button type="button" class="pw__btn pw__btn--ghost pw__btn--small paso7__mvp" (click)="cargarFacturaMvp()">
-          Prefijar factura del ejemplo MVP
-        </button>
       </div>
 
-      <aside class="paso7__side" aria-live="polite">
-        <div class="paso7__label">Suma estimada de importes netos</div>
-        <div class="paso7__money">{{ sumaNetos | number: '1.2-2' }}</div>
-        <div class="paso7__comparison">
-          <span>Subtotal de factura</span>
-          <strong>{{ form.controls.importe_sin_iva.value | number: '1.2-2' }}</strong>
-          <span>Diferencia</span>
-          <strong [class.paso7__difference--ok]="diferenciaDentroTolerancia">{{ diferenciaNetoPasadas | number: '1.2-2' }}</strong>
-          <span>Percepciones</span>
-          <strong>{{ form.controls.percepciones.value | number: '1.2-2' }}</strong>
-          <span>IVA</span>
-          <strong>{{ form.controls.iva.value | number: '1.2-2' }}</strong>
-          <span>Total de factura</span>
-          <strong>{{ form.controls.importe_total.value | number: '1.2-2' }}</strong>
-        </div>
-        <p>
-          Al continuar, el paso de validación compara esta suma con el subtotal de la factura
-          (tolerancia ±1% = {{ toleranciaFactura | number: '1.2-2' }}).
-        </p>
-      </aside>
+      <app-accordion
+        [multiple]="true"
+        [expandedValues]="expandedValues"
+        (expandedValuesChange)="onExpandedValuesChange($event)"
+      >
+        <app-accordion-panel
+          *ngFor="let item of documentosPagina; trackBy: trackByFactura"
+          [value]="panelValue(item.doc, item.index)"
+          [status]="panelStatus(item.index)"
+        >
+          <span appAccordionHeader>
+            Documento {{ item.doc.factura || '(sin número)' }}
+            <span class="paso7__acc-meta">· {{ countPasadas(item.doc) }} pasadas</span>
+            <span class="paso7__acc-badge" *ngIf="item.doc.omitido">Omitido</span>
+          </span>
+          <div appAccordionContent>
+            <ng-container *ngIf="isExpanded(item.doc, item.index)">
+              <div class="paso7__omitido-banner" *ngIf="item.doc.omitido">
+                <p>
+                  Este documento se omitirá en la validación y confirmación.
+                  <span *ngIf="item.doc.errores?.length"> Motivo: {{ item.doc.errores.join(' · ') }}</span>
+                </p>
+                <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="reincluirDocumento(item.index)">
+                  Volver a incluir
+                </button>
+              </div>
+              <div class="paso7__layout" *ngIf="docFormAt(item.index) as fg">
+                <div class="paso7__form-card paso7__form-card--flat">
+                  <form class="pw__form-grid paso7__form" [formGroup]="fg" (ngSubmit)="$event.preventDefault()">
+                    <div class="pw__field">
+                      <label [attr.for]="'factura_' + item.index">Número de factura *</label>
+                      <input [id]="'factura_' + item.index" formControlName="factura" autocomplete="off" />
+                      <p class="paso7__hint">Autocompletado desde columna FACTURA del Excel.</p>
+                      <div class="pw__field-error" *ngIf="invalid('factura', item.index)">Obligatorio</div>
+                    </div>
+
+                    <div class="pw__field">
+                      <label [attr.for]="'tipo_' + item.index">Tipo *</label>
+                      <select [id]="'tipo_' + item.index" formControlName="tipo">
+                        <option *ngFor="let t of tiposDocumento" [value]="t">
+                          {{ t === 'FC' ? 'FC — Factura' : 'NC — Nota de crédito' }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <div class="pw__field">
+                      <label [attr.for]="'cuenta_' + item.index">Cuenta</label>
+                      <input [id]="'cuenta_' + item.index" formControlName="cuenta" placeholder="Opcional" />
+                    </div>
+
+                    <div class="pw__field paso7__field--full">
+                      <app-search-multi-select
+                        label="Empresa *"
+                        [options]="empresaOptions"
+                        [value]="empresaIdsPorDoc[item.index] || []"
+                        mode="single"
+                        [disabled]="!!item.doc.omitido"
+                        [clearable]="true"
+                        placeholder="Elegí la empresa de este documento…"
+                        emptyMessage="Sin empresas en catálogo"
+                        (valueChange)="onEmpresaDocChange($event, item.index)"
+                      ></app-search-multi-select>
+                      <p class="paso7__hint" *ngIf="hintConcesion(item.index) as hint">{{ hint }}</p>
+                      <p class="paso7__hint">
+                        Autocompletada desde Concesión (empresa o peaje). Podés cambiarla; las estaciones
+                        pueden ser de otra empresa.
+                      </p>
+                      <div class="pw__field-error" *ngIf="invalid('empresa_id', item.index)">Obligatorio</div>
+                      <div class="paso7__step-actions">
+                        <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="irAPasoParaDocumento(5, item.index)">
+                          Revisar mapeo
+                        </button>
+                        <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="irAPasoParaDocumento(6, item.index)">
+                          Revisar estaciones
+                        </button>
+                        <button
+                          type="button"
+                          class="pw__btn pw__btn--ghost pw__btn--small"
+                          *ngIf="!item.doc.omitido"
+                          (click)="omitirDocumento(item.index)"
+                        >
+                          Omitir documento
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="pw__field paso7__field--date">
+                      <app-date-range-picker
+                        label="Fecha de documento *"
+                        mode="single"
+                        [inputId]="'fecha_factura_' + item.index"
+                        placeholder="dd/mm/aaaa"
+                        [value]="fechaRanges[item.index]"
+                        (valueChange)="onFechaChange($event, item.index)"
+                      ></app-date-range-picker>
+                      <div class="pw__field-error" *ngIf="invalid('fecha_factura', item.index)">Obligatorio</div>
+                    </div>
+
+                    <div class="pw__field">
+                      <label [attr.for]="'bonificacion_' + item.index">Bonificación *</label>
+                      <input [id]="'bonificacion_' + item.index" type="number" step="0.01" formControlName="bonificacion" />
+                      <p class="paso7__hint">Total de pasadas − bonificación = subtotal (sin IVA). No viene del archivo.</p>
+                      <div class="pw__field-error" *ngIf="invalid('bonificacion', item.index)">Obligatorio</div>
+                    </div>
+
+                    <div class="pw__field">
+                      <label [attr.for]="'importe_sin_iva_' + item.index">Subtotal *</label>
+                      <input [id]="'importe_sin_iva_' + item.index" type="number" step="0.01" formControlName="importe_sin_iva" />
+                      <div class="pw__field-error" *ngIf="invalid('importe_sin_iva', item.index)">Obligatorio</div>
+                    </div>
+
+                    <div class="pw__field">
+                      <label [attr.for]="'percepciones_' + item.index">Percepciones *</label>
+                      <input [id]="'percepciones_' + item.index" type="number" step="0.01" formControlName="percepciones" />
+                    </div>
+
+                    <div class="pw__field">
+                      <label [attr.for]="'iva_' + item.index">IVA *</label>
+                      <input [id]="'iva_' + item.index" type="number" step="0.01" formControlName="iva" />
+                    </div>
+
+                    <div class="pw__field">
+                      <label [attr.for]="'importe_total_' + item.index">Total *</label>
+                      <input [id]="'importe_total_' + item.index" type="number" step="0.01" formControlName="importe_total" />
+                      <div class="pw__field-error" *ngIf="invalid('importe_total', item.index)">Obligatorio</div>
+                    </div>
+
+                    <div class="pw__field paso7__field--full">
+                      <div class="paso7__iva-actions" role="group" [attr.aria-label]="'IVA documento ' + item.doc.factura">
+                        <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="quitarIvaDoc(item.index)">
+                          Quitar IVA
+                        </button>
+                        <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="agregarIvaDoc(item.index)">
+                          Agregar IVA
+                        </button>
+                      </div>
+                      <p class="paso7__hint">
+                        Solo este documento: Quitar divide cabecera y pasadas por 1,21; Agregar aplica 21% y ×1,21 a pasadas.
+                      </p>
+                    </div>
+                  </form>
+                </div>
+                <aside class="paso7__side">
+                  <div class="paso7__label">Pasadas de este documento</div>
+                  <div class="paso7__money">{{ countPasadas(item.doc) }}</div>
+                  <div class="paso7__label" style="margin-top: 0.75rem">Suma neta estimada</div>
+                  <div class="paso7__money paso7__money--sm">{{ sumaNetaDe(item.doc, item.index) | number: '1.2-2' }}</div>
+                  <p *ngIf="tipoDe(item.index) === 'NC'">
+                    Tipo NC: los importes de pasadas se normalizan a negativos al validar (idempotente si ya vienen negativos).
+                  </p>
+                </aside>
+              </div>
+            </ng-container>
+          </div>
+        </app-accordion-panel>
+      </app-accordion>
     </div>
+
+    <ng-template #simpleDoc>
+      <div class="paso7__layout">
+        <div class="paso7__form-card">
+          <div class="paso7__form-head">
+            <h3>Datos del documento</h3>
+            <span class="paso7__form-chip">Teclado primero</span>
+          </div>
+
+          <form [formGroup]="form" class="pw__form-grid paso7__form" (ngSubmit)="continuar()">
+            <div class="pw__field">
+              <label for="factura">Número de factura *</label>
+              <input
+                #facturaInput
+                id="factura"
+                formControlName="factura"
+                autocomplete="off"
+                enterkeyhint="next"
+              />
+              <div class="pw__field-error" *ngIf="invalid('factura')">Obligatorio</div>
+            </div>
+
+            <div class="pw__field">
+              <label for="tipo">Tipo *</label>
+              <select id="tipo" formControlName="tipo">
+                <option *ngFor="let t of tiposDocumento" [value]="t">{{ t === 'FC' ? 'FC — Factura' : 'NC — Nota de crédito' }}</option>
+              </select>
+            </div>
+
+            <div class="pw__field">
+              <label for="cuenta">Cuenta</label>
+              <input id="cuenta" formControlName="cuenta" autocomplete="off" placeholder="Opcional" enterkeyhint="next" />
+            </div>
+
+            <div class="pw__field paso7__field--full">
+              <app-search-multi-select
+                label="Empresa *"
+                [options]="empresaOptions"
+                [value]="empresaIds"
+                mode="single"
+                [disabled]="true"
+                [clearable]="false"
+                placeholder="Empresa del Paso 1"
+                emptyMessage="Sin empresa seleccionada en Paso 1"
+              ></app-search-multi-select>
+              <p class="paso7__hint">Definida en Paso 1 · no se modifica aquí</p>
+              <div class="pw__field-error" *ngIf="invalid('empresa_id')">Obligatorio (elegí empresa en Paso 1)</div>
+            </div>
+
+            <div class="pw__field paso7__field--date">
+              <app-date-range-picker
+                label="Fecha de documento *"
+                mode="single"
+                inputId="fecha_factura"
+                placeholder="dd/mm/aaaa"
+                [value]="fechaRanges[0]"
+                (valueChange)="onFechaChange($event, 0)"
+              ></app-date-range-picker>
+              <div class="pw__field-error" *ngIf="invalid('fecha_factura')">Obligatorio</div>
+            </div>
+
+            <div class="pw__field">
+              <label for="bonificacion">Bonificación *</label>
+              <input id="bonificacion" type="number" step="0.01" formControlName="bonificacion" enterkeyhint="next" />
+              <p class="paso7__hint">Total de pasadas − bonificación = subtotal (sin IVA). No viene del archivo.</p>
+              <div class="pw__field-error" *ngIf="invalid('bonificacion')">Obligatorio</div>
+            </div>
+
+            <div class="pw__field">
+              <label for="importe_sin_iva">Subtotal *</label>
+              <input id="importe_sin_iva" type="number" step="0.01" formControlName="importe_sin_iva" enterkeyhint="next" />
+              <div class="pw__field-error" *ngIf="invalid('importe_sin_iva')">Obligatorio</div>
+            </div>
+
+            <div class="pw__field">
+              <label for="percepciones">Percepciones *</label>
+              <input id="percepciones" type="number" step="0.01" formControlName="percepciones" enterkeyhint="next" />
+              <div class="pw__field-error" *ngIf="invalid('percepciones')">Ingresá un importe válido</div>
+            </div>
+
+            <div class="pw__field">
+              <label for="iva">IVA *</label>
+              <input id="iva" type="number" step="0.01" formControlName="iva" enterkeyhint="next" />
+              <div class="pw__field-error" *ngIf="invalid('iva')">Ingresá un importe válido</div>
+            </div>
+
+            <div class="pw__field">
+              <label for="importe_total">Total *</label>
+              <input id="importe_total" type="number" step="0.01" formControlName="importe_total" enterkeyhint="done" />
+              <div class="pw__field-error" *ngIf="invalid('importe_total')">Obligatorio</div>
+            </div>
+          </form>
+
+          <button type="button" class="pw__btn pw__btn--ghost pw__btn--small paso7__mvp" (click)="cargarFacturaMvp()">
+            Prefijar documento del ejemplo MVP
+          </button>
+        </div>
+
+        <aside class="paso7__side" aria-live="polite">
+          <div class="paso7__label">Suma estimada de importes netos</div>
+          <div class="paso7__money">{{ sumaNetos | number: '1.2-2' }}</div>
+          <div class="paso7__comparison">
+            <span>Suma neta de pasadas</span>
+            <strong>{{ sumaNetos | number: '1.2-2' }}</strong>
+            <span>Bonificación</span>
+            <strong>{{ form.controls.bonificacion.value | number: '1.2-2' }}</strong>
+            <span>Subtotal de documento</span>
+            <strong>{{ form.controls.importe_sin_iva.value | number: '1.2-2' }}</strong>
+            <span>Diferencia</span>
+            <strong [class.paso7__difference--ok]="diferenciaDentroTolerancia">{{ diferenciaNetoPasadas | number: '1.2-2' }}</strong>
+            <span>Percepciones</span>
+            <strong>{{ form.controls.percepciones.value | number: '1.2-2' }}</strong>
+            <span>IVA</span>
+            <strong>{{ form.controls.iva.value | number: '1.2-2' }}</strong>
+            <span>Total de documento</span>
+            <strong>{{ form.controls.importe_total.value | number: '1.2-2' }}</strong>
+          </div>
+          <p>
+            Al continuar, el paso de validación compara Σ pasadas − bonificación con el subtotal
+            (tolerancia ±1% = {{ toleranciaFactura | number: '1.2-2' }}).
+          </p>
+        </aside>
+      </div>
+    </ng-template>
   </div>
 
   <div class="pw__footer">
@@ -161,10 +344,22 @@
         <kbd>Ctrl</kbd>+<kbd>Enter</kbd> continuar ·
         <kbd>Alt</kbd>+<kbd>←</kbd> volver
       </span>
-      <span>Ejemplo MVP: F-A-0001-00004567 · sin IVA 102060.00</span>
+      <span *ngIf="!esMasiva">Ejemplo MVP: F-A-0001-00004567 · sin IVA 102060.00</span>
+      <span *ngIf="esMasiva">
+        {{ documentos.length }} documentos
+        <ng-container *ngIf="cantidadOmitidos"> · {{ cantidadOmitidos }} omitidos</ng-container>
+      </span>
     </div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--ghost"
+        *ngIf="puedeOmitirInvalidosYContinuar"
+        (click)="omitirInvalidosYContinuar()"
+      >
+        Omitir documentos con error y continuar
+      </button>
       <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>
     </div>
   </div>

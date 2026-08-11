@@ -34,7 +34,7 @@ const PASOS: PasoMeta[] = [
   { id: 4, label: 'Plantilla' },
   { id: 5, label: 'Mapear columnas' },
   { id: 6, label: 'Estaciones' },
-  { id: 7, label: 'Factura' },
+  { id: 7, label: 'Documento' },
   { id: 8, label: 'Validación' },
   { id: 9, label: 'Revisar' },
 ];
@@ -138,7 +138,11 @@ export class PeajesWizardComponent implements OnInit {
 
   puedeAvanzarA(paso: WizardPasoId): boolean {
     const s = this.state.snapshot();
-    if (paso >= 2 && (!s.preview || !s.empresaId)) {
+    if (paso >= 2 && !s.preview) {
+      return false;
+    }
+    // Simple: empresa global obligatoria. Masiva: empresa por documento en Paso 7.
+    if (paso >= 2 && s.modoImportacion !== 'masiva' && !s.empresaId) {
       return false;
     }
     if (paso >= 5 && s.columnasIncluidas.length === 0) {
@@ -151,9 +155,23 @@ export class PeajesWizardComponent implements OnInit {
       return false;
     }
     if (paso >= 8) {
-      const f = s.factura;
-      if (!f.factura || !f.empresa_id || !f.fecha_factura ||
-          f.importe_sin_iva === null || f.percepciones === null || f.iva === null || f.importe_total === null) {
+      const docs = s.documentos?.length ? s.documentos : [s.factura];
+      const incluidos = docs.filter((f) => !('omitido' in f && f.omitido));
+      if (!incluidos.length) {
+        return false;
+      }
+      const incompleto = incluidos.some(
+        (f) =>
+          !f.factura ||
+          !f.empresa_id ||
+          !f.fecha_factura ||
+          f.bonificacion === null ||
+          f.importe_sin_iva === null ||
+          f.percepciones === null ||
+          f.iva === null ||
+          f.importe_total === null
+      );
+      if (incompleto) {
         return false;
       }
     }

@@ -62,7 +62,7 @@
     (rowClick)="openRow($event)"
   >
     <ng-template appDataTableColumn="fecha_hora" let-row>
-      <span class="pl__mono">{{ asPasada(row).fecha_hora | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+      <span class="pl__mono">{{ formatFechaHora(asPasada(row).fecha_hora) }}</span>
     </ng-template>
 
     <ng-template appDataTableColumn="estacion_nombre" let-row>
@@ -99,7 +99,7 @@
     </ng-template>
 
     <ng-template appDataTableColumn="created_at" let-row>
-      <span class="pl__mono">{{ asPasada(row).created_at | date: 'yyyy-MM-dd HH:mm' }}</span>
+      <span class="pl__mono">{{ formatFechaHora(asPasada(row).created_at, false) }}</span>
     </ng-template>
 
     <ng-template appDataTableColumn="acciones" let-row>

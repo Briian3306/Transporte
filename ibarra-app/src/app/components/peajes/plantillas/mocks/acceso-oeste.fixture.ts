@@ -34,7 +34,9 @@ export function buildAccesoOestePlantillaConfigs(): ConfiguracionPlantilla[] {
   return [
     config('ao-10', 'FECHA', 'FECHA_HORA', 10, {
       algoritmo_codigo: 'FORMATEAR_FECHA_HORA',
-      columnas_entrada: ['FECHA', 'HORA'], formato_hora: 'YYYY-MM-DD HH:MM:SS',
+      columnas_entrada: ['FECHA', 'HORA'],
+      // Acceso Oeste CSV: FECHA=yyyy-MM-dd, HORA=HH:mm:ss.
+      formato_hora: 'YYYY-MM-DD HH:MM:SS',
     }),
     config('ao-20', 'ESTACION', 'CODIGO_ESTACION', 20, {
       algoritmo_codigo: 'COMBINAR_COLUMNAS',

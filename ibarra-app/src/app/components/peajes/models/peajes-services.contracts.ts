@@ -7,7 +7,8 @@ import {
   ErrorValidacionPasada,
   Estacion,
   EstacionAliasProveedor,
-  Factura,
+  EstacionPendienteGrupo,
+  Documento,
   Pasada,
   PasadaEstandarizada,
   PasadaGestion,
@@ -45,6 +46,22 @@ export interface RelacionEstacionProveedor {
   valorProveedor: string;
   estacionId: string | null;
   peajeIdDerivado?: string | null;
+  /** Valor dominante de Concesion en filas con este código (RN-26). */
+  concesionProveedor?: string | null;
+  /** Peaje de alcance para filtrar estaciones (recomendado o corregido). */
+  peajeIdAlcance?: string | null;
+}
+
+/** Recomendación Concesion → Peaje detectada en Paso 5 (RN-26). */
+export interface RecomendacionPeajeConcesion {
+  concesion: string;
+  peajeId: string | null;
+  peajeNombre: string | null;
+  empresaId: string | null;
+  /** Resultado del reconocedor (misma idea que estaciones). */
+  tipo?: 'exacta' | 'sugerencias' | 'sin_coincidencia';
+  /** Peajes candidatos cuando no hay match exacto. */
+  sugerencias?: Array<{ id: string; nombre: string }>;
 }
 
 export interface ResultadoValidacionCarga {
@@ -55,7 +72,7 @@ export interface ResultadoValidacionCarga {
 }
 
 export interface ConfirmacionCargaInput {
-  factura: Omit<Factura, 'id' | 'created_at'> & { id?: string };
+  documento: Omit<Documento, 'id' | 'created_at'> & { id?: string };
   pasadas: PasadaEstandarizada[];
   plantillaId?: string | null;
   mapeos: MapeoColumna[];
@@ -93,12 +110,36 @@ export interface PasadasListResult {
   offset: number;
 }
 
+/** Filtros server-side para peajes_listar_estaciones_pendientes. */
+export interface EstacionesPendientesListFilters {
+  fecha_desde?: string | null;
+  fecha_hasta?: string | null;
+  empresa_ids?: string[];
+  q_estacion?: string | null;
+  q_empresa?: string | null;
+}
+
+export interface EstacionesPendientesListParams {
+  filters?: EstacionesPendientesListFilters;
+  sort?: string;
+  dir?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+}
+
+export interface EstacionesPendientesListResult {
+  rows: EstacionPendienteGrupo[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export type PasadaCreateInput = {
   fecha_hora: string;
   pase_id: string;
   patente_id: string;
   estacion_id: string;
-  factura_id: string;
+  documento_id: string;
   precio: number;
   bonificacion?: number;
   quantity?: number;
@@ -110,14 +151,14 @@ export type PasadaUpdatePatch = Partial<{
   pase_id: string;
   patente_id: string;
   estacion_id: string;
-  factura_id: string;
+  documento_id: string;
   precio: number;
   bonificacion: number;
   quantity: number;
 }>;
 
 export interface ConfirmacionCargaResultado {
-  factura: Factura;
+  documento: Documento;
   pasadas: Pasada[];
   registro: RegistroCargaPeajes;
 }
@@ -145,19 +186,25 @@ export interface PeajesCatalogoService {
   crearPase(data: Omit<Pase, 'id' | 'created_at' | 'patente'>): Observable<Pase>;
 }
 
-/** Persistencia de carga / factura — agente 01; mocks hasta F01-2/5/6. */
+/** Persistencia de carga / documento — agente 01; mocks hasta F01-2/5/6. */
 export interface PeajesCargaService {
   validarCarga(
     pasadas: PasadaEstandarizada[],
-    factura: Pick<Factura, 'importe_sin_iva' | 'percepciones' | 'iva' | 'importe_total'>
+    documento: Pick<
+      Documento,
+      'tipo' | 'importe_sin_iva' | 'bonificacion' | 'percepciones' | 'iva' | 'importe_total'
+    >
   ): Observable<ResultadoValidacionCarga>;
   confirmarCarga(input: ConfirmacionCargaInput): Observable<ConfirmacionCargaResultado>;
   detectarDuplicados(pasadas: PasadaEstandarizada[]): Observable<ErrorValidacionPasada[]>;
 }
 
-/** Gestión / encuesta de pasadas persistidas (F08-1). */
+/** Gestión / encuesta de pasadas persistidas (F08-1 / F08-2). */
 export interface PeajesPasadasService {
   listar(params: PasadasListParams): Observable<PasadasListResult>;
+  listarEstacionesPendientes(
+    params: EstacionesPendientesListParams
+  ): Observable<EstacionesPendientesListResult>;
   crear(data: PasadaCreateInput): Observable<Pasada>;
   actualizar(id: string, patch: PasadaUpdatePatch): Observable<Pasada>;
   eliminar(id: string): Observable<{ id: string; deleted: boolean }>;

@@ -1,3 +1,7 @@
+import {
+  formatUtcDateOnly,
+  isUtcDateOnly,
+} from '../../../wizard/services/peajes-fecha.util';
 import { resolverColumnasEntrada } from '../algorithm-descriptor';
 import { StrategyContext, TransformStrategy } from '../strategy.types';
 
@@ -16,7 +20,10 @@ export type FormatoFechaHora = (typeof FORMATOS_FECHA_HORA)[number];
 function asString(value: unknown): string {
   if (value == null) return '';
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    // ISO date-only: unambiguous for Postgres (evita DD/MM vs MDY).
+    // Date-only Excel cells are UTC midnight — local getters shift −1 day in ART.
+    if (isUtcDateOnly(value)) {
+      return formatUtcDateOnly(value);
+    }
     const yyyy = value.getFullYear();
     const mm = String(value.getMonth() + 1).padStart(2, '0');
     const dd = String(value.getDate()).padStart(2, '0');
@@ -232,7 +239,10 @@ export const formatearFechaHoraStrategy: TransformStrategy = {
     // Si FECHA ya es Date con hora, usarla como ancla
     const fechaRaw = normalizarFechaEntrada(fechaVal);
     const horaRaw = normalizarHoraEntrada(horaVal, fechaVal);
-    const formato = String(ctx.parametros?.['formato_hora'] ?? 'HHMMSS').trim();
+    const formatoExplicit = ctx.parametros?.['formato_hora'];
+    const formato = String(
+      formatoExplicit ?? inferFormatoFechaHora(fechaVal, horaVal)
+    ).trim();
 
     if (!fechaRaw && !horaRaw) return null;
 
@@ -260,12 +270,18 @@ export const combinarColumnasStrategy: TransformStrategy = {
       formatoHora === 'MM/DD/YY HHMMSS' ||
       (columnas.length === 2 && pareceParFechaHora(columnas, ctx))
     ) {
+      const colFecha = columnas[0] ?? 'FECHA';
+      const colHora = columnas[1] ?? 'HORA';
+      const fechaVal = ctx.fila[colFecha] ?? ctx.resultado[colFecha];
+      const horaVal = ctx.fila[colHora] ?? ctx.resultado[colHora];
       const formatted = formatearFechaHoraStrategy.ejecutar({
         ...ctx,
         parametros: {
           ...ctx.parametros,
           columnas_entrada: columnas.length ? columnas : ['FECHA', 'HORA'],
-          formato_hora: (formatoHora as string | undefined) ?? 'DD/MM/YYYY HH:MM:SS',
+          formato_hora:
+            (formatoHora as string | undefined) ??
+            inferFormatoFechaHora(fechaVal, horaVal),
         },
       });
       if (formatted != null && formatted !== '') {
@@ -381,17 +397,50 @@ export const operarNumeroStrategy: TransformStrategy = {
 
 function normalizarFechaEntrada(value: unknown): string {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return asString(value);
+    // FECHA + HORA: calendar day from UTC (date-only cells are UTC midnight).
+    return formatUtcDateOnly(value);
   }
   // Excel serial number (days since 1899-12-30)
   if (typeof value === 'number' && Number.isFinite(value) && value > 20000 && value < 80000) {
     const utc = Math.round((value - 25569) * 86400 * 1000);
     const d = new Date(utc);
     if (!Number.isNaN(d.getTime())) {
-      return asString(d);
+      return formatUtcDateOnly(d);
     }
   }
-  return asString(value).trim();
+  const s = asString(value).trim();
+  // Recover prior bug: formatLocalDateTime(UTC midnight) → "YYYY-MM-DD 21|22|23:00:00" in west TZ.
+  const shifted = /^(\d{4})-(\d{2})-(\d{2})[ T](21|22|23):00:00$/.exec(s);
+  if (shifted) {
+    const y = Number(shifted[1]);
+    const mo = Number(shifted[2]);
+    const day = Number(shifted[3]);
+    const hh = Number(shifted[4]);
+    const reconstructed = new Date(y, mo - 1, day, hh, 0, 0);
+    if (!Number.isNaN(reconstructed.getTime())) {
+      return formatUtcDateOnly(reconstructed);
+    }
+  }
+  return s;
+}
+
+/** Prefer ISO when FECHA is yyyy-MM-dd / Date; HHMMSS when hora is digits-only. */
+function inferFormatoFechaHora(fechaVal: unknown, horaVal: unknown): string {
+  const hora = asString(horaVal).trim();
+  if (hora && /^\d{4,6}$/.test(hora.replace(/\D/g, '')) && !hora.includes(':')) {
+    return 'HHMMSS';
+  }
+  if (fechaVal instanceof Date) {
+    return 'YYYY-MM-DD HH:MM:SS';
+  }
+  const fecha = asString(fechaVal).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(fecha)) {
+    return 'YYYY-MM-DD HH:MM:SS';
+  }
+  if (/^\d{1,2}:\d{2}/.test(hora)) {
+    return 'DD/MM/YYYY HH:MM:SS';
+  }
+  return 'HHMMSS';
 }
 
 function normalizarHoraEntrada(horaVal: unknown, fechaVal: unknown): string {
@@ -462,13 +511,10 @@ function parseFechaDdMmYyyy(fecha: string, formato?: string): string | null {
   if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
     return t.slice(0, 10);
   }
-  // Locale Date string fallback: try Date parse
+  // Locale Date string fallback: prefer UTC calendar day (ISO date-only parses as UTC midnight).
   const d = new Date(t);
   if (!Number.isNaN(d.getTime()) && /\d{4}/.test(t)) {
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    return `${yyyy}-${mm}-${dd}`;
+    return formatUtcDateOnly(d);
   }
   return null;
 }

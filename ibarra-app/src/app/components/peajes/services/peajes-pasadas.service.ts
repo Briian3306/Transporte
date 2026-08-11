@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, from } from 'rxjs';
-import { Pasada, PasadaGestion } from '../models/peajes.models';
+import { EstacionPendienteGrupo, Pasada, PasadaGestion } from '../models/peajes.models';
 import {
+  EstacionesPendientesListParams,
+  EstacionesPendientesListResult,
   PasadaCreateInput,
   PasadaUpdatePatch,
   PasadasListParams,
@@ -32,6 +34,31 @@ export class PeajesPasadasSupabaseService implements PeajesPasadasService {
           limit: Number(data?.limit ?? params.limit ?? 50),
           offset: Number(data?.offset ?? params.offset ?? 0),
         } satisfies PasadasListResult;
+      })
+    );
+  }
+
+  listarEstacionesPendientes(
+    params: EstacionesPendientesListParams
+  ): Observable<EstacionesPendientesListResult> {
+    return from(
+      this.supabase.executeWithRetry(async () => {
+        const client = await this.supabase.getClient();
+        const { data, error } = await client.rpc('peajes_listar_estaciones_pendientes', {
+          p_filters: params.filters ?? {},
+          p_sort: params.sort ?? 'cantidad_pasadas',
+          p_dir: params.dir ?? 'desc',
+          p_limit: params.limit ?? 50,
+          p_offset: params.offset ?? 0,
+        });
+        if (error) throw error;
+        const raw = (data?.rows ?? []) as Omit<EstacionPendienteGrupo, 'id'>[];
+        return {
+          rows: raw.map((r) => ({ ...r, id: r.estacion_id })),
+          total: Number(data?.total ?? 0),
+          limit: Number(data?.limit ?? params.limit ?? 50),
+          offset: Number(data?.offset ?? params.offset ?? 0),
+        } satisfies EstacionesPendientesListResult;
       })
     );
   }

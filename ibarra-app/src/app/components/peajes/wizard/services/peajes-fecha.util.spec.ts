@@ -1,28 +1,63 @@
-import { toPostgresFechaHora } from './peajes-fecha.util';
+import {
+  toPostgresFechaHora,
+  formatLocalDateTime,
+  formatUtcDateTime,
+  formatUtcDateOnly,
+  isUtcDateOnly,
+  normalizarCeldaExcel,
+} from './peajes-fecha.util';
 
 describe('toPostgresFechaHora', () => {
-  it('conserva yyyy-MM-dd HH:mm:ss válido', () => {
+  it('acepta ISO con hora', () => {
     expect(toPostgresFechaHora('2026-07-13 15:54:17')).toBe('2026-07-13 15:54:17');
   });
 
-  it('convierte dd/MM/yyyy HH:mm:ss (es-AR) a ISO', () => {
+  it('acepta dd/MM/yyyy con hora', () => {
     expect(toPostgresFechaHora('13/07/2026 15:54:17')).toBe('2026-07-13 15:54:17');
   });
 
-  it('corrige yyyy-dd-MM inválido (mes 13) intercambiando día/mes', () => {
+  it('corrige yyyy-dd-MM inválido', () => {
     expect(toPostgresFechaHora('2026-13-07 15:54:17')).toBe('2026-07-13 15:54:17');
   });
 
-  it('interpreta MM/DD cuando el segundo token > 12', () => {
+  it('acepta MM/DD cuando mes>12 en 2.º token no aplica; 07/13 es julio', () => {
     expect(toPostgresFechaHora('07/13/2026 15:54:17')).toBe('2026-07-13 15:54:17');
   });
 
-  it('acepta Date local', () => {
+  it('formatea Date local', () => {
     const d = new Date(2026, 6, 13, 15, 54, 17);
     expect(toPostgresFechaHora(d)).toBe('2026-07-13 15:54:17');
   });
 
-  it('devuelve null si el mes sigue inválido', () => {
+  it('rechaza fecha imposible', () => {
     expect(toPostgresFechaHora('2026-13-32 15:54:17')).toBeNull();
+  });
+});
+
+describe('formatLocalDateTime / normalizarCeldaExcel', () => {
+  it('exporta yyyy-MM-dd HH:mm:ss', () => {
+    expect(formatLocalDateTime(new Date(2026, 6, 24, 13, 37, 24))).toBe('2026-07-24 13:37:24');
+  });
+
+  it('normalizarCeldaExcel usa formatLocalDateTime para datetime local', () => {
+    expect(normalizarCeldaExcel(new Date(2026, 6, 24, 23, 54, 2))).toBe('2026-07-24 23:54:02');
+  });
+
+  it('normalizarCeldaExcel date-only UTC midnight usa calendario UTC (no −1 día ART)', () => {
+    const utcMidnight = new Date(Date.UTC(2026, 6, 13)); // 2026-07-13T00:00:00Z
+    expect(isUtcDateOnly(utcMidnight)).toBeTrue();
+    expect(formatUtcDateOnly(utcMidnight)).toBe('2026-07-13');
+    expect(normalizarCeldaExcel(utcMidnight)).toBe('2026-07-13 00:00:00');
+  });
+});
+
+describe('formatUtcDateTime', () => {
+  it('muestra componentes UTC sin shift local', () => {
+    expect(formatUtcDateTime('2026-07-11T18:02:07.000Z')).toBe('2026-07-11 18:02:07');
+    expect(formatUtcDateTime('2026-07-11 18:02:07+00')).toBe('2026-07-11 18:02:07');
+  });
+
+  it('soporta sin segundos', () => {
+    expect(formatUtcDateTime('2026-07-11T18:02:07.000Z', false)).toBe('2026-07-11 18:02');
   });
 });

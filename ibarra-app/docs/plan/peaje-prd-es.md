@@ -7,7 +7,8 @@
 | **Nombre del proyecto**  | Module Automation Tool                                                                                                                                                                                                                            |
 | **Tipo de documento**    | Documento de Requisitos del Producto — PRD                                                                                                                                                                                                        |
 | **Fecha de inicio**      | 29 de julio de 2026                                                                                                                                                                                                                               |
-| **Estado del proyecto**  | Definición y planificación del MVP                                                                                                                                                                                                                |
+| **Estado del proyecto**  | MVP en implementación (wizard + documentos FC\|NC + importación masiva; F13 passing)                                                                                                                                                               |
+| **Última actualización PRD** | 10 de agosto de 2026 — alineación F13 documentos / masiva / RN-16 hora                                                                                                                                    |
 | **Plataforma principal** | Aplicación web responsive                                                                                                                                                                                                                         |
 | **Objetivo principal**   | Automatizar la carga, transformación, validación y almacenamiento de registros históricos de pasadas por peajes e información de facturación, con el propósito de generar datos estandarizados para inteligencia de negocio y toma de decisiones. |
 
@@ -25,10 +26,11 @@ La aplicación permitirá que los usuarios:
 4. Apliquen algoritmos de transformación.
 5. Relacionen las columnas del archivo con una estructura interna estandarizada.
 6. Identifiquen el peaje correspondiente a cada registro.
-7. Ingresen la información de la factura.
+7. Ingresen la información del documento (factura FC o nota de crédito NC).
 8. Validen los resultados.
 9. Almacenen la información procesada.
 10. Reutilicen configuraciones mediante plantillas.
+11. En importación masiva, procesen varios documentos del mismo archivo (columna `FACTURA`).
 
 El MVP estará enfocado en ofrecer un flujo de trabajo sencillo, guiado y comprensible para usuarios  analistas.
 
@@ -163,7 +165,7 @@ El frontend deberá implementar un asistente paso a paso.
 
 ### Paso 1 — Cargar archivo
 
-El usuario deberá cargar un archivo `.xlsx` con información histórica de pasadas por peajes.
+El usuario deberá cargar un archivo `.xlsx` (o CSV compatible) con información histórica de pasadas por peajes.
 
 La interfaz deberá permitir:
 
@@ -174,6 +176,15 @@ La interfaz deberá permitir:
 * Mostrar el tamaño del archivo.
 * Mostrar la cantidad de filas detectadas.
 * Informar cuando el archivo sea inválido o no pueda procesarse.
+* Elegir modo de carga: **simple** (un documento) o **importación masiva**.
+
+#### Importación masiva
+
+Cuando el modo sea masiva:
+
+* El archivo **deberá** incluir una columna exacta `FACTURA` que agrupe filas por número de documento. Sin esa columna, el sistema bloqueará la continuación (sin fallback silencioso).
+* La **empresa** del Paso 1 será **opcional** (valor por defecto); podrá completarse o corregirse por documento en el Paso 7.
+* Cada valor distinto de `FACTURA` originará un documento a confirmar por separado.
 
 ### Paso 2 — Previsualizar y seleccionar columnas
 
@@ -263,12 +274,45 @@ Ejemplo:
 | `Fecha Movimiento`  | `FECHA_HORA`       |
 | `Dominio`           | `PATENTE_ID`       |
 | `Zona`              | `ZONA`             |
-| `Estación`          | `PEAJE_ID`         |
+| `Estación`          | `ESTACION_ID`      |
 | `Precio Unitario`   | `PRECIO`           |
 | `Cantidad`          | `QUANTITY`         |
 | `Importe`           | `IMPORTE NETO`     |
 
 El sistema deberá impedir continuar cuando una columna obligatoria no haya sido relacionada.
+
+#### Mapeo Company → Concesión → Peaje → Estaciones (RN-26)
+
+En formatos de importación donde exista la columna Excel `Concesion` (p. ej. Telepase Plus / ConsumosResumen), el comportamiento del mapeo y del reconocimiento de estaciones dependerá de la **empresa** seleccionada (Paso 1 o documento) y de esa columna:
+
+```text
+COMPANY (empresa)
+   ↓
+Excel: Concesion  →  representa el PEAJE
+   ↓
+Peaje recomendado / coincidente (catálogo)
+   ↓
+ESTACIONES recomendadas solo de ese Peaje (y empresa)
+```
+
+Ejemplo:
+
+```text
+COMPANY: TelePASE
+Concesion: AUSA
+→ Peaje: AUSA
+→ Estaciones recomendadas: Parque Avellaneda, Dellepiane, Alberti, …
+```
+
+Reglas:
+
+1. Detectar la columna origen `Concesion` (metadata; no es destino Structure Goal).
+2. Usar sus valores para identificar o recomendar el **Peaje** del catálogo (`empresas` → `peajes`).
+3. Tras identificar el Peaje, las **estaciones** sugeridas y listadas para selección deberán pertenecer a ese Peaje (y a la empresa correspondiente). No mostrar estaciones de peajes u empresas no relacionados.
+4. El usuario podrá corregir manualmente el Peaje o la Estación recomendados.
+5. Reutilizar las relaciones existentes en base de datos (empresa / peaje / estación); no hardcodear listas.
+
+La detección y previsualización de peajes por `Concesion` ocurre en **Paso 5**; la selección filtrada de estaciones se confirma en **Paso 6**.
 
 ### Paso 6 — Relacionar estaciones y peajes
 
@@ -282,6 +326,8 @@ La relación será:
 PASADA.ESTACION_ID → ESTACION.ID
 ESTACION.PEAJE_ID → PEAJE.ID
 ```
+
+Cuando el archivo traiga `Concesion` (RN-26), el peaje se **recomienda primero** desde ese valor; el selector de estaciones del código proveedor se limita a las estaciones de ese peaje hasta que el usuario cambie el peaje manualmente.
 
 El código de estación recibido en el archivo podrá ser diferente del identificador interno utilizado por el sistema.
 
@@ -299,8 +345,8 @@ El sistema deberá permitir:
 
 - Buscar una equivalencia exacta entre el código del proveedor y una estación interna.
 - Aplicar una relación guardada previamente en una plantilla.
-- Sugerir estaciones según el nombre o código recibido.
-- Seleccionar manualmente una estación.
+- Sugerir estaciones según el nombre o código recibido **dentro del peaje/empresa vigentes**.
+- Seleccionar manualmente una estación (dentro del alcance del peaje; el peaje es corregible).
 - Crear una nueva estación cuando no exista.
 - Identificar estaciones sin relación.
 - Mostrar el peaje al que pertenece la estación seleccionada.
@@ -309,52 +355,60 @@ El sistema deberá permitir:
 La relación entre el código del proveedor y la estación deberá formar parte de la configuración del adaptador o de la plantilla.
 
 El sistema deberá impedir la finalización de la carga cuando existan registros sin una estación relacionada.
-### Paso 7 — Ingresar información de factura
+### Paso 7 — Ingresar información de documento
 
-Para el MVP, la información de la factura se ingresará manualmente.
+Para el MVP, la información del documento se ingresará manualmente (no hay extracción PDF).
 
-El usuario deberá completar:
+El usuario deberá completar, por documento:
 
-* Número de factura.
-* Cuenta.
-* Empresa.
-* Fecha de factura.
-* Importe sin IVA.
-* Importe total.
+* Número de documento (`FACTURA` en Excel / formulario).
+* Tipo: `FC` (factura) o `NC` (nota de crédito).
+* Cuenta (opcional).
+* Empresa (en carga simple: la del Paso 1; en masiva: editable por panel).
+* Fecha del documento.
+* Subtotal (`importe_sin_iva`), **bonificación de cabecera** (manual; no viene del Excel), percepciones, IVA y total declarado según el desglose implementado.
+
+En **importación masiva**, la UI mostrará un acordeón con un panel por valor de `FACTURA` (autofill del número). El usuario podrá:
+
+* Omitir un documento inválido y continuar con los válidos.
+* Omitir en bloque los documentos con error.
+* Desde un panel, corregir empresa y volver a mapeo (Paso 5) o estaciones (Paso 6) cuando el archivo lo requiera.
+
+Para `NC`, los importes de cabecera y de pasadas se normalizan a **negativos**; para `FC` permanecen positivos.
 
 La extracción automática desde PDF no forma parte del MVP.
 
 ### Paso 8 — Validar información
 
-El sistema deberá verificar:
+El sistema deberá verificar (solo sobre documentos **no omitidos**):
 
 * Campos obligatorios.
-* Fechas inválidas.
+* Fechas inválidas (incl. `FECHA_HORA` con hora completa; ver RN-16).
 * Valores numéricos inválidos.
 * Patentes vacías.
-* Peajes sin relacionar.
-* Identificadores duplicados.
-* Importes negativos.
+* Peajes / estaciones sin relacionar.
+* Identificadores duplicados (clave RN-16).
+* Signos incoherentes respecto del tipo FC|NC.
 * Cantidades inválidas.
 * Registros incompletos.
-* Diferencias entre el total de la factura y la suma de las pasadas.
+* Diferencias entre el subtotal del documento y la suma de `IMPORTE_NETO` de sus pasadas (tolerancia por defecto = 1% del subtotal).
 
 ### Paso 9 — Revisar y finalizar
 
-Antes de guardar la información, el sistema deberá mostrar:
+Antes de guardar, el sistema deberá mostrar:
 
 * Información del archivo.
 * Plantilla utilizada.
 * Transformaciones aplicadas.
 * Relaciones entre columnas.
-* Relaciones con peajes.
-* Información de factura.
+* Relaciones con peajes / estaciones.
+* Información de documento(s) incluidos (y omitidos, si aplica).
 * Primeras 10 filas transformadas.
-* Cantidad de filas válidas.
-* Cantidad de filas rechazadas.
-* Advertencias.
-* Errores.
-* Total calculado.
+* Cantidad de filas válidas / rechazadas.
+* Advertencias y errores.
+* Totales calculados por documento incluido.
+
+La confirmación invocará la persistencia **por documento incluido** (`peajes_confirmar_carga`), aislando errores entre documentos. El resumen final distinguirá importados, omitidos+errores y fallos de confirmación.
 
 El usuario deberá confirmar expresamente la carga.
 
@@ -658,29 +712,33 @@ El sistema deberá impedir continuar cuando falten relaciones requeridas.
 
 El sistema deberá relacionar el valor del archivo con `Peaje.ID`.
 
+Cuando exista columna `Concesion`, ese valor representa el peaje a relacionar (ver RN-26 / Paso 5–6).
+
 ### RF-17 — Sugerir coincidencias de peajes
 
-El sistema deberá sugerir peajes existentes a partir del nombre cargado.
+El sistema deberá sugerir peajes existentes a partir del nombre cargado (incluidos valores de `Concesion`).
+
+Las estaciones recomendadas tras un peaje coincidente deberán filtrarse por ese peaje y la empresa seleccionada; no se listarán estaciones de peajes u empresas ajenos. El usuario podrá corregir peaje o estación manualmente.
 
 ### RF-18 — Resolver peajes desconocidos
 
 El usuario deberá poder seleccionar o crear un peaje cuando no exista una coincidencia.
 
-### RF-19 — Ingresar información de factura
+### RF-19 — Ingresar información de documento
 
-El usuario deberá ingresar manualmente la factura.
+El usuario deberá ingresar manualmente los datos del documento (FC o NC). En importación masiva podrá completar varios documentos del mismo archivo y omitir los inválidos.
 
-### RF-20 — Validar factura
+### RF-20 — Validar documento
 
-El sistema deberá validar los campos e importes de la factura.
+El sistema deberá validar los campos e importes de cada documento incluido frente a sus pasadas (tolerancia por defecto = 1% del subtotal).
 
 ### RF-21 — Mostrar revisión final
 
-El sistema deberá mostrar la información antes del almacenamiento.
+El sistema deberá mostrar la información antes del almacenamiento, incluyendo resumen de documentos importados / omitidos cuando aplique.
 
 ### RF-22 — Guardar información
 
-El sistema deberá guardar los datos válidos mediante Supabase.
+El sistema deberá guardar los datos válidos mediante Supabase, confirmando **por documento** e isolando errores entre documentos en cargas masivas.
 
 ### RF-23 — Informar filas rechazadas
 
@@ -884,18 +942,21 @@ Podrá incorporarse posteriormente cuando se determine si representa:
 - Una agrupación interna.
 - Una categoría operativa.
 
-### 11.2 Bill
+### 11.2 Documento (Bill)
 
-La estructura `Bill` representa la factura asociada con un conjunto de pasadas.
+La estructura de negocio `Bill` / **Documento** representa la factura (`FC`) o nota de crédito (`NC`) asociada con un conjunto de pasadas.
 
 | Columna | Descripción |
 |---|---|
-| `FACTURA` | Número de factura. |
-| `CUENTA` | Cuenta asociada con la factura. |
-| `EMPRESA` | Empresa que emitió la factura. |
-| `Fecha_factura` | Fecha de emisión de la factura. |
-| `Importe_SIN_IVA` | Importe de la factura sin IVA. |
-| `Importe_Total` | Importe total de la factura. |
+| `FACTURA` | Número de documento (identificador visible). |
+| `TIPO` | `FC` (factura) o `NC` (nota de crédito). |
+| `CUENTA` | Cuenta asociada (opcional). |
+| `EMPRESA` | Empresa del documento. |
+| `Fecha_factura` | Fecha de emisión. |
+| `Importe_SIN_IVA` | Subtotal declarado (negativo si `TIPO=NC`). |
+| `PERCEPCIONES` | Percepciones declaradas (opcional / según desglose). |
+| `IVA` | IVA declarado (según desglose). |
+| `Importe_Total` | Total declarado (negativo si `TIPO=NC`). |
 
 ### 11.3 Pase
 
@@ -1071,21 +1132,21 @@ Cardinalidad:
 PATENTES 1 ─── N PASADA
 ```
 
-### 12.5 Factura y pasada
+### 12.5 Documento y pasada
 
-Una factura podrá agrupar múltiples pasadas.
+Un documento podrá agrupar múltiples pasadas.
 
 ```text
-PASADA.FACTURA_ID → BILL.ID
+PASADA.DOCUMENTO_ID → DOCUMENTO.ID
 ```
 
 Cardinalidad:
 
 ```text
-BILL 1 ─── N PASADA
+DOCUMENTO 1 ─── N PASADA
 ```
 
-`FACTURA_ID` será una clave técnica incorporada en el modelo físico para relacionar cada pasada con su factura.
+`DOCUMENTO_ID` será la clave técnica en el modelo físico para relacionar cada pasada con su documento (`documentos`). Los alias históricos `FACTURA_ID` / `factura_*` en vistas son solo compatibilidad.
 ## 13. Definición de las relaciones
 
 ### 13.1 Relación entre Patentes y Pase
@@ -1163,27 +1224,27 @@ PEAJE 1 ─── N PASADA_COLUMNS
 
 Esta relación permite almacenar solamente el identificador del peaje dentro de cada pasada y mantener el nombre, ubicación y descripción en un catálogo independiente.
 
-### 13.5 Relación entre Bill y Pasada-Columns
+### 13.5 Relación entre Documento (Bill) y Pasada-Columns
 
-Una factura puede contener múltiples pasadas.
+Un documento puede contener múltiples pasadas.
 
-Cada pasada procesada deberá pertenecer a una factura.
+Cada pasada procesada deberá pertenecer a un documento.
 
-La estructura actual de `Pasada-Columns` no incluye una referencia a `Bill`.
+La estructura lógica de `Pasada-Columns` no exige exponer `DOCUMENTO_ID` en el Structure Goal de columnas de Excel; se incorpora en el modelo físico al confirmar la carga.
 
-Para implementar esta relación en PostgreSQL será necesario agregar una clave foránea técnica, preferentemente:
+Clave técnica:
 
 ```text
-FACTURA_ID
+DOCUMENTO_ID
 ```
 
 La relación sería:
 
 ```text
-PASADA_COLUMNS.FACTURA_ID → BILL.ID
+PASADA.DOCUMENTO_ID → DOCUMENTOS.ID
 ```
 
-La incorporación de esta clave técnica no modifica la definición de negocio presentada en `Structure Goal`.
+La incorporación de esta clave técnica no modifica la definición de negocio presentada en `Structure Goal` (número `FACTURA` + `TIPO`).
 
 ---
 
@@ -1194,13 +1255,17 @@ El siguiente modelo representa una posible implementación técnica normalizada.
 ```mermaid
 
 erDiagram
-    FACTURAS {
+    DOCUMENTOS {
         uuid id PK
         string factura
+        string tipo
         string cuenta
         string empresa_id
         date fecha_factura
         decimal importe_sin_iva
+        decimal bonificacion
+        decimal percepciones
+        decimal iva
         decimal importe_total
         datetime created_at
     }
@@ -1209,7 +1274,7 @@ erDiagram
         uuid id PK
         string nombre
         string descripcion
-        uuid empresa_id FK
+        string empresa_id
         string estrategia_codigo
         string estado
         datetime created_at
@@ -1232,7 +1297,7 @@ erDiagram
         uuid id PK
         string nombre
         string descripcion
-        uuid empresa_id FK
+        string empresa_id
         string estado
         datetime created_at
         datetime updated_at
@@ -1247,7 +1312,7 @@ erDiagram
     }
     EMPRESA {
         uuid id PK
-        nombre string
+        string nombre
     }
     PATENTES {
         uuid id PK
@@ -1272,27 +1337,35 @@ erDiagram
         datetime created_at
     }
 
+    ESTACIONES {
+        uuid id PK
+        uuid peaje_id FK
+        string nombre
+        datetime created_at
+    }
+
     PASADAS {
         uuid id PK
         uuid pase_id FK
         uuid patente_id FK
-        uuid peaje_id FK
-        uuid factura_id FK
+        uuid estacion_id FK
+        uuid documento_id FK
         datetime fecha_hora
-        string zona
         decimal precio
+        decimal bonificacion
         integer quantity
         decimal importe_neto
         datetime created_at
     }
 
-    FACTURAS ||--o{ EMPRESA : "contiene"
-    FACTURAS ||--o{ PASADAS : "contiene"
+    DOCUMENTOS ||--o{ PASADAS : "agrupa"
+    EMPRESA ||--o{ DOCUMENTOS : "emite"
     PATENTES ||--o{ PASES : "tiene"
     PATENTES ||--o{ PASADAS : "realiza"
     PASES ||--o{ PASADAS : "registra"
-    PEAJES ||--o{ PASADAS : "recibe"
-    PEAJES ||--o{ EMPRESA : "continee"
+    PEAJES ||--o{ ESTACIONES : "contiene"
+    ESTACIONES ||--o{ PASADAS : "recibe"
+    EMPRESA ||--o{ PEAJES : "opera"
     EMPRESA ||--o{ PLANTILLAS_CONFIGURACION : "posee"
     PLANTILLAS_CONFIGURACION ||--o{ CONFIGURACIONES_PLANTILLA : "contiene"
     ALGORITMOS_COMBINADOS ||--o{ ALGORITMO_COMBINADO_PASOS : "compone"
@@ -1305,13 +1378,15 @@ erDiagram
 | Structure Goal   | Modelo físico recomendado |
 | ---------------- | ------------------------- |
 | `Pasada-Columns` | `pasadas`                 |
-| `Bill`           | `facturas`                |
+| `Bill` / Documento | `documentos` (ex `facturas`; `tipo` FC\|NC) |
 | `Pase`           | `pases`                   |
 | `Patentes`       | `patentes`                |
 | `Peaje`          | `peajes`                  |
+| `Estación`       | `estaciones`              |
 | `IMPORTE NETO`   | `importe_neto`            |
 | `Fecha_factura`  | `fecha_factura`           |
-| `PEAJE_ID`       | `peaje_id`                |
+| `DOCUMENTO_ID`   | `documento_id`            |
+| `ESTACION_ID`    | `estacion_id` (peaje derivado) |
 | `PATENTE_ID`     | `patente_id`              |
 | `PASE_ID`        | `pase_id`                 |
 
@@ -1441,17 +1516,21 @@ Cuando el archivo incluya un importe final, el sistema deberá compararlo con el
 
 Una diferencia deberá generar una advertencia.
 
-### RN-12 — Asociación con factura
+### RN-12 — Asociación con documento
 
-Toda carga confirmada deberá estar relacionada con una factura.
+Toda carga confirmada deberá estar relacionada con un documento (`documentos`, tipo `FC` o `NC`).
 
-### RN-13 — Validación de factura
+### RN-13 — Validación de documento
 
-La suma de `IMPORTE NETO` deberá compararse con `Importe_SIN_IVA`.
+La suma de `IMPORTE_NETO` de las pasadas del documento deberá compararse con el subtotal declarado (`importe_sin_iva`), descontando la **bonificación de cabecera** del documento (`documentos.bonificacion`, cargada manualmente en Paso 7 cuando aparece en la factura y no en el archivo).
 
 ```text
-Total calculado = SUM(IMPORTE NETO)
+Total calculado = SUM(IMPORTE_NETO) − bonificacion_documento
 ```
+
+Equivalente: `SUM(IMPORTE_NETO)` se compara con `importe_sin_iva + bonificacion`.
+
+La tolerancia por defecto es el **1% del valor absoluto del subtotal** (`abs(subtotal) * 0.01`) cuando no se indica otra.
 
 ### RN-14 — Columnas no utilizadas
 
@@ -1489,10 +1568,12 @@ Una posible clave de negocio será:
 ```text
 PASE_ID + FECHA_HORA + ESTACION_ID + PATENTE_ID
 ```
-Esta combinación deberá validarse durante el diseño técnico.
 
-### RN-17 — Validaciones factura con pasadas
-El importe neto toal de las facturas tiene que ser igual al importe neto de la factura, para que se pueda guardar
+`FECHA_HORA` deberá conservar fecha **y hora**. Truncar a medianoche provoca falsos positivos de duplicado cuando varias pasadas legítimas comparten el mismo día (p. ej. Excel `Date` con hora).
+
+### RN-17 — Validaciones documento con pasadas
+
+El subtotal declarado del documento debe conciliar con la suma de `IMPORTE_NETO` de sus pasadas menos la bonificación de cabecera (dentro de la tolerancia de RN-13) para poder guardar. Para `NC`, cabecera y líneas deben ser coherentes en signo negativo.
 
 ### RN-18 — Orden determinista de configuración
 
@@ -1526,6 +1607,17 @@ Ante un error o rechazo, el sistema deberá informar fila, columna, orden, algor
 
 La plantilla, sus configuraciones y los pasos de sus algoritmos combinados deberán actualizarse en una operación transaccional. No podrá quedar una definición parcialmente sobrescrita.
 
+### RN-26 — Concesión → Peaje → Estaciones por empresa
+
+Si el archivo de importación incluye la columna `Concesion`, ese valor representa el **peaje** del proveedor (no la estación). El sistema deberá:
+
+1. Resolver o recomendar el peaje del catálogo a partir de `Concesion` y la empresa seleccionada.
+2. Recomendar y listar para selección únicamente las estaciones que pertenecen a ese peaje (y a la empresa asociada).
+3. No mostrar estaciones de peajes u empresas no relacionados como recomendaciones ni como opciones por defecto del selector.
+4. Permitir que el usuario corrija manualmente el peaje o la estación.
+
+Cadena normativa: `COMPANY → Concesion → PEAJE → ESTACIONES`.
+
 ## 16. Criterios de aceptación del MVP
 
 El MVP será considerado terminado cuando:
@@ -1551,8 +1643,8 @@ El MVP será considerado terminado cuando:
 * El sistema valide los campos obligatorios.
 * El usuario pueda relacionar cada valor de peaje con un registro de `Peaje`.
 * El sistema detecte peajes sin asociación.
-* El usuario pueda ingresar la factura.
-* El sistema valide la información de factura.
+* El usuario pueda ingresar el documento (FC o NC).
+* El sistema valide la información de documento frente a las pasadas.
 * El sistema identifique filas válidas y rechazadas.
 * El sistema detecte posibles duplicados.
 * El usuario pueda revisar los resultados.
@@ -1586,7 +1678,7 @@ flowchart LR
     UP --> TR[Motor de transformaciones]
     TR --> MP[Mapeo de columnas]
     MP --> PC[Catálogo de peajes]
-    PC --> FV[Validación de factura]
+    PC --> FV[Validación de documento]
     FV --> SV[Servicio de persistencia]
     SV --> SB[Supabase]
     SB --> DB[(PostgreSQL)]
@@ -1646,7 +1738,7 @@ flowchart LR
 
 * Ingresar factura.
 * Validar importes.
-* Relacionar pasadas con facturas.
+* Relacionar pasadas con documentos.
 * Guardar información.
 * Prevenir duplicados.
 
