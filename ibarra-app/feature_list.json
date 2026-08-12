@@ -2,8 +2,8 @@
   "project": "peajes-module-automation-tool",
   "source_of_truth": "docs/plan/peaje-prd-es.md",
   "single_active_feature_per_agent": true,
-  "documentation_last_reviewed": "2026-08-10",
-  "documentation_status": "docs/backend RPCs + PRD F13 sync; F13 passing; F06/F07/F08/F11 en seguimiento; docs/08-sql eliminada",
+  "documentation_last_reviewed": "2026-08-12",
+  "documentation_status": "docs/backend RPCs + PRD F13 sync; F13 passing; F06/F07/F08/F11 en seguimiento; docs/08-sql eliminada; F14 planificada en docs/plan/auditoria-pasadas-patrones/ (not_started, sin implementación)",
   "agents": [
     "00-orquestador-setup",
     "01-backend-supabase",
@@ -858,7 +858,36 @@
         "2026-07-31: algorithm-descriptor.ts (10 códigos) + dependencias-pipeline.ts + motor APIs",
         "2026-07-31: motor.spec U-P01…U-P08 + I-P09/I-P10; motor.verify.ts PASS (skip-disabled, deps, preview, §21)",
         "2026-07-31: Demo 102060 / AU 132940.19 assertados en motor.verify",
-        "2026-08-06: CONVERTIR_NUMERO_ARS en registry + catalogo SQL; AUSA-8-2026 TARIFA→PRECIO en DESARROLLO"
+        "2026-08-06: CONVERTIR_NUMERO_ARS en registry + catalogo SQL; AUSA-8-2026 TARIFA→PRECIO en DESARROLLO",
+        "2026-08-11: FILTRAR_COLUMNA (filtro de filas) + ejemplo MERCOSUR 79157; descriptors = ALGORITMO_CODIGOS.length"
+      ]
+    },
+    {
+      "id": "F03-FILTRAR-COLUMNA",
+      "title": "Motor — FILTRAR_COLUMNA (filtro de filas por valor de columna)",
+      "prd_refs": [
+        "RF-07",
+        "RF-08",
+        "RN-18",
+        "RN-20"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F03-1",
+        "F03-9"
+      ],
+      "status": "passing",
+      "verification": [
+        "StrategyRegistry tiene FILTRAR_COLUMNA; pads 1 ≡ 0001",
+        "aplicarPipeline descarta filas no coincidentes",
+        "Migración peajes_algoritmos_catalogo FILTRAR_COLUMNA",
+        "ejemplo-mercosur-procesamiento-pasadas.md + CSV: 164 filas Σ 4721445.29",
+        "ng test --include=\"**/peajes/plantillas/**/*.spec.ts\"",
+        "npx tsx src/app/components/peajes/plantillas/motor.verify.ts"
+      ],
+      "evidence": [
+        "2026-08-11: estrategias-atomicas FILTRAR_COLUMNA + row-drop en motor; migration 20260811190002; mercosur.fixture + motor.spec/verify",
+        "2026-08-11 verify: motor.verify PASS (164 filas Σ 4721445.29); ng test plantillas 46 SUCCESS; supabase test db 112 PASS"
       ]
     },
     {
@@ -1321,6 +1350,131 @@
       "evidence": [
         "2026-08-10: WizardDocumentoGrupo.omitido + helpers; paso7/8/9. ng test paso7-factura + paso8-validacion + paso9-revision → SUCCESS"
       ]
+    },
+    {
+      "id": "F14-0",
+      "title": "Contrato: destino CATEGORIA en PasadaColumnKey / PASADA_COLUMN_KEYS",
+      "prd_refs": ["RF-14", "RF-06", "RN-15", "§21"],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": [],
+      "status": "not_started",
+      "verification": [
+        "models/peajes.types.ts: 'CATEGORIA' presente en PasadaColumnKey y PASADA_COLUMN_KEYS (10 keys)",
+        "'CATEGORIA' NO está en PASADA_COLUMNAS_OBLIGATORIAS: un archivo sin categoría (Patrón A) sigue validando",
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0 (ningún switch exhaustivo sobre PasadaColumnKey roto)",
+        "ng test --include=\"**/peajes/**\" --watch=false --browsers=ChromeHeadless sin fallos nuevos",
+        "Cambio comiteado antes de que arranquen F14-1 y F14-3 (regla 1 del modelo de agentes)"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F14-1",
+      "title": "Tablas tarifas_normalizadas / parámetros / catálogo de status + ALTER pasadas + RLS + trigger",
+      "prd_refs": ["§22", "§25", "§26", "RN-05", "RN-16", "RN-20", "RN-24"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-0"],
+      "status": "not_started",
+      "verification": [
+        "Migración YYYYMMDDHHMMSS_peajes_*.sql crea tarifas_normalizadas, tarifas_parametros_peaje (umbrales 15 / 4.100 / auto_confirmar false) y tarifas_status_catalogo (tipo_meta PICO|NO_PICO|NEUTRO)",
+        "ALTER TABLE pasadas agrega categoria text null, tarifa_normalizada_id uuid null y tarifa_status text not null default 'PENDIENTE'; NO agrega peaje_id (RN-05) y pasadas_duplicado_uk queda intacta (RN-16)",
+        "Trigger de validación de status: acepta PENDIENTE/POSIBLE_HORARIO, acepta PICO y NO_PICO cargados en tarifas_status_catalogo del peaje, y rechaza con excepción un código ajeno",
+        "RLS plana {tabla}_authenticated_all en las tres tablas nuevas, igual que el resto del módulo (PRD §5.2)",
+        "Vistas pasadas_con_peaje, pasadas_gestion, pwbi_pasadas, pwbi_documentos, pwbi_estacion y pwbi_patentes revisadas y respondiendo tras el ALTER",
+        "Verificado contra Supabase CLI local desde cero + supabase db advisors sin hallazgos nuevos sin justificar"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F14-2",
+      "title": "RPCs de normalización/confirmación tarifaria + enganche post-carga en peajes_confirmar_carga",
+      "prd_refs": ["§23", "§24", "§27", "RN-05", "RN-20", "RN-24", "RF-32"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-1"],
+      "status": "not_started",
+      "verification": [
+        "Existen peajes_normalizar_tarifas(p_documento_id), peajes_recalcular_tarifas(p_peaje_id), peajes_confirmar_status_tarifa(p_asignaciones jsonb), peajes_marcar_diagnostico_tarifa(id, diagnostico), peajes_listar_tarifas_normalizadas(p_filtros, p_page, p_page_size, p_sort) y peajes_grupos_similares_tarifa(id, p_tolerancia)",
+        "peajes_confirmar_carga dispara peajes_normalizar_tarifas por documento confirmado sin cambiar su firma pública ni romper PeajesCargaSupabaseService.confirmarCarga()",
+        "peaje_id de tarifas_normalizadas se deriva vía estaciones.peaje_id, nunca desde pasadas (RN-05)",
+        "peajes_recalcular_tarifas sobre las 1711 pasadas del dataset (ConsumosResumen.xlsx 1015 + ConsumosResumen-202607-1.xlsx 696) produce filas conciliables con las 119 del CSV de referencia (34 estaciones, 22 niveles de importe)",
+        "Filas con confirmado_manual = true no son pisadas por el recálculo",
+        "supabase db advisors EXIT limpio tras crear las funciones"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F14-3",
+      "title": "Wizard: detección de CATEGORIA en Paso 2, destino en Paso 5 y persistencia de pasadas.categoria",
+      "prd_refs": ["RF-06", "RF-14", "RN-15", "§21"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F14-0", "F14-1"],
+      "status": "not_started",
+      "verification": [
+        "COLUMN_ALIASES incluye CATEGORIA; detectColumnRecommendations propone el destino en Paso 2 (CATEGORIA/CATEGORÍA/categoria colapsan por normalizarEncabezadoColumna)",
+        "MVP_COLUMNAS_EXCLUIDAS ya no lista 'CATEGORIA' y ningún fixture MVP cambia de resultado",
+        "Paso 5 ofrece CATEGORIA como destino opcional y el valor llega crudo al payload de peajes_confirmar_carga → pasadas.categoria (texto del proveedor, nunca patentes.categoria, RN-15)",
+        "Archivo sin columna de categoría recorre los 9 pasos y guarda con pasadas.categoria = NULL (Patrón A), sin advertencias nuevas en Paso 8",
+        "ng test --include=\"**/peajes/wizard/**\" --watch=false --browsers=ChromeHeadless SUCCESS"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F14-4",
+      "title": "Pantalla /peajes/auditoria-tarifas + tarjeta en peajes-home",
+      "prd_refs": ["RF-26", "RF-32", "§27", "RN-24"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F14-2"],
+      "status": "in_progress",
+      "verification": [
+        "Ruta /peajes/auditoria-tarifas registrada con permiso { module: 'peajes', action: 'read' } y tarjeta en peajes-home.component.html (icono fas fa-chart-line, título 'Auditoría de tarifas', link 'Auditar tarifas')",
+        "Pantalla con patrón pasadas-pendientes: tabla nativa padre, único expandedId, fila de detalle con colspan y app-data-table anidada, paginador manual, filtros con debounce 300ms; prefijo CSS at__",
+        "Badges de status resueltos en runtime desde tarifas_status_catalogo (PICO / NO_PICO en el dataset); PENDIENTE y POSIBLE_HORARIO con presentación fija y código desconocido en badge neutro sin romper la vista",
+        "Panel de comparación asigna status por nivel (2, 3 o N) y llama peajes_confirmar_status_tarifa; acciones 'Es variación por categoría' y 'Marcar para revisar' llaman peajes_marcar_diagnostico_tarifa",
+        "Botón Recalcular invoca peajes_recalcular_tarifas con estado de carga y feedback",
+        "ng test --include=\"**/peajes/auditoria-tarifas/**\" --watch=false --browsers=ChromeHeadless SUCCESS"
+      ],
+      "evidence": [
+        "2026-08-12: UI F14-4 en src/app/components/peajes/auditoria-tarifas/ (list, familia-panel, status-buttons, status-badge, comparar-dialog, mock, routes). Ruta + permiso + tarjeta peajes-home cableados.",
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0",
+        "ng test --include=\"**/peajes/auditoria-tarifas/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless → 14/14 SUCCESS",
+        "npx --yes tsx src/app/components/peajes/auditoria-tarifas/clasificacion.verify.ts → ZARATE 5/5 OK",
+        "npm run build EXIT 0 (lazy chunk peajes-routes incluye auditoria-tarifas)",
+        "Pendiente F14-2: swap AuditoriaTarifasMockService → PeajesAuditoriaTarifasSupabaseService; contratos canónicos en models/auditoria-tarifas.contracts.ts (agente 00/01)"
+      ]
+    },
+    {
+      "id": "F14-5",
+      "title": "Documentación F14: auditoría de pasadas por patrones",
+      "prd_refs": ["§20", "§22", "§25", "RF-26", "RN-15"],
+      "agent_owner": "04-documentador",
+      "depends_on": ["F14-1", "F14-2", "F14-3", "F14-4"],
+      "status": "not_started",
+      "verification": [
+        "docs/06-tablas/peajes/ documenta tarifas_normalizadas, tarifas_parametros_peaje, tarifas_status_catalogo y las 3 columnas nuevas de pasadas, aclarando que pasadas.categoria es texto crudo del proveedor y no el enum patentes.categoria (RN-15)",
+        "docs/06-components/peajes/ documenta la pantalla /peajes/auditoria-tarifas y el destino CATEGORIA del Paso 5",
+        "docs/backend/peajes/index.md enlaza los 6 RPC peajes_* de F14 con firma y consumidor",
+        "docs/modulos/peajes.md e INDEX.md afectados actualizados; enlaces cruzados resuelven",
+        "Solo se documenta lo que está passing en feature_list.json (regla 4 del modelo de agentes)"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "F14-6",
+      "title": "QA/E2E de auditoría tarifaria contra el dataset de referencia",
+      "prd_refs": ["RF-26", "RF-32", "RN-16", "RN-24", "§27"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F14-3", "F14-4"],
+      "status": "not_started",
+      "verification": [
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0 y ng test --include=\"**/peajes/**\" --watch=false --browsers=ChromeHeadless sin fallos nuevos; npx --yes tsx src/app/components/peajes/plantillas/motor.verify.ts sin regresiones",
+        "Dataset cargado y conciliado: 1711 pasadas entre file_upload_name 'ConsumosResumen.xlsx' (1015, 26 estaciones) y 'ConsumosResumen-202607-1.xlsx' (696, 30 estaciones); no existe ningún file_upload_name con '202607-2'",
+        "Recálculo comparado contra tarifa_test_resumen_union.csv (delimitador ';', coma decimal, 119 filas, 34 estaciones, 4 concesiones, 22 niveles de importe)",
+        "Clasificación humana esperada del CSV contrastada: PICO 49 / NO_PICO 52 / PENDIENTE 18; las candidatas quedan en POSIBLE_HORARIO y son confirmables desde la pantalla",
+        "Dataset tratado como Patrón A (ningún libro fuente tiene columna de categoría) y la etiqueta PATRON = B del CSV confirmada o registrada como pendiente del product owner",
+        "Discrepancia 1040 filas RESULTADO_1 vs 1015 pasadas localizada en ZARATE precio=1500 (CSV 114 vs DB 89); hipótesis NC 0104-00077675 de resumen.txt registrada; MVP ignora NCs (no resta cases)",
+        "Extracción de hora pinneada con AT TIME ZONE 'UTC' (prueba empírica ZARATE: 4/5 niveles ±0,01 vs CSV; BA desplaza el pico a 7–8 a.m.)",
+        "E2E manual: carga → Paso 9 → hook crea tarifas_normalizadas → confirmación en pantalla → pasadas.tarifa_status actualizado → vistas pwbi_* responden"
+      ],
+      "evidence": []
     }
   ]
 }

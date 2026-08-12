@@ -1,0 +1,107 @@
+<div class="at__familia" *ngIf="meta as m">
+  <p class="at__detail-title">
+    Escalera tarifaria · {{ m.estacion_nombre }} · Patrón {{ m.patron }} ·
+    {{ niveles.length }} niveles · {{ m.totalCases | number }} casos
+  </p>
+
+  <p class="at__suggestion-note" aria-live="polite">{{ suggestionNote }}</p>
+
+  <p class="at__error" *ngIf="confirmError" role="alert">{{ confirmError }}</p>
+
+  <ng-container *ngIf="niveles.length > 1; else singleLevel">
+    <app-data-table
+      [columns]="detailColumns"
+      [rows]="detailTableRows"
+      [total]="niveles.length"
+      [page]="1"
+      [pageSize]="niveles.length"
+      [sort]="detailSort"
+      [clientFilter]="false"
+      [exportEnabled]="false"
+      (sortChange)="onDetailSort($event)"
+    >
+      <ng-template appDataTableColumn key="importe" let-row>
+        <span class="at__price at__num">{{ row['importe'] | number: '1.2-2' }}</span>
+      </ng-template>
+
+      <ng-template appDataTableColumn key="cases" let-row>
+        <span class="at__num">{{ row['cases'] | number }}</span>
+      </ng-template>
+
+      <ng-template appDataTableColumn key="multiplicador" let-row>
+        <div class="at__mult-cell">
+          <span class="at__num">{{ row['multiplicador'] | number: '1.2-3' }}×</span>
+          <span class="at__mult-bar" [style.width]="barWidth(row['multiplicador'])"></span>
+        </div>
+      </ng-template>
+
+      <ng-template appDataTableColumn key="franja" let-row>
+        <div class="at__rail-wrap">
+          <div class="at__rail">
+            <span class="at__rail-segment" [ngStyle]="railStyle($any(row))"></span>
+            <span
+              class="at__rail-mark"
+              *ngIf="row['hora_media'] != null"
+              [style.left.%]="(row['hora_media'] / 24) * 100"
+            ></span>
+          </div>
+          <span class="at__rail-meta">{{ mediaLabel($any(row)) }}</span>
+        </div>
+      </ng-template>
+
+      <ng-template appDataTableColumn key="diagnostico" let-row>
+        <span [class]="diagnosticoClass(row['diagnostico'])">{{
+          diagnosticoLabel(row['diagnostico'])
+        }}</span>
+      </ng-template>
+
+      <ng-template appDataTableColumn key="status" let-row>
+        <app-tarifa-status-buttons
+          [importe]="row['importe']"
+          [catalogo]="catalogo"
+          [selected]="selections.get(row['id']) ?? row['status']"
+          [disabled]="saving"
+          (selectedChange)="onSelect(row['id'], $event)"
+        ></app-tarifa-status-buttons>
+      </ng-template>
+    </app-data-table>
+  </ng-container>
+
+  <ng-template #singleLevel>
+    <p class="at__detail-empty">Esta estación tiene un solo nivel de tarifa.</p>
+  </ng-template>
+
+  <p class="at__pending-count" aria-live="polite" *ngIf="niveles.length > 1">
+    {{ unconfirmedCount }} de {{ niveles.length }} sin confirmar
+  </p>
+
+  <div class="at__familia-actions">
+    <button
+      type="button"
+      class="at__btn at__btn--primary"
+      [disabled]="saving || !buildAsignaciones().length"
+      (click)="onConfirm()"
+    >
+      {{ confirmLabel }}
+    </button>
+    <button
+      type="button"
+      class="at__btn"
+      [disabled]="saving"
+      (click)="marcarDiagnostico.emit('CATEGORIA')"
+    >
+      {{ saving ? 'Marcando…' : 'Es variación por categoría' }}
+    </button>
+    <button
+      type="button"
+      class="at__btn"
+      [disabled]="saving"
+      (click)="marcarDiagnostico.emit('REVISAR')"
+    >
+      {{ saving ? 'Marcando…' : 'Marcar para revisar' }}
+    </button>
+    <button type="button" class="at__btn" [disabled]="saving" (click)="comparar.emit()">
+      Comparar con grupos similares
+    </button>
+  </div>
+</div>

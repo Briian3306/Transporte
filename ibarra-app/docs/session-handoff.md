@@ -2,7 +2,7 @@
 
 ## Fuente de verdad
 
-Consultar, en este orden: `docs/plan/peaje-prd-es.md`, `feature_list.json`, `docs/claude-progress.md` y el código actual. Las migraciones reales están en `supabase/migrations`; no existe documentación SQL duplicada.
+Consultar, en este orden: `docs/plan/peaje-prd-short.md.md`, `feature_list.json`, `docs/claude-progress.md` y el código actual. Las migraciones reales están en `supabase/migrations`; no existe documentación SQL duplicada.
 
 ## Estado Peajes
 
@@ -29,6 +29,18 @@ Consultar, en este orden: `docs/plan/peaje-prd-es.md`, `feature_list.json`, `doc
 2. Ejecutar E2E Acceso Oeste (`387882.csv`) y AUSOL (`557074.csv`) con conteos y totales documentados.
 3. Cerrar pruebas de gestión de pasadas y actualizar evidencias de `feature_list.json`.
 4. Ejecutar `init.sh` en un entorno con Bash/WSL o documentar una alternativa Windows.
+
+## F14 — Auditoría tarifas (2026-08-12)
+
+F14-4 (agente 02) requiere de F14-0/F14-2:
+
+1. `models/auditoria-tarifas.contracts.ts` con `PeajesAuditoriaTarifasService`, token `PEAJES_AUDITORIA_TARIFAS_SERVICE` y tipos exportados desde `models/index.ts`. Hoy el frontend usa `auditoria-tarifas/contracts.local.ts`.
+2. Confirmación de claves `p_filtros` y formato `p_sort` (`cases:desc`).
+3. Confirmación de si `peajes_confirmar_status_tarifa` acepta asignaciones multi-estación (diálogo Comparar).
+4. Confirmación de si `peajes_recalcular_tarifas` respeta `confirmado_manual` (copy del diálogo Recalcular).
+5. Definición de bloque `resumen` en listado vs. llamadas extra de progreso (`p_page_size: 1`).
+
+Swap en `auditoria-tarifas.routes.ts`: reemplazar `AuditoriaTarifasMockService` por `PeajesAuditoriaTarifasSupabaseService` cuando F14-2 esté `passing`.
 
 ## Riesgos
 

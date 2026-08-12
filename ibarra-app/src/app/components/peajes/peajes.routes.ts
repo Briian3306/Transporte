@@ -5,11 +5,12 @@ import { PEAJES_CATALOGOS_ROUTES } from './catalogos/catalogos.routes';
 import { PEAJES_PLANTILLAS_ROUTES } from './plantillas/plantillas.routes';
 import { PEAJES_PASADAS_ROUTES } from './pasadas/pasadas.routes';
 import { PEAJES_PASADAS_PENDIENTES_ROUTES } from './pasadas-pendientes/pasadas-pendientes.routes';
+import { PEAJES_AUDITORIA_TARIFAS_ROUTES } from './auditoria-tarifas/auditoria-tarifas.routes';
 import { PEAJES_SUPABASE_PROVIDERS } from './peajes.providers';
 
 /**
  * Rutas hijas del módulo Peajes (merge Agente 05).
- * Paths sin overlap: '' | wizard | catalogos/* | plantillas | pasadas | pasadas-pendientes
+ * Paths sin overlap: '' | wizard | catalogos/* | plantillas | pasadas | pasadas-pendientes | auditoria-tarifas
  */
 export const PEAJES_ROUTES: Routes = [
   {
@@ -25,6 +26,7 @@ export const PEAJES_ROUTES: Routes = [
       ...PEAJES_PLANTILLAS_ROUTES,
       ...PEAJES_PASADAS_ROUTES,
       ...PEAJES_PASADAS_PENDIENTES_ROUTES,
+      ...PEAJES_AUDITORIA_TARIFAS_ROUTES,
     ],
   },
 ];

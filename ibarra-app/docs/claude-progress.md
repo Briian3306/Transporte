@@ -2,7 +2,7 @@
 
 ## Fuente de verdad
 
-- PRD principal: `docs/plan/peaje-prd-es.md`
+- PRD principal: `docs/plan/peaje-prd-short.md.md`
 - Ejemplo operativo: `docs/plan/ejemplo-mvp-procesamiento-pasadas.md`
 - Estado de features: `feature_list.json`
 - Guía de agentes: `AGENTS.md`
@@ -10,7 +10,11 @@
 
 ## Estado actual
 
-Fecha: 2026-08-11 — **`pwbi_estacion` + Latitud/Longitud**: columnas `Latitud` / `Longitud` desde `estaciones.latitud` / `estaciones.longitud`. Migración `20260811131009_peajes_pwbi_estacion_lat_long.sql` aplicada en DESARROLLO. Refrescar consulta Power BI `pwbi_estacion`.
+Fecha: 2026-08-11 — **FILTRAR_COLUMNA**: estrategia atómica de filtro de filas (`ESTACION=1` ≡ `0001`); motor `aplicarPipeline` descarta no coincidentes; catálogo SQL `20260811190002_peajes_algoritmo_filtrar_columna.sql`; ejemplo `docs/plan/ejemplo-mercosur-procesamiento-pasadas.md` + CSV `pasadas_2026-07-01_79157.csv` (164 filas → Σ 4721445.29 = TOTAL factura). Fixture `mercosur.fixture.ts`. Verify: `motor.verify` PASS; `ng test` plantillas **46 SUCCESS**; `supabase test db` **112 PASS**. No push DESARROLLO aún.
+
+Fecha previa: 2026-08-11 — **AUBASA plantilla HHMMSS + ELIMINAR_IVA**: fixture `aubasa.fixture.ts`, tests motor (AG309CO `2026-07-03 11:42:54`), docs `docs/plan/aubasa-plantilla-fecha-hora.md` (DELETE SQL `5364164`/`5364165`). Plantilla DESARROLLO **AUBASA-7-2026**. No borrar batches hasta re-upload.
+
+Fecha previa: 2026-08-11 — **`pwbi_estacion` + Latitud/Longitud**: columnas `Latitud` / `Longitud` desde `estaciones.latitud` / `estaciones.longitud`. Migración `20260811131009_peajes_pwbi_estacion_lat_long.sql` aplicada en DESARROLLO. Refrescar consulta Power BI `pwbi_estacion`.
 
 Fecha previa: 2026-08-11 — **`pwbi_documentos` en DESARROLLO**: vista dimensión documentos (FC|NC + empresa + importes cabecera); `security_invoker=false` + `GRANT SELECT` a `anon`. Migración `20260811121811_peajes_pwbi_documentos.sql`. Relación Power BI: `pwbi_pasadas.Documento_ID` → `pwbi_documentos.Documento_ID`. Docs actualizados (`pwbi-views.md`, `powerbi-supabase.md`).
 
@@ -28,7 +32,7 @@ Fecha previa: 2026-08-10 — **Bonificación de cabecera en documento**: columna
 
 Fecha previa: 2026-08-10 — **F08-2 passing**: vista `/peajes/pasadas-pendientes` (estaciones PENDING agregadas + expand pasadas + drawer ubicación). RPC `peajes_listar_estaciones_pendientes` (`20260810142350_…`); docs `docs/backend/peajes/estaciones-pendientes.md` + index + functions catalog. Verify: `db reset --local --no-seed` OK; `supabase test db` → **81 PASS**.
 
-Fecha previa: 2026-08-10 — **F04-5 passing**: documentación `docs/backend/` (catálogo RPC + peajes + workflow/testing), sync `documentos-pasadas` / índices, PRD `peaje-prd-es.md` alineado F13 (masiva, FC|NC, RN-16 hora). `docs/08-sql/` eliminada (canonical = backend + migrations).
+Fecha previa: 2026-08-10 — **F04-5 passing**: documentación `docs/backend/` (catálogo RPC + peajes + workflow/testing), sync `documentos-pasadas` / índices, PRD `peaje-prd-short.md.md` alineado F13 (masiva, FC|NC, RN-16 hora). `docs/08-sql/` eliminada (canonical = backend + migrations).
 
 Fecha previa: 2026-08-10 — **Docs: eliminado `docs/08-sql/`** (incl. `peajes/`). Skills `documentacion-proyecto`, `backend-documenter`, `backend-supabase-write` + `AGENTS.md` documentan SQL/RPC solo en `docs/backend/` + fuente `supabase/migrations/`.
 
@@ -124,6 +128,13 @@ F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `
 
 ## Registro de sesiones
 
+### 2026-08-11 — AUBASA FECHA_HORA plantilla + tests
+
+**Agente:** motor / plantillas  
+**Scope:** fixture `aubasa.fixture.ts`, `FORMATEAR_FECHA_HORA` HHMMSS + `ELIMINAR_IVA`, motor specs AG309CO, docs `aubasa-plantilla-fecha-hora.md`, plantilla DESARROLLO `AUBASA-7-2026` (`2dd50d7a-356e-42f4-979b-a383cff54a59`)  
+**Verify:** `ng test …/motor.spec.ts` → **56 SUCCESS** (28×2 browsers)  
+**Pendiente usuario:** DELETE batches `5364164`/`5364165` + re-upload con plantilla nueva
+
 ### 2026-08-10 — AUSOL/AUSA fecha_hora −1 día (evidencia + fix)
 
 **Agente:** integrador / motor
@@ -139,7 +150,7 @@ F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `
 
 - Creado `docs/backend/` (functions catalog, peajes RPC detail, supabase workflow/testing, edge stub).
 - Sync tablas: `documentos-pasadas.md`; `auditoria-y-rpcs.md` → pointer a backend; eliminado `facturas-pasadas.md`.
-- Actualizado `peaje-prd-es.md` (Paso 1/7/8/9 masiva+documentos, §11–14 DOCUMENTOS, RF-19–22, RN-12/13/16/17).
+- Actualizado `peaje-prd-short.md.md` (Paso 1/7/8/9 masiva+documentos, §11–14 DOCUMENTOS, RF-19–22, RN-12/13/16/17).
 - Índices: `docs/INDEX.md`, `modulos/peajes.md`, `06-components/peajes/INDEX.md`, `06-tablas/*`.
 - `feature_list.json`: F04-5 `passing`; `documentation_*` → 2026-08-10.
 - Confirmado: sin `docs/08-sql/`.
@@ -492,7 +503,14 @@ Criterio de cierre: (2) y (3) en verde sin paso de transformación parche no aco
 - `ELIMINAR_IVA` se recomienda de forma opcional cuando se detectan tarifa y bonificación; al persistirse en el pipeline de una plantilla se reaplica solo para esa empresa.
 - Verificación: `npx tsc --noEmit -p tsconfig.app.json` y `git diff --check` OK. El bundle de specs focalizados compiló, pero ChromeHeadless no inició por error local de caché/cifrado, por lo que F10-1 sigue `in_progress`.
 
-### 2026-08-04 — F11-1 Factura con subtotal, percepciones e IVA
+### 2026-08-12 — F14-4 Auditoría de tarifas (frontend, agente 02)
+
+- Pantalla `/peajes/auditoria-tarifas` implementada bajo `auditoria-tarifas/`: filtros con debounce, tabla padre/detalle, escalera tarifaria (barra multiplicador + riel 24h), botones de status por catálogo, diálogo de comparación, progreso por peaje, Recalcular.
+- Ruta registrada en `peajes.routes.ts`, permiso en `permission.guard.ts`, tarjeta en `peajes-home`.
+- Servicio: `AuditoriaTarifasMockService` (dataset ZARATE/AGÜERO) vía token `PEAJES_AUDITORIA_TARIFAS_SERVICE`; contratos locales en `contracts.local.ts` hasta F14-0/F14-2.
+- Verificación: `tsc` OK, `ng test` auditoría 14/14, `clasificacion.verify.ts` OK, `npm run build` OK.
+- Bloqueo: F14-2 para RPC reales y `models/auditoria-tarifas.contracts.ts` canónico.
+
 
 - La migración posterior `20260804175001_peajes_facturas_iva_total_manual.sql` agrega `facturas.iva` y elimina la restricción de total derivado: subtotal, percepciones, IVA y total son valores ingresados de factura. RAE se ignora.
 - Paso 7 conserva la suma por centavos de las pasadas y compara únicamente subtotal contra pasadas, con tolerancia de $5,00. Se cubrió la factura AUSOL `0840-0557074` del `2026-08-01`: subtotal 560832.27, percepciones 24676.62, IVA 117774.78, total 703283.67.

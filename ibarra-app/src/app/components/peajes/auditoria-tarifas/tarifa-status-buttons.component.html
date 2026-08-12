@@ -1,0 +1,23 @@
+<div
+  class="at__status-group"
+  role="radiogroup"
+  [attr.aria-label]="'Clasificación de ' + (importe | number: '1.2-2')"
+>
+  <span class="at__status-hint" *ngIf="!hasSelection">Sin clasificar</span>
+  <button
+    *ngFor="let btn of buttons; let i = index"
+    type="button"
+    role="radio"
+    class="at__status-btn"
+    [id]="buttonId(i)"
+    [class.at__status-btn--selected]="isSelected(btn.codigo)"
+    [attr.aria-checked]="isSelected(btn.codigo)"
+    [attr.tabindex]="tabIndexFor(i)"
+    [disabled]="disabled"
+    [style.--at-status-color]="btn.color"
+    (click)="select(btn.codigo)"
+    (keydown)="onKeydown($event, i)"
+  >
+    <span *ngIf="isSelected(btn.codigo)" aria-hidden="true">● </span>{{ btn.etiqueta }}
+  </button>
+</div>
