@@ -54,6 +54,7 @@ describe('PeajesCargaSupabaseService', () => {
             BONIFICACION: 0,
             QUANTITY: 1,
             IMPORTE_NETO: 100,
+            CATEGORIA: null,
           },
         ],
         plantillaId: null,

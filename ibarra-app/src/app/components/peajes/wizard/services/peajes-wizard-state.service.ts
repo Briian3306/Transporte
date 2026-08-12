@@ -1202,6 +1202,8 @@ export class PeajesWizardStateService {
           BONIFICACION: null,
           QUANTITY: 1,
           IMPORTE_NETO: null,
+          // F14-0: opcional (Patrón A = null). Se completa si hay mapeo a CATEGORIA.
+          CATEGORIA: null,
         };
 
         for (const m of mapeoActivo) {

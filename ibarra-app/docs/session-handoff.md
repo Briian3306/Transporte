@@ -32,15 +32,30 @@ Consultar, en este orden: `docs/plan/peaje-prd-short.md.md`, `feature_list.json`
 
 ## F14 — Auditoría tarifas (2026-08-12)
 
+**F14-0 (agente 00 / integrador) — DONE**
+
+- Contrato: `'CATEGORIA'` en `PasadaColumnKey` y `PASADA_COLUMN_KEYS` (10 keys); **ausente** de `PASADA_COLUMNAS_OBLIGATORIAS` (RN-15 / Patrón A).
+- Wizard: `construirPasadasDesdeMapeo` inicializa `CATEGORIA: null` (Patrón A por defecto).
+- Desbloquea F14-3 (aliases Paso 2, MVP fixtures, persistencia mapeo).
+
 **F14-1 / F14-2 (agente 01) — DONE (CLI, sin push remoto)**
 
 - Contratos canónicos: `models/auditoria-tarifas.contracts.ts` (re-export desde `contracts.local.ts`).
-- Servicio: `PeajesAuditoriaTarifasSupabaseService`; provider ya swapped en `auditoria-tarifas.routes.ts`.
+- Servicio: `PeajesAuditoriaTarifasSupabaseService`; provider swapped en `auditoria-tarifas.routes.ts`.
 - RPCs: `peajes_listar_tarifas_normalizadas` (`p_filtros` con `peaje_ids[]` / `solo_muestra_confiable`, `p_sort` = `campo:dir`); `peajes_confirmar_status_tarifa` acepta N asignaciones multi-estación; `peajes_recalcular_tarifas` respeta `confirmado_manual`; `peajes_grupos_similares_tarifa` devuelve `tarifa_ids[]` ordenados por importe.
 - Enganche: `peajes_confirmar_carga` persiste `categoria`; normalización post-commit vía segundo `.rpc` (opción b).
-- Pendiente agente 00: F14-0 `CATEGORIA` en `PasadaColumnKey`.
-- Pendiente F14-6: recálculo dataset 1711/119 en DESARROLLO; **no** `db push` aún (también viaja drift `20260811190002_filtrar_columna`).
 
+**F14-4 — DONE (UI + provider real)**
+
+- Pantalla `/peajes/auditoria-tarifas` + tarjeta home; specs 14/14 con mock; runtime Supabase.
+
+**Pendiente**
+
+- F14-3: detección aliases `CATEGORIA` en Paso 2, sacar de `MVP_COLUMNAS_EXCLUIDAS`, mapeo sugerido.
+- F14-5: docs (tras F14-3).
+- F14-6: dataset 1711/119 en DESARROLLO — **skip** mientras no haya `db push` / remote autorizado.
+- `fecha_desde`/`fecha_hasta` en listar agregado: documentados como no-ops; no fix local-only pedido.
+- Drift migración `20260811190002_filtrar_columna` viaja en el próximo push remoto.
 ## Riesgos
 
 La principal incertidumbre es la falta de evidencia final para F06/F07/F08, no una ausencia conocida del MVP. No hacer merge a `main` ni afirmar `passing` sin comandos reproducibles y resultados registrados. No pushear F14 a DESARROLLO sin autorización explícita.

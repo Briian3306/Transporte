@@ -10,7 +10,9 @@
 
 ## Estado actual
 
-Fecha: 2026-08-12 — **F14-1 / F14-2 backend passing (CLI)**: tablas `tarifas_*` + ALTER `pasadas` (sin `peaje_id`); 6 RPC; enganche post-carga opción (b) en `PeajesCargaSupabaseService`; `PeajesAuditoriaTarifasSupabaseService` + provider real en `/peajes/auditoria-tarifas`. Verify: `npx supabase db reset --local --no-seed` OK; `npx supabase test db` → **144 PASS** (`peajes_f14_test` + regresiones). Docs: `docs/backend/peajes/auditoria-tarifas.md`. **No** `db push --linked`. Bloqueos: F14-0 (`CATEGORIA` en `PasadaColumnKey`) pendiente agente 00; dataset 1711/119 → F14-6; drift `20260811190002_filtrar_columna` viaja en el próximo push remoto.
+Fecha: 2026-08-12 — **F14-0 + integración auditoría**: `CATEGORIA` en `PasadaColumnKey` / `PASADA_COLUMN_KEYS` (10 keys; **no** en obligatorias). Inicializador wizard `CATEGORIA: null`. Specs `PasadaEstandarizada` ajustados. Verify: `npx tsc --noEmit -p tsconfig.app.json` EXIT 0; `ng test` auditoria-tarifas **14/14**; peajes-carga+paso8+paso9 **9/9**. `contracts.local.ts` re-export canónico OK; provider Supabase sigue activo. **F14-0/F14-4 → passing**. Abierto: F14-3 (aliases/MVP exclusión); F14-6 dataset DESARROLLO (sin remote, skip); `fecha_desde`/`fecha_hasta` no-ops en listar agregado. **No** `db push`.
+
+Fecha previa: 2026-08-12 — **F14-1 / F14-2 backend passing (CLI)**: tablas `tarifas_*` + ALTER `pasadas` (sin `peaje_id`); 6 RPC; enganche post-carga opción (b) en `PeajesCargaSupabaseService`; `PeajesAuditoriaTarifasSupabaseService` + provider real en `/peajes/auditoria-tarifas`. Verify: `npx supabase db reset --local --no-seed` OK; `npx supabase test db` → **144 PASS** (`peajes_f14_test` + regresiones). Docs: `docs/backend/peajes/auditoria-tarifas.md`. **No** `db push --linked`. Bloqueos: F14-0 (`CATEGORIA` en `PasadaColumnKey`) pendiente agente 00; dataset 1711/119 → F14-6; drift `20260811190002_filtrar_columna` viaja en el próximo push remoto.
 
 Fecha previa: 2026-08-12 — **F14-4 frontend** pantalla `/peajes/auditoria-tarifas` (commit `706beee`); provider ahora Supabase (F14-2).
 
@@ -507,13 +509,20 @@ Criterio de cierre: (2) y (3) en verde sin paso de transformación parche no aco
 - `ELIMINAR_IVA` se recomienda de forma opcional cuando se detectan tarifa y bonificación; al persistirse en el pipeline de una plantilla se reaplica solo para esa empresa.
 - Verificación: `npx tsc --noEmit -p tsconfig.app.json` y `git diff --check` OK. El bundle de specs focalizados compiló, pero ChromeHeadless no inició por error local de caché/cifrado, por lo que F10-1 sigue `in_progress`.
 
+### 2026-08-12 — F14-0 Contrato CATEGORIA + integración F14-4
+
+- `PasadaColumnKey` / `PASADA_COLUMN_KEYS` incluyen `'CATEGORIA'` (10 keys); **no** en `PASADA_COLUMNAS_OBLIGATORIAS` (Patrón A intacto).
+- `construirPasadasDesdeMapeo` inicializa `CATEGORIA: null`; specs de `PasadaEstandarizada` actualizados.
+- Provider auditoría ya era Supabase (F14-2); `contracts.local.ts` re-exporta canónico.
+- Verify: `tsc` EXIT 0; `ng test` auditoria-tarifas 14/14; peajes-carga+paso8+paso9 9/9.
+- Status: F14-0 + F14-4 `passing`. Pendiente: F14-3 (aliases/MVP); F14-6 dataset DESARROLLO (skip sin remote).
+
 ### 2026-08-12 — F14-4 Auditoría de tarifas (frontend, agente 02)
 
 - Pantalla `/peajes/auditoria-tarifas` implementada bajo `auditoria-tarifas/`: filtros con debounce, tabla padre/detalle, escalera tarifaria (barra multiplicador + riel 24h), botones de status por catálogo, diálogo de comparación, progreso por peaje, Recalcular.
 - Ruta registrada en `peajes.routes.ts`, permiso en `permission.guard.ts`, tarjeta en `peajes-home`.
-- Servicio: `AuditoriaTarifasMockService` (dataset ZARATE/AGÜERO) vía token `PEAJES_AUDITORIA_TARIFAS_SERVICE`; contratos locales en `contracts.local.ts` hasta F14-0/F14-2.
+- Servicio: mock tipado para specs; runtime usa `PeajesAuditoriaTarifasSupabaseService` (F14-2). `contracts.local.ts` re-exporta `models/auditoria-tarifas.contracts.ts`.
 - Verificación: `tsc` OK, `ng test` auditoría 14/14, `clasificacion.verify.ts` OK, `npm run build` OK.
-- Bloqueo: F14-2 para RPC reales y `models/auditoria-tarifas.contracts.ts` canónico.
 
 
 - La migración posterior `20260804175001_peajes_facturas_iva_total_manual.sql` agrega `facturas.iva` y elimina la restricción de total derivado: subtotal, percepciones, IVA y total son valores ingresados de factura. RAE se ignora.

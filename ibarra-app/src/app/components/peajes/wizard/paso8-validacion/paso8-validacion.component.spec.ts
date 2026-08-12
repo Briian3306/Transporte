@@ -44,6 +44,7 @@ describe('Paso8ValidacionComponent', () => {
         BONIFICACION: 5220,
         QUANTITY: 1,
         IMPORTE_NETO: 12180,
+        CATEGORIA: null,
       },
     ]);
 

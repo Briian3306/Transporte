@@ -15,6 +15,7 @@ export type TipoConfiguracionPlantilla = 'transformacion' | 'mapeo' | 'validacio
 /**
  * Claves de columnas estándar Pasada-Columns (Structure Goal §11.1).
  * `IMPORTE_NETO` es el nombre canónico de "IMPORTE NETO".
+ * `CATEGORIA` es opcional (F14 / RN-15): texto crudo del proveedor; Patrón B si se mapea.
  */
 export type PasadaColumnKey =
   | 'PASADA_ID'
@@ -25,7 +26,8 @@ export type PasadaColumnKey =
   | 'PRECIO'
   | 'BONIFICACION'
   | 'QUANTITY'
-  | 'IMPORTE_NETO';
+  | 'IMPORTE_NETO'
+  | 'CATEGORIA';
 
 export const PASADA_COLUMN_KEYS: readonly PasadaColumnKey[] = [
   'PASADA_ID',
@@ -37,9 +39,10 @@ export const PASADA_COLUMN_KEYS: readonly PasadaColumnKey[] = [
   'BONIFICACION',
   'QUANTITY',
   'IMPORTE_NETO',
+  'CATEGORIA',
 ] as const;
 
-/** Columnas obligatorias para avanzar el mapeo (MVP). */
+/** Columnas obligatorias para avanzar el mapeo (MVP). CATEGORIA es opcional (Patrón A). */
 export const PASADA_COLUMNAS_OBLIGATORIAS: readonly PasadaColumnKey[] = [
   'FECHA_HORA',
   'PASE_ID',

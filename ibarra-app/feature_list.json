@@ -3,7 +3,7 @@
   "source_of_truth": "docs/plan/peaje-prd-es.md",
   "single_active_feature_per_agent": true,
   "documentation_last_reviewed": "2026-08-12",
-  "documentation_status": "docs/backend RPCs + PRD F13 sync; F13 passing; F14-1/F14-2 backend passing (CLI); F14-4 UI in_progress con provider Supabase; F14-0 CATEGORIA types pendiente agente 00",
+  "documentation_status": "docs/backend RPCs + PRD F13 sync; F13 passing; F14-0/F14-1/F14-2/F14-4 passing (CLI + UI); F14-3 wizard CATEGORIA detection pendiente; F14-6 dataset DESARROLLO diferido (sin remote)",
   "agents": [
     "00-orquestador-setup",
     "01-backend-supabase",
@@ -1357,7 +1357,7 @@
       "prd_refs": ["RF-14", "RF-06", "RN-15", "§21"],
       "agent_owner": "00-orquestador-setup",
       "depends_on": [],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "models/peajes.types.ts: 'CATEGORIA' presente en PasadaColumnKey y PASADA_COLUMN_KEYS (10 keys)",
         "'CATEGORIA' NO está en PASADA_COLUMNAS_OBLIGATORIAS: un archivo sin categoría (Patrón A) sigue validando",
@@ -1365,7 +1365,12 @@
         "ng test --include=\"**/peajes/**\" --watch=false --browsers=ChromeHeadless sin fallos nuevos",
         "Cambio comiteado antes de que arranquen F14-1 y F14-3 (regla 1 del modelo de agentes)"
       ],
-      "evidence": []
+      "evidence": [
+        "2026-08-12: PasadaColumnKey + PASADA_COLUMN_KEYS incluyen CATEGORIA (10 keys); ausente de PASADA_COLUMNAS_OBLIGATORIAS. Inicializador wizard CATEGORIA:null. Specs PasadaEstandarizada actualizados.",
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0",
+        "ng test auditoria-tarifas → 14/14 SUCCESS; peajes-carga + paso8 + paso9 → 9/9 SUCCESS",
+        "Nota: F14-1/F14-2 ya estaban passing (CLI) antes de este commit; F14-3 (detección aliases/MVP) sigue pendiente"
+      ]
     },
     {
       "id": "F14-1",
@@ -1427,7 +1432,7 @@
       "prd_refs": ["RF-26", "RF-32", "§27", "RN-24"],
       "agent_owner": "02-frontend-wizard-tablas",
       "depends_on": ["F14-2"],
-      "status": "in_progress",
+      "status": "passing",
       "verification": [
         "Ruta /peajes/auditoria-tarifas registrada con permiso { module: 'peajes', action: 'read' } y tarjeta en peajes-home.component.html (icono fas fa-chart-line, título 'Auditoría de tarifas', link 'Auditar tarifas')",
         "Pantalla con patrón pasadas-pendientes: tabla nativa padre, único expandedId, fila de detalle con colspan y app-data-table anidada, paginador manual, filtros con debounce 300ms; prefijo CSS at__",
@@ -1438,11 +1443,11 @@
       ],
       "evidence": [
         "2026-08-12: UI F14-4 en src/app/components/peajes/auditoria-tarifas/ (list, familia-panel, status-buttons, status-badge, comparar-dialog, mock, routes). Ruta + permiso + tarjeta peajes-home cableados.",
+        "Provider PeajesAuditoriaTarifasSupabaseService (F14-2) activo en auditoria-tarifas.routes.ts; contracts.local.ts re-exporta models/auditoria-tarifas.contracts.ts",
         "npx tsc --noEmit -p tsconfig.app.json EXIT 0",
-        "ng test --include=\"**/peajes/auditoria-tarifas/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless → 14/14 SUCCESS",
-        "npx --yes tsx src/app/components/peajes/auditoria-tarifas/clasificacion.verify.ts → ZARATE 5/5 OK",
-        "npm run build EXIT 0 (lazy chunk peajes-routes incluye auditoria-tarifas)",
-        "Pendiente F14-2: swap AuditoriaTarifasMockService → PeajesAuditoriaTarifasSupabaseService; contratos canónicos en models/auditoria-tarifas.contracts.ts (agente 00/01)"
+        "ng test --include=\"**/peajes/auditoria-tarifas/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless → 14/14 SUCCESS (post F14-0 CATEGORIA)",
+        "npx --yes tsx src/app/components/peajes/auditoria-tarifas/clasificacion.verify.ts → ZARATE 5/5 OK (evidencia previa 706beee)",
+        "npm run build EXIT 0 (lazy chunk peajes-routes incluye auditoria-tarifas) — evidencia previa 706beee"
       ]
     },
     {
