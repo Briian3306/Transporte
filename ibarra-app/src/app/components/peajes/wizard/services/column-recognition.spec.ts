@@ -166,4 +166,70 @@ describe('column-recognition (F02-11)', () => {
     expect(codes).toContain('ASIGNAR_VALOR');
     expect(codes).toContain('CALCULAR_IMPORTE_NETO');
   });
+
+  describe('F14-3 CATEGORIA', () => {
+    it('resuelve aliases CATEGORIA / CATEG / CLASE / TIPO VEHICULO (acentos colapsan)', () => {
+      expect(resolveAlias(buildColumnLookup(['CATEGORIA']), COLUMN_ALIASES.category)).toBe(
+        'CATEGORIA'
+      );
+      expect(resolveAlias(buildColumnLookup(['Categoría']), COLUMN_ALIASES.category)).toBe(
+        'Categoría'
+      );
+      expect(resolveAlias(buildColumnLookup(['CATEG']), COLUMN_ALIASES.category)).toBe('CATEG');
+      expect(resolveAlias(buildColumnLookup(['CLASE']), COLUMN_ALIASES.category)).toBe('CLASE');
+      expect(
+        resolveAlias(buildColumnLookup(['Tipo Vehículo']), COLUMN_ALIASES.category)
+      ).toBe('Tipo Vehículo');
+      expect(
+        resolveAlias(buildColumnLookup(['CATEGORIA VEHICULO']), COLUMN_ALIASES.category)
+      ).toBe('CATEGORIA VEHICULO');
+      expect(resolveAlias(buildColumnLookup(['TIPO']), COLUMN_ALIASES.category)).toBeUndefined();
+    });
+
+    it('recomienda CATEGORIA sin pasos de pipeline y con mapeoHint descartable', () => {
+      const recs = detectColumnRecommendations(
+        previewOf(
+          ['FECHA', 'HORA', 'ESTACION', 'CATEGORIA', 'TARIFA', 'BONIFICACION'],
+          [
+            {
+              FECHA: '25/06/2026',
+              HORA: '083015',
+              ESTACION: '3',
+              CATEGORIA: '5',
+              TARIFA: '100',
+              BONIFICACION: '10',
+            },
+          ]
+        )
+      );
+      const cat = recs.find((r) => r.kind === 'categoria')!;
+      expect(cat.id).toBe('rec-categoria');
+      expect(cat.draftSteps).toEqual([]);
+      expect(cat.incluirColumnas).toEqual(['CATEGORIA']);
+      expect(cat.mapeoHints[0]).toEqual(
+        jasmine.objectContaining({ columnaOrigen: 'CATEGORIA', columnaDestino: 'CATEGORIA' })
+      );
+      expect(cat.status).toBe('pending');
+    });
+
+    it('sin columna de categoría no propone rec-categoria (Patrón A)', () => {
+      const recs = detectColumnRecommendations(
+        previewOf(
+          ['FECHA', 'HORA', 'DOMINIO', 'DISPOSITIVON', 'ESTACION', 'TARIFA', 'BONIFICACION'],
+          [
+            {
+              FECHA: '25/06/2026',
+              HORA: '083015',
+              DOMINIO: 'AB123CD',
+              DISPOSITIVON: '9',
+              ESTACION: 'E1',
+              TARIFA: '100',
+              BONIFICACION: '10',
+            },
+          ]
+        )
+      );
+      expect(recs.some((r) => r.kind === 'categoria')).toBeFalse();
+    });
+  });
 });

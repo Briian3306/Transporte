@@ -49,10 +49,21 @@ Consultar, en este orden: `docs/plan/peaje-prd-short.md.md`, `feature_list.json`
 
 - Pantalla `/peajes/auditoria-tarifas` + tarjeta home; specs 14/14 con mock; runtime Supabase.
 
+**F14-3 — DONE (wizard CATEGORIA)**
+
+- `column-recognition.ts`: kind `categoria`, aliases inline, `rec-categoria` (sin pipeline).
+- Fixtures MVP/AU: `CATEGORIA` incluida + `MVP_MAPEO_SUGERIDO` / `AU_MAPEO_SUGERIDO`.
+- Paso 5: destino opcional en UI; `construirPasadasDesdeMapeo` + payload carga ya propagaban `categoria`.
+- Verify: wizard specs **96 SUCCESS** (include `**/*.spec.ts`).
+
+**F14-5 — DONE (docs)**
+
+- Componentes: `reconocimiento-columnas.md`, `reconocimiento-estaciones.md`, `auditoria-tarifas.md`, wizard Paso 5.
+- Tablas: `tarifas-normalizadas.md` + cols F14 en `documentos-pasadas.md`.
+- Módulo / INDEX + backend index ya enlazaba 6 RPC.
+
 **Pendiente**
 
-- F14-3: detección aliases `CATEGORIA` en Paso 2, sacar de `MVP_COLUMNAS_EXCLUIDAS`, mapeo sugerido.
-- F14-5: docs (tras F14-3).
 - F14-6: dataset 1711/119 en DESARROLLO — **skip** mientras no haya `db push` / remote autorizado.
 - `fecha_desde`/`fecha_hasta` en listar agregado: documentados como no-ops; no fix local-only pedido.
 - Drift migración `20260811190002_filtrar_columna` viaja en el próximo push remoto.

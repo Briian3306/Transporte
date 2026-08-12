@@ -19,7 +19,8 @@ export type ColumnRecommendationKind =
   | 'bonificacion'
   | 'eliminar_iva'
   | 'dispositivo'
-  | 'estacion';
+  | 'estacion'
+  | 'categoria';
 
 export type ColumnRecommendationStatus = 'pending' | 'accepted' | 'dismissed';
 
@@ -45,6 +46,8 @@ export const COLUMN_ALIASES = {
   time: ['HORA'],
   device: [...CONSUMOS_RESUMEN_ALIASES.pase],
   station: [...CONSUMOS_RESUMEN_ALIASES.estacion],
+  /** F14-3: aliases inline (ConsumosResumen no trae categoría). Normalización cubre acentos. */
+  category: ['CATEGORIA', 'CATEG', 'CLASE', 'TIPO VEHICULO', 'CATEGORIA VEHICULO'],
 } as const;
 
 function nuevoClientId(): string {
@@ -379,6 +382,7 @@ export function detectColumnRecommendations(
   const discountCol = resolveAlias(lookup, COLUMN_ALIASES.discount);
   const deviceCol = resolveAlias(lookup, COLUMN_ALIASES.device);
   const stationCol = resolveAlias(lookup, COLUMN_ALIASES.station);
+  const categoryCol = resolveAlias(lookup, COLUMN_ALIASES.category);
 
   if (fechaCol && horaCol) {
     const formato = detectaFormatoHora(sampleValues(preview, horaCol));
@@ -422,6 +426,21 @@ export function detectColumnRecommendations(
       draftSteps: [],
       incluirColumnas: [stationCol],
       mapeoHints: [hint(stationCol, 'ESTACION_ID')],
+    });
+  }
+
+  if (categoryCol) {
+    recs.push({
+      id: 'rec-categoria',
+      kind: 'categoria',
+      title: `Recomendado: ${categoryCol} → CATEGORIA`,
+      detail:
+        'Conservar la categoría del proveedor tal cual viene en el archivo. Habilita el análisis tarifario por categoría (Patrón B); sin esta columna las tarifas se agrupan solo por estación.',
+      status: 'pending',
+      columnasEntrada: [categoryCol],
+      draftSteps: [],
+      incluirColumnas: [categoryCol],
+      mapeoHints: [hint(categoryCol, 'CATEGORIA')],
     });
   }
 

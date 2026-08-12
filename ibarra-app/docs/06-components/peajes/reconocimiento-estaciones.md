@@ -69,6 +69,19 @@ Si el archivo es compatible y no hay estaciones ambiguas/nuevas ni patentes fuer
 
 `validarDefinicionPlantilla` acepta el snapshot `mapeos`: un destino obligatorio como `ESTACION_ID` puede cubrirse solo por mapeo (sin paso de pipeline). Si el origen del mapeo (p. ej. `ESTACION`) no está en el archivo ni es salida del pipeline, se informa el error antes de aplicar.
 
+## Categoría y familias tarifarias por estación (F14)
+
+La estación resuelta en el Paso 6 es **una de las dos dimensiones** de una familia tarifaria; la otra es la categoría del proveedor mapeada en el Paso 5 ([reconocimiento-columnas.md](./reconocimiento-columnas.md)).
+
+```text
+Patrón A (sin categoría):  familia = estación            → variación intra-estación por explicar
+Patrón B (con categoría):  familia = estación + categoría → variación intra-familia ≈ horaria
+```
+
+Resolver mal una estación en el Paso 6 parte o mezcla familias aguas abajo: dos códigos de proveedor que son la misma estación producen dos familias con la mitad de las pasadas y pueden quedar en `MUESTRA_INSUFICIENTE`. Por eso la calidad del Paso 6 importa para la auditoría tarifaria.
+
+Modelo completo: [APENDICE-B](../../plan/auditoria-pasadas-patrones/APENDICE-B-deteccion-categoria-y-mapeo.md). Pantalla: [auditoria-tarifas.md](./auditoria-tarifas.md).
+
 ## Archivos
 
 - `wizard/paso6-estaciones/*`
@@ -81,4 +94,4 @@ Si el archivo es compatible y no hay estaciones ambiguas/nuevas ni patentes fuer
 
 ---
 
-> Última actualización: 2026-08-07
+> Última actualización: 2026-08-12

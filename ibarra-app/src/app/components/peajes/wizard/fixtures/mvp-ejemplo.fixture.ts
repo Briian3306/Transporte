@@ -27,11 +27,13 @@ export const MVP_COLUMNAS_INCLUIDAS = [
   'ESTACION',
   'DISPOSITIVON',
   'DOMINIO',
+  'CATEGORIA',
   'TARIFA',
   'BONIFICACION',
 ] as const;
 
-export const MVP_COLUMNAS_EXCLUIDAS = ['VIA', 'DISPOSITIVOT', 'CATEGORIA'] as const;
+/** VIA / DISPOSITIVOT no alimentan la estructura estándar. CATEGORIA sí (F14-3 · Patrón B). */
+export const MVP_COLUMNAS_EXCLUIDAS = ['VIA', 'DISPOSITIVOT'] as const;
 
 /** 10 registros del ejemplo (incluye columnas ignoradas). */
 export const MVP_FILAS_ORIGEN: Record<string, unknown>[] = [
@@ -177,6 +179,7 @@ export const MVP_MAPEO_SUGERIDO: Record<string, PasadaColumnKey | null> = {
   ESTACION: 'ESTACION_ID',
   DISPOSITIVON: 'PASE_ID',
   DOMINIO: 'PATENTE_ID',
+  CATEGORIA: 'CATEGORIA',
   TARIFA: 'PRECIO',
   BONIFICACION: 'BONIFICACION',
 };

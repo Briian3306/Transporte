@@ -54,7 +54,7 @@ describe('PeajesCargaSupabaseService', () => {
             BONIFICACION: 0,
             QUANTITY: 1,
             IMPORTE_NETO: 100,
-            CATEGORIA: null,
+            CATEGORIA: ' 5 ',
           },
         ],
         plantillaId: null,
@@ -68,5 +68,10 @@ describe('PeajesCargaSupabaseService', () => {
     expect(result.pasadas[0].id).toBe('22222222-2222-4222-8222-222222222222');
     expect(result.registro.id).toBe('33333333-3333-4333-8333-333333333333');
     expect(from).not.toHaveBeenCalled();
+    // Primera llamada = peajes_confirmar_carga (la 2ª es peajes_normalizar_tarifas post-commit).
+    const confirmarArgs = rpc.calls.argsFor(0)[1] as {
+      p_pasadas: Array<{ categoria: string | null }>;
+    };
+    expect(confirmarArgs.p_pasadas[0].categoria).toBe('5');
   });
 });

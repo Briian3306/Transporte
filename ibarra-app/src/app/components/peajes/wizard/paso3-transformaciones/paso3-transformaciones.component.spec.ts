@@ -69,7 +69,9 @@ describe('Paso3TransformacionesComponent (editable pipeline I-P*)', () => {
     const codigos = component.drafts.map((d) => d.configuracion?.algoritmo_codigo);
     expect(codigos).toContain('FORMATEAR_FECHA_HORA');
     expect(codigos).toContain('CALCULAR_IMPORTE_NETO');
-    expect(component.descriptors.length).toBe(10);
+    // Catálogo vivo del motor (no hardcodear N: F13+ sumó FILTRAR_COLUMNA y otros).
+    expect(component.descriptors.length).toBe(motor.getAlgorithmDescriptors().length);
+    expect(component.descriptors.length).toBeGreaterThanOrEqual(10);
   });
 
   /** I-P02: add step */

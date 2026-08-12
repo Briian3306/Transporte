@@ -11,8 +11,9 @@ Documentación de UI y servicios del módulo Peajes (wizard, catálogos, plantil
 | [wizard.md](./wizard.md) | Asistente de carga (pasos 1–9), estado y Excel |
 | [importacion-masiva-consumos-resumen.md](./importacion-masiva-consumos-resumen.md) | F13 — ConsumosResumen / masiva multi-documento |
 | [validacion-carga.md](./validacion-carga.md) | Paso 8: diagnóstico, tolerancia, errores RPC |
-| [reconocimiento-columnas.md](./reconocimiento-columnas.md) | F02-11 — reconocimiento semántico + Paso 2 |
+| [reconocimiento-columnas.md](./reconocimiento-columnas.md) | F02-11 / F14-3 — reconocimiento semántico + CATEGORIA |
 | [reconocimiento-estaciones.md](./reconocimiento-estaciones.md) | F02-13 / RN-26 — estaciones por peaje/empresa |
+| [auditoria-tarifas.md](./auditoria-tarifas.md) | F14-4 — pantalla `/peajes/auditoria-tarifas` |
 | [patentes-sin-resolver.md](./patentes-sin-resolver.md) | F02-14 — DataTable Agregar/Quitar en Paso 5 |
 | [pipeline-editable-paso3.md](./pipeline-editable-paso3.md) | Pipeline editable Paso 3 (F02-10 / F03-9) |
 | [catalogos.md](./catalogos.md) | CRUD UI empresas / peajes / estaciones / patentes / pases |

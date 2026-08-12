@@ -454,6 +454,11 @@ export class Paso5MapeoComponent implements OnInit {
     );
   }
 
+  /** Destinos fuera de PASADA_COLUMNAS_OBLIGATORIAS (p. ej. CATEGORIA · F14-3). */
+  esDestinoOpcional(key: PasadaColumnKey): boolean {
+    return !(this.obligatorias as readonly PasadaColumnKey[]).includes(key);
+  }
+
   faltantes(): PasadaColumnKey[] {
     const mapeados = new Set(
       this.mapeos.filter((m) => m.columnaDestino).map((m) => m.columnaDestino!)

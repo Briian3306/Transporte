@@ -56,8 +56,13 @@ Conciliación: `Σ pasadas.importe_neto − documentos.bonificacion ≈ importe_
 | `created_at` | timestamptz | No | Default `now()` |
 | `user_id` | uuid FK → auth.users | Sí | Creador |
 | `file_upload_name` | text | Sí | Nombre archivo de carga |
+| `categoria` | text | Sí | Texto crudo del proveedor (F14 / RN-15). **No** es `patentes.categoria`. Vacío → `NULL` = Patrón A |
+| `tarifa_normalizada_id` | uuid FK → tarifas_normalizadas | Sí | Familia tarifaria asignada por el motor |
+| `tarifa_status` | text | No | Copiado desde `tarifas_normalizadas.status` (default `PENDIENTE`) |
 
-UK anti-duplicados: `(pase_id, fecha_hora, estacion_id, patente_id)`.
+UK anti-duplicados: `(pase_id, fecha_hora, estacion_id, patente_id)` — **sin** `categoria` (RN-16).
+
+Tablas de auditoría tarifaria (`tarifas_normalizadas`, `tarifas_parametros_peaje`, `tarifas_status_catalogo`): ver [auditoria-tarifas.md](../../backend/peajes/auditoria-tarifas.md) y [tarifas-normalizadas.md](./tarifas-normalizadas.md).
 
 ---
 
@@ -82,6 +87,7 @@ Listado: RPC `peajes_listar_pasadas`. CRUD: ver [gestion-pasadas](../../backend/
 | RN-12 | Asociación con documento |
 | RN-13/17 | Suma netos vs subtotal; tolerancia 1% del subtotal |
 | RN-16 | Duplicados por clave de negocio (hora completa) |
+| RN-15 | `pasadas.categoria` = texto del proveedor; nunca join con `patentes.categoria` |
 
 Confirmación: [confirmar-carga](../../backend/peajes/confirmar-carga.md).
 
@@ -91,10 +97,11 @@ Confirmación: [confirmar-carga](../../backend/peajes/confirmar-carga.md).
 
 - SQL base: `supabase/migrations/20260730125518_peajes_facturas_pasadas.sql`
 - SQL F13: `supabase/migrations/20260807140000_peajes_documentos_tipo_nc.sql`
+- SQL F14: `supabase/migrations/2026081212*_peajes_tarifas_*` (ver backend)
 - Backend RPC: [docs/backend/](../../backend/index.md)
 - Servicio: `PeajesCargaSupabaseService`, `PeajesPasadasSupabaseService`
 - Wizard: [wizard.md](../../06-components/peajes/wizard.md)
 
 ---
 
-> Última actualización: agosto 2026
+> Última actualización: 2026-08-12

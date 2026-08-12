@@ -56,10 +56,13 @@ Flujo:
 | `FORMATEAR_FECHA_HORA` | Fecha/hora |
 | `COMBINAR_COLUMNAS` | Concat |
 | `CALCULAR_IMPORTE_NETO` | Precio − bonificación |
+| `FILTRAR_COLUMNA` | Conserva filas si columna = valor (`1` ≡ `0001`) |
 
 `NORMALIZAR_PATENTE` / `COMBINAR_FECHA_HORA` son **combinados**, no códigos del registry.
 
 El wizard (Paso 2) puede **recomendar** estas cadenas atómicas según aliases de columna (F02-11). Las recetas viven en `column-recognition.ts` y reutilizan el mismo catálogo; ver [reconocimiento-columnas.md](./reconocimiento-columnas.md). No duplicar aquí la tabla de aliases.
+
+**F14 no agrega códigos al catálogo:** la categoría del proveedor se resuelve como mapeo opcional a `CATEGORIA` (sin estrategia nueva). Ver [reconocimiento-columnas.md](./reconocimiento-columnas.md#categoría-del-proveedor-f14-3).
 
 ---
 
@@ -96,6 +99,7 @@ En Paso 5 el origen del mapeo es `PATENTE_ID` (salida del pipeline).
 | `ELIMINAR_IVA` | Divide una columna numérica —normalmente `IMPORTE_NETO`— por `1,21` y redondea cada pasada a dos decimales. Es opcional y se guarda en la plantilla de la empresa. |
 | `OPERAR_NUMERO` | Opera una columna contra un valor fijo mediante `sumar`, `restar`, `multiplicar` o `dividir`. Rechaza valores inválidos y división por cero. |
 | `CONVERTIR_NUMERO_ARS` | Parsea montos argentinos (`19.985,09`). Usar en Telepase / Autopistas Urbanas. `CONVERTIR_NUMERO` queda para enteros o decimal con punto (`19985.09`). |
+| `FILTRAR_COLUMNA` | Descarta filas cuyo valor de columna no coincide con `parametros.valor` (número o texto). Pads numéricos equivalentes (`1` ≡ `0001`). Usado en Autovía del Mercosur para `ESTACION` vs factura. |
 
 Estas estrategias se ejecutan únicamente desde el `StrategyRegistry`; los parámetros persistidos declaran operación, valor y columna, sin ejecutar código dinámico.
 

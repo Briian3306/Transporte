@@ -296,4 +296,27 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
     expect(pasadas[0].PRECIO).toBe(19985.09);
     expect(pasadas[0].IMPORTE_NETO).toBe(19985.09);
   });
+
+  describe('F14-3 CATEGORIA', () => {
+    it('MVP mapea CATEGORIA → texto crudo y sin mapeo queda null (Patrón A)', () => {
+      state.cargarEjemploMvp();
+      const mapeoCat = state.mapeosActivos().find((m) => m.columnaDestino === 'CATEGORIA');
+      expect(mapeoCat?.columnaOrigen).toBe('CATEGORIA');
+      expect(mapeoCat?.excluida).toBeFalse();
+
+      const conCat = state.construirPasadasDesdeMapeo();
+      expect(conCat.length).toBeGreaterThan(0);
+      expect(conCat[0].CATEGORIA).toBe('5');
+
+      state.setMapeos(
+        state.mapeosActivos().map((m) =>
+          m.columnaDestino === 'CATEGORIA'
+            ? { ...m, columnaDestino: null, excluida: true }
+            : m
+        )
+      );
+      const sinCat = state.construirPasadasDesdeMapeo();
+      expect(sinCat[0].CATEGORIA).toBeNull();
+    });
+  });
 });

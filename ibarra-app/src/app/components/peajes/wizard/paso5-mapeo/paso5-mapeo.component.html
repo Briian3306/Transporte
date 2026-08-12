@@ -42,7 +42,7 @@
                     [value]="d"
                     [disabled]="destinoUsado(d, m.columnaOrigen)"
                   >
-                    {{ d }}
+                    {{ d }}{{ esDestinoOpcional(d) ? ' (opcional)' : '' }}
                   </option>
                 </select>
               </td>
@@ -372,7 +372,9 @@
   </div>
 
   <div class="pw__footer">
-    <div class="pw__footer-hint">Obligatorias: {{ obligatorias.join(', ') }}</div>
+    <div class="pw__footer-hint">
+      Obligatorias: {{ obligatorias.join(', ') }}. CATEGORIA es opcional (Patrón B si se mapea).
+    </div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
       <button

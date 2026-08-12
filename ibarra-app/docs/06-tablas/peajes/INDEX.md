@@ -11,6 +11,7 @@ Documentación del esquema persistente del módulo Peajes (F01 + F13 documentos)
 | [modelo-datos.md](./modelo-datos.md) | Vista general, relaciones y reglas de dominio |
 | [catalogos.md](./catalogos.md) | `peajes`, `estaciones`, `patentes`, `pases`, empresas |
 | [documentos-pasadas.md](./documentos-pasadas.md) | `documentos`, `pasadas`, vistas |
+| [tarifas-normalizadas.md](./tarifas-normalizadas.md) | F14: `tarifas_*` + columnas de auditoría en `pasadas` |
 | [plantillas-algoritmos.md](./plantillas-algoritmos.md) | Plantillas, configuraciones, algoritmos |
 | [auditoria-y-rpcs.md](./auditoria-y-rpcs.md) | `registros_carga_peajes` + enlace a RPCs |
 

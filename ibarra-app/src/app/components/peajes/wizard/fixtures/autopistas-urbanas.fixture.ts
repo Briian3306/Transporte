@@ -31,11 +31,11 @@ export const AU_COLUMNAS_INCLUIDAS = [
   'VIA',
   'DISPOSITIVO',
   'PATENTE',
+  'CATEGORIA',
   'TARIFA',
 ] as const;
 
 export const AU_COLUMNAS_EXCLUIDAS = [
-  'CATEGORIA',
   'TIPO_DE_DOCUMENTO',
   'DOCUMENTO_LEGAL',
   'DOCUMENTO_SA',
@@ -231,6 +231,7 @@ export const AU_MAPEO_SUGERIDO: Record<string, PasadaColumnKey | null> = {
   VIA: null,
   DISPOSITIVO: 'PASE_ID',
   PATENTE: 'PATENTE_ID',
+  CATEGORIA: 'CATEGORIA',
   TARIFA: 'PRECIO',
 };
 

@@ -3,7 +3,7 @@
   "source_of_truth": "docs/plan/peaje-prd-es.md",
   "single_active_feature_per_agent": true,
   "documentation_last_reviewed": "2026-08-12",
-  "documentation_status": "docs/backend RPCs + PRD F13 sync; F13 passing; F14-0/F14-1/F14-2/F14-4 passing (CLI + UI); F14-3 wizard CATEGORIA detection pendiente; F14-6 dataset DESARROLLO diferido (sin remote)",
+  "documentation_status": "docs/backend RPCs + F14 docs; F13 passing; F14-0..F14-5 passing (CLI + wizard CATEGORIA + UI + docs); F14-6 dataset DESARROLLO diferido (sin remote)",
   "agents": [
     "00-orquestador-setup",
     "01-backend-supabase",
@@ -1416,15 +1416,19 @@
       "prd_refs": ["RF-06", "RF-14", "RN-15", "§21"],
       "agent_owner": "02-frontend-wizard-tablas",
       "depends_on": ["F14-0", "F14-1"],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "COLUMN_ALIASES incluye CATEGORIA; detectColumnRecommendations propone el destino en Paso 2 (CATEGORIA/CATEGORÍA/categoria colapsan por normalizarEncabezadoColumna)",
         "MVP_COLUMNAS_EXCLUIDAS ya no lista 'CATEGORIA' y ningún fixture MVP cambia de resultado",
         "Paso 5 ofrece CATEGORIA como destino opcional y el valor llega crudo al payload de peajes_confirmar_carga → pasadas.categoria (texto del proveedor, nunca patentes.categoria, RN-15)",
         "Archivo sin columna de categoría recorre los 9 pasos y guarda con pasadas.categoria = NULL (Patrón A), sin advertencias nuevas en Paso 8",
-        "ng test --include=\"**/peajes/wizard/**\" --watch=false --browsers=ChromeHeadless SUCCESS"
+        "ng test --include=\"**/peajes/wizard/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless SUCCESS"
       ],
-      "evidence": []
+      "evidence": [
+        "2026-08-12: COLUMN_ALIASES.category + kind categoria + rec-categoria (draftSteps=[], mapeoHints→CATEGORIA). MVP/AU: CATEGORIA incluida y mapeada; EXCLUIDAS sin CATEGORIA. Paso 5 marca destinos opcionales. Payload peajes_confirmar_carga.categoria con trim (F14-2).",
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0",
+        "ng test --include=\"**/peajes/wizard/**/*.spec.ts\" --include=\"**/peajes/services/peajes-carga.service.spec.ts\" --watch=false --browsers=ChromeHeadless → 96 SUCCESS"
+      ]
     },
     {
       "id": "F14-4",
@@ -1456,7 +1460,7 @@
       "prd_refs": ["§20", "§22", "§25", "RF-26", "RN-15"],
       "agent_owner": "04-documentador",
       "depends_on": ["F14-1", "F14-2", "F14-3", "F14-4"],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "docs/06-tablas/peajes/ documenta tarifas_normalizadas, tarifas_parametros_peaje, tarifas_status_catalogo y las 3 columnas nuevas de pasadas, aclarando que pasadas.categoria es texto crudo del proveedor y no el enum patentes.categoria (RN-15)",
         "docs/06-components/peajes/ documenta la pantalla /peajes/auditoria-tarifas y el destino CATEGORIA del Paso 5",
@@ -1464,7 +1468,9 @@
         "docs/modulos/peajes.md e INDEX.md afectados actualizados; enlaces cruzados resuelven",
         "Solo se documenta lo que está passing en feature_list.json (regla 4 del modelo de agentes)"
       ],
-      "evidence": []
+      "evidence": [
+        "2026-08-12: reconocimiento-columnas.md (§CATEGORIA F14-3) + reconocimiento-estaciones.md (familias) + auditoria-tarifas.md (UI) + tarifas-normalizadas.md + documentos-pasadas cols F14; wizard.md Paso 5 opcional; plantillas nota sin códigos nuevos; modulos/peajes.md + docs/INDEX.md; backend/peajes/auditoria-tarifas.md + index ya enlazaban 6 RPC."
+      ]
     },
     {
       "id": "F14-6",

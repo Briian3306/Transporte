@@ -213,4 +213,12 @@ describe('Paso5MapeoComponent', () => {
       jasmine.arrayContaining(['AH033DL', 'AE751PA'])
     );
   });
+
+  it('F14-3: CATEGORIA es destino opcional y no bloquea faltantes', () => {
+    expect(component.destinos).toContain('CATEGORIA');
+    expect(component.obligatorias).not.toContain('CATEGORIA');
+    expect(component.esDestinoOpcional('CATEGORIA')).toBeTrue();
+    expect(component.esDestinoOpcional('FECHA_HORA')).toBeFalse();
+    expect(component.faltantes()).not.toContain('CATEGORIA');
+  });
 });
