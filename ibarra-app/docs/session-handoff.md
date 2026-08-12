@@ -32,16 +32,15 @@ Consultar, en este orden: `docs/plan/peaje-prd-short.md.md`, `feature_list.json`
 
 ## F14 — Auditoría tarifas (2026-08-12)
 
-F14-4 (agente 02) requiere de F14-0/F14-2:
+**F14-1 / F14-2 (agente 01) — DONE (CLI, sin push remoto)**
 
-1. `models/auditoria-tarifas.contracts.ts` con `PeajesAuditoriaTarifasService`, token `PEAJES_AUDITORIA_TARIFAS_SERVICE` y tipos exportados desde `models/index.ts`. Hoy el frontend usa `auditoria-tarifas/contracts.local.ts`.
-2. Confirmación de claves `p_filtros` y formato `p_sort` (`cases:desc`).
-3. Confirmación de si `peajes_confirmar_status_tarifa` acepta asignaciones multi-estación (diálogo Comparar).
-4. Confirmación de si `peajes_recalcular_tarifas` respeta `confirmado_manual` (copy del diálogo Recalcular).
-5. Definición de bloque `resumen` en listado vs. llamadas extra de progreso (`p_page_size: 1`).
-
-Swap en `auditoria-tarifas.routes.ts`: reemplazar `AuditoriaTarifasMockService` por `PeajesAuditoriaTarifasSupabaseService` cuando F14-2 esté `passing`.
+- Contratos canónicos: `models/auditoria-tarifas.contracts.ts` (re-export desde `contracts.local.ts`).
+- Servicio: `PeajesAuditoriaTarifasSupabaseService`; provider ya swapped en `auditoria-tarifas.routes.ts`.
+- RPCs: `peajes_listar_tarifas_normalizadas` (`p_filtros` con `peaje_ids[]` / `solo_muestra_confiable`, `p_sort` = `campo:dir`); `peajes_confirmar_status_tarifa` acepta N asignaciones multi-estación; `peajes_recalcular_tarifas` respeta `confirmado_manual`; `peajes_grupos_similares_tarifa` devuelve `tarifa_ids[]` ordenados por importe.
+- Enganche: `peajes_confirmar_carga` persiste `categoria`; normalización post-commit vía segundo `.rpc` (opción b).
+- Pendiente agente 00: F14-0 `CATEGORIA` en `PasadaColumnKey`.
+- Pendiente F14-6: recálculo dataset 1711/119 en DESARROLLO; **no** `db push` aún (también viaja drift `20260811190002_filtrar_columna`).
 
 ## Riesgos
 
-La principal incertidumbre es la falta de evidencia final para F06/F07/F08, no una ausencia conocida del MVP. No hacer merge a `main` ni afirmar `passing` sin comandos reproducibles y resultados registrados.
+La principal incertidumbre es la falta de evidencia final para F06/F07/F08, no una ausencia conocida del MVP. No hacer merge a `main` ni afirmar `passing` sin comandos reproducibles y resultados registrados. No pushear F14 a DESARROLLO sin autorización explícita.

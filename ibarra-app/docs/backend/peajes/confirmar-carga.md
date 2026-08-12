@@ -27,8 +27,9 @@ Confirmar de forma atómica una carga válida (RN-12, RN-13/17, RN-16) sin estad
 3. Detecta duplicados (`peajes_detectar_duplicados`).
 4. Calcula/valida `importe_neto` por fila (`peajes_calcular_importe_neto`).
 5. Valida suma vs (subtotal + bonificación de cabecera) (`peajes_validar_factura_pasadas`, tolerancia default 1%).
-6. Inserta fila en `documentos` (incluye `bonificacion`), pasadas con `documento_id`, y `registros_carga_peajes`.
+6. Inserta fila en `documentos` (incluye `bonificacion`), pasadas con `documento_id` y `categoria` cruda opcional (F14 / RN-15), y `registros_carga_peajes`.
 7. Devuelve jsonb con ids y métricas de filas.
+8. **Fuera de esta TX** (opción b): `PeajesCargaSupabaseService` invoca `peajes_normalizar_tarifas(documento_id)`; un fallo se registra y no invalida la carga.
 
 En masiva, el frontend orquesta **una invocación por documento**; errores se aíslan por llamada.
 

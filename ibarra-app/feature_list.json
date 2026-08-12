@@ -3,7 +3,7 @@
   "source_of_truth": "docs/plan/peaje-prd-es.md",
   "single_active_feature_per_agent": true,
   "documentation_last_reviewed": "2026-08-12",
-  "documentation_status": "docs/backend RPCs + PRD F13 sync; F13 passing; F06/F07/F08/F11 en seguimiento; docs/08-sql eliminada; F14 planificada en docs/plan/auditoria-pasadas-patrones/ (not_started, sin implementación)",
+  "documentation_status": "docs/backend RPCs + PRD F13 sync; F13 passing; F14-1/F14-2 backend passing (CLI); F14-4 UI in_progress con provider Supabase; F14-0 CATEGORIA types pendiente agente 00",
   "agents": [
     "00-orquestador-setup",
     "01-backend-supabase",
@@ -1373,7 +1373,7 @@
       "prd_refs": ["§22", "§25", "§26", "RN-05", "RN-16", "RN-20", "RN-24"],
       "agent_owner": "01-backend-supabase",
       "depends_on": ["F14-0"],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "Migración YYYYMMDDHHMMSS_peajes_*.sql crea tarifas_normalizadas, tarifas_parametros_peaje (umbrales 15 / 4.100 / auto_confirmar false) y tarifas_status_catalogo (tipo_meta PICO|NO_PICO|NEUTRO)",
         "ALTER TABLE pasadas agrega categoria text null, tarifa_normalizada_id uuid null y tarifa_status text not null default 'PENDIENTE'; NO agrega peaje_id (RN-05) y pasadas_duplicado_uk queda intacta (RN-16)",
@@ -1382,7 +1382,9 @@
         "Vistas pasadas_con_peaje, pasadas_gestion, pwbi_pasadas, pwbi_documentos, pwbi_estacion y pwbi_patentes revisadas y respondiendo tras el ALTER",
         "Verificado contra Supabase CLI local desde cero + supabase db advisors sin hallazgos nuevos sin justificar"
       ],
-      "evidence": []
+      "evidence": [
+        "2026-08-12: migraciones 20260812140628 + 20260812140633 + 20260812140648. npx supabase db reset --local --no-seed OK. npx supabase test db → 144 PASS (incl. peajes_f14_test B-06/B-07/B-08 schema). Sin peaje_id en pasadas. Docs docs/backend/peajes/auditoria-tarifas.md. Nota: F14-0 (CATEGORIA en types) sigue pendiente de agente 00; el DDL no lo requiere."
+      ]
     },
     {
       "id": "F14-2",
@@ -1390,7 +1392,7 @@
       "prd_refs": ["§23", "§24", "§27", "RN-05", "RN-20", "RN-24", "RF-32"],
       "agent_owner": "01-backend-supabase",
       "depends_on": ["F14-1"],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "Existen peajes_normalizar_tarifas(p_documento_id), peajes_recalcular_tarifas(p_peaje_id), peajes_confirmar_status_tarifa(p_asignaciones jsonb), peajes_marcar_diagnostico_tarifa(id, diagnostico), peajes_listar_tarifas_normalizadas(p_filtros, p_page, p_page_size, p_sort) y peajes_grupos_similares_tarifa(id, p_tolerancia)",
         "peajes_confirmar_carga dispara peajes_normalizar_tarifas por documento confirmado sin cambiar su firma pública ni romper PeajesCargaSupabaseService.confirmarCarga()",
@@ -1399,7 +1401,9 @@
         "Filas con confirmado_manual = true no son pisadas por el recálculo",
         "supabase db advisors EXIT limpio tras crear las funciones"
       ],
-      "evidence": []
+      "evidence": [
+        "2026-08-12: RPC en 20260812140637/40/44/53. Enganche opción (b) en PeajesCargaSupabaseService + persiste categoria. PeajesAuditoriaTarifasSupabaseService + provider swap en auditoria-tarifas.routes. npx supabase test db → 144 PASS (B-01..B-16 sintéticos: MUESTRA_INSUFICIENTE, TARIFA_UNICA, POSIBLE_HORARIO, confirmado_manual, NC=0, listar). Recálculo dataset 1711/119 diferido a F14-6 (DESARROLLO/seed). Contratos models/auditoria-tarifas.contracts.ts."
+      ]
     },
     {
       "id": "F14-3",

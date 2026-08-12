@@ -130,6 +130,12 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
             bonificacion: Number(p.BONIFICACION ?? 0),
             importe_neto: p.IMPORTE_NETO != null ? Number(p.IMPORTE_NETO) : undefined,
           });
+          // F14: CATEGORIA opcional (F14-0). Vacío → null (Patrón A). Texto crudo RN-15.
+          const categoriaRaw = (p as Record<string, unknown>)['CATEGORIA'];
+          const categoria =
+            categoriaRaw == null || String(categoriaRaw).trim() === ''
+              ? null
+              : String(categoriaRaw).trim();
           return {
             fecha_hora: toPostgresFechaHora(p.FECHA_HORA) ?? p.FECHA_HORA,
             pase_id: p.PASE_ID,
@@ -139,6 +145,7 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
             bonificacion: norm.bonificacion,
             quantity: Number(p.QUANTITY ?? 1),
             importe_neto: norm.importe_neto,
+            categoria,
           };
         });
 
@@ -171,6 +178,16 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
         const pasadaIds = (data.pasada_ids ?? []) as string[];
         if (!documentoId || !registroId || pasadaIds.length !== pasadasPayload.length) {
           throw new Error('Respuesta incompleta de peajes_confirmar_carga');
+        }
+
+        // F14-2 opción (b): normalización post-commit. No debe invalidar una carga ya confirmada.
+        try {
+          const { error: normError } = await client.rpc('peajes_normalizar_tarifas', {
+            p_documento_id: documentoId,
+          });
+          if (normError) throw normError;
+        } catch (e) {
+          console.warn('[peajes] normalización tarifaria diferida', e);
         }
 
         // El RPC ya confirmó y cerró la transacción. No hacer SELECTs posteriores:

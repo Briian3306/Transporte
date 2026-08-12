@@ -1,18 +1,14 @@
 import { Provider } from '@angular/core';
 import { Routes } from '@angular/router';
 import { PEAJES_CATALOGO_SERVICE } from '../models';
-import { PeajesCatalogoSupabaseService } from '../services';
+import { PEAJES_AUDITORIA_TARIFAS_SERVICE } from '../models/auditoria-tarifas.contracts';
+import { PeajesCatalogoSupabaseService, PeajesAuditoriaTarifasSupabaseService } from '../services';
 import { AuditoriaTarifasListComponent } from './auditoria-tarifas-list.component';
-import { PEAJES_AUDITORIA_TARIFAS_SERVICE } from './contracts.local';
-import { AuditoriaTarifasMockService } from './mocks/auditoria-tarifas.mock';
 
-/**
- * Providers for auditoría route.
- * TODO(F14-2): swap mock for PeajesAuditoriaTarifasSupabaseService when backend lands.
- */
+/** Providers for auditoría route — Supabase real (F14-2). */
 export const PEAJES_AUDITORIA_TARIFAS_PROVIDERS: Provider[] = [
   { provide: PEAJES_CATALOGO_SERVICE, useExisting: PeajesCatalogoSupabaseService },
-  { provide: PEAJES_AUDITORIA_TARIFAS_SERVICE, useClass: AuditoriaTarifasMockService },
+  { provide: PEAJES_AUDITORIA_TARIFAS_SERVICE, useClass: PeajesAuditoriaTarifasSupabaseService },
 ];
 
 export const PEAJES_AUDITORIA_TARIFAS_ROUTES: Routes = [

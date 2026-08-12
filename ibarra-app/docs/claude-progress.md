@@ -10,7 +10,11 @@
 
 ## Estado actual
 
-Fecha: 2026-08-11 — **FILTRAR_COLUMNA**: estrategia atómica de filtro de filas (`ESTACION=1` ≡ `0001`); motor `aplicarPipeline` descarta no coincidentes; catálogo SQL `20260811190002_peajes_algoritmo_filtrar_columna.sql`; ejemplo `docs/plan/ejemplo-mercosur-procesamiento-pasadas.md` + CSV `pasadas_2026-07-01_79157.csv` (164 filas → Σ 4721445.29 = TOTAL factura). Fixture `mercosur.fixture.ts`. Verify: `motor.verify` PASS; `ng test` plantillas **46 SUCCESS**; `supabase test db` **112 PASS**. No push DESARROLLO aún.
+Fecha: 2026-08-12 — **F14-1 / F14-2 backend passing (CLI)**: tablas `tarifas_*` + ALTER `pasadas` (sin `peaje_id`); 6 RPC; enganche post-carga opción (b) en `PeajesCargaSupabaseService`; `PeajesAuditoriaTarifasSupabaseService` + provider real en `/peajes/auditoria-tarifas`. Verify: `npx supabase db reset --local --no-seed` OK; `npx supabase test db` → **144 PASS** (`peajes_f14_test` + regresiones). Docs: `docs/backend/peajes/auditoria-tarifas.md`. **No** `db push --linked`. Bloqueos: F14-0 (`CATEGORIA` en `PasadaColumnKey`) pendiente agente 00; dataset 1711/119 → F14-6; drift `20260811190002_filtrar_columna` viaja en el próximo push remoto.
+
+Fecha previa: 2026-08-12 — **F14-4 frontend** pantalla `/peajes/auditoria-tarifas` (commit `706beee`); provider ahora Supabase (F14-2).
+
+Fecha previa: 2026-08-11 — **FILTRAR_COLUMNA**: estrategia atómica de filtro de filas (`ESTACION=1` ≡ `0001`); motor `aplicarPipeline` descarta no coincidentes; catálogo SQL `20260811190002_peajes_algoritmo_filtrar_columna.sql`; ejemplo `docs/plan/ejemplo-mercosur-procesamiento-pasadas.md` + CSV `pasadas_2026-07-01_79157.csv` (164 filas → Σ 4721445.29 = TOTAL factura). Fixture `mercosur.fixture.ts`. Verify: `motor.verify` PASS; `ng test` plantillas **46 SUCCESS**; `supabase test db` **112 PASS**. No push DESARROLLO aún.
 
 Fecha previa: 2026-08-11 — **AUBASA plantilla HHMMSS + ELIMINAR_IVA**: fixture `aubasa.fixture.ts`, tests motor (AG309CO `2026-07-03 11:42:54`), docs `docs/plan/aubasa-plantilla-fecha-hora.md` (DELETE SQL `5364164`/`5364165`). Plantilla DESARROLLO **AUBASA-7-2026**. No borrar batches hasta re-upload.
 
