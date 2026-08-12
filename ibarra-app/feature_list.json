@@ -3,7 +3,7 @@
   "source_of_truth": "docs/plan/peaje-prd-es.md",
   "single_active_feature_per_agent": true,
   "documentation_last_reviewed": "2026-08-12",
-  "documentation_status": "docs/backend RPCs + F14 docs; F13 passing; F14-0..F14-5 passing (CLI + wizard CATEGORIA + UI + docs); F14-6 dataset DESARROLLO diferido (sin remote)",
+  "documentation_status": "docs/backend RPCs + F14 docs; F13 passing; F14-0..F14-5 passing (CLI + wizard CATEGORIA + UI + docs); DESARROLLO db push 2026-08-12 (F14 tarifas + FILTRAR_COLUMNA); F14-6 dataset QA aún pendiente",
   "agents": [
     "00-orquestador-setup",
     "01-backend-supabase",
@@ -1489,7 +1489,9 @@
         "Extracción de hora pinneada con AT TIME ZONE 'UTC' (prueba empírica ZARATE: 4/5 niveles ±0,01 vs CSV; BA desplaza el pico a 7–8 a.m.)",
         "E2E manual: carga → Paso 9 → hook crea tarifas_normalizadas → confirmación en pantalla → pasadas.tarifa_status actualizado → vistas pwbi_* responden"
       ],
-      "evidence": []
+      "evidence": [
+        "2026-08-12 (push-only, sin reconciliación dataset): DESARROLLO kfffigvyvtzyczeiadxh recibió migraciones F14 + FILTRAR_COLUMNA vía db push --linked tras CLI 144 PASS. F14-6 QA/E2E dataset 1711/119 sigue pendiente."
+      ]
     }
   ]
 }
