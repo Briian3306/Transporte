@@ -332,7 +332,8 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
       }
     }
 
-    return resultado as PasadaEstandarizada;
+    // Conservar columnas de origen (p. ej. ESTACION tras FILTRAR_COLUMNA) para Paso 6.
+    return { ...fila, ...resultado } as PasadaEstandarizada;
   }
 }
 

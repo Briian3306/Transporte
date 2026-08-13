@@ -88,11 +88,21 @@ export function buildMercosurPlantillaConfigs(): ConfiguracionPlantilla[] {
   });
 
   return [
-    config('mercosur-5', 'ESTACION', 'ESTACION', 5, {
-      algoritmo_codigo: 'FILTRAR_COLUMNA',
-      columna: 'ESTACION',
-      valor: '1',
-    }),
+    {
+      id: 'mercosur-5',
+      plantilla_id: plantillaId,
+      nombre_columna: 'ESTACION',
+      columna_destino: null,
+      orden: 5,
+      tipo: 'transformacion',
+      algoritmo_combinado_id: null,
+      configuracion: {
+        algoritmo_codigo: 'FILTRAR_COLUMNA',
+        columna: 'ESTACION',
+        valor: '1',
+      },
+      obligatoria: false,
+    },
     config('mercosur-10', 'FECHA', 'FECHA_HORA', 10, {
       algoritmo_codigo: 'FORMATEAR_FECHA_HORA',
       columnas_entrada: ['FECHA', 'HORA'],

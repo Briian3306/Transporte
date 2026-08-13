@@ -21,6 +21,7 @@ Administrar pasadas ya persistidas fuera del wizard (`/peajes/pasadas`).
 ## Business Logic
 
 - `peajes_listar_pasadas`: filtros, orden, paginación; lee joins de catálogo vía vista.
+- Filtros `p_filters`: `fecha_desde`, `fecha_hasta`, `estacion_ids`, `patente_ids`, `empresa_ids`, `q_estacion`, `q_patente`, `q_empresa`, `q_archivo`, `tarifa_normalizada_id` (uuid de un nivel de `tarifas_normalizadas`).
 - CRUD valida FKs y recalcula neto cuando aplica; usa `documento_id`.
 - La vista expone `documento_*` y alias `factura_*` de compatibilidad.
 
@@ -41,7 +42,7 @@ Administrar pasadas ya persistidas fuera del wizard (`/peajes/pasadas`).
 | `peajes_actualizar_pasada` | RPC | Patch |
 | `peajes_eliminar_pasada` | RPC | Baja |
 
-**Ubicación:** `20260803190348_peajes_pasadas_audit_gestion.sql` + ajustes F13 en `20260807140000_peajes_documentos_tipo_nc.sql`.
+**Ubicación:** `20260803190348_peajes_pasadas_audit_gestion.sql` + ajustes F13 en `20260807140000_peajes_documentos_tipo_nc.sql` + filtro `tarifa_normalizada_id` en `20260813175138_peajes_listar_pasadas_tarifa_normalizada.sql`.
 
 ## Testing
 

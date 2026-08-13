@@ -17,7 +17,11 @@ import {
  */
 @Injectable()
 export class PeajesCatalogoMockService implements PeajesCatalogoService {
-  private empresas: Empresa[] = [{ id: 'EMP-001', nombre: 'Empresa Demo', descripcion: 'Proveedor demo' }];
+  private empresas: Empresa[] = [
+    { id: 'EMP-001', nombre: 'Empresa Demo', descripcion: 'Proveedor demo' },
+    { id: '37ab9246-a07a-40b5-b62d-7a8b8e7782db', nombre: 'AUTOVIA DEL MERCOSUR', descripcion: 'MERCOSUR' },
+    { id: '75d868b4-aef5-409a-8d12-973506656811', nombre: 'AUBASA', descripcion: 'AUBASA' },
+  ];
   private peajes: Peaje[] = [
     {
       id: 'PEA-001',
@@ -25,6 +29,22 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
       ubicacion: 'AMBA',
       descripcion: 'Peaje demo MVP',
       empresa_id: 'EMP-001',
+      created_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      id: 'PEA-AUBASA',
+      nombre: 'AUBASA',
+      ubicacion: 'AMBA',
+      descripcion: 'Peaje AUBASA',
+      empresa_id: '75d868b4-aef5-409a-8d12-973506656811',
+      created_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      id: 'PEA-MERCOSUR',
+      nombre: 'Autovía del Mercosur',
+      ubicacion: 'Zárate',
+      descripcion: 'Peaje MERCOSUR',
+      empresa_id: '37ab9246-a07a-40b5-b62d-7a8b8e7782db',
       created_at: '2026-01-01T00:00:00Z',
     },
   ];
@@ -37,7 +57,6 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
       ubicacion: 'Monte Grande',
       codigos_proveedor: ['3'],
       created_at: '2026-01-01T00:00:00Z',
-      peaje: this.peajes[0],
     },
     {
       id: 'EST-092',
@@ -46,7 +65,6 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
       ubicacion: 'Autopista Ezeiza-Cañuelas',
       codigos_proveedor: ['2'],
       created_at: '2026-01-01T00:00:00Z',
-      peaje: this.peajes[0],
     },
     {
       id: 'EST-091',
@@ -55,7 +73,6 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
       ubicacion: 'Acceso Ricchieri',
       codigos_proveedor: ['1'],
       created_at: '2026-01-01T00:00:00Z',
-      peaje: this.peajes[0],
     },
     {
       id: 'EST-095',
@@ -64,7 +81,22 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
       ubicacion: 'Acceso Mercado Central',
       codigos_proveedor: ['5'],
       created_at: '2026-01-01T00:00:00Z',
-      peaje: this.peajes[0],
+    },
+    {
+      id: 'EST-DOCK',
+      peaje_id: 'PEA-AUBASA',
+      nombre: 'DOCK SUD',
+      ubicacion: 'Dock Sud',
+      codigos_proveedor: ['0001', '1'],
+      created_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      id: 'EST-MER-0001',
+      peaje_id: 'PEA-MERCOSUR',
+      nombre: 'Estación 0001',
+      ubicacion: 'Zárate',
+      codigos_proveedor: ['0001', '1'],
+      created_at: '2026-01-01T00:00:00Z',
     },
   ];
 

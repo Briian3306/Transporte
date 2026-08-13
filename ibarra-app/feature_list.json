@@ -1511,6 +1511,31 @@
       "evidence": [
         "2026-08-13: migración 20260813100000_peajes_plantillas_mapeo_categoria.sql. DESARROLLO apply via MCP apply_migration peajes_plantillas_mapeo_categoria (project-ref kfffigvyvtzyczeiadxh). Pre: 7 Telepase cat_activa=0; post: cat_activa=1 (AUSA-8-2026, AUSA-V2, AUSA-V3, AUSOL-7-2026, AUBASA-7-2026, AU-OESTE-V1-08-26, CORRE-VIALES-V1); MASIVOOO=0. pasadas: consumos 1711 null, telepase 1750 con cat, tarifas 281. ng test plantilla-apply 3/3 + paso5 8/8 SUCCESS. Spec CATEGORIA restore en peajes-plantilla-apply.service.spec.ts."
       ]
+    },
+    {
+      "id": "F14-8",
+      "title": "Refactor UI auditoria: expansion inline y asignacion explicita de status",
+      "prd_refs": ["RF-26", "RF-32", "RN-24", "PLAN_Refactor_UI_UX_Auditoria_Tarifas.md"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F14-4"],
+      "status": "passing",
+      "verification": [
+        "La familia vuelve a desplegarse inline en una fila de detalle con un unico expandedId, como la tabla de pasadas-pendientes",
+        "Cada nivel desplegado permite elegir PICO o NO_PICO con app-search-select (plantillas appDataTableColumn=\"status\") y el boton Asignar status llama peajes_confirmar_status_tarifa",
+        "CONFIRMADO no aparece como opcion seleccionable: es diagnostico posterior; POSIBLE_HORARIO permanece como sugerencia",
+        "Franja horaria muestra HH:mm – HH:mm desde hora_min/hora_max (plantilla appDataTableColumn=\"franja\")",
+        "Acciones Ver casos abre peajes_listar_pasadas filtrado por tarifa_normalizada_id, misma tabla que /peajes/pasadas sin filtros ni acciones",
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0 y npx tsc --noEmit -p tsconfig.spec.json EXIT 0",
+        "ng test --include=\"**/peajes/auditoria-tarifas/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless"
+      ],
+      "evidence": [
+        "2026-08-13: restaurados expandedId, fila de detalle y app-tarifa-familia-panel inline; se elimino el dialogo de familia que deshabilitaba la seleccion en modo Ver.",
+        "2026-08-13: agregado boton Asignar status en el panel y filtro de CONFIRMADO en helpers/list/status-buttons.",
+        "2026-08-13: npx tsc --noEmit -p tsconfig.app.json EXIT 0; npx tsc --noEmit -p tsconfig.spec.json EXIT 0. Karma/ChromeHeadless pendiente de ejecucion por bloqueo GPU del entorno Windows.",
+        "2026-08-13: plantillas appDataTableColumn=\"clave\" (ya no key=); Clasificación = search-select; franja HH:mm – HH:mm; Acciones Ver casos + dialogo pasadas; filtro RPC tarifa_normalizada_id (20260813175138).",
+        "2026-08-13 DESARROLLO: peajes_listar_pasadas filtra tarifa_normalizada_id. Smoke PASEO DEL BAJO 9731.46 → total 6 (antes 3465).",
+        "2026-08-13: npx tsc --noEmit app+spec EXIT 0; ng test auditoria-tarifas **29/29 SUCCESS** (ChromeHeadless)."
+      ]
     }
   ]
 }

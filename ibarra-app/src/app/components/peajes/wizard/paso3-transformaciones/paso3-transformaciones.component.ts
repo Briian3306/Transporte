@@ -52,6 +52,8 @@ export class Paso3TransformacionesComponent implements OnInit {
   algorithmSearch = '';
   errores: ErrorValidacionPasada[] = [];
   filasPreviewIo: Record<string, unknown>[] = [];
+  /** Hint cuando el filtro deja vacío el sample de 10 filas iniciales. */
+  previewFiltroHint = '';
   columnasTabla: string[] = [];
   previewLoading = false;
 
@@ -126,6 +128,14 @@ export class Paso3TransformacionesComponent implements OnInit {
     return this.descriptors.find((d) => d.codigo === this.editAlgoritmo);
   }
 
+  /** FILTRAR_COLUMNA no produce columna Structure Goal. */
+  get esPasoFiltro(): boolean {
+    return (
+      this.editAlgoritmo === 'FILTRAR_COLUMNA' ||
+      this.selectedDescriptor?.categoria === 'filtro'
+    );
+  }
+
   /** Columnas disponibles para inputs (origen + salidas de otros pasos). */
   get columnasParaInputs(): string[] {
     const set = new Set(this.columnasIncluidas);
@@ -177,6 +187,16 @@ export class Paso3TransformacionesComponent implements OnInit {
   }
 
   salidaPaso(step: ConfiguracionPlantillaDraft): string {
+    const codigo = step.configuracion?.algoritmo_codigo;
+    if (codigo === 'FILTRAR_COLUMNA') {
+      const params = step.configuracion?.parametros ?? {};
+      const valor = params['valor'];
+      const col =
+        (step.configuracion?.columnas_entrada ?? [])[0] ||
+        step.nombre_columna ||
+        '?';
+      return `filtro ${col}=${valor ?? '?'}`;
+    }
     return (step.columna_destino || step.nombre_columna || '—').trim() || '—';
   }
 
@@ -262,34 +282,20 @@ export class Paso3TransformacionesComponent implements OnInit {
   recompute(): void {
     this.previewLoading = true;
     this.errorMsg = '';
+    this.previewFiltroHint = '';
     try {
       const configs = this.state.toConfiguracionesPlantilla();
       const columnas = this.columnasIncluidas;
       this.errores = this.motor.validarDependenciasPipeline(configs, columnas);
 
-      const preview = this.state.snapshot().preview;
-      const filasBase = (preview?.filasPreview ?? []).slice(0, 10).map((f) => {
-        const row: Record<string, unknown> = {};
-        for (const c of columnas) {
-          row[c] = f[c];
-        }
-        return row;
-      });
-
-      let transformadas: Record<string, unknown>[] = [];
       const selected = this.selectedStep;
-      if (configs.length === 0 || filasBase.length === 0) {
-        transformadas = filasBase;
-      } else if (selected) {
-        transformadas = this.motor.previsualizarPaso(configs, filasBase, selected.orden);
-      } else {
-        transformadas = this.motor.aplicarPipeline(filasBase, configs);
-      }
-
-      this.filasPreviewIo = filasBase.map((orig, i) => ({
-        ...orig,
-        ...(transformadas[i] ?? {}),
-      }));
+      const { transformadas, hint } = this.construirPreviewPipeline(
+        configs,
+        columnas,
+        selected?.orden ?? null
+      );
+      this.filasPreviewIo = transformadas;
+      this.previewFiltroHint = hint;
 
       const colSet = new Set<string>(columnas);
       for (const row of this.filasPreviewIo) {
@@ -308,9 +314,103 @@ export class Paso3TransformacionesComponent implements OnInit {
     } catch (e) {
       this.errorMsg = e instanceof Error ? e.message : 'Error al previsualizar el pipeline';
       this.filasPreviewIo = [];
+      this.previewFiltroHint = '';
     } finally {
       this.previewLoading = false;
     }
+  }
+
+  /**
+   * Arma hasta 10 filas de preview. Con FILTRAR_COLUMNA no se limita a
+   * `filasPreview` (primeras 10 del Excel): se escanea `filasOrigen` hasta
+   * reunir filas que sobrevivan el filtro (p. ej. ESTACION=0003/0004).
+   */
+  private construirPreviewPipeline(
+    configs: ConfiguracionPlantilla[],
+    columnas: string[],
+    hastaOrden: number | null
+  ): { transformadas: Record<string, unknown>[]; hint: string } {
+    const preview = this.state.snapshot().preview;
+    if (!preview) {
+      return { transformadas: [], hint: '' };
+    }
+
+    const mapRow = (f: Record<string, unknown>): Record<string, unknown> => {
+      const row: Record<string, unknown> = {};
+      for (const c of columnas) {
+        row[c] = f[c];
+      }
+      for (const [k, v] of Object.entries(f)) {
+        if (!(k in row)) row[k] = v;
+      }
+      return row;
+    };
+
+    const aplicar = (filas: Record<string, unknown>[]): Record<string, unknown>[] => {
+      if (!configs.length || !filas.length) return filas;
+      if (hastaOrden != null) {
+        return this.motor.previsualizarPaso(configs, filas, hastaOrden);
+      }
+      return this.motor.aplicarPipeline(filas, configs);
+    };
+
+    const tieneFiltro = configs.some(
+      (c) =>
+        c.configuracion?.['algoritmo_codigo'] === 'FILTRAR_COLUMNA' &&
+        c.configuracion?.['habilitado'] !== false &&
+        (hastaOrden == null || c.orden <= hastaOrden)
+    );
+
+    const origen =
+      preview.filasOrigen.length > 0 ? preview.filasOrigen : preview.filasPreview;
+    const totalArchivo = origen.length || preview.totalFilas || 0;
+
+    if (!tieneFiltro) {
+      const base = (preview.filasPreview.length
+        ? preview.filasPreview
+        : origen
+      )
+        .slice(0, 10)
+        .map(mapRow);
+      return { transformadas: aplicar(base), hint: '' };
+    }
+
+    const limitePreview = 10;
+    const survivors: Record<string, unknown>[] = [];
+    let scanned = 0;
+    const chunk = 40;
+    while (scanned < origen.length && survivors.length < limitePreview) {
+      const slice = origen.slice(scanned, scanned + chunk).map(mapRow);
+      scanned += slice.length;
+      if (!slice.length) break;
+      const kept = aplicar(slice);
+      for (const row of kept) {
+        survivors.push(row);
+        if (survivors.length >= limitePreview) break;
+      }
+    }
+
+    if (!survivors.length) {
+      return {
+        transformadas: [],
+        hint:
+          totalArchivo > 0
+            ? `Ninguna de las ${scanned} filas escaneadas (archivo: ${totalArchivo}) pasa FILTRAR_COLUMNA con el valor actual. Probá otro valor o revisá la columna.`
+            : '',
+      };
+    }
+
+    const hint =
+      scanned < totalArchivo || survivors.length < limitePreview
+        ? `Preview: ${survivors.length} fila(s) que pasan el filtro (escaneadas ${scanned} de ${totalArchivo} del archivo). Al Continuar se aplica a todo el archivo.`
+        : `Preview: ${survivors.length} fila(s) que pasan el filtro (${totalArchivo} en archivo).`;
+
+    return { transformadas: survivors.slice(0, limitePreview), hint };
+  }
+
+  get tieneArchivoCargado(): boolean {
+    const p = this.state.snapshot().preview;
+    return !!(p && (p.filasOrigen.length || p.filasPreview.length || p.totalFilas));
   }
 
   afterMutation(): void {
@@ -349,11 +449,16 @@ export class Paso3TransformacionesComponent implements OnInit {
     }
     this.editAlgoritmo = step.configuracion?.algoritmo_codigo ?? '';
     this.editEntradas = [...(step.configuracion?.columnas_entrada ?? [])];
-    this.editSalida = (step.columna_destino || step.nombre_columna || '').trim();
-    this.editSalidaCustom = !!(
-      this.editSalida &&
-      !this.destinosEstandar.includes(this.editSalida as (typeof PASADA_COLUMN_KEYS)[number])
-    );
+    if (this.editAlgoritmo === 'FILTRAR_COLUMNA') {
+      this.editSalida = '';
+      this.editSalidaCustom = false;
+    } else {
+      this.editSalida = (step.columna_destino || step.nombre_columna || '').trim();
+      this.editSalidaCustom = !!(
+        this.editSalida &&
+        !this.destinosEstandar.includes(this.editSalida as (typeof PASADA_COLUMN_KEYS)[number])
+      );
+    }
     this.editParams = { ...(step.configuracion?.parametros ?? {}) };
     if (
       this.editAlgoritmo === 'FORMATEAR_FECHA_HORA' &&
@@ -379,6 +484,12 @@ export class Paso3TransformacionesComponent implements OnInit {
       params['formato_hora'] = 'HHMMSS';
     }
 
+    const esFiltro = this.editAlgoritmo === 'FILTRAR_COLUMNA';
+    if (esFiltro) {
+      this.editSalida = '';
+      this.editSalidaCustom = false;
+    }
+
     const desc = this.selectedDescriptor;
     this.state.updateDraftStep(this.selectedClientId, {
       nombre_columna:
@@ -386,8 +497,9 @@ export class Paso3TransformacionesComponent implements OnInit {
         this.editSalida ||
         this.selectedStep?.nombre_columna ||
         'COL',
-      columna_destino: this.editSalida.trim() || null,
-      obligatoria: this.editObligatoria,
+      // Filtro de filas: sin columna Structure Goal (no PASADA_ID / etc.).
+      columna_destino: esFiltro ? null : this.editSalida.trim() || null,
+      obligatoria: esFiltro ? false : this.editObligatoria,
       configuracion: {
         algoritmo_codigo: this.editAlgoritmo || undefined,
         columnas_entrada: [...entradas],
@@ -424,7 +536,10 @@ export class Paso3TransformacionesComponent implements OnInit {
           continue;
         }
         if (field.nombre === 'valor' && this.editParams['valor'] === undefined) {
-          this.editParams['valor'] = 1;
+          // ASIGNAR_VALOR default 1; FILTRAR_COLUMNA deja vacío para que el usuario tipe.
+          if (desc.codigo !== 'FILTRAR_COLUMNA') {
+            this.editParams['valor'] = 1;
+          }
         }
         if (field.nombre === 'operacion' && this.editParams['operacion'] === undefined) {
           this.editParams['operacion'] = field.opciones?.[0] ?? 'sumar';
@@ -449,6 +564,14 @@ export class Paso3TransformacionesComponent implements OnInit {
         this.editSalidaCustom = false;
         if (desc.codigo === 'ELIMINAR_IVA') {
           this.editEntradas = ['IMPORTE_NETO'];
+        }
+      }
+      if (desc.codigo === 'FILTRAR_COLUMNA') {
+        this.editSalida = '';
+        this.editSalidaCustom = false;
+        this.editObligatoria = false;
+        if (this.editParams['valor'] === undefined) {
+          this.editParams = { ...this.editParams, valor: '' };
         }
       }
     }
@@ -829,6 +952,35 @@ export class Paso3TransformacionesComponent implements OnInit {
     }
     // Propaga salidas del pipeline al mapeo (FECHA_HORA, etc.) y marca orígenes resueltos
     this.state.sincronizarMapeosDesdePipeline();
+
+    // Aplicar pipeline a todo el archivo para que Paso 6 respete FILTRAR_COLUMNA.
+    const configs = this.state.toConfiguracionesPlantilla();
+    const preview = this.state.snapshot().preview;
+    if (configs.length && preview) {
+      const columnas = this.columnasIncluidas;
+      const origen = preview.filasOrigen.length
+        ? preview.filasOrigen
+        : preview.filasPreview;
+      const filas = origen.map((f) => {
+        const row: Record<string, unknown> = {};
+        for (const c of columnas) {
+          row[c] = f[c];
+        }
+        for (const [k, v] of Object.entries(f)) {
+          if (!(k in row)) row[k] = v;
+        }
+        return row;
+      });
+      try {
+        const transformadas = this.motor.aplicarPipeline(filas, configs);
+        this.state.setPasadasEstandarizadas(transformadas);
+      } catch (e) {
+        this.errorMsg =
+          e instanceof Error ? e.message : 'Error al aplicar el pipeline';
+        return;
+      }
+    }
+
     this.completado.emit();
   }
 }

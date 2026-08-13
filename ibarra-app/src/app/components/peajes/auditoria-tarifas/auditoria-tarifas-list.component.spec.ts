@@ -7,7 +7,7 @@ import {
   PEAJES_AUDITORIA_TARIFAS_SERVICE,
   PeajesAuditoriaTarifasService,
 } from './contracts.local';
-import { PEAJES_CATALOGO_SERVICE } from '../models';
+import { PEAJES_CATALOGO_SERVICE, PEAJES_PASADAS_SERVICE } from '../models';
 import { AuditoriaTarifasMockService } from './mocks/auditoria-tarifas.mock';
 
 describe('AuditoriaTarifasListComponent', () => {
@@ -15,8 +15,12 @@ describe('AuditoriaTarifasListComponent', () => {
   let component: AuditoriaTarifasListComponent;
   let auditoria: PeajesAuditoriaTarifasService;
   let listarSpy: jasmine.Spy;
+  let pasadasListar: jasmine.Spy;
 
   beforeEach(async () => {
+    pasadasListar = jasmine.createSpy('listar').and.returnValue(
+      of({ rows: [], total: 0, limit: 50, offset: 0 })
+    );
     await TestBed.configureTestingModule({
       imports: [AuditoriaTarifasListComponent],
       providers: [
@@ -29,14 +33,16 @@ describe('AuditoriaTarifasListComponent', () => {
             listarEstaciones: () => of([]),
           },
         },
+        {
+          provide: PEAJES_PASADAS_SERVICE,
+          useValue: { listar: pasadasListar },
+        },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AuditoriaTarifasListComponent);
     component = fixture.componentInstance;
-    auditoria = TestBed.inject(Injector).get(
-      PEAJES_AUDITORIA_TARIFAS_SERVICE
-    ) as PeajesAuditoriaTarifasService;
+    auditoria = TestBed.inject(Injector).get(PEAJES_AUDITORIA_TARIFAS_SERVICE) as PeajesAuditoriaTarifasService;
     listarSpy = spyOn(auditoria, 'listar').and.callThrough();
     fixture.detectChanges();
     await fixture.whenStable();
@@ -55,7 +61,7 @@ describe('AuditoriaTarifasListComponent', () => {
     expect(loadRowsSpy).toHaveBeenCalledTimes(1);
   }));
 
-  it('resetea la página al filtrar', fakeAsync(() => {
+  it('resetea la pagina al filtrar', fakeAsync(() => {
     component.page = 3;
     component.patchFilters({ q_estacion: 'ZARATE' });
     tick(300);
@@ -67,7 +73,7 @@ describe('AuditoriaTarifasListComponent', () => {
     expect(component.sortDirection).toBe('desc');
   });
 
-  it('deshabilita Recalcular sin un peaje único', () => {
+  it('deshabilita Recalcular sin un peaje unico', () => {
     component.filters = {};
     fixture.detectChanges();
     const btn: HTMLButtonElement = fixture.nativeElement.querySelector('.at__header-actions .at__btn');
@@ -88,5 +94,53 @@ describe('AuditoriaTarifasListComponent', () => {
     fixture.detectChanges();
     const alert = fixture.nativeElement.querySelector('[role="alert"]');
     expect(alert?.textContent).toContain('No se pudieron cargar las familias de tarifa');
+  }));
+
+  it('expande la familia inline como la tabla de referencia', () => {
+    const row = component.rows[0];
+    component.toggleExpand(row);
+    expect(component.expandedId).toBe(row.id);
+    component.toggleExpand(row);
+    expect(component.expandedId).toBeNull();
+  });
+
+  it('no expone CONFIRMADO como opcion de clasificacion', () => {
+    component.catalogByPeaje.set('p1', [
+      { peaje_id: 'p1', codigo: 'PICO', etiqueta: 'Pico', color: '#f59e0b', tipo_meta: 'PICO', orden: 1 },
+      { peaje_id: 'p1', codigo: 'NO_PICO', etiqueta: 'No pico', color: '#10b981', tipo_meta: 'NO_PICO', orden: 2 },
+      { peaje_id: 'p1', codigo: 'CONFIRMADO', etiqueta: 'Confirmado', color: '#0f766e', tipo_meta: 'NEUTRO', orden: 3 },
+    ]);
+    expect(component.statusOptions.map((option) => option.id)).not.toContain('CONFIRMADO');
+  });
+
+  it('expone chips de status visibles y los combina', () => {
+    component.toggleStatusQuick('PICO');
+    component.toggleStatusQuick('NO_PICO');
+    expect(component.filters.status).toEqual(['PICO', 'NO_PICO']);
+    component.toggleStatusQuick('PICO');
+    expect(component.filters.status).toEqual(['NO_PICO']);
+  });
+
+  it('calcula el resumen global y ordena concesiones pendientes primero', () => {
+    component.progress = [
+      { peaje_id: 'done', peaje_nombre: 'Completa', total: 10, pendientes: 0 },
+      { peaje_id: 'pending', peaje_nombre: 'Pendiente', total: 10, pendientes: 7 },
+    ];
+    expect(component.progressSummary).toEqual({ total: 20, classified: 13, pending: 7, pct: 65 });
+    component.progress.sort((a, b) => b.pendientes - a.pendientes);
+    expect(component.progress[0].peaje_id).toBe('pending');
+  });
+
+  it('abre Ver casos filtrando pasadas por tarifa_normalizada_id', fakeAsync(async () => {
+    const row = component.rows[0];
+    component.openVerCasos(row);
+    tick();
+    await fixture.whenStable();
+    expect(component.casosOpen).toBeTrue();
+    expect(pasadasListar).toHaveBeenCalled();
+    const args = pasadasListar.calls.mostRecent().args[0];
+    expect(args.filters.tarifa_normalizada_id).toBe(row.id);
+    expect(args.sort).toBe('fecha_hora');
+    expect(args.dir).toBe('desc');
   }));
 });

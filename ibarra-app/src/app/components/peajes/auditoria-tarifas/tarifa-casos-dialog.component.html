@@ -1,0 +1,70 @@
+<app-dialog
+  [open]="open"
+  eyebrow="Auditoría de tarifas"
+  [title]="title"
+  [description]="description"
+  size="lg"
+  (closed)="onClose()"
+>
+  <div class="at-casos">
+    <p class="at-casos__error" *ngIf="error" role="alert">{{ error }}</p>
+    <app-data-table
+      [columns]="columns"
+      [rows]="tableRows"
+      [loading]="loading"
+      [sort]="sort"
+      [page]="page"
+      [pageSize]="pageSize"
+      [total]="total"
+      emptyMessage="No hay pasadas asociadas a este nivel."
+      [exportEnabled]="false"
+      (sortChange)="sortChange.emit($event)"
+      (pageChange)="pageChange.emit($event)"
+    >
+      <ng-template appDataTableColumn="fecha_hora" let-row>
+        <span class="pl__mono">{{ formatFechaHora(asPasada(row).fecha_hora) }}</span>
+      </ng-template>
+
+      <ng-template appDataTableColumn="estacion_nombre" let-row>
+        <div class="pl__estacion">
+          <span>{{ asPasada(row).estacion_nombre }}</span>
+          <span
+            class="pl__badge"
+            [class.pl__badge--ok]="badge(row) === 'OK'"
+            [class.pl__badge--pending]="badge(row) === 'PENDING'"
+          >
+            {{ badge(row) }}
+          </span>
+        </div>
+      </ng-template>
+
+      <ng-template appDataTableColumn="patente_codigo" let-row>
+        <span class="pl__plate">{{ asPasada(row).patente_codigo }}</span>
+      </ng-template>
+
+      <ng-template appDataTableColumn="empresa_nombre" let-row>
+        {{ asPasada(row).empresa_nombre || '—' }}
+      </ng-template>
+
+      <ng-template appDataTableColumn="precio" let-row>
+        <strong class="pl__price">{{ asPasada(row).precio | number: '1.2-2' }}</strong>
+      </ng-template>
+
+      <ng-template appDataTableColumn="importe_neto" let-row>
+        <strong class="pl__price">{{ asPasada(row).importe_neto | number: '1.2-2' }}</strong>
+      </ng-template>
+
+      <ng-template appDataTableColumn="file_upload_name" let-row>
+        <span class="pl__file">{{ asPasada(row).file_upload_name || '—' }}</span>
+      </ng-template>
+
+      <ng-template appDataTableColumn="created_at" let-row>
+        <span class="pl__mono">{{ formatFechaHora(asPasada(row).created_at, false) }}</span>
+      </ng-template>
+    </app-data-table>
+  </div>
+
+  <div appDialogActions class="at-casos__actions">
+    <button type="button" class="at-casos__btn" (click)="onClose()">Cerrar</button>
+  </div>
+</app-dialog>

@@ -1,0 +1,101 @@
+:host ::ng-deep .app-dialog--lg {
+  width: min(1080px, 96vw);
+  max-height: min(90vh, 860px);
+}
+
+.at-casos {
+  --pl-signal: #004ac6;
+  --pl-price: #2563eb;
+  --pl-ink: #0f172a;
+  --pl-muted: #434655;
+  --pl-line: #e2e8f0;
+  --pl-ok: #10b981;
+  --pl-pending: #f59e0b;
+  min-width: 0;
+}
+
+.at-casos__error {
+  margin: 0 0 0.75rem;
+  color: #b91c1c;
+  font-size: 0.84rem;
+}
+
+.at-casos__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.at-casos__btn {
+  appearance: none;
+  min-height: 2.3rem;
+  padding: 0.42rem 0.8rem;
+  border: 1px solid #dbe4ee;
+  border-radius: 0.48rem;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.74rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.pl__estacion {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.pl__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 0.15rem 0.45rem;
+}
+
+.pl__badge::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pl__badge--ok {
+  color: #065f46;
+  background: color-mix(in srgb, var(--pl-ok) 18%, #fff);
+}
+
+.pl__badge--pending {
+  color: #92400e;
+  background: color-mix(in srgb, var(--pl-pending) 22%, #fff);
+}
+
+.pl__plate {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  background: #f2f4f6;
+  border: 1px solid var(--pl-line);
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.4rem;
+}
+
+.pl__price {
+  color: var(--pl-price);
+  font-variant-numeric: tabular-nums;
+}
+
+.pl__mono,
+.pl__file {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+}
+
+.pl__file {
+  color: var(--pl-muted);
+  font-style: italic;
+}

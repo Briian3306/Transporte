@@ -94,6 +94,53 @@ describe('Paso6EstacionesComponent', () => {
     expect(codigos.some((c) => c.includes('0003') || c.includes(' - '))).toBeFalse();
   });
 
+  it('FILTRAR_COLUMNA: Paso 6 solo lista estaciones que quedaron tras el filtro', async () => {
+    await crearConPreview({
+      columnas: ['ESTACION', 'TARIFA'],
+      filas: [
+        { ESTACION: '0001', TARIFA: 10 },
+        { ESTACION: '0002', TARIFA: 20 },
+        { ESTACION: '0003', TARIFA: 30 },
+        { ESTACION: '0001', TARIFA: 40 },
+      ],
+      incluidas: ['ESTACION', 'TARIFA'],
+      excluidas: [],
+    });
+
+    state.setConfiguracionesDraft([
+      {
+        clientId: 'filtro-1',
+        orden: 5,
+        tipo: 'transformacion',
+        nombre_columna: 'ESTACION',
+        columna_destino: null,
+        algoritmo_combinado_id: null,
+        configuracion: {
+          algoritmo_codigo: 'FILTRAR_COLUMNA',
+          columnas_entrada: ['ESTACION'],
+          parametros: { columna: 'ESTACION', valor: '0001' },
+          habilitado: true,
+        },
+        obligatoria: false,
+      },
+    ]);
+    // Simula salida del motor tras filtro (origen preservado).
+    state.setPasadasEstandarizadas([
+      { ESTACION: '0001', TARIFA: 10 } as never,
+      { ESTACION: '0001', TARIFA: 40 } as never,
+    ]);
+
+    fixture = TestBed.createComponent(Paso6EstacionesComponent);
+    component = fixture.componentInstance;
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    const codigos = component.relaciones.map((r) => r.valorProveedor).sort();
+    expect(codigos).toEqual(['0001']);
+    expect(codigos).not.toContain('0002');
+    expect(codigos).not.toContain('0003');
+  });
+
   it('F02-15: con VIA incluida combina ESTACION - VIA', async () => {
     await crearConPreview({
       columnas: ['FECHA', 'HORA', 'ESTACION', 'VIA', 'DISPOSITIVO', 'PATENTE'],
@@ -137,7 +184,90 @@ describe('Paso6EstacionesComponent', () => {
     state.setModoImportacion('simple');
     fixture.detectChanges();
     expect(component.esCargaDensa).toBeFalse();
-    expect(component.mostrarPeajeRelacionado).toBe(component.relaciones.length > 0);
+    expect(component.mostrarPeajeRelacionado).toBe(
+      component.relaciones.length > 0 && component.peajesUnicos.length > 0
+    );
+  });
+
+  it('no auto-matchea AUBASA cuando la empresa es AUTOVIA DEL MERCOSUR', async () => {
+    state.reiniciar();
+    state.setEmpresaId('37ab9246-a07a-40b5-b62d-7a8b8e7782db');
+    state.setPreview({
+      nombreArchivo: 'pasadas_2026-07-01_79157.csv',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['ESTACION'],
+      filasPreview: [{ ESTACION: '0001' }],
+      filasOrigen: [{ ESTACION: '0001' }],
+      tiposInferidos: { ESTACION: 'texto' },
+    });
+    state.setSeleccionColumnas(['ESTACION'], []);
+    state.setMapeos([
+      { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID', excluida: false },
+    ]);
+
+    fixture = TestBed.createComponent(Paso6EstacionesComponent);
+    component = fixture.componentInstance;
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(component.peajesUnicos.map((p) => p.nombre)).toEqual(['Autovía del Mercosur']);
+    expect(component.relaciones.length).toBe(1);
+    expect(component.relaciones[0].estacionId).toBe('EST-MER-0001');
+    expect(component.relaciones[0].estacionId).not.toBe('EST-DOCK');
+    expect(component.peajeDe(component.relaciones[0].estacionId)).toContain('Mercosur');
+    expect(component.peajeDe(component.relaciones[0].estacionId)).not.toContain('AUBASA');
+    expect(component.mostrarColumnaPeaje).toBeTrue();
+  });
+
+  it('sin peajes de la empresa no cae al catálogo global ni muestra AUBASA', async () => {
+    state.reiniciar();
+    state.setEmpresaId('empresa-sin-peajes');
+    state.setPreview({
+      nombreArchivo: 'x.csv',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['ESTACION'],
+      filasPreview: [{ ESTACION: '0001' }],
+      filasOrigen: [{ ESTACION: '0001' }],
+      tiposInferidos: { ESTACION: 'texto' },
+    });
+    state.setSeleccionColumnas(['ESTACION'], []);
+    state.setMapeos([
+      { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID', excluida: false },
+    ]);
+
+    fixture = TestBed.createComponent(Paso6EstacionesComponent);
+    component = fixture.componentInstance;
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(component.sinPeajesEmpresa).toBeTrue();
+    expect(component.peajesUnicos.length).toBe(0);
+    expect(component.relaciones[0].estacionId).toBeNull();
+    expect(component.peajeDe(component.relaciones[0].estacionId, '0001')).toBe('—');
+  });
+
+  it('Acciones expone Cambiar estación cuando hay match', async () => {
+    await crearConPreview({
+      columnas: ['ESTACION'],
+      filas: [{ ESTACION: '3' }],
+      incluidas: ['ESTACION'],
+      excluidas: [],
+    });
+    state.setEmpresaId('EMP-001');
+    fixture = TestBed.createComponent(Paso6EstacionesComponent);
+    component = fixture.componentInstance;
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    const matched = component.relaciones.find((r) => r.estacionId);
+    expect(matched?.estacionId).toBeTruthy();
+    const html = fixture.nativeElement as HTMLElement;
+    const btn = Array.from(html.querySelectorAll('button')).find((b) =>
+      (b.textContent ?? '').includes('Cambiar estación')
+    );
+    expect(btn).toBeTruthy();
   });
 
   it('filtra y pagina la lista de estaciones', async () => {

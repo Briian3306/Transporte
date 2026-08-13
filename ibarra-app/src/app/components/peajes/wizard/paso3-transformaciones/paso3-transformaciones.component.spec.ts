@@ -228,4 +228,93 @@ describe('Paso3TransformacionesComponent (editable pipeline I-P*)', () => {
     expect(String(out[0]['FECHA_HORA'])).toBe('2026-06-25 20:50:05');
     expect(Number(out[0]['IMPORTE_NETO'])).toBe(12180);
   });
+
+  /**
+   * FILTRAR_COLUMNA: si el valor no aparece en las primeras 10 filas,
+   * el preview debe escanear filasOrigen (no mostrar vacío engañoso).
+   */
+  it('FILTRAR_COLUMNA: preview encuentra 0004 fuera de las primeras 10 filas', () => {
+    const filasOrigen: Record<string, unknown>[] = [];
+    for (let i = 0; i < 25; i++) {
+      filasOrigen.push({
+        ESTACION: i < 12 ? '0001' : i < 20 ? '0002' : '0004',
+        TARIFA: 100 + i,
+        PASADA: `P${i}`,
+      });
+    }
+    state.setPreview({
+      nombreArchivo: 'pasadas_filter.csv',
+      tamanioBytes: 1,
+      columnas: ['ESTACION', 'TARIFA', 'PASADA'],
+      filasPreview: filasOrigen.slice(0, 10).map((r) => ({ ...r })),
+      filasOrigen: filasOrigen.map((r) => ({ ...r })),
+      tiposInferidos: {
+        ESTACION: 'texto',
+        TARIFA: 'numero',
+        PASADA: 'texto',
+      },
+      totalFilas: filasOrigen.length,
+    });
+    state.setSeleccionColumnas(['ESTACION', 'TARIFA', 'PASADA'], []);
+    state.setConfiguracionesDraft([
+      {
+        clientId: 'flt-1',
+        orden: 10,
+        tipo: 'transformacion',
+        nombre_columna: 'ESTACION',
+        columna_destino: null,
+        obligatoria: false,
+        configuracion: {
+          algoritmo_codigo: 'FILTRAR_COLUMNA',
+          columnas_entrada: ['ESTACION'],
+          parametros: { columna: 'ESTACION', valor: '0004' },
+          habilitado: true,
+        },
+      },
+    ]);
+    component.selectedClientId = null;
+    component.syncFromState();
+    component.recompute();
+
+    expect(component.tieneArchivoCargado).toBeTrue();
+    expect(component.filasPreviewIo.length).toBeGreaterThan(0);
+    expect(component.filasPreviewIo.every((r) => String(r['ESTACION']) === '0004')).toBeTrue();
+    expect(component.previewFiltroHint).toMatch(/pasan el filtro/i);
+  });
+
+  it('FILTRAR_COLUMNA: preview vacío con archivo cargado no pide “Cargá un Excel”', () => {
+    state.setPreview({
+      nombreArchivo: 'pasadas_filter.csv',
+      tamanioBytes: 1,
+      columnas: ['ESTACION'],
+      filasPreview: [{ ESTACION: '0001' }],
+      filasOrigen: [{ ESTACION: '0001' }, { ESTACION: '0002' }],
+      tiposInferidos: { ESTACION: 'texto' },
+      totalFilas: 2,
+    });
+    state.setSeleccionColumnas(['ESTACION'], []);
+    state.setConfiguracionesDraft([
+      {
+        clientId: 'flt-miss',
+        orden: 10,
+        tipo: 'transformacion',
+        nombre_columna: 'ESTACION',
+        columna_destino: null,
+        obligatoria: false,
+        configuracion: {
+          algoritmo_codigo: 'FILTRAR_COLUMNA',
+          columnas_entrada: ['ESTACION'],
+          parametros: { columna: 'ESTACION', valor: '9999' },
+          habilitado: true,
+        },
+      },
+    ]);
+    component.selectedClientId = null;
+    component.syncFromState();
+    component.recompute();
+
+    expect(component.filasPreviewIo.length).toBe(0);
+    expect(component.tieneArchivoCargado).toBeTrue();
+    expect(component.previewFiltroHint).toMatch(/Ninguna.*pasa FILTRAR_COLUMNA/i);
+  });
 });

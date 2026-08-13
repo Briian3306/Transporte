@@ -15,6 +15,7 @@ La aplicación y el paquete de coordinación están centralizados en `ibarra-app
 
 ## Fuentes canónicas
 
+- Normalización tarifaria: [normalizacion-tarifa/INDEX.md](./normalizacion-tarifa/INDEX.md) — PRD, plan técnico y refactor UI/UX propuesto para Auditoría de tarifas.
 - PRD: [peaje-prd-es.md](./peaje-prd-es.md).
 - Caso de aceptación Demo: [ejemplo-mvp-procesamiento-pasadas.md](./ejemplo-mvp-procesamiento-pasadas.md).
 - Caso Autopistas Urbanas (CSV): [ejemplo-autopistas-urbanas-pasadas.md](./ejemplo-autopistas-urbanas-pasadas.md) — fuente [csv/autopistas_urbanas.csv](./csv/autopistas_urbanas.csv).

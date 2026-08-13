@@ -1,4 +1,5 @@
 import {
+  AfterViewInit,
   Component,
   EventEmitter,
   Input,
@@ -6,42 +7,87 @@ import {
   OnInit,
   Output,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { SearchSelectComponent, SearchSelectOption } from '../../shared';
 import { TarifaStatusCatalogo } from './contracts.local';
 import { buildStatusCatalogoButtons } from './auditoria-tarifas.helpers';
 
 @Component({
   selector: 'app-tarifa-status-buttons',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SearchSelectComponent],
   templateUrl: './tarifa-status-buttons.component.html',
   styleUrl: './tarifa-status-buttons.component.css',
 })
-export class TarifaStatusButtonsComponent implements OnChanges, OnInit {
+export class TarifaStatusButtonsComponent implements OnChanges, OnInit, AfterViewInit {
   @Input() importe = 0;
   @Input() catalogo: TarifaStatusCatalogo[] = [];
   @Input() selected: string | null = null;
   @Input() disabled = false;
+  @Input() autoFocus = false;
 
   @Output() selectedChange = new EventEmitter<string>();
 
-  buttons: TarifaStatusCatalogo[] = [];
-  focusIndex = 0;
+  @ViewChild(SearchSelectComponent) private searchSelect?: SearchSelectComponent;
+
+  options: SearchSelectOption[] = [];
+  private buttons: TarifaStatusCatalogo[] = [];
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['catalogo'] || changes['selected']) {
-      this.rebuildButtons();
+    if (changes['catalogo']) {
+      this.rebuildOptions();
     }
   }
 
   ngOnInit(): void {
-    this.rebuildButtons();
+    this.rebuildOptions();
   }
 
-  private rebuildButtons(): void {
-    this.buttons = buildStatusCatalogoButtons(this.catalogo);
-    if (!this.buttons.some((c) => c.codigo === 'POSIBLE_HORARIO')) {
+  ngAfterViewInit(): void {
+    if (this.autoFocus && !this.disabled) {
+      setTimeout(() => this.searchSelect?.focusInput());
+    }
+  }
+
+  get selectValue(): string | null {
+    if (!this.selected || this.selected === 'PENDIENTE') return null;
+    return this.selected;
+  }
+
+  get hasSelection(): boolean {
+    return !!this.selectValue;
+  }
+
+  get currentColor(): string {
+    const code = this.selectValue;
+    if (!code) return '#B45309';
+    return this.buttons.find((b) => b.codigo === code)?.color ?? '#004ac6';
+  }
+
+  get currentLabel(): string {
+    const code = this.selectValue;
+    if (!code) return 'Sin clasificar';
+    return this.buttons.find((b) => b.codigo === code)?.etiqueta ?? code;
+  }
+
+  get ariaLabel(): string {
+    return `Clasificación de ${this.importe.toFixed(2)}: ${this.currentLabel}`;
+  }
+
+  onValueChange(value: string | null): void {
+    if (this.disabled) return;
+    const next = value && value !== 'PENDIENTE' ? value : 'PENDIENTE';
+    this.selected = next;
+    this.selectedChange.emit(next);
+  }
+
+  private rebuildOptions(): void {
+    this.buttons = buildStatusCatalogoButtons(this.catalogo).filter(
+      (status) => status.codigo !== 'PENDIENTE' && status.codigo !== 'CONFIRMADO'
+    );
+    if (this.catalogo.length && !this.buttons.some((status) => status.codigo === 'POSIBLE_HORARIO')) {
       this.buttons = [
         ...this.buttons,
         {
@@ -54,71 +100,9 @@ export class TarifaStatusButtonsComponent implements OnChanges, OnInit {
         },
       ];
     }
-    this.syncFocusIndex();
-  }
-
-  get hasSelection(): boolean {
-    return !!this.selected && this.selected !== 'PENDIENTE';
-  }
-
-  isSelected(codigo: string): boolean {
-    return this.selected === codigo;
-  }
-
-  select(codigo: string): void {
-    if (this.disabled) return;
-    this.selectedChange.emit(codigo);
-    this.focusIndex = this.buttons.findIndex((b) => b.codigo === codigo);
-  }
-
-  onKeydown(event: KeyboardEvent, index: number): void {
-    if (this.disabled || !this.buttons.length) return;
-
-    let next = index;
-    if (event.key === 'ArrowRight') {
-      next = (index + 1) % this.buttons.length;
-      event.preventDefault();
-    } else if (event.key === 'ArrowLeft') {
-      next = (index - 1 + this.buttons.length) % this.buttons.length;
-      event.preventDefault();
-    } else if (event.key === 'Home') {
-      next = 0;
-      event.preventDefault();
-    } else if (event.key === 'End') {
-      next = this.buttons.length - 1;
-      event.preventDefault();
-    } else {
-      return;
-    }
-
-    this.focusIndex = next;
-    this.select(this.buttons[next].codigo);
-    this.focusButton(next);
-  }
-
-  tabIndexFor(index: number): number {
-    if (!this.hasSelection) {
-      return index === 0 ? 0 : -1;
-    }
-    const selectedIndex = this.buttons.findIndex((b) => b.codigo === this.selected);
-    return index === (selectedIndex >= 0 ? selectedIndex : this.focusIndex) ? 0 : -1;
-  }
-
-  private syncFocusIndex(): void {
-    if (this.selected) {
-      const idx = this.buttons.findIndex((b) => b.codigo === this.selected);
-      if (idx >= 0) this.focusIndex = idx;
-    }
-  }
-
-  private focusButton(index: number): void {
-    setTimeout(() => {
-      const el = document.getElementById(this.buttonId(index));
-      el?.focus();
-    });
-  }
-
-  buttonId(index: number): string {
-    return `status-btn-${this.importe}-${index}`;
+    this.options = this.buttons.map((b) => ({
+      id: b.codigo,
+      label: b.etiqueta,
+    }));
   }
 }

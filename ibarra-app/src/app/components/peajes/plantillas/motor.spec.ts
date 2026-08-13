@@ -219,6 +219,7 @@ describe('peajes/plantillas/motor', () => {
     );
     expect(rows.length).toBe(3);
     expect(rows.every((r) => r['QUANTITY'] === 1)).toBeTrue();
+    expect(rows.every((r) => String((r as Record<string, unknown>)['ESTACION']) === '0001')).toBeTrue();
     expect(rows[0]['FECHA_HORA']).toBe('2026-06-16 18:45:16');
     expect(rows[0]['PATENTE_ID']).toBe('AD933WS');
     expect(rows[0]['PASE_ID']).toBe('90836134');

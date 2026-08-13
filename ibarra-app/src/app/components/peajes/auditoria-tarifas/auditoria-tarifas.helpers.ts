@@ -31,7 +31,9 @@ export function patronFromRow(row: Pick<TarifaNormalizadaRow, 'categoria'>): 'A'
 }
 
 export function buildStatusCatalogoButtons(catalogo: TarifaStatusCatalogo[]): TarifaStatusCatalogo[] {
-  const sorted = [...catalogo].sort((a, b) => a.orden - b.orden);
+  const sorted = [...catalogo]
+    .filter((status) => status.codigo !== 'PENDIENTE' && status.codigo !== 'CONFIRMADO')
+    .sort((a, b) => a.orden - b.orden);
   const hasPosibleHorario = sorted.some((c) => c.codigo === 'POSIBLE_HORARIO');
   if (hasPosibleHorario) {
     return sorted;

@@ -10,6 +10,18 @@
 
 ## Estado actual
 
+Fecha: 2026-08-13 — **Bugfix preview FILTRAR_COLUMNA (0003/0004)**: Paso 3 ya no limita el preview a las primeras 10 filas del Excel cuando hay filtro; escanea `filasOrigen` hasta reunir ~10 filas que pasan. Mensaje vacío distingue “sin archivo” vs “filtro sin matches”. Tests paso3 agregados.
+
+Fecha: 2026-08-13 — **Paso 6 empresa≠AUBASA**: ya no se hace fallback al catálogo global cuando la empresa no tiene peajes. Seed DESARROLLO peaje **Autovía del Mercosur** + estaciones `0001`–`0004` para empresa `37ab9246-…`. Acciones: **Cambiar estación** / **Crear estación**. Tests paso6 **11/11**.
+
+Fecha: 2026-08-13 — **Bugfix FILTRAR_COLUMNA → Paso 6**: motor conserva columnas origen; `construirPasadasDesdeMapeo` / `filasParaReconocimientoEstaciones` usan set filtrado (no rezip a `filasOrigen`); Paso 3 sin salida Structure Goal (`PASADA_ID`) y aplica pipeline al Continuar; preview no rezip por índice. Tests: **52 SUCCESS**.
+
+Fecha: 2026-08-13 — **F14-8 Ver casos en DESARROLLO**: `peajes_listar_pasadas` ya filtra `tarifa_normalizada_id`. Aplicado en `kfffigvyvtzyczeiadxh` (`20260813175138`). Smoke PASEO DEL BAJO 9731.46: **total 6** (antes 3465). Recargar la pantalla y volver a abrir Ver casos.
+
+Fecha previa: 2026-08-13 — **F14-8 passing**: plantillas de la tabla anidada usan `appDataTableColumn="clave"` (el `key=` dejaba Clasificación como texto crudo y Franja vacía). Select buscable PICO/NO_PICO; franja `HH:mm – HH:mm` desde `hora_min`/`hora_max`; **Ver casos** abre pasadas del nivel. Migración `20260813175138_peajes_listar_pasadas_tarifa_normalizada.sql` (filtro `tarifa_normalizada_id`). Verify: `tsc` app+spec EXIT 0; `ng test` auditoria-tarifas **29/29**.
+
+Fecha previa: 2026-08-13 — **F14-8 refactor UI de auditoría tarifaria en curso**: se restauró la expansión inline de familias con `expandedId` y `app-tarifa-familia-panel`, alineada con la tabla de referencia. Cada nivel expone selección PICO/NO_PICO y el panel agrega `Asignar status`; `CONFIRMADO` se filtra porque es diagnóstico posterior, no clasificación tarifaria. Verificación TypeScript app/specs OK. Pendiente ejecutar Karma/ChromeHeadless (el entorno Windows presenta fallo GPU) y validar manualmente la interacción.
+
 Fecha: 2026-08-13 — **F14-7 plantillas CATEGORIA (Patrón B)**: migración `20260813100000_peajes_plantillas_mapeo_categoria.sql` activa mapeo `CATEGORIA→CATEGORIA` (`excluida=false`) en 7 plantillas Telepase DESARROLLO (`kfffigvyvtzyczeiadxh`). Pre: todas `cat_activa=0`; post: **7/7 Telepase `cat_activa=1`**, MASIVOOO=0. Sin tocar `pasadas` (ConsumosResumen 1711 null; Telepase 1750; tarifas 281). Verify: `ng test` plantilla-apply **3/3** + paso5 **8/8**; pgTAP `peajes_f14_plantillas_categoria_test.sql`. **F14-7 → passing**. Pendiente §6.2 wizard smoke manual (AUSA CSV + MASIVOOO).
 
 Fecha previa: 2026-08-13 — **F14-6 local verify suite (agente 05)**: `tsc` EXIT 0; `ng test` auditoria-tarifas **14/14** + peajes/** **178/178**; `clasificacion.verify.ts` ZARATE **5/5** (NO_PICO,PICO,PICO,PICO,PICO); `motor.verify.ts` + `e2e-prd21.verify.ts` PASS; `supabase test db` **144 PASS**. Sin `db reset --linked`. **F14-6 → in_progress** (recalc/reconcile DESARROLLO + E2E manual confirmación PICO/NO_PICO: sibling).
@@ -140,9 +152,16 @@ Decisiones vigentes:
 10. Reconocimiento de columnas (F02-11) por **semántica/aliases**, no por concesionaria; ESTACION → Paso 6.
 ## Features
 
-F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `passing` (2026-08-03). **F02-12/13/14** `passing` (2026-08-04). **F02-15** + **F02-16** `passing` (2026-08-04).
+F00–F05 `passing`. **F02-10** + **F03-9** `passing` (2026-07-31). **F02-11** `passing` (2026-08-03). **F02-12/13/14** `passing` (2026-08-04). **F02-15** + **F02-16** `passing` (2026-08-04). **F14-8** `passing` (2026-08-13).
 
 ## Registro de sesiones
+
+### 2026-08-13 — F14-8 Clasificación editable, franja y Ver casos
+
+**Agente:** 02-frontend-wizard-tablas  
+**Scope:** plantillas `appDataTableColumn="…"` en `tarifa-familia-panel`; search-select de status; franja `hora_min`/`hora_max`; diálogo Ver casos; filtro `tarifa_normalizada_id` en `peajes_listar_pasadas`.  
+**Verify:** `npx tsc --noEmit` app+spec EXIT 0; `ng test --include="**/peajes/auditoria-tarifas/**/*.spec.ts"` → **29 SUCCESS**.  
+**DESARROLLO:** `peajes_listar_pasadas` con `tarifa_normalizada_id` aplicado (`20260813175138`). Smoke PASEO DEL BAJO 9731.46 → total 6.
 
 ### 2026-08-11 — AUBASA FECHA_HORA plantilla + tests
 

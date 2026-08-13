@@ -21,6 +21,12 @@
   </div>
 
   <div class="pw__body">
+    <div class="pw__alert pw__alert--warn" *ngIf="sinPeajesEmpresa" role="status">
+      La empresa del Paso 1 no tiene peajes en el catálogo. Creá un peaje en
+      Catálogos → Peajes (asociado a esa empresa) antes de relacionar estaciones.
+      No se usan peajes de otras empresas (p. ej. AUBASA).
+    </div>
+
     <div class="paso6__layout">
       <div class="paso6__relation">
         <aside
@@ -93,7 +99,7 @@
               <thead>
                 <tr>
                   <th class="paso6__col-codigo">Código proveedor</th>
-                  <th class="paso6__col-peaje" *ngIf="scopingPorConcesion">Peaje (Concesión)</th>
+                  <th class="paso6__col-peaje" *ngIf="mostrarColumnaPeaje">Peaje</th>
                   <th class="paso6__col-estacion">Estación interna</th>
                   <th class="paso6__col-derivado" *ngIf="!esCargaDensa">Peaje derivado</th>
                   <th class="paso6__col-acciones">Acciones</th>
@@ -110,11 +116,11 @@
                       {{ r.concesionProveedor }}
                     </div>
                   </td>
-                  <td class="paso6__col-peaje" *ngIf="scopingPorConcesion">
+                  <td class="paso6__col-peaje" *ngIf="mostrarColumnaPeaje">
                     <app-search-select
                       *ngIf="isEditing(r.valorProveedor); else peajeCompact"
                       class="paso6__search-select"
-                      placeholder="Peaje…"
+                      placeholder="Peaje de la empresa…"
                       [options]="peajeOptionsForRow(r.valorProveedor)"
                       [value]="peajeAlcanceDe(r.valorProveedor)"
                       [showAllWhenEmpty]="true"
@@ -159,13 +165,6 @@
                       <div class="paso6__compact">
                         <span class="paso6__compact-id pw__mono">{{ r.estacionId }}</span>
                         <span class="paso6__compact-name">{{ estacionNombre(r.estacionId) }}</span>
-                        <button
-                          type="button"
-                          class="pw__btn pw__btn--ghost pw__btn--small"
-                          (click)="editarFila(r.valorProveedor)"
-                        >
-                          Editar
-                        </button>
                       </div>
                     </ng-template>
                     <div class="paso6__derivado-inline" *ngIf="esCargaDensa">
@@ -177,10 +176,27 @@
                     {{ peajeDe(r.estacionId, r.valorProveedor) }}
                   </td>
                   <td class="paso6__col-acciones">
-                    <div class="paso6__actions" *ngIf="reconocimientos[r.valorProveedor]?.tipo === 'sugerencias'">
+                    <div class="paso6__actions">
                       <button
                         type="button"
                         class="pw__btn pw__btn--small pw__btn--ghost"
+                        *ngIf="r.estacionId && !isEditing(r.valorProveedor)"
+                        (click)="editarFila(r.valorProveedor)"
+                      >
+                        Cambiar estación
+                      </button>
+                      <button
+                        type="button"
+                        class="pw__btn pw__btn--small pw__btn--ghost"
+                        *ngIf="!r.estacionId || isEditing(r.valorProveedor)"
+                        (click)="abrirCrear(r.valorProveedor)"
+                      >
+                        Crear estación
+                      </button>
+                      <button
+                        type="button"
+                        class="pw__btn pw__btn--small pw__btn--ghost"
+                        *ngIf="reconocimientos[r.valorProveedor]?.tipo === 'sugerencias'"
                         (click)="declararSinCoincidencia(r.valorProveedor)"
                       >
                         Ninguna coincide

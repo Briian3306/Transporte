@@ -344,7 +344,7 @@
             </ng-container>
           </div>
 
-          <label class="pw__field">
+          <label class="pw__field" *ngIf="!esPasoFiltro">
             Columna de salida (resultado del paso)
             <select
               class="pw__select pw__mono"
@@ -356,7 +356,7 @@
               <option value="__custom__">Nombre personalizado…</option>
             </select>
           </label>
-          <label class="pw__field" *ngIf="editSalidaCustom || salidaSelectValue === '__custom__'">
+          <label class="pw__field" *ngIf="!esPasoFiltro && (editSalidaCustom || salidaSelectValue === '__custom__')">
             Nombre de columna generada
             <input
               class="pw__input pw__mono"
@@ -366,7 +366,10 @@
               placeholder="p. ej. FECHA_HORA_CUSTOM"
             />
           </label>
-          <p class="paso3__hint-text" *ngIf="editSalida">
+          <p class="paso3__hint-text" *ngIf="esPasoFiltro">
+            Este paso solo filtra filas: no genera columna de salida. Las filas que no coincidan se descartan del pipeline.
+          </p>
+          <p class="paso3__hint-text" *ngIf="!esPasoFiltro && editSalida">
             Esta salida se podrá mapear al Structure Goal y usarse en pasos siguientes.
           </p>
 
@@ -378,7 +381,7 @@
             />
             Paso habilitado
           </label>
-          <label class="paso3__check">
+          <label class="paso3__check" *ngIf="!esPasoFiltro">
             <input
               type="checkbox"
               [(ngModel)]="editObligatoria"
@@ -406,8 +409,23 @@
       </div>
       <div class="paso3__compare-body">
         <div class="paso3__loading" *ngIf="previewLoading">Calculando preview…</div>
-        <div class="paso3__empty" *ngIf="!previewLoading && !filasPreviewIo.length">
-          Sin filas de preview. Cargá un Excel en el paso 1.
+        <p class="paso3__hint-text" *ngIf="!previewLoading && previewFiltroHint">
+          {{ previewFiltroHint }}
+        </p>
+        <div
+          class="paso3__empty"
+          *ngIf="!previewLoading && !filasPreviewIo.length && !tieneArchivoCargado"
+        >
+          Sin filas de preview. Cargá un Excel o CSV en el paso 1.
+        </div>
+        <div
+          class="paso3__empty"
+          *ngIf="!previewLoading && !filasPreviewIo.length && tieneArchivoCargado"
+        >
+          Ninguna fila pasa el filtro en el sample. Ajustá
+          <span class="pw__mono">FILTRAR_COLUMNA</span> (p. ej. valor
+          <span class="pw__mono">0003</span> /
+          <span class="pw__mono">0004</span>) o desactivá el paso para ver el archivo.
         </div>
         <div class="pw__table-wrap" *ngIf="!previewLoading && filasPreviewIo.length">
           <table class="pw__table paso3__preview-table">

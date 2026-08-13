@@ -1,23 +1,26 @@
 <div
-  class="at__status-group"
-  role="radiogroup"
-  [attr.aria-label]="'Clasificación de ' + (importe | number: '1.2-2')"
+  class="at__status-select"
+  [attr.aria-label]="ariaLabel"
+  [style.--at-status-color]="currentColor"
 >
-  <span class="at__status-hint" *ngIf="!hasSelection">Sin clasificar</span>
-  <button
-    *ngFor="let btn of buttons; let i = index"
-    type="button"
-    role="radio"
-    class="at__status-btn"
-    [id]="buttonId(i)"
-    [class.at__status-btn--selected]="isSelected(btn.codigo)"
-    [attr.aria-checked]="isSelected(btn.codigo)"
-    [attr.tabindex]="tabIndexFor(i)"
+  <span
+    class="at__status-dot"
+    [class.at__status-dot--pending]="!hasSelection"
+    aria-hidden="true"
+  ></span>
+  <app-search-select
+    class="at__status-search"
+    [options]="options"
+    [value]="selectValue"
     [disabled]="disabled"
-    [style.--at-status-color]="btn.color"
-    (click)="select(btn.codigo)"
-    (keydown)="onKeydown($event, i)"
-  >
-    <span *ngIf="isSelected(btn.codigo)" aria-hidden="true">● </span>{{ btn.etiqueta }}
-  </button>
+    [clearable]="true"
+    [showAllWhenEmpty]="true"
+    [maxResults]="20"
+    placeholder="Buscar status (PICO, NO_PICO…)"
+    emptyMessage="Sin estados que coincidan"
+    (valueChange)="onValueChange($event)"
+  ></app-search-select>
+  <span *ngIf="!options.length" class="at__status-empty" role="status">
+    No hay estados en el catálogo de este peaje
+  </span>
 </div>

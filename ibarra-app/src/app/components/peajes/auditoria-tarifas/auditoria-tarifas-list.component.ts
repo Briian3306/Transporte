@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { Subject, firstValueFrom } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import {
+  DataTablePageChange,
+  DataTableSort,
   DateRangePickerComponent,
   DateRangeValue,
   DialogComponent,
@@ -18,8 +20,11 @@ import {
 import {
   Estacion,
   PEAJES_CATALOGO_SERVICE,
+  PEAJES_PASADAS_SERVICE,
+  PasadaGestion,
   Peaje,
   PeajesCatalogoService,
+  PeajesPasadasService,
 } from '../models';
 import {
   PeajesAuditoriaTarifasService,
@@ -41,6 +46,7 @@ import {
 import { TarifaFamiliaPanelComponent } from './tarifa-familia-panel.component';
 import { TarifaStatusBadgeComponent } from './tarifa-status-badge.component';
 import { TarifaCompararDialogComponent } from './tarifa-comparar-dialog.component';
+import { TarifaCasosDialogComponent } from './tarifa-casos-dialog.component';
 import { formatUtcDateShort } from '../wizard/services/peajes-fecha.util';
 
 interface PeajeProgress {
@@ -65,6 +71,7 @@ interface PeajeProgress {
     TarifaFamiliaPanelComponent,
     TarifaStatusBadgeComponent,
     TarifaCompararDialogComponent,
+    TarifaCasosDialogComponent,
   ],
   templateUrl: './auditoria-tarifas-list.component.html',
   styleUrl: './auditoria-tarifas-list.component.css',
@@ -97,6 +104,7 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
 
   progress: PeajeProgress[] = [];
   progressLoading = false;
+  progressOpen = false;
 
   recalcDialogOpen = false;
   recalculating = false;
@@ -112,11 +120,22 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
   compareTolerancia = 0.05;
   compareSourceRow: TarifaNormalizadaRow | null = null;
 
+  casosOpen = false;
+  casosNivel: TarifaNormalizadaRow | null = null;
+  casosRows: PasadaGestion[] = [];
+  casosTotal = 0;
+  casosLoading = false;
+  casosError: string | null = null;
+  casosPage = 1;
+  casosPageSize = 50;
+  casosSort: DataTableSort = { key: 'fecha_hora', direction: 'desc' };
+
   readonly diagnosticoOptions = DIAGNOSTICO_OPTIONS;
 
   constructor(
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService,
-    @Inject(PEAJES_AUDITORIA_TARIFAS_SERVICE) private readonly auditoria: PeajesAuditoriaTarifasService
+    @Inject(PEAJES_AUDITORIA_TARIFAS_SERVICE) private readonly auditoria: PeajesAuditoriaTarifasService,
+    @Inject(PEAJES_PASADAS_SERVICE) private readonly pasadas: PeajesPasadasService
   ) {}
 
   get peajeOptions(): SearchMultiSelectOption[] {
@@ -142,13 +161,24 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
     const seen = new Set<string>(['PENDIENTE', 'POSIBLE_HORARIO']);
     peajeIds.forEach((pid) => {
       (this.catalogByPeaje.get(pid) ?? []).forEach((c) => {
-        if (!seen.has(c.codigo)) {
+        if (c.codigo !== 'CONFIRMADO' && !seen.has(c.codigo)) {
           seen.add(c.codigo);
           base.push({ id: c.codigo, label: c.etiqueta });
         }
       });
     });
     return base;
+  }
+
+  get statusQuickOptions(): SearchMultiSelectOption[] {
+    return this.statusOptions.filter((option) => option.id !== 'POSIBLE_HORARIO').slice(0, 5);
+  }
+
+  get progressSummary(): { total: number; classified: number; pending: number; pct: number } {
+    const total = this.progress.reduce((sum, item) => sum + item.total, 0);
+    const pending = this.progress.reduce((sum, item) => sum + item.pendientes, 0);
+    const classified = Math.max(0, total - pending);
+    return { total, classified, pending, pct: total ? Math.round((classified / total) * 100) : 0 };
   }
 
   get categoriaOptions(): { id: string; label: string }[] {
@@ -226,9 +256,18 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
   }
 
   get expandedCatalogo(): TarifaStatusCatalogo[] {
-    const row = this.rows.find((r) => r.id === this.expandedId);
-    if (!row) return [];
-    return this.catalogByPeaje.get(row.peaje_id) ?? [];
+    const row = this.rows.find((item) => item.id === this.expandedId);
+    return row ? this.catalogForRow(row) : [];
+  }
+
+  get casosTitle(): string {
+    if (!this.casosNivel) return 'Pasadas';
+    return `Pasadas · ${this.casosNivel.estacion_nombre} · ${this.casosNivel.importe.toFixed(2)}`;
+  }
+
+  get casosDescription(): string {
+    if (!this.casosNivel) return '';
+    return `${this.casosNivel.cases} casos de este nivel de tarifa.`;
   }
 
   ngOnInit(): void {
@@ -339,7 +378,9 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
           };
         })
       );
-      this.progress = entries.filter((e) => e.total > 0);
+      this.progress = entries
+        .filter((e) => e.total > 0)
+        .sort((a, b) => b.pendientes - a.pendientes || a.peaje_nombre.localeCompare(b.peaje_nombre, 'es'));
     } catch {
       this.progress = [];
     } finally {
@@ -380,6 +421,21 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
 
   onStatus(ids: string[]): void {
     this.patchFilters({ status: ids.length ? ids : undefined });
+  }
+
+  toggleStatusQuick(code: string): void {
+    const current = new Set(this.filters.status ?? []);
+    if (current.has(code)) current.delete(code);
+    else current.add(code);
+    this.onStatus([...current]);
+  }
+
+  isStatusQuickActive(code: string): boolean {
+    return this.filters.status?.includes(code) ?? false;
+  }
+
+  statusQuickLabel(code: string): string {
+    return this.statusOptions.find((option) => option.id === code)?.label ?? code;
   }
 
   onPatron(patron: 'A' | 'B' | null): void {
@@ -447,6 +503,13 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
       this.collapseDetail();
       return;
     }
+    this.expandedId = row.id;
+    this.familiaConfirmError = null;
+    void this.loadFamilia(row);
+  }
+
+  openDetail(row: TarifaNormalizadaRow): void {
+    if (this.expandedId === row.id) return;
     this.expandedId = row.id;
     this.familiaConfirmError = null;
     void this.loadFamilia(row);
@@ -561,6 +624,60 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
     } finally {
       this.compareSaving = false;
     }
+  }
+
+  openVerCasos(nivel: TarifaNormalizadaRow): void {
+    this.casosNivel = nivel;
+    this.casosPage = 1;
+    this.casosSort = { key: 'fecha_hora', direction: 'desc' };
+    this.casosOpen = true;
+    this.casosError = null;
+    void this.loadCasos();
+  }
+
+  async loadCasos(): Promise<void> {
+    if (!this.casosNivel) return;
+    this.casosLoading = true;
+    this.casosError = null;
+    try {
+      const result = await firstValueFrom(
+        this.pasadas.listar({
+          filters: { tarifa_normalizada_id: this.casosNivel.id },
+          sort: this.casosSort.key,
+          dir: this.casosSort.direction,
+          limit: this.casosPageSize,
+          offset: (this.casosPage - 1) * this.casosPageSize,
+        })
+      );
+      this.casosRows = result.rows;
+      this.casosTotal = result.total;
+    } catch {
+      this.casosRows = [];
+      this.casosTotal = 0;
+      this.casosError = 'No se pudieron cargar las pasadas de este nivel.';
+    } finally {
+      this.casosLoading = false;
+    }
+  }
+
+  onCasosSort(sort: DataTableSort): void {
+    this.casosSort = sort;
+    this.casosPage = 1;
+    void this.loadCasos();
+  }
+
+  onCasosPage(change: DataTablePageChange): void {
+    this.casosPage = change.page;
+    this.casosPageSize = change.pageSize;
+    void this.loadCasos();
+  }
+
+  closeCasos(): void {
+    this.casosOpen = false;
+    this.casosNivel = null;
+    this.casosRows = [];
+    this.casosTotal = 0;
+    this.casosError = null;
   }
 
   openRecalcDialog(): void {

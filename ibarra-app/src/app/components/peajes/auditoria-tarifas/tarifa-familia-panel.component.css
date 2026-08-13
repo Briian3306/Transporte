@@ -1,102 +1,80 @@
-.at__familia {
-  padding: 0.75rem 0;
+:host ::ng-deep app-data-table .dt__frame,
+:host ::ng-deep app-data-table .dt__scroll {
+  overflow: visible;
 }
 
-.at__detail-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #434655;
+:host ::ng-deep app-data-table .dt__scroll {
+  max-height: none;
 }
 
-.at__suggestion-note {
-  margin: 0 0 0.75rem;
-  font-size: 0.75rem;
-  color: #434655;
+:host ::ng-deep .ss__dropdown {
+  z-index: 30;
 }
 
-.at__detail-empty {
-  margin: 0.5rem 0 1rem;
-  font-size: 0.875rem;
-  color: #434655;
+.at__familia { display: flex; flex-direction: column; min-height: 0; }
+.at__num { font-variant-numeric: tabular-nums; }
+.at__price { color: #2563eb; font-weight: 750; }
+.at__badge { display: inline-flex; align-items: center; gap: .3rem; padding: .18rem .48rem; border-radius: 999px; font-size: .63rem; font-weight: 800; letter-spacing: .03em; white-space: nowrap; }
+.at__badge::before { width: .4rem; height: .4rem; border-radius: 50%; background: currentColor; content: ''; }
+.at__badge--ok { color: #065f46; background: #dff7ef; }
+.at__badge--pending { color: #92400e; background: #fff3d8; }
+.at__badge--neutral { color: #475569; background: #edf1f5; }
+.at__badge--info { color: #004ac6; background: #e8f0ff; }
+.at__badge--danger { color: #991b1b; background: #fee8e8; }
+.at__casos-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 2rem;
+  padding: .28rem .55rem;
+  border: 1px solid #dbe4ee;
+  border-radius: .45rem;
+  background: #fff;
+  color: #004ac6;
+  font-size: .72rem;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
 }
-
-.at__pending-count {
-  margin: 0.75rem 0 0.5rem;
-  font-size: 0.8125rem;
-  color: #434655;
+.at__casos-btn:hover,
+.at__casos-btn:focus-visible {
+  border-color: #93b4e9;
+  background: #edf4ff;
 }
-
-.at__familia-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-.at__mult-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.at__mult-bar {
-  display: block;
-  height: 0.35rem;
-  border-radius: 999px;
-  background: #2563eb;
-  max-width: 100%;
-}
-
-.at__rail-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.at__rail {
-  position: relative;
-  width: 100%;
-  max-width: 12rem;
-  height: 0.5rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, #004ac6 10%, #fff);
-}
-
-.at__rail-segment {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  border-radius: 999px;
-  background: #2563eb;
-}
-
-.at__rail-mark {
-  position: absolute;
-  top: -2px;
-  width: 3px;
-  height: calc(100% + 4px);
-  background: #0f172a;
-  transform: translateX(-50%);
-}
-
-.at__rail-meta {
-  font-size: 0.6875rem;
-  color: #434655;
-}
-
-.at__price {
-  color: #2563eb;
-  font-weight: 600;
-}
-
-.at__num {
+.at__familia-note { display: flex; justify-content: space-between; gap: .75rem; align-items: center; margin-bottom: .75rem; padding: .65rem .75rem; border: 1px solid #dbeafe; border-radius: .55rem; background: #f5f9ff; color: #1e3a8a; font-size: .78rem; }
+.at__familia-note i { margin-right: .25rem; }
+.at__family-pending { color: #92400e; font-weight: 800; font-variant-numeric: tabular-nums; }
+.at__error { margin: .5rem 0; padding: .6rem .7rem; border-radius: .45rem; background: #fff1f2; color: #b91c1c; font-size: .8rem; }
+.at__desktop-detail { min-width: 0; }
+.at__mult-cell { display: flex; flex-direction: column; gap: .28rem; }
+.at__mult-bar { display: block; height: .3rem; border-radius: 99px; background: #2563eb; }
+.at__rail-wrap { display: flex; flex-direction: column; gap: .22rem; min-width: 12rem; }
+.at__franja-range {
+  color: #0f172a;
+  font-size: .85rem;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 }
+.at__rail { position: relative; height: .4rem; overflow: visible; border-radius: 99px; background: #e8eef5; }
+.at__rail-segment { position: absolute; top: 0; bottom: 0; border-radius: inherit; background: #2563eb; opacity: .85; }
+.at__rail-mark { position: absolute; top: -.18rem; width: 3px; height: .76rem; border-radius: 3px; background: #0f172a; transform: translateX(-50%); }
+.at__rail-meta { color: #52647a; font-size: .65rem; font-variant-numeric: tabular-nums; }
+.at__no-hours { margin: .25rem 0; color: #64748b; font-size: .72rem; font-style: italic; }
+.at__detail-pager { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .5rem; padding: .75rem 0 0; color: #52647a; font-size: .72rem; }
+.at__detail-pager label { display: inline-flex; align-items: center; gap: .3rem; }
+.at__detail-pager select { min-height: 2rem; border: 1px solid #dbe4ee; border-radius: .4rem; background: #fff; }
+.at__more-actions { margin-top: .8rem; border-top: 1px solid #dbe4ee; color: #52647a; }
+.at__more-actions summary { width: fit-content; padding: .65rem 0 .35rem; color: #004ac6; font-size: .75rem; font-weight: 800; cursor: pointer; }
+.at__more-actions-list { display: flex; flex-wrap: wrap; gap: .45rem; padding: .35rem 0 .2rem; }
+.at__familia-actions { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .5rem; margin-top: 1rem; padding: .8rem 0 .1rem; border-top: 1px solid #dbe4ee; background: linear-gradient(180deg, rgba(255,255,255,.7), #fff 35%); }
+.at__confirm-count { margin-right: auto; color: #52647a; font-size: .72rem; font-variant-numeric: tabular-nums; }
+.at__btn { appearance: none; min-height: 2.3rem; padding: .42rem .68rem; border: 1px solid #dbe4ee; border-radius: .48rem; background: #fff; color: #0f172a; font-size: .74rem; font-weight: 750; cursor: pointer; }
+.at__btn--primary { border-color: #004ac6; background: #004ac6; color: #fff; }
+.at__btn:disabled { opacity: .55; cursor: not-allowed; }
+.at__btn:focus-visible, summary:focus-visible { outline: 2px solid #6ea0ee; outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .at__mult-bar,
-  .at__rail-segment {
-    transition: none;
-  }
+  .at__mult-bar, .at__rail-segment { transition: none; }
 }

@@ -319,4 +319,56 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
       expect(sinCat[0].CATEGORIA).toBeNull();
     });
   });
+
+  it('FILTRAR_COLUMNA: construirPasadasDesdeMapeo no reexpande a filasOrigen', () => {
+    state.setPreview({
+      nombreArchivo: 'mercosur.csv',
+      tamanioBytes: 1,
+      totalFilas: 4,
+      columnas: ['ESTACION', 'TARIFA'],
+      filasPreview: [
+        { ESTACION: '0001', TARIFA: 10 },
+        { ESTACION: '0002', TARIFA: 20 },
+      ],
+      filasOrigen: [
+        { ESTACION: '0001', TARIFA: 10 },
+        { ESTACION: '0002', TARIFA: 20 },
+        { ESTACION: '0003', TARIFA: 30 },
+        { ESTACION: '0001', TARIFA: 40 },
+      ],
+      tiposInferidos: { ESTACION: 'texto', TARIFA: 'número' },
+    });
+    state.setSeleccionColumnas(['ESTACION', 'TARIFA'], []);
+    state.setMapeos([
+      { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID', excluida: false },
+      { columnaOrigen: 'TARIFA', columnaDestino: 'PRECIO', excluida: false },
+    ]);
+    state.setConfiguracionesDraft([
+      draftStep({
+        clientId: 'f1',
+        orden: 5,
+        nombre_columna: 'ESTACION',
+        columna_destino: null,
+        obligatoria: false,
+        configuracion: {
+          algoritmo_codigo: 'FILTRAR_COLUMNA',
+          columnas_entrada: ['ESTACION'],
+          parametros: { columna: 'ESTACION', valor: '0001' },
+          habilitado: true,
+        },
+      }),
+    ]);
+    state.setPasadasEstandarizadas([
+      { ESTACION: '0001', TARIFA: 10, PRECIO: 10 } as never,
+      { ESTACION: '0001', TARIFA: 40, PRECIO: 40 } as never,
+    ]);
+
+    const pasadas = state.construirPasadasDesdeMapeo();
+    expect(pasadas.length).toBe(2);
+    expect(pasadas.every((p) => String(p.ESTACION_ID) === '0001')).toBeTrue();
+
+    const filasRec = state.filasParaReconocimientoEstaciones();
+    expect(filasRec.length).toBe(2);
+    expect(filasRec.map((f) => String(f['ESTACION']))).toEqual(['0001', '0001']);
+  });
 });

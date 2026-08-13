@@ -24,17 +24,21 @@ Definidos en `src/app/components/peajes/models/` (`peajes-services.contracts.ts`
 | `PEAJES_CARGA_SERVICE` / `PeajesCargaService` | Validar, duplicados, confirmar carga |
 | `PEAJES_PLANTILLAS_SERVICE` / `PeajesPlantillasService` | Plantillas, configs, algoritmos |
 | `PEAJES_MOTOR_TRANSFORMACION` / `PeajesMotorTransformacion` | Pipeline Strategy/Builder |
+| `PEAJES_AUDITORIA_TARIFAS_SERVICE` / `PeajesAuditoriaTarifasService` | Listar/confirmar/recalcular tarifas normalizadas (F14) |
+
+Contratos F14: `models/auditoria-tarifas.contracts.ts`. Guía de pantalla: [auditoria-tarifas.md](./auditoria-tarifas.md).
 
 ---
 
 ## Implementaciones
 
-| Interfaz | Real (F01) | Mock UI (F02/F03) |
-|----------|------------|-------------------|
+| Interfaz | Real | Mock UI / tests |
+|----------|------|-----------------|
 | Catálogo | `PeajesCatalogoSupabaseService` | `PeajesCatalogoMockService` |
 | Carga | `PeajesCargaSupabaseService` | `PeajesCargaMockService` |
 | Plantillas | `PeajesPlantillasSupabaseService` | `PeajesPlantillasMockService` |
 | Motor | `PeajesMotorTransformacionService` | — (no mock) |
+| Auditoría tarifas | `PeajesAuditoriaTarifasSupabaseService` (provider en `auditoria-tarifas.routes.ts`) | `AuditoriaTarifasMockService` (specs) |
 
 Export barrel: `src/app/components/peajes/services/index.ts`.
 
@@ -68,7 +72,9 @@ Mocks tipados quedan solo para unit tests (`PEAJES_CATALOGOS_MOCK_PROVIDERS`, sp
 
 - Handoff: [docs/session-handoff.md](../../session-handoff.md)
 - Tablas/RPC: [docs/06-tablas/peajes/](../../06-tablas/peajes/INDEX.md)
+- Auditoría tarifas UI: [auditoria-tarifas.md](./auditoria-tarifas.md)
+- Auditoría tarifas backend: [docs/backend/peajes/auditoria-tarifas.md](../../backend/peajes/auditoria-tarifas.md)
 
 ---
 
-> Última actualización: julio 2026
+> Última actualización: 2026-08-13

@@ -809,6 +809,10 @@ export class PeajesWizardStateService {
     const inputsResueltos = new Set<string>();
 
     for (const d of drafts) {
+      const codigo = d.configuracion?.algoritmo_codigo;
+      // FILTRAR_COLUMNA no produce destino Structure Goal.
+      if (codigo === 'FILTRAR_COLUMNA') continue;
+
       const out = (d.columna_destino || '').trim();
       if (!out) continue;
 
@@ -1097,9 +1101,27 @@ export class PeajesWizardStateService {
   }
 
   /**
+   * Filas efectivas para reconocer estaciones (Paso 6).
+   * Si el motor ya filtró (FILTRAR_COLUMNA), usa `pasadasEstandarizadas`
+   * (conservan columnas de origen). Si no, usa el archivo completo.
+   */
+  filasParaReconocimientoEstaciones(): Record<string, unknown>[] {
+    const preferMotor =
+      this.state.pasadasEstandarizadas.length > 0 &&
+      (this.state.configuracionesDraft.length > 0 || !!this.state.plantillaId);
+    if (preferMotor) {
+      return this.state.pasadasEstandarizadas as Record<string, unknown>[];
+    }
+    const preview = this.state.preview;
+    if (!preview) return [];
+    return preview.filasOrigen.length ? preview.filasOrigen : preview.filasPreview;
+  }
+
+  /**
    * Construye filas estandarizadas desde preview + mapeos + relaciones estación.
    * Si hay draft del Paso 3 y ya existen `pasadasEstandarizadas` del motor,
    * preferir esas salidas (sin reaplicar helpers MVP de FECHA_HORA/PATENTE/PASE).
+   * Con FILTRAR_COLUMNA el set del motor es la verdad (no se reexpande a filasOrigen).
    */
   construirPasadasDesdeMapeo(): PasadaEstandarizada[] {
     const preview = this.state.preview;
@@ -1113,6 +1135,7 @@ export class PeajesWizardStateService {
     );
 
     // Draft Paso 3 o plantilla aplicada (Paso 4): reutilizar salida del motor.
+    // Importante: NO re-zippear contra filasOrigen — FILTRAR_COLUMNA reduce el set.
     const preferMotor =
       this.state.pasadasEstandarizadas.length > 0 &&
       (this.state.configuracionesDraft.length > 0 || !!this.state.plantillaId);
@@ -1121,9 +1144,8 @@ export class PeajesWizardStateService {
 
     if (preferMotor) {
       const motorRows = this.state.pasadasEstandarizadas;
-      const filas = preview.filasOrigen.length ? preview.filasOrigen : preview.filasPreview;
-      rows = filas.map((fila, idx) => {
-        const base = motorRows[idx] ?? motorRows[Math.min(idx, motorRows.length - 1)] ?? {};
+      rows = motorRows.map((base) => {
+        const fila = base as Record<string, unknown>;
         const out: Record<string, string | number | null> = { ...base };
 
         for (const m of mapeoActivo) {

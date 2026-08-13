@@ -93,6 +93,8 @@ export interface PasadasListFilters {
   q_patente?: string | null;
   q_empresa?: string | null;
   q_archivo?: string | null;
+  /** Filtra pasadas de un nivel de `tarifas_normalizadas`. */
+  tarifa_normalizada_id?: string | null;
 }
 
 export interface PasadasListParams {

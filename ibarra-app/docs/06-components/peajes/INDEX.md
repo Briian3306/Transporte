@@ -13,7 +13,7 @@ Documentación de UI y servicios del módulo Peajes (wizard, catálogos, plantil
 | [validacion-carga.md](./validacion-carga.md) | Paso 8: diagnóstico, tolerancia, errores RPC |
 | [reconocimiento-columnas.md](./reconocimiento-columnas.md) | F02-11 / F14-3 — reconocimiento semántico + CATEGORIA |
 | [reconocimiento-estaciones.md](./reconocimiento-estaciones.md) | F02-13 / RN-26 — estaciones por peaje/empresa |
-| [auditoria-tarifas.md](./auditoria-tarifas.md) | F14-4 — pantalla `/peajes/auditoria-tarifas` |
+| [auditoria-tarifas.md](./auditoria-tarifas.md) | F14-4 — uso de `/peajes/auditoria-tarifas` (botones, tablas, servicios) |
 | [patentes-sin-resolver.md](./patentes-sin-resolver.md) | F02-14 — DataTable Agregar/Quitar en Paso 5 |
 | [pipeline-editable-paso3.md](./pipeline-editable-paso3.md) | Pipeline editable Paso 3 (F02-10 / F03-9) |
 | [catalogos.md](./catalogos.md) | CRUD UI empresas / peajes / estaciones / patentes / pases |
@@ -28,4 +28,4 @@ Ver `feature_list.json` (F02/F03/F13) y `docs/claude-progress.md`.
 
 ---
 
-> Última actualización: 2026-08-10
+> Última actualización: 2026-08-13
