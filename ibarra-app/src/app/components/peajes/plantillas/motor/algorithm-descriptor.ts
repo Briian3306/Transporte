@@ -7,7 +7,8 @@ export type AlgorithmCategoria =
   | 'numero'
   | 'combinacion'
   | 'asignacion'
-  | 'mapeo';
+  | 'mapeo'
+  | 'filtro';
 
 export type AlgorithmOutputType = 'string' | 'number' | 'unknown';
 
@@ -501,6 +502,36 @@ const DESCRIPTORES: AlgorithmDescriptor[] = [
     },
     resumen(config) {
       return `Copiar(${colUnaria(config) ?? '?'})`;
+    },
+  },
+  {
+    codigo: 'FILTRAR_COLUMNA',
+    nombre: 'Filtrar columna',
+    descripcion:
+      'Conserva solo las filas cuyo valor de columna coincide con el parámetro valor (número o texto; pads numéricos equivalentes).',
+    categoria: 'filtro',
+    inputs: { arity: 1, required: true },
+    parametrosSchema: [
+      { nombre: 'columna', tipo: 'string', requerido: true },
+      { nombre: 'valor', tipo: 'unknown', requerido: true },
+    ],
+    outputType: 'unknown',
+    validar(config) {
+      const errores: ErrorValidacionPasada[] = [];
+      const col = colUnaria(config);
+      if (!col) {
+        errores.push(
+          err('columna', null, 'FILTRAR_COLUMNA: falta columna de entrada')
+        );
+      }
+      if (config == null || !('valor' in config) || config['valor'] === undefined) {
+        errores.push(err('valor', null, 'FILTRAR_COLUMNA: falta parametro valor'));
+      }
+      return errores;
+    },
+    resumen(config) {
+      const col = colUnaria(config) ?? '?';
+      return `Filtrar(${col} = ${JSON.stringify(config?.['valor'] ?? null)})`;
     },
   },
 ];

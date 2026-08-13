@@ -35,6 +35,15 @@ Persistir definiciones de plantilla/algoritmo sin estados parciales (RN-18…RN-
 - `algoritmo_codigo` ∈ `peajes_algoritmos_catalogo`.
 - Transacción: fallo → rollback total.
 
+## Catálogo atómico reciente
+
+| Código | Migración | Rol |
+|--------|-----------|-----|
+| `CONVERTIR_NUMERO_ARS` | `20260806120000_peajes_algoritmo_convertir_numero_ars.sql` | Locale AR |
+| `FILTRAR_COLUMNA` | `20260811190002_peajes_algoritmo_filtrar_columna.sql` | Conserva filas si columna = valor (pads numéricos `1` ≡ `0001`) |
+
+`FILTRAR_COLUMNA` es un filtro de filas en el motor TypeScript (`aplicarPipeline` descarta no coincidentes); el catálogo SQL solo autoriza la referencia (RN-20).
+
 ## Testing
 
 | Tipo | Archivo | Escenario |
@@ -49,4 +58,4 @@ Persistir definiciones de plantilla/algoritmo sin estados parciales (RN-18…RN-
 
 ---
 
-> Última actualización: agosto 2026
+> Última actualización: agosto 2026 (FILTRAR_COLUMNA)

@@ -6,7 +6,7 @@ Guía para agentes de IA que trabajan en este repositorio. Léelo antes de hacer
 
 El trabajo del módulo Peajes se coordina mediante tres artefactos:
 
-- `ibarra-app/docs/plan/peaje-prd-es.md`: fuente de verdad funcional y de alcance.
+- `ibarra-app/docs/plan/peaje-prd-short.md.md`: fuente de verdad funcional y de alcance.
 - `feature_list.json`: estado canónico de features, dependencias, verificación y evidencia.
 - `ibarra-app/docs/claude-progress.md`: bitácora de sesiones, decisiones y bloqueos.
 
@@ -15,7 +15,7 @@ Antes de implementar, cada agente deberá leer este archivo, el PRD de Peajes y 
 ### Orden de inicio
 
 1. Confirmar el directorio de trabajo y consultar `git status --short`.
-2. Leer `AGENTS.md`, `ibarra-app/docs/plan/peaje-prd-es.md` y `feature_list.json`.
+2. Leer `AGENTS.md`, `ibarra-app/docs/plan/peaje-prd-short.md.md` y `feature_list.json`.
 3. Leer `ibarra-app/docs/claude-progress.md` para conocer decisiones y bloqueos.
 4. Revisar el código existente del área que se tocará.
 5. Ejecutar la verificación base disponible desde `ibarra-app` antes de atribuir fallas al feature.
@@ -174,7 +174,7 @@ Build Netlify usa `npm install --legacy-peer-deps && npm run build:prod` desde `
 
 Antes de implementar el módulo de peajes, leer:
 
-1. `ibarra-app/docs/plan/peaje-prd-es.md` (fuente principal en español)
+1. `ibarra-app/docs/plan/peaje-prd-short.md.md` (fuente principal en español)
 2. `ibarra-app/docs/plan/peajes-prd.md` (versión EN)
 3. `ibarra-app/docs/plan/ejemplo-mvp-procesamiento-pasadas.md`
 

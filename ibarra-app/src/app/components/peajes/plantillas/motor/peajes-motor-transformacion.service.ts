@@ -36,7 +36,7 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
     return this.registry;
   }
 
-  /** Metadata UI de los 10 códigos atómicos (F03-9). */
+  /** Metadata UI de los códigos atómicos registrados (F03-9). */
   getAlgorithmDescriptors(): AlgorithmDescriptor[] {
     return getAlgorithmDescriptors();
   }
@@ -79,7 +79,14 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
     algoritmos?: AlgoritmoCombinado[]
   ): PasadaEstandarizada[] {
     const pasos = this.construirPipeline(configuraciones, algoritmos);
-    return filas.map((fila) => this.aplicarPasosAFila(fila, pasos));
+    const out: PasadaEstandarizada[] = [];
+    for (const fila of filas) {
+      const resultado = this.aplicarPasosAFila(fila, pasos);
+      if (resultado !== null) {
+        out.push(resultado);
+      }
+    }
+    return out;
   }
 
   /**
@@ -280,10 +287,13 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
     return errores;
   }
 
+  /**
+   * Aplica pasos a una fila. Devuelve `null` si `FILTRAR_COLUMNA` descarta la fila.
+   */
   private aplicarPasosAFila(
     fila: Record<string, unknown>,
     pasos: PasoEjecucion[]
-  ): PasadaEstandarizada {
+  ): PasadaEstandarizada | null {
     const resultado: Record<string, unknown> = {};
 
     for (const paso of pasos) {
@@ -296,6 +306,14 @@ export class PeajesMotorTransformacionService implements PeajesMotorTransformaci
         columnaDestino: paso.columnaDestino,
       };
       const valor = strategy.ejecutar(ctx);
+
+      if (paso.algoritmoCodigo === 'FILTRAR_COLUMNA') {
+        if (valor !== true) {
+          return null;
+        }
+        continue;
+      }
+
       const destino = paso.columnaDestino ?? paso.columnaOrigen;
       if (destino) {
         resultado[destino] = valor;
@@ -337,6 +355,7 @@ function necesitaColumnaOrigen(cfg: ConfiguracionPlantilla): boolean {
     codigo === 'CONVERTIR_TEXTO' ||
     codigo === 'CONVERTIR_NUMERO' ||
     codigo === 'CONVERTIR_NUMERO_ARS' ||
+    codigo === 'FILTRAR_COLUMNA' ||
     cfg.tipo === 'mapeo'
   );
 }

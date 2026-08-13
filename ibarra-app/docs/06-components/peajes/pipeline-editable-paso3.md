@@ -70,7 +70,7 @@ Si hay `configuracionesDraft` y no se elige plantilla remota, Paso 4 aplica el d
 
 ## Referencias
 
-- PRD: `docs/plan/peaje-prd-es.md`
+- PRD: `docs/plan/peaje-prd-short.mdort.md.md`
 - Demo: `docs/plan/ejemplo-mvp-procesamiento-pasadas.md`
 - Autopistas: `docs/plan/ejemplo-autopistas-urbanas-pasadas.md`
 - Handoff: `docs/session-handoff.md`

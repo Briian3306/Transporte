@@ -22,6 +22,19 @@ import {
   buildAccesoOestePlantillaConfigs,
 } from './mocks/acceso-oeste.fixture';
 import { AUSOL_FILAS_MUESTRA, buildAusolPlantillaConfigs } from './mocks/ausol.fixture';
+import {
+  AUBASA_FILAS_MUESTRA,
+  AUBASA_IMPORTE_SIN_IVA,
+  buildAubasaPlantillaConfigs,
+} from './mocks/aubasa.fixture';
+import {
+  MERCOSUR_FILAS_MUESTRA,
+  buildMercosurPlantillaConfigs,
+} from './mocks/mercosur.fixture';
+import {
+  filtrarColumnaStrategy,
+  valoresEquivalentesFiltro,
+} from './motor/strategies/estrategias-atomicas';
 
 function cfg(
   partial: Partial<ConfiguracionPlantilla> & {
@@ -122,6 +135,95 @@ describe('peajes/plantillas/motor', () => {
     expect(row['PATENTE_ID']).toBe('AE751PA');
     expect(row['IMPORTE_NETO']).toBe(3976.59);
     expect(row['QUANTITY']).toBe(1);
+  });
+
+  it('AUBASA: HHMMSS 114254 → FECHA_HORA con hora = HORA_TRANSFORMADA', () => {
+    const motor = crearMotor();
+    const [row] = motor.aplicarPipeline(AUBASA_FILAS_MUESTRA, buildAubasaPlantillaConfigs());
+    expect(row['FECHA_HORA']).toBe('2026-07-03 11:42:54');
+    expect(String(row['FECHA_HORA']).slice(11)).toBe(
+      String(AUBASA_FILAS_MUESTRA[0]['HORA_TRANSFORMADA'])
+    );
+    expect(row['PATENTE_ID']).toBe('AG309CO');
+    expect(row['PASE_ID']).toBe('99739957');
+    expect(row['IMPORTE_NETO']).toBe(AUBASA_IMPORTE_SIN_IVA);
+    expect(row['QUANTITY']).toBe(1);
+  });
+
+  it('AUBASA: HORA corta 1337 → 00:13:37', () => {
+    const motor = crearMotor();
+    const [, row] = motor.aplicarPipeline(AUBASA_FILAS_MUESTRA, buildAubasaPlantillaConfigs());
+    expect(row['FECHA_HORA']).toBe('2026-07-02 00:13:37');
+    expect(String(row['FECHA_HORA']).slice(11)).toBe(
+      String(AUBASA_FILAS_MUESTRA[1]['HORA_TRANSFORMADA'])
+    );
+  });
+
+  it('AUBASA: Date UTC midnight + HHMMSS no pierde un día (regresión ART)', () => {
+    const motor = crearMotor();
+    const [row] = motor.aplicarPipeline(
+      [
+        {
+          FECHA: new Date(Date.UTC(2026, 6, 3)), // 2026-07-03T00:00:00Z
+          HORA: '114254',
+          ESTACION: '0001',
+          DISPOSITIVO: '99739957',
+          PATENTE: 'AG309CO',
+          TARIFA: '13466.55',
+          BONIFICACION: '0.00',
+        },
+      ],
+      buildAubasaPlantillaConfigs()
+    );
+    expect(row['FECHA_HORA']).toBe('2026-07-03 11:42:54');
+  });
+
+  it('FILTRAR_COLUMNA: pads 0001 ≡ 1; texto case-insensitive', () => {
+    expect(valoresEquivalentesFiltro('0001', 1)).toBeTrue();
+    expect(valoresEquivalentesFiltro('0001', '1')).toBeTrue();
+    expect(valoresEquivalentesFiltro('0002', 1)).toBeFalse();
+    expect(valoresEquivalentesFiltro('Zarate', 'zarate')).toBeTrue();
+    expect(valoresEquivalentesFiltro('Zarate', 'Campana')).toBeFalse();
+
+    const keep = filtrarColumnaStrategy.ejecutar({
+      fila: { ESTACION: '0001' },
+      resultado: {},
+      parametros: { columna: 'ESTACION', valor: 1 },
+      columnaOrigen: 'ESTACION',
+    });
+    expect(keep).toBe(true);
+    const drop = filtrarColumnaStrategy.ejecutar({
+      fila: { ESTACION: '0002' },
+      resultado: {},
+      parametros: { columna: 'ESTACION', valor: '1' },
+      columnaOrigen: 'ESTACION',
+    });
+    expect(drop).toBe(false);
+  });
+
+  it('FILTRAR_COLUMNA: descriptor exige columna y valor', () => {
+    const desc = getAlgorithmDescriptor('FILTRAR_COLUMNA')!;
+    expect(desc.categoria).toBe('filtro');
+    expect(desc.validar({}).some((e) => /columna/i.test(e.motivo))).toBeTrue();
+    expect(
+      desc.validar({ columna: 'ESTACION' }).some((e) => /valor/i.test(e.motivo))
+    ).toBeTrue();
+    expect(desc.validar({ columna: 'ESTACION', valor: '1' }).length).toBe(0);
+  });
+
+  it('MERCOSUR: FILTRAR_COLUMNA ESTACION=1 deja 3 de 4 filas de muestra', () => {
+    const motor = crearMotor();
+    const rows = motor.aplicarPipeline(
+      MERCOSUR_FILAS_MUESTRA,
+      buildMercosurPlantillaConfigs()
+    );
+    expect(rows.length).toBe(3);
+    expect(rows.every((r) => r['QUANTITY'] === 1)).toBeTrue();
+    expect(rows[0]['FECHA_HORA']).toBe('2026-06-16 18:45:16');
+    expect(rows[0]['PATENTE_ID']).toBe('AD933WS');
+    expect(rows[0]['PASE_ID']).toBe('90836134');
+    const sum = rows.reduce((a, r) => a + Number(r['IMPORTE_NETO'] ?? 0), 0);
+    expect(sum).toBeCloseTo(42365.91 + 42365.91 + 28243.94, 2);
   });
 
   it('AUSOL: Date UTC midnight + HORA no pierde un día (regresión ART)', () => {

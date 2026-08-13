@@ -25,6 +25,15 @@ import {
   ACCESO_OESTE_FILAS_MUESTRA,
   buildAccesoOestePlantillaConfigs,
 } from './mocks/acceso-oeste.fixture';
+import {
+  MERCOSUR_FILAS_ESTACION_1,
+  MERCOSUR_FILAS_MUESTRA,
+  MERCOSUR_TOTAL_FACTURA,
+  buildMercosurPlantillaConfigs,
+} from './mocks/mercosur.fixture';
+import { ALGORITMO_CODIGOS } from './motor/strategy.types';
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const algoritmos: AlgoritmoCombinado[] = [
   {
@@ -152,12 +161,16 @@ function main(): void {
   assert(!puedeAplicarRecurso('empresa-a', 'empresa-b'), 'A no aplica a B');
   assert(puedeAplicarRecurso(GLOBAL_EMPRESA_ID, 'empresa-b'), 'global sí');
 
-  console.log('F03-9 descriptors (10 códigos)');
+  console.log('F03-9 descriptors');
   const descs = motor.getAlgorithmDescriptors();
-  assert(descs.length === 11, '11 AlgorithmDescriptor');
+  assert(descs.length === ALGORITMO_CODIGOS.length, `${ALGORITMO_CODIGOS.length} AlgorithmDescriptor`);
   assert(
     descs.every((d) => typeof d.validar === 'function' && typeof d.resumen === 'function'),
     'descriptor validar/resumen'
+  );
+  assert(
+    !!descs.find((d) => d.codigo === 'FILTRAR_COLUMNA'),
+    'FILTRAR_COLUMNA en descriptors'
   );
 
   console.log('F03-9 skip-disabled');
@@ -337,7 +350,38 @@ function main(): void {
   assert(accesoRows[0]['PATENTE_ID'] === 'OWG130', 'Acceso Oeste PATENTE → PATENTE_ID');
   assert(accesoRows[0]['IMPORTE_NETO'] === 3976.59, 'Acceso Oeste importe neto');
 
-  console.log('\nPASS: verificación motor/plantillas F03 + I-P Demo/AU');
+  console.log('FILTRAR_COLUMNA / MERCOSUR muestra');
+  const mercosurMuestra = motor.aplicarPipeline(
+    MERCOSUR_FILAS_MUESTRA,
+    buildMercosurPlantillaConfigs()
+  );
+  assert(mercosurMuestra.length === 3, 'MERCOSUR muestra: 3 filas tras filtro');
+  assert(
+    motor.getRegistry().tiene('FILTRAR_COLUMNA'),
+    'registry tiene FILTRAR_COLUMNA'
+  );
+
+  console.log('FILTRAR_COLUMNA / MERCOSUR CSV completo ESTACION=1 → TOTAL factura');
+  const mercosurCsv = cargarFilasMercosurCsv();
+  assert(mercosurCsv.length === 540, `MERCOSUR CSV 540 filas (got ${mercosurCsv.length})`);
+  const mercosurRows = motor.aplicarPipeline(
+    mercosurCsv,
+    buildMercosurPlantillaConfigs()
+  );
+  assert(
+    mercosurRows.length === MERCOSUR_FILAS_ESTACION_1,
+    `MERCOSUR filtradas ${MERCOSUR_FILAS_ESTACION_1} (got ${mercosurRows.length})`
+  );
+  const mercosurSum = mercosurRows.reduce(
+    (a, r) => a + Number(r['IMPORTE_NETO'] ?? 0),
+    0
+  );
+  assert(
+    Math.abs(mercosurSum - MERCOSUR_TOTAL_FACTURA) < 0.01,
+    `MERCOSUR Σ IMPORTE_NETO = ${MERCOSUR_TOTAL_FACTURA} (got ${mercosurSum})`
+  );
+
+  console.log('\nPASS: verificación motor/plantillas F03 + I-P Demo/AU/MERCOSUR');
 }
 
 /** Configs atómicas equivalentes al seed wizard Paso 3 (F02-10). */
@@ -448,6 +492,25 @@ function buildSeedDemoConfigsAtomic(): ConfiguracionPlantilla[] {
       obligatoria: true,
     },
   ];
+}
+
+function cargarFilasMercosurCsv(): Record<string, unknown>[] {
+  const csvPath = resolve(
+    process.cwd(),
+    'docs/plan/csv/pasadas_2026-07-01_79157.csv'
+  );
+  assert(existsSync(csvPath), `CSV MERCOSUR existe: ${csvPath}`);
+  const text = readFileSync(csvPath, 'utf8');
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines[0].split(';');
+  return lines.slice(1).map((line) => {
+    const cols = line.split(';');
+    const row: Record<string, unknown> = {};
+    headers.forEach((h, i) => {
+      row[h] = cols[i];
+    });
+    return row;
+  });
 }
 
 main();

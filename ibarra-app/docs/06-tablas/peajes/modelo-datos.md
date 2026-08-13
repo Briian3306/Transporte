@@ -86,7 +86,7 @@ La estación mantiene `latitud`, `longitud`, `camino` y `estado_geocodificacion`
 - Backend RPCs: [docs/backend/](../../backend/index.md)
 - Migraciones: `supabase/migrations/*peajes*.sql`
 - Módulo: [docs/modulos/peajes.md](../../modulos/peajes.md)
-- PRD: [docs/plan/peaje-prd-es.md](../../plan/peaje-prd-es.md) (§11–15)
+- PRD: [docs/plan/peaje-prd-short.mdort.md.md](../../plan/peaje-prd-short.mdort.md.md) (§11–15)
 
 ---
 

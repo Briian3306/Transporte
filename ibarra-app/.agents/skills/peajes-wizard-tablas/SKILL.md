@@ -17,7 +17,7 @@ Implementar `F02-*` bajo:
 - `src/app/components/peajes/wizard/**`
 - `src/app/components/peajes/catalogos/**`
 
-Leer antes: `AGENTS.md`, `docs/plan/peaje-prd-es.md` (§4 pasos 1–2 y 5–9, §§7.5, 8, 15, §21), `docs/session-handoff.md`, contratos en `src/app/components/peajes/models/`.
+Leer antes: `AGENTS.md`, `docs/plan/peaje-prd-short.md.md` (§4 pasos 1–2 y 5–9, §§7.5, 8, 15, §21), `docs/session-handoff.md`, contratos en `src/app/components/peajes/models/`.
 
 ## Ownership — no salir
 

@@ -31,7 +31,7 @@ No hay staging/prod separados en este flujo. Push a DESARROLLO solo con autoriza
 
 ## Referencias
 
-- PRD: [docs/plan/peaje-prd-es.md](../plan/peaje-prd-es.md)
+- PRD: [docs/plan/peaje-prd-short.md.md](../plan/peaje-prd-short.md.md)
 - Módulo UI: [docs/modulos/peajes.md](../modulos/peajes.md)
 - Modelo tablas: [docs/06-tablas/peajes/](../06-tablas/peajes/INDEX.md)
 - Features: `feature_list.json`

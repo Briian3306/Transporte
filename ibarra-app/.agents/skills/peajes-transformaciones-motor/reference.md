@@ -40,7 +40,8 @@ StrategyRegistry
   ├── CALCULAR_IMPORTE_NETO
   ├── CONVERTIR_NUMERO / CONVERTIR_TEXTO
   ├── ASIGNAR_VALOR
-  └── COPIAR_COLUMNA
+  ├── COPIAR_COLUMNA
+  └── FILTRAR_COLUMNA
          │ resolve(codigo)
          ▼
   TransformStrategy.ejecutar(StrategyContext)
@@ -248,7 +249,7 @@ Same generic patente pipeline in both: combined `NORMALIZAR_PATENTE` → `BORRAR
 
 ## Related docs
 
-- PRD: `docs/plan/peaje-prd-es.md` §§7, 15, 21
+- PRD: `docs/plan/peaje-prd-short.md.md` §§7, 15, 21
 - Skill agent 03: `.agents/skills/peajes-plantillas-builder/SKILL.md`
 - Tables: `docs/06-tablas/peajes/plantillas-algoritmos.md`
 - Motor service: `plantillas/motor/peajes-motor-transformacion.service.ts`

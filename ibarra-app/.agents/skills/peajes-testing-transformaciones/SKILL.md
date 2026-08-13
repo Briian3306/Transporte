@@ -16,7 +16,7 @@ Test strategy for **Excel/CSV transformation logic**, pipelines, mapping, valida
 
 **Principle:** *Every transformation needs a deterministic I/O pair. Every validation needs a boundary case. Every provider needs a fixture from the plan examples.*
 
-**Sources of truth:** PRD `docs/plan/peaje-prd-es.md`, [ejemplo-mvp-procesamiento-pasadas.md](../../../docs/plan/ejemplo-mvp-procesamiento-pasadas.md), [ejemplo-autopistas-urbanas-pasadas.md](../../../docs/plan/ejemplo-autopistas-urbanas-pasadas.md), plan [testing_plan.md](../../../docs/plan/testing_plan.md).
+**Sources of truth:** PRD `docs/plan/peaje-prd-short.md.md`, [ejemplo-mvp-procesamiento-pasadas.md](../../../docs/plan/ejemplo-mvp-procesamiento-pasadas.md), [ejemplo-autopistas-urbanas-pasadas.md](../../../docs/plan/ejemplo-autopistas-urbanas-pasadas.md), plan [testing_plan.md](../../../docs/plan/testing_plan.md).
 
 Companion architecture: [peajes-transformaciones-motor](../peajes-transformaciones-motor/SKILL.md).
 
@@ -49,6 +49,7 @@ Do **not** assume Jest/Vitest/Playwright unless the repo adds them. Prefer exten
 |----------|----------|------------------------------|
 | Demo | `ejemplo-mvp-procesamiento-pasadas.md` | `1947768.xlsx` (+ fixture `mvp-ejemplo.fixture.ts`) |
 | Autopistas Urbanas | `ejemplo-autopistas-urbanas-pasadas.md` | `autopistas_urbanas.csv` |
+| MERCOSUR | `ejemplo-mercosur-procesamiento-pasadas.md` | `pasadas_2026-07-01_79157.csv` (+ `mercosur.fixture.ts`) |
 
 Acceptance totals (10-row preview):
 

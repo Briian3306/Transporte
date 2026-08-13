@@ -588,6 +588,46 @@ function toNumber(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Conserva la fila si el valor de la columna coincide con `parametros.valor`.
+ * Pads numéricos: `1` ≡ `"1"` ≡ `"0001"`. Texto: igualdad case-insensitive tras trim.
+ * Devuelve `true` (keep) | `false` (drop). El motor no escribe columna destino.
+ */
+export const filtrarColumnaStrategy: TransformStrategy = {
+  codigo: 'FILTRAR_COLUMNA',
+  nombre: 'Filtrar columna',
+  descripcion:
+    'Conserva solo las filas cuyo valor de columna coincide con el parámetro valor.',
+  ejecutar(ctx: StrategyContext): unknown {
+    const cols = resolverColumnasEntrada(ctx.parametros ?? undefined);
+    const columna =
+      (typeof ctx.parametros?.['columna'] === 'string' && ctx.parametros['columna']
+        ? ctx.parametros['columna']
+        : null) ??
+      cols[0] ??
+      ctx.columnaOrigen ??
+      ctx.columnaDestino;
+    if (!columna) return false;
+    if (ctx.parametros == null || !('valor' in ctx.parametros)) return false;
+
+    const esperado = ctx.parametros['valor'];
+    const actual =
+      columna in ctx.resultado ? ctx.resultado[columna] : ctx.fila[columna];
+    return valoresEquivalentesFiltro(actual, esperado);
+  },
+};
+
+/** Comparación eq para FILTRAR_COLUMNA (pads numéricos + texto case-insensitive). */
+export function valoresEquivalentesFiltro(a: unknown, b: unknown): boolean {
+  const sa = asString(a).trim();
+  const sb = asString(b).trim();
+  if (sa === sb) return true;
+  if (/^\d+$/.test(sa) && /^\d+$/.test(sb)) {
+    return Number(sa) === Number(sb);
+  }
+  return sa.toUpperCase() === sb.toUpperCase();
+}
+
 export const ESTRATEGIAS_ATOMICAS: TransformStrategy[] = [
   borrarEspaciosStrategy,
   eliminarGuionesStrategy,
@@ -603,4 +643,5 @@ export const ESTRATEGIAS_ATOMICAS: TransformStrategy[] = [
   calcularImporteNetoStrategy,
   eliminarIvaStrategy,
   operarNumeroStrategy,
+  filtrarColumnaStrategy,
 ];

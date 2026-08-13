@@ -67,6 +67,7 @@ Atomic codes in this repo (`ALGORITMO_CODIGOS`):
 | `CONVERTIR_NUMERO_ARS` | Cast locale AR (`19.985,09`) |
 | `ASIGNAR_VALOR` | Constant (e.g. QUANTITY=1) |
 | `COPIAR_COLUMNA` | Pass-through / mapeo |
+| `FILTRAR_COLUMNA` | Keep rows where column equals `valor` (number/text; `1` ≡ `0001`) |
 
 **Not** registry codes (combined algorithm *names*): `NORMALIZAR_PATENTE`, `COMBINAR_FECHA_HORA`. They expand to atomic steps via `algoritmo_combinado_pasos`.
 

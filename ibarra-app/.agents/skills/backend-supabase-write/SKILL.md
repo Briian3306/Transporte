@@ -131,5 +131,5 @@ Every change → `docs/backend/` (see [plantilla-sql-task.md](plantilla-sql-task
 - [../supabase-postgres-best-practices/SKILL.md](../supabase-postgres-best-practices/SKILL.md)
 - [../backend-documenter/SKILL.md](../backend-documenter/SKILL.md)
 - [../backend-tester/SKILL.md](../backend-tester/SKILL.md)
-- PRD: `docs/plan/peaje-prd-es.md`
+- PRD: `docs/plan/peaje-prd-short.md.md`
 - Handoff: `docs/session-handoff.md`

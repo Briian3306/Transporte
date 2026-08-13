@@ -4,7 +4,7 @@
 
 Plan de pruebas del MVP Peajes centrado en la **lógica de transformación Excel/CSV**, pipelines, mapeo de columnas, validación de salida y manejo de errores. Aplicable al **wizard** y a los **servicios/motor** del dominio Peajes.
 
-**Fuentes de verdad:** `peaje-prd-es.md`, [ejemplo-mvp-procesamiento-pasadas.md](./ejemplo-mvp-procesamiento-pasadas.md), [ejemplo-autopistas-urbanas-pasadas.md](./ejemplo-autopistas-urbanas-pasadas.md).
+**Fuentes de verdad:** `peaje-prd-short.md.md`, [ejemplo-mvp-procesamiento-pasadas.md](./ejemplo-mvp-procesamiento-pasadas.md), [ejemplo-autopistas-urbanas-pasadas.md](./ejemplo-autopistas-urbanas-pasadas.md).
 
 **Skill de ejecución:** `.agents/skills/peajes-testing-transformaciones/SKILL.md`  
 **Arquitectura bajo prueba:** `.agents/skills/peajes-transformaciones-motor/SKILL.md`
@@ -351,7 +351,7 @@ El MVP de transformación/validación se considera **aceptable para testing** cu
 
 ## Referencias
 
-- PRD: [peaje-prd-es.md](./peaje-prd-es.md)
+- PRD: [peaje-prd-short.md.md](./peaje-prd-short.md.md)
 - Demo: [ejemplo-mvp-procesamiento-pasadas.md](./ejemplo-mvp-procesamiento-pasadas.md)
 - Autopistas: [ejemplo-autopistas-urbanas-pasadas.md](./ejemplo-autopistas-urbanas-pasadas.md)
 - AUSOL: [ejemplo-ausol-procesamiento-pasadas.md](./ejemplo-ausol-procesamiento-pasadas.md) y [prueba-workflow-557074-ausol.md](./prueba-workflow-557074-ausol.md)

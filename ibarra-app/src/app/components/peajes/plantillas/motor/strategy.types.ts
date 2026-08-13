@@ -18,6 +18,7 @@ export const ALGORITMO_CODIGOS = [
   'CONVERTIR_TEXTO',
   'ASIGNAR_VALOR',
   'COPIAR_COLUMNA',
+  'FILTRAR_COLUMNA',
 ] as const;
 
 export type AlgoritmoCodigo = (typeof ALGORITMO_CODIGOS)[number];

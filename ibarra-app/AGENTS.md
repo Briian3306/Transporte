@@ -4,7 +4,7 @@
 
 Módulo Angular 19 (standalone components) + Supabase que se incorpora al proyecto
 existente `ibarra-app/` (Transporte Ibarra), implementando el PRD
-`docs/plan/peaje-prd-es.md`: un asistente guiado que carga, transforma, mapea, valida y
+`docs/plan/peaje-prd-short.md.md`: un asistente guiado que carga, transforma, mapea, valida y
 almacena pasadas de peaje, y las asocia a una factura.
 
 El módulo `peajes` se construye como **dominio aislado** dentro de la app
@@ -14,7 +14,7 @@ Flota ni Neumáticos, ni reutilizar `checklist_templates` / `ChecklistTemplateSe
 
 ## Fuente de verdad (en este orden si hay conflicto)
 
-1. `docs/plan/peaje-prd-es.md` — spec funcional y de datos. Ante cualquier duda, el PRD
+1. `docs/plan/peaje-prd-short.md.md` — spec funcional y de datos. Ante cualquier duda, el PRD
   manda sobre cualquier supuesto de este archivo.
 2. `feature_list.json` (raíz) — estado canónico de features, agente dueño y pasos
   de verificación.
@@ -72,6 +72,31 @@ F09 cruza plantillas, wizard, persistencia y documentación. La relación
 → reconocimiento normal. El backend posee migración/RPC/servicio; el wizard restaura
 mapeos y relaciones y solo salta a Factura si no quedan excepciones.
 
+### F14 — Auditoría de pasadas por patrones (normalización tarifaria)
+
+F14 cruza contrato, backend, wizard, pantalla nueva, documentación y QA en cadena
+estricta: 00 entrega el destino `CATEGORIA` en `PasadaColumnKey` /
+`PASADA_COLUMN_KEYS` (opcional, nunca en `PASADA_COLUMNAS_OBLIGATORIAS`) y comitea
+antes de que arranque nadie; 01 crea `tarifas_normalizadas`,
+`tarifas_parametros_peaje` y `tarifas_status_catalogo`, extiende `pasadas` y
+publica los RPC `peajes_*`; 02 suma la detección y el mapeo en el wizard y la
+pantalla `/peajes/auditoria-tarifas`; 04 documenta lo que quedó `passing`; 05
+fusiona ruta y permiso y corre el QA contra el dataset de referencia. Plan
+completo y apéndices en `docs/plan/auditoria-pasadas-patrones/`.
+
+Cuatro invariantes que ningún agente puede romper. `pasadas.categoria` es el texto
+crudo que trajo el proveedor y **nunca** debe confundirse ni joinearse con
+`patentes.categoria`, que es el enum interno de flota (TRANSPORTE/REMIS/OBRA/AUTO):
+si hiciera falta relacionarlas, va una tabla de equivalencia explícita (RN-15). La
+concesión se deriva siempre por `pasadas.estacion_id → estaciones.peaje_id` y está
+prohibido agregar `peaje_id` a `pasadas` (RN-05); `tarifas_normalizadas` sí lleva
+`peaje_id` porque agrega a nivel de peaje. El campo `diagnostico` es algorítmico y
+fijo, mientras que `status` es entrada del usuario validada por trigger contra los
+dos códigos universales o el catálogo `tarifas_status_catalogo` de ese peaje — por
+eso no es un `CHECK`. Y la normalización corre como hook posterior al guardado
+final, disparada por `peajes_confirmar_carga` sobre el documento recién
+confirmado, no como paso del wizard.
+
 
 
 ## Flujo de arranque (toda sesión, todo agente)
@@ -89,7 +114,7 @@ mapeos y relaciones y solo salta a Factura si no quedan excepciones.
 
 ## Antes de implementar cualquier cosa
 
-1. Leer `docs/plan/peaje-prd-es.md` para el comportamiento exacto de la feature
+1. Leer `docs/plan/peaje-prd-short.md.md` para el comportamiento exacto de la feature
   (Sección 4 = pasos del wizard, Sección 7 = motor/plantillas, Secciones 11-14
    = modelo de datos, Sección 15 = reglas de negocio).
 2. Leer tu skill en `.agents/skills/` (ver tabla de arriba) antes de escribir
