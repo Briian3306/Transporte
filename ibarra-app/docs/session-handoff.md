@@ -72,6 +72,15 @@ Project-ref confirmado: `kfffigvyvtzyczeiadxh`.
 4. Reconcile: ConsumosResumen **1015+696=1711**; 0 cargas `202607-2`. CSV 119 vs DB: 117/119 keys (2 alias `KM. 244` vs `KM 244`); cases 116/117 (ZARATE 1500: DB 89 vs CSV 114). ZARATE 5 niveles CATEGORIA; desvío UTC 4/5 ±0.01. `pwbi_pasadas.Tarifa_Status` expuesto.
 5. **Pendiente F14-6**: `ng test`/`motor.verify` local; E2E manual confirmación PICO/NO_PICO en `/peajes/auditoria-tarifas`; R1 CSV `PATRON=B` confirmar con PO; R2 NC `0104-00077675`.
 6. `fecha_desde`/`fecha_hasta` en listar agregado: no-ops documentados.
+
+## F14-7 — Plantillas CATEGORIA (2026-08-13) — DONE
+
+- **Problema:** plantillas Telepase tenían `{ columnaOrigen: "CATEGORIA", excluida: true }` → wizard Paso 5 restauraba Patrón A.
+- **Fix:** migración `20260813100000_peajes_plantillas_mapeo_categoria.sql` (idempotente, solo jsonb `mapeos`).
+- **DESARROLLO:** apply vía MCP `apply_migration` (project-ref `kfffigvyvtzyczeiadxh` confirmado). Plantillas actualizadas: AUSA-8-2026, AUSA-V2, AUSA-V3, AUSOL-7-2026, AUBASA-7-2026, AU-OESTE-V1-08-26, CORRE-VIALES-V1. **No tocadas:** MASIVOOO, Acceso Oeste, Demo.
+- **Verify remoto:** cat_activa=1 (Telepase) / 0 (MASIVOOO); pasadas intactas; tarifas 281.
+- **Verify repo:** spec CATEGORIA restore en `peajes-plantilla-apply.service.spec.ts`; paso5 8/8.
+- **Pendiente:** smoke wizard §6.2 (carga CSV AUSA + ConsumosResumen MASIVOOO) — manual/QA.
 ## Riesgos
 
 La principal incertidumbre es la falta de evidencia final para F06/F07/F08, no una ausencia conocida del MVP. No hacer merge a `main` ni afirmar `passing` sin comandos reproducibles y resultados registrados. No pushear F14 a DESARROLLO sin autorización explícita.

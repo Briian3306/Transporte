@@ -31,6 +31,7 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
         { columnaOrigen: 'PRECIO', columnaDestino: 'PRECIO', excluida: false },
         { columnaOrigen: 'BONIFICACION', columnaDestino: 'BONIFICACION', excluida: false },
         { columnaOrigen: 'IMPORTE_NETO', columnaDestino: 'IMPORTE_NETO', excluida: false },
+        { columnaOrigen: 'CATEGORIA', columnaDestino: 'CATEGORIA', excluida: false },
       ],
       estaciones_reconocidas: [
         {
@@ -151,7 +152,7 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
       nombreArchivo: '557074.csv',
       tamanioBytes: 100,
       totalFilas: 1,
-      columnas: ['FECHA', 'HORA', 'ESTACION', 'DISPOSITIVO', 'PATENTE', 'TARIFA', 'BONIFICACION'],
+      columnas: ['FECHA', 'HORA', 'ESTACION', 'DISPOSITIVO', 'PATENTE', 'TARIFA', 'BONIFICACION', 'CATEGORIA'],
       filasPreview: [
         {
           FECHA: '2026-07-16',
@@ -161,6 +162,7 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
           PATENTE: 'AE751PA',
           TARIFA: '3976.59',
           BONIFICACION: '0.00',
+          CATEGORIA: '5',
         },
       ],
       filasOrigen: [
@@ -172,6 +174,7 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
           PATENTE: 'AE751PA',
           TARIFA: '3976.59',
           BONIFICACION: '0.00',
+          CATEGORIA: '5',
         },
       ],
       tiposInferidos: {},
@@ -197,6 +200,16 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
     expect(pasadas[0].QUANTITY).toBe(1);
   });
 
+  it('restaura mapeo CATEGORIA activo al aplicar plantilla Telepase (Patrón B)', async () => {
+    const result = await apply.aplicarYEvaluar(plantillaSinQuantity.id);
+
+    expect(result.ok).toBeTrue();
+    const cat = state.mapeosActivos().find((m) => m.columnaDestino === 'CATEGORIA');
+    expect(cat).toBeDefined();
+    expect(cat!.columnaOrigen).toBe('CATEGORIA');
+    expect(cat!.excluida).toBeFalse();
+  });
+
   it('repara plantilla sin BONIFICACION con ASIGNAR_VALOR=0', async () => {
     plantillaActual = {
       ...plantillaSinQuantity,
@@ -204,7 +217,10 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
       nombre: 'TELEPASE-SIN-BONIF',
       mapeos: [
         ...plantillaSinQuantity.mapeos!.filter(
-          (m) => m.columnaDestino !== 'BONIFICACION' && m.columnaDestino !== 'IMPORTE_NETO'
+          (m) =>
+            m.columnaDestino !== 'BONIFICACION' &&
+            m.columnaDestino !== 'IMPORTE_NETO' &&
+            m.columnaDestino !== 'CATEGORIA'
         ),
         { columnaOrigen: 'PRECIO', columnaDestino: 'IMPORTE_NETO', excluida: false },
       ],
