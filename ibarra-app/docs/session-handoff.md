@@ -62,11 +62,16 @@ Consultar, en este orden: `docs/plan/peaje-prd-short.md.md`, `feature_list.json`
 - Tablas: `tarifas-normalizadas.md` + cols F14 en `documentos-pasadas.md`.
 - Módulo / INDEX + backend index ya enlazaba 6 RPC.
 
-**Pendiente**
+**F14-6 DESARROLLO (2026-08-13) — recalc + reconcile DONE; local tests + E2E UI pendientes**
 
-- F14-6: dataset 1711/119 en DESARROLLO — **skip** mientras no haya `db push` / remote autorizado.
-- `fecha_desde`/`fecha_hasta` en listar agregado: documentados como no-ops; no fix local-only pedido.
-- Drift migración `20260811190002_filtrar_columna` viaja en el próximo push remoto.
+Project-ref confirmado: `kfffigvyvtzyczeiadxh`.
+
+1. Migraciones F14 en remoto. `tarifas_status_catalogo` seeded (18 filas PICO/NO_PICO × 9 peajes).
+2. Backfill `pasadas.categoria` (Telepase only): **1750** updated; ConsumosResumen **1711** `categoria IS NULL` (Patrón A).
+3. **Recalcular DONE**: `peajes_recalcular_tarifas` × 9 peajes → `tarifas_normalizadas` **281**; **3465/3465** pasadas con `tarifa_normalizada_id`. Por peaje: CORREDORES VIALES 1394 · AUSA 783 · AUTOPISTA OESTE 410 · AUBASA 233 · RUTAS SUR 206 · AUSOL 185 · CORREDOR VIAL 5 172 · UNIDAD EJECUTORA 80 · CONEXION ALTO DELTA 2.
+4. Reconcile: ConsumosResumen **1015+696=1711**; 0 cargas `202607-2`. CSV 119 vs DB: 117/119 keys (2 alias `KM. 244` vs `KM 244`); cases 116/117 (ZARATE 1500: DB 89 vs CSV 114). ZARATE 5 niveles CATEGORIA; desvío UTC 4/5 ±0.01. `pwbi_pasadas.Tarifa_Status` expuesto.
+5. **Pendiente F14-6**: `ng test`/`motor.verify` local; E2E manual confirmación PICO/NO_PICO en `/peajes/auditoria-tarifas`; R1 CSV `PATRON=B` confirmar con PO; R2 NC `0104-00077675`.
+6. `fecha_desde`/`fecha_hasta` en listar agregado: no-ops documentados.
 ## Riesgos
 
 La principal incertidumbre es la falta de evidencia final para F06/F07/F08, no una ausencia conocida del MVP. No hacer merge a `main` ni afirmar `passing` sin comandos reproducibles y resultados registrados. No pushear F14 a DESARROLLO sin autorización explícita.
