@@ -4,6 +4,38 @@
     <span class="at__family-pending">{{ unconfirmedCount }} pendientes</span>
   </div>
 
+  <div
+    class="at__reconocimiento"
+    *ngIf="showReconocimiento && picoNoPicoPair as pair"
+    role="region"
+    aria-label="Reconocimiento de pico y no pico"
+  >
+    <div class="at__reconocimiento-copy">
+      <p class="at__reconocimiento-kicker">Par de precios</p>
+      <div class="at__reconocimiento-pair">
+        <span class="at__reconocimiento-fare">
+          <strong>{{ pair.low.importe | number: '1.2-2' }}</strong>
+          <span>{{ pair.noPicoLabel }}</span>
+        </span>
+        <span class="at__reconocimiento-arrow" aria-hidden="true">→</span>
+        <span class="at__reconocimiento-fare at__reconocimiento-fare--pico">
+          <strong>{{ pair.high.importe | number: '1.2-2' }}</strong>
+          <span>{{ pair.picoLabel }}</span>
+        </span>
+      </div>
+      <p class="at__reconocimiento-hint">{{ reconocimientoHint }}</p>
+    </div>
+    <button
+      type="button"
+      class="at__btn at__btn--reconocimiento"
+      [disabled]="saving"
+      (click)="onReconocimientoDetectado()"
+    >
+      <i class="fas fa-check-double" aria-hidden="true"></i>
+      Reconocimiento detectado
+    </button>
+  </div>
+
   <p class="at__error" *ngIf="confirmError" role="alert">{{ confirmError }}</p>
 
   <app-data-table
@@ -47,6 +79,33 @@
     </ng-template>
     <ng-template appDataTableColumn="diagnostico" let-row>
       <span [class]="diagnosticoClass(row['diagnostico'])">{{ diagnosticoLabel(row['diagnostico']) }}</span>
+    </ng-template>
+    <ng-template appDataTableColumn="categoria_calculated" let-row>
+      <div *ngIf="isPatronA(asNivel(row)); else patronBCat" (click)="$event.stopPropagation()">
+        <label
+          class="at__clase-stamp"
+          [class.at__clase-stamp--filled]="claseValue(row['id']) != null"
+          [attr.title]="claseValue(row['id']) == null ? 'Sin clase' : 'Categoría ' + claseValue(row['id'])"
+        >
+          <span class="at__clase-kicker">CAT</span>
+          <input
+            class="at__clase-digit"
+            type="number"
+            min="0"
+            max="10"
+            step="1"
+            inputmode="numeric"
+            [ngModel]="claseValue(row['id'])"
+            (ngModelChange)="onClase(row['id'], $event)"
+            [disabled]="saving"
+            [attr.aria-label]="'Categoría opcional, 0 a 10'"
+            placeholder="—"
+          />
+        </label>
+      </div>
+      <ng-template #patronBCat>
+        <span class="at__clase-dash" title="Categoría del proveedor">—</span>
+      </ng-template>
     </ng-template>
     <ng-template appDataTableColumn="status" let-row>
       <div (click)="$event.stopPropagation()">

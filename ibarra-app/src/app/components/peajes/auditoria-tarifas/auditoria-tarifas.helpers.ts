@@ -1,4 +1,5 @@
 import {
+  TarifaAsignacion,
   TarifaDiagnostico,
   TarifaNormalizadaRow,
   TarifaStatusCatalogo,
@@ -48,6 +49,74 @@ export function statusCodesForPeaje(catalogo: TarifaStatusCatalogo[]): string[] 
     codes.push('POSIBLE_HORARIO');
   }
   return codes;
+}
+
+export interface PicoNoPicoPair {
+  low: TarifaNormalizadaRow;
+  high: TarifaNormalizadaRow;
+  noPicoCode: string;
+  picoCode: string;
+  noPicoLabel: string;
+  picoLabel: string;
+}
+
+function catalogByTipoMeta(
+  catalogo: TarifaStatusCatalogo[],
+  tipo: 'PICO' | 'NO_PICO'
+): TarifaStatusCatalogo | undefined {
+  return (
+    catalogo.find(
+      (c) => c.tipo_meta === tipo && c.codigo !== 'CONFIRMADO' && c.codigo !== 'PENDIENTE'
+    ) ?? catalogo.find((c) => c.codigo === tipo)
+  );
+}
+
+/** Two distinct prices: cheaper → No Pico, more expensive → Pico. */
+export function detectPicoNoPicoPair(
+  niveles: TarifaNormalizadaRow[],
+  catalogo: TarifaStatusCatalogo[]
+): PicoNoPicoPair | null {
+  if (niveles.length !== 2) return null;
+  const [first, second] = niveles;
+  if (first.importe === second.importe) return null;
+  const noPico = catalogByTipoMeta(catalogo, 'NO_PICO');
+  const pico = catalogByTipoMeta(catalogo, 'PICO');
+  if (!noPico || !pico) return null;
+  const [low, high] = first.importe < second.importe ? [first, second] : [second, first];
+  return {
+    low,
+    high,
+    noPicoCode: noPico.codigo,
+    picoCode: pico.codigo,
+    noPicoLabel: noPico.etiqueta,
+    picoLabel: pico.etiqueta,
+  };
+}
+
+export function isPicoNoPicoSelection(
+  pair: PicoNoPicoPair,
+  selections: Map<string, string>
+): boolean {
+  return (
+    selections.get(pair.low.id) === pair.noPicoCode &&
+    selections.get(pair.high.id) === pair.picoCode
+  );
+}
+
+export function pairAlreadyConfirmed(pair: PicoNoPicoPair): boolean {
+  return (
+    pair.low.diagnostico === 'CONFIRMADO' &&
+    pair.high.diagnostico === 'CONFIRMADO' &&
+    pair.low.status === pair.noPicoCode &&
+    pair.high.status === pair.picoCode
+  );
+}
+
+export function buildPicoNoPicoAsignaciones(pair: PicoNoPicoPair): TarifaAsignacion[] {
+  return [
+    { tarifa_normalizada_id: pair.low.id, status_codigo: pair.noPicoCode },
+    { tarifa_normalizada_id: pair.high.id, status_codigo: pair.picoCode },
+  ];
 }
 
 /** Preselect status by ascending price (Apéndice C §7.2). */
@@ -122,4 +191,12 @@ export function familiaFromNiveles(niveles: TarifaNormalizadaRow[]): {
     patron: patronFromRow(first),
     totalCases: niveles.reduce((sum, n) => sum + n.cases, 0),
   };
+}
+
+/** Clase 0–10 o null. Vacío / no numérico → null. Fuera de rango se recorta. */
+export function parseCategoriaCalculated(raw: unknown): number | null {
+  if (raw === '' || raw == null) return null;
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(10, Math.max(0, Math.round(n)));
 }

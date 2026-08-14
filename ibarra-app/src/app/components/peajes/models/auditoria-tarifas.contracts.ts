@@ -31,6 +31,8 @@ export interface TarifaNormalizadaRow {
   estacion_id: string;
   estacion_nombre: string;
   categoria: string | null;
+  /** Clase 0–10 inferida por el analista (Patrón A). null = sin asignar. */
+  categoria_calculated: number | null;
   importe: number;
   cases: number;
   importe_base: number;
@@ -75,6 +77,8 @@ export interface TarifasNormalizadasListResult {
 export interface TarifaAsignacion {
   tarifa_normalizada_id: string;
   status_codigo: string;
+  /** Opcional. Solo se envía cuando el analista eligió una clase 0–10. */
+  categoria_calculated?: number | null;
 }
 
 export interface TarifaGrupoSimilar {

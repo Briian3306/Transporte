@@ -60,13 +60,15 @@ export const MOCK_STATUS_CATALOG: TarifaStatusCatalogo[] = [
 ];
 
 function row(
-  partial: Omit<TarifaNormalizadaRow, 'confirmado_manual' | 'categoria'> & {
+  partial: Omit<TarifaNormalizadaRow, 'confirmado_manual' | 'categoria' | 'categoria_calculated'> & {
     categoria?: string | null;
+    categoria_calculated?: number | null;
     confirmado_manual?: boolean;
   }
 ): TarifaNormalizadaRow {
   return {
     categoria: null,
+    categoria_calculated: null,
     confirmado_manual: false,
     ...partial,
   };
@@ -395,11 +397,14 @@ export class AuditoriaTarifasMockService implements PeajesAuditoriaTarifasServic
     if (this.failConfirm) {
       return throwError(() => new Error('Mock confirm failure'));
     }
-    asignaciones.forEach(({ tarifa_normalizada_id, status_codigo }) => {
+    asignaciones.forEach(({ tarifa_normalizada_id, status_codigo, categoria_calculated }) => {
       const row = this.rows.find((r) => r.id === tarifa_normalizada_id);
       if (row) {
         row.status = status_codigo;
         row.confirmado_manual = true;
+        if (categoria_calculated !== undefined) {
+          row.categoria_calculated = categoria_calculated;
+        }
         if (row.diagnostico !== 'REVISAR' && row.diagnostico !== 'CATEGORIA') {
           row.diagnostico = 'CONFIRMADO';
         }

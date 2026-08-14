@@ -47,6 +47,8 @@ function mapRow(raw: RpcListRow): TarifaNormalizadaRow {
     estacion_id: String(raw.estacion_id),
     estacion_nombre: String(raw.estacion_nombre ?? ''),
     categoria: raw.categoria ?? null,
+    categoria_calculated:
+      raw.categoria_calculated == null ? null : Number(raw.categoria_calculated),
     importe: Number(raw.importe),
     cases: Number(raw.cases),
     importe_base: Number(raw.importe_base),
@@ -163,7 +165,7 @@ export class PeajesAuditoriaTarifasSupabaseService implements PeajesAuditoriaTar
         const { data: row, error: selError } = await client
           .from('tarifas_normalizadas')
           .select(
-            'id, peaje_id, estacion_id, categoria, importe, cases, importe_base, multiplicador, hora_min, hora_max, hora_media, desvio, muestra_confiable, diagnostico, status, confirmado_manual'
+            'id, peaje_id, estacion_id, categoria, categoria_calculated, importe, cases, importe_base, multiplicador, hora_min, hora_max, hora_media, desvio, muestra_confiable, diagnostico, status, confirmado_manual'
           )
           .eq('id', tarifaNormalizadaId)
           .maybeSingle();

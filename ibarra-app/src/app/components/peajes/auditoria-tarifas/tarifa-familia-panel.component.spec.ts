@@ -100,4 +100,97 @@ describe('TarifaFamiliaPanelComponent', () => {
     expect(emitted.length).toBe(1);
     expect(component.niveles.some((n) => n.id === emitted[0])).toBeTrue();
   });
+
+  it('no muestra Reconocimiento detectado en familias de más de dos niveles', () => {
+    expect(component.showReconocimiento).toBeFalse();
+    expect(fixture.nativeElement.querySelector('.at__btn--reconocimiento')).toBeNull();
+  });
+
+  it('asigna No Pico al más bajo, Pico al más alto y confirma al pulsar Reconocimiento detectado', () => {
+    const ordered = [...component.niveles].sort((a, b) => a.importe - b.importe);
+    component.niveles = [
+      { ...ordered[0], diagnostico: 'POSIBLE_HORARIO', status: 'PENDIENTE' },
+      { ...ordered[1], diagnostico: 'POSIBLE_HORARIO', status: 'PENDIENTE' },
+    ];
+    component.ngOnChanges({ niveles: {} as never });
+    fixture.detectChanges();
+
+    expect(component.showReconocimiento).toBeTrue();
+    expect(component.reconocimientoHint).toContain('No pico');
+    expect(component.reconocimientoHint).toContain('Pico');
+    expect(component.reconocimientoHint).toContain('Confirmado');
+
+    const emitted: { tarifa_normalizada_id: string; status_codigo: string }[][] = [];
+    component.confirm.subscribe((asignaciones) => emitted.push(asignaciones));
+    const btn: HTMLButtonElement = fixture.nativeElement.querySelector('.at__btn--reconocimiento');
+    expect(btn.textContent).toContain('Reconocimiento detectado');
+    btn.click();
+
+    expect(emitted.length).toBe(1);
+    expect(emitted[0]).toEqual([
+      { tarifa_normalizada_id: component.niveles[0].id, status_codigo: 'NO_PICO' },
+      { tarifa_normalizada_id: component.niveles[1].id, status_codigo: 'PICO' },
+    ]);
+    expect(component.selections.get(component.niveles[0].id)).toBe('NO_PICO');
+    expect(component.selections.get(component.niveles[1].id)).toBe('PICO');
+  });
+
+  it('confirma automáticamente cuando el usuario elige No Pico y Pico en los dos precios', () => {
+    const ordered = [...component.niveles].sort((a, b) => a.importe - b.importe);
+    component.niveles = [ordered[0], ordered[1]];
+    component.ngOnChanges({ niveles: {} as never });
+
+    const emitted: { tarifa_normalizada_id: string; status_codigo: string }[][] = [];
+    component.confirm.subscribe((asignaciones) => emitted.push(asignaciones));
+
+    component.onSelect(ordered[0].id, 'NO_PICO');
+    expect(emitted.length).toBe(0);
+
+    component.onSelect(ordered[1].id, 'PICO');
+    expect(emitted.length).toBe(1);
+    expect(emitted[0].some((a) => a.tarifa_normalizada_id === ordered[0].id && a.status_codigo === 'NO_PICO')).toBeTrue();
+    expect(emitted[0].some((a) => a.tarifa_normalizada_id === ordered[1].id && a.status_codigo === 'PICO')).toBeTrue();
+  });
+
+  it('no confirma si el usuario invierte Pico y No Pico', () => {
+    const ordered = [...component.niveles].sort((a, b) => a.importe - b.importe);
+    component.niveles = [ordered[0], ordered[1]];
+    component.ngOnChanges({ niveles: {} as never });
+    const emitted: unknown[] = [];
+    component.confirm.subscribe((asignaciones) => emitted.push(asignaciones));
+    component.onSelect(ordered[0].id, 'PICO');
+    component.onSelect(ordered[1].id, 'NO_PICO');
+    expect(emitted.length).toBe(0);
+  });
+
+  it('muestra el sello CAT en Patrón A y omite categoria_calculated si está vacío', () => {
+    fixture.detectChanges();
+    const stamps: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.at__clase-stamp');
+    expect(stamps.length).toBe(component.niveles.length);
+    expect(stamps[0].querySelector('.at__clase-kicker')?.textContent?.trim()).toBe('CAT');
+    const asignaciones = component.buildAsignaciones();
+    expect(asignaciones.length).toBeGreaterThan(0);
+    expect(asignaciones.every((a) => a.categoria_calculated === undefined)).toBeTrue();
+  });
+
+  it('incluye categoria_calculated solo cuando hay una clase 0–10', () => {
+    const cheapest = [...component.niveles].sort((a, b) => a.importe - b.importe)[0];
+    component.onClase(cheapest.id, 5);
+    const withClass = component.buildAsignaciones().find((a) => a.tarifa_normalizada_id === cheapest.id);
+    expect(withClass?.categoria_calculated).toBe(5);
+    component.onClase(cheapest.id, '');
+    const cleared = component.buildAsignaciones().find((a) => a.tarifa_normalizada_id === cheapest.id);
+    expect(cleared?.categoria_calculated).toBeUndefined();
+  });
+
+  it('recorta 11 a 10 y muestra em dash en Patrón B', () => {
+    component.onClase(component.niveles[0].id, 11);
+    expect(component.claseValue(component.niveles[0].id)).toBe(10);
+
+    component.niveles = [{ ...component.niveles[0], categoria: '2' }];
+    component.ngOnChanges({ niveles: {} as never });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.at__clase-stamp')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.at__clase-dash')?.textContent?.trim()).toBe('—');
+  });
 });

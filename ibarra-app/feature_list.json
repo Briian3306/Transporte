@@ -668,6 +668,25 @@
       ]
     },
     {
+      "id": "F02-17",
+      "title": "Bug — código 0001 Zarate (MERCOSUR) vs DOCK SUD (AUBASA) en Paso 6",
+      "prd_refs": ["RF-16", "RF-17", "§7.5"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-13", "F09-1"],
+      "status": "passing",
+      "verification": [
+        "Con empresa AUTOVIA DEL MERCOSUR, ESTACION=0001 auto-selecciona Zarate y nunca DOCK SUD",
+        "Una plantilla que restaura DOCK SUD no salta a Factura: abre Paso 6 y descarta el id ajeno",
+        "reconocerEstacion(valor, empresaId) honra empresa; sin empresa un código compartido queda en sugerencias",
+        "Docs: reconocimiento-estaciones.md (F02-17)"
+      ],
+      "evidence": [
+        "2026-08-14: helper reconocerEstacionEnCatalogo (1 ≡ 0001); mock + PeajesCatalogoSupabaseService scope by empresaId; plantilla apply rejects other-company estacion and opens Paso 6",
+        "2026-08-14: ng test helpers+paso1+paso6+plantilla-apply — 26 SUCCESS (ChromeHeadless)",
+        "2026-08-14: docs reconocimiento-estaciones.md + wizard.md (F02-17)"
+      ]
+    },
+    {
       "id": "F03-1",
       "title": "Paso 3 — Motor de transformaciones (tarjetas, orden, preview)",
       "prd_refs": [
@@ -1535,6 +1554,25 @@
         "2026-08-13: plantillas appDataTableColumn=\"clave\" (ya no key=); Clasificación = search-select; franja HH:mm – HH:mm; Acciones Ver casos + dialogo pasadas; filtro RPC tarifa_normalizada_id (20260813175138).",
         "2026-08-13 DESARROLLO: peajes_listar_pasadas filtra tarifa_normalizada_id. Smoke PASEO DEL BAJO 9731.46 → total 6 (antes 3465).",
         "2026-08-13: npx tsc --noEmit app+spec EXIT 0; ng test auditoria-tarifas **29/29 SUCCESS** (ChromeHeadless)."
+      ]
+    },
+    {
+      "id": "F14-9",
+      "title": "Patrón A: categoria_calculated opcional (0–10) en tarifas_normalizadas y sello CAT",
+      "prd_refs": ["RN-15", "RF-26", "§23 Patrón A"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-2", "F14-8"],
+      "status": "passing",
+      "verification": [
+        "tarifas_normalizadas.categoria_calculated smallint NULL CHECK 0–10; no cambia UNIQUE (peaje, estación, categoria, importe)",
+        "peajes_confirmar_status_tarifa acepta categoria_calculated opcional; sin la clave conserva el valor; confirmar status no la exige",
+        "peajes_listar_tarifas_normalizadas incluye categoria_calculated; peajes_recalcular_tarifas no la pisa",
+        "Panel familia: columna Categoría con sello CAT 0–10 en Patrón A; em dash en Patrón B",
+        "npx supabase db reset --local --no-seed && npx supabase test db",
+        "ng test --include=**/peajes/auditoria-tarifas/**/*.spec.ts --watch=false --browsers=ChromeHeadless"
+      ],
+      "evidence": [
+        "2026-08-14: migración 20260814204300_peajes_tarifas_categoria_calculated.sql. npx supabase db reset --local --no-seed OK. peajes_f14_test.sql 42/42 PASS. ng test auditoria-tarifas 45/45 SUCCESS. Campo opcional: confirmar sin clave no borra; 11 → CHECK 23514. DESARROLLO db push --linked kfffigvyvtzyczeiadxh aplicó la migración."
       ]
     }
   ]

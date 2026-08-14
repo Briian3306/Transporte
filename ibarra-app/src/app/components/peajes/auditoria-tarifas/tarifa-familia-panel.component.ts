@@ -24,7 +24,13 @@ import {
 import {
   DIAGNOSTICO_BADGE_CLASS,
   DIAGNOSTICO_LABELS,
+  PicoNoPicoPair,
+  detectPicoNoPicoPair,
   familiaFromNiveles,
+  isPicoNoPicoSelection,
+  pairAlreadyConfirmed,
+  parseCategoriaCalculated,
+  patronFromRow,
   suggestStatusByPrice,
 } from './auditoria-tarifas.helpers';
 import { TarifaStatusButtonsComponent } from './tarifa-status-buttons.component';
@@ -50,7 +56,9 @@ export class TarifaFamiliaPanelComponent implements OnChanges, OnInit {
   @Output() verCasos = new EventEmitter<TarifaNormalizadaRow>();
 
   selections = new Map<string, string>();
+  clases = new Map<string, number | null>();
   suggestionPristine = true;
+  private readonly touchedIds = new Set<string>();
   detailSort: DataTableSort = { key: 'importe', direction: 'asc' };
   detailPage = 1;
   detailPageSize = 10;
@@ -62,6 +70,7 @@ export class TarifaFamiliaPanelComponent implements OnChanges, OnInit {
     { key: 'multiplicador', label: 'Mult.', sortable: false, width: '10rem', templateOnly: true },
     { key: 'franja', label: 'Franja horaria', sortable: false, width: '16rem', templateOnly: true },
     { key: 'diagnostico', label: 'Diagnóstico', sortable: false, width: '9rem', templateOnly: true },
+    { key: 'categoria_calculated', label: 'Categoría', sortable: false, width: '5.5rem', templateOnly: true },
     { key: 'status', label: 'Clasificación', sortable: false, templateOnly: true },
     { key: 'acciones', label: 'Acciones', sortable: false, templateOnly: true, align: 'right', width: '8.5rem' },
   ];
@@ -132,8 +141,36 @@ export class TarifaFamiliaPanelComponent implements OnChanges, OnInit {
       : 'Editado manualmente.';
   }
 
+  get picoNoPicoPair(): PicoNoPicoPair | null {
+    return detectPicoNoPicoPair(this.niveles, this.catalogo);
+  }
+
+  get showReconocimiento(): boolean {
+    const pair = this.picoNoPicoPair;
+    return !!pair && !pairAlreadyConfirmed(pair);
+  }
+
+  get reconocimientoHint(): string {
+    const pair = this.picoNoPicoPair;
+    if (!pair) return '';
+    return `El más bajo es ${pair.noPicoLabel} y el más alto es ${pair.picoLabel}. Confirmalo para dejar el diagnóstico en Confirmado.`;
+  }
+
   asNivel(row: Record<string, unknown>): TarifaNormalizadaRow {
     return row as unknown as TarifaNormalizadaRow;
+  }
+
+  isPatronA(nivel: TarifaNormalizadaRow): boolean {
+    return patronFromRow(nivel) === 'A';
+  }
+
+  claseValue(nivelId: string): number | null {
+    return this.clases.has(nivelId) ? (this.clases.get(nivelId) ?? null) : null;
+  }
+
+  onClase(nivelId: string, raw: unknown): void {
+    this.clases.set(nivelId, parseCategoriaCalculated(raw));
+    this.suggestionPristine = false;
   }
 
   diagnosticoLabel(d: TarifaDiagnostico): string {
@@ -200,6 +237,17 @@ export class TarifaFamiliaPanelComponent implements OnChanges, OnInit {
   onSelect(nivelId: string, codigo: string): void {
     this.selections.set(nivelId, codigo);
     this.suggestionPristine = false;
+    this.touchedIds.add(nivelId);
+    if (this.shouldAutoConfirmPicoNoPico()) this.onConfirm();
+  }
+
+  onReconocimientoDetectado(): void {
+    const pair = this.picoNoPicoPair;
+    if (!pair || this.saving) return;
+    this.selections.set(pair.low.id, pair.noPicoCode);
+    this.selections.set(pair.high.id, pair.picoCode);
+    this.suggestionPristine = false;
+    this.confirm.emit(this.buildAsignaciones());
   }
 
   onVerCasos(nivel: TarifaNormalizadaRow): void {
@@ -219,9 +267,14 @@ export class TarifaFamiliaPanelComponent implements OnChanges, OnInit {
   buildAsignaciones(): TarifaAsignacion[] {
     return this.niveles.flatMap((nivel) => {
       const code = this.selections.get(nivel.id);
-      return code && code !== 'PENDIENTE'
-        ? [{ tarifa_normalizada_id: nivel.id, status_codigo: code }]
-        : [];
+      if (!code || code === 'PENDIENTE') return [];
+      const item: TarifaAsignacion = {
+        tarifa_normalizada_id: nivel.id,
+        status_codigo: code,
+      };
+      const cat = this.clases.get(nivel.id);
+      if (cat != null) item.categoria_calculated = cat;
+      return [item];
     });
   }
 
@@ -241,7 +294,16 @@ export class TarifaFamiliaPanelComponent implements OnChanges, OnInit {
 
   private applySuggestion(): void {
     this.selections = suggestStatusByPrice(this.niveles, this.catalogo);
+    this.clases = new Map(this.niveles.map((n) => [n.id, n.categoria_calculated ?? null]));
     this.suggestionPristine = true;
+    this.touchedIds.clear();
     this.detailPage = Math.min(this.detailPage, this.detailTotalPages);
+  }
+
+  private shouldAutoConfirmPicoNoPico(): boolean {
+    if (this.saving) return false;
+    const pair = this.picoNoPicoPair;
+    if (!pair || this.touchedIds.size < 2) return false;
+    return isPicoNoPicoSelection(pair, this.selections);
   }
 }

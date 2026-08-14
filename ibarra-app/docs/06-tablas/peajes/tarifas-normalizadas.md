@@ -14,9 +14,9 @@ Vocabulario de status por peaje (`codigo`, `etiqueta`, `color`, `tipo_meta` ∈ 
 
 ## tarifas_normalizadas
 
-Familias `(peaje_id, estacion_id, categoria, importe)` con `diagnostico` (capa 1 algorítmica) y `status` (capa 2 humana). Unique `NULLS NOT DISTINCT` sobre esa cuádruple. Trigger valida `status` contra universales `PENDIENTE`/`POSIBLE_HORARIO` o el catálogo del peaje.
+Familias `(peaje_id, estacion_id, categoria, importe)` con `diagnostico` (capa 1 algorítmica), `status` (capa 2 humana) y `categoria_calculated` (capa 3 opcional, Patrón A: smallint 0–10). Unique `NULLS NOT DISTINCT` sobre esa cuádruple. Trigger valida `status` contra universales `PENDIENTE`/`POSIBLE_HORARIO` o el catálogo del peaje.
 
-`categoria` aquí es el mismo texto crudo del proveedor que `pasadas.categoria` (RN-15); `NULL` ⇒ Patrón A.
+`categoria` aquí es el mismo texto crudo del proveedor que `pasadas.categoria` (RN-15); `NULL` ⇒ Patrón A. `categoria_calculated` no es esa columna: es la clase que anota el analista cuando el archivo no trajo categoría. Recálculo no la pisa.
 
 ## Columnas nuevas en pasadas
 
@@ -24,4 +24,4 @@ Ver [documentos-pasadas.md](./documentos-pasadas.md): `categoria`, `tarifa_norma
 
 ---
 
-> Última actualización: 2026-08-12
+> Última actualización: 2026-08-14

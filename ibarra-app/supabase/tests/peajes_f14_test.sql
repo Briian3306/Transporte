@@ -1,6 +1,6 @@
 -- pgTAP: F14-1 / F14-2 — auditoría tarifaria (casos B del Apéndice D, síntesis CLI)
 BEGIN;
-SELECT plan(32);
+SELECT plan(42);
 
 -- -----------------------------------------------------------------------------
 -- Seed catálogos
@@ -34,6 +34,7 @@ SELECT has_column('public', 'pasadas', 'categoria', 'F14-1 pasadas.categoria');
 SELECT has_column('public', 'pasadas', 'tarifa_normalizada_id', 'F14-1 pasadas.tarifa_normalizada_id');
 SELECT has_column('public', 'pasadas', 'tarifa_status', 'F14-1 pasadas.tarifa_status');
 SELECT hasnt_column('public', 'pasadas', 'peaje_id', 'F14-1 RN-05: pasadas sin peaje_id');
+SELECT has_column('public', 'tarifas_normalizadas', 'categoria_calculated', 'F14-9 categoria_calculated existe');
 
 -- B-06: UNIQUE NULLS NOT DISTINCT
 SELECT throws_ok(
@@ -83,6 +84,14 @@ SELECT lives_ok(
   $$UPDATE public.tarifas_normalizadas SET status = 'PICO'
      WHERE id = 'e1111111-1111-1111-1111-111111111111'$$,
   'B-08 acepta PICO del catálogo del peaje'
+);
+
+SELECT throws_ok(
+  $$UPDATE public.tarifas_normalizadas SET categoria_calculated = 11
+     WHERE id = 'e1111111-1111-1111-1111-111111111111'$$,
+  '23514',
+  NULL,
+  'F14-9 rechaza categoria_calculated 11'
 );
 
 -- Helper: documento + N pasadas a un precio/hora
@@ -409,6 +418,112 @@ SELECT is(
   ),
   'CATEGORIA',
   'marcar_diagnostico CATEGORIA'
+);
+
+-- Recalcular borra nivel MUESTRA_INSUFICIENTE sin pasadas FC (fantasma post-move).
+INSERT INTO public.tarifas_normalizadas (
+  peaje_id, estacion_id, categoria, importe, importe_base, cases, patron, diagnostico, status
+) VALUES (
+  'a1111111-1111-1111-1111-111111111111',
+  'b2222222-2222-2222-2222-222222222222',
+  '7', 23536.62, 23536.62, 5, 'B', 'MUESTRA_INSUFICIENTE', 'PENDIENTE'
+);
+SELECT public.peajes_recalcular_tarifas('a1111111-1111-1111-1111-111111111111');
+SELECT is(
+  (
+    SELECT count(*)::integer FROM public.tarifas_normalizadas
+    WHERE estacion_id = 'b2222222-2222-2222-2222-222222222222'
+      AND importe = 23536.62
+      AND categoria = '7'
+  ),
+  0,
+  'recalcular borra MUESTRA_INSUFICIENTE sin pasadas FC'
+);
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM public.tarifas_normalizadas
+    WHERE estacion_id = 'b2222222-2222-2222-2222-222222222222'
+      AND importe = 5361.29
+  ),
+  'recalcular conserva nivel con pasadas FC'
+);
+
+-- F14-9: categoria_calculated opcional en confirmar; recalc no la pisa
+SELECT is(
+  (
+    public.peajes_confirmar_status_tarifa(
+      jsonb_build_array(
+        jsonb_build_object(
+          'tarifa_normalizada_id',
+          (SELECT id FROM public.tarifas_normalizadas
+           WHERE estacion_id = 'b3333333-3333-3333-3333-333333333333' AND importe = 1200),
+          'status_codigo', 'NO_PICO',
+          'categoria_calculated', 5
+        )
+      )
+    )->>'niveles_confirmados'
+  )::integer,
+  1,
+  'F14-9 confirma con categoria_calculated 5'
+);
+
+SELECT is(
+  (
+    SELECT categoria_calculated FROM public.tarifas_normalizadas
+    WHERE estacion_id = 'b3333333-3333-3333-3333-333333333333' AND importe = 1200
+  ),
+  5::smallint,
+  'F14-9 persiste categoria_calculated 5'
+);
+
+SELECT is(
+  (
+    public.peajes_confirmar_status_tarifa(
+      jsonb_build_array(
+        jsonb_build_object(
+          'tarifa_normalizada_id',
+          (SELECT id FROM public.tarifas_normalizadas
+           WHERE estacion_id = 'b3333333-3333-3333-3333-333333333333' AND importe = 1200),
+          'status_codigo', 'PICO'
+        )
+      )
+    )->>'niveles_confirmados'
+  )::integer,
+  1,
+  'F14-9 confirma sin clave categoria_calculated'
+);
+
+SELECT is(
+  (
+    SELECT categoria_calculated FROM public.tarifas_normalizadas
+    WHERE estacion_id = 'b3333333-3333-3333-3333-333333333333' AND importe = 1200
+  ),
+  5::smallint,
+  'F14-9 ausente la clave no borra categoria_calculated'
+);
+
+SELECT ok(
+  EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(
+      public.peajes_listar_tarifas_normalizadas(
+        jsonb_build_object('peaje_id', 'a1111111-1111-1111-1111-111111111111'),
+        1, 100, 'cases:desc'
+      )->'rows'
+    ) r
+    WHERE (r->>'categoria_calculated')::int = 5
+  ),
+  'F14-9 listar incluye categoria_calculated'
+);
+
+SELECT public.peajes_recalcular_tarifas('a1111111-1111-1111-1111-111111111111');
+SELECT is(
+  (
+    SELECT categoria_calculated FROM public.tarifas_normalizadas
+    WHERE estacion_id = 'b3333333-3333-3333-3333-333333333333' AND importe = 1200
+  ),
+  5::smallint,
+  'F14-9 recalcular no pisa categoria_calculated'
 );
 
 SELECT * FROM finish();
