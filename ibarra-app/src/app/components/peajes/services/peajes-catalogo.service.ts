@@ -9,6 +9,11 @@ import {
   Peaje,
   ResultadoReconocimientoEstacion,
 } from '../models/peajes.models';
+import {
+  reconocerEstacionEnCatalogo,
+  estacionPerteneceAEmpresa,
+  variantesCodigoEstacion,
+} from '../models/estacion-reconocimiento.helpers';
 import { PeajesCatalogoService } from '../models/peajes-services.contracts';
 import { SupabaseService } from '../../../services/supabase.service';
 
@@ -30,6 +35,19 @@ export class PeajesCatalogoSupabaseService implements PeajesCatalogoService {
     return from(this.supabase.executeWithRetry(async () => {
       const client = await this.supabase.getClient(); const { data: row, error } = await client.from('empresas').insert(data).select('*').single();
       if (error) throw error; return row as Empresa;
+    }));
+  }
+  actualizarEmpresa(id: string, data: Partial<Empresa>): Observable<Empresa> {
+    return from(this.supabase.executeWithRetry(async () => {
+      const client = await this.supabase.getClient();
+      const { data: row, error } = await client
+        .from('empresas')
+        .update(data)
+        .eq('id', id)
+        .select('*')
+        .single();
+      if (error) throw error;
+      return row as Empresa;
     }));
   }
   listarPeajes(empresaId?: string): Observable<Peaje[]> {
@@ -146,29 +164,36 @@ export class PeajesCatalogoSupabaseService implements PeajesCatalogoService {
     );
   }
 
+  /**
+   * Alias de empresa, luego código/nombre en el catálogo.
+   * `0001`/`1` existen en Zarate (MERCOSUR) y DOCK SUD (AUBASA): pasar `empresaId`
+   * del Paso 1. Sin empresa, un código compartido queda en sugerencias (nunca el primero).
+   */
   reconocerEstacion(valorProveedor: string, empresaId?: string): Observable<ResultadoReconocimientoEstacion> {
     return from(
       this.supabase.executeWithRetry(async () => {
         const client = await this.supabase.getClient();
         const valor = (valorProveedor ?? '').trim();
-        const normalizado = this.normalizarEstacion(valor);
+        const variantes = variantesCodigoEstacion(valor);
         const vacio: ResultadoReconocimientoEstacion = {
           valorProveedor: valor,
           tipo: 'sin_coincidencia',
           estacion: null,
           sugerencias: [],
         };
-        if (!normalizado) return vacio;
+        if (!variantes.length) return vacio;
 
         let aliases = client
           .from('estaciones_alias_proveedor')
           .select('estacion:estaciones(*, peaje:peajes(*))')
-          .eq('valor_normalizado', normalizado);
+          .in('valor_normalizado', variantes);
         if (empresaId) aliases = aliases.eq('empresa_id', empresaId);
         const { data: aliasRows, error: aliasError } = await aliases;
         if (aliasError) throw aliasError;
 
-        const exactas = this.estacionesUnicas(aliasRows ?? []);
+        const exactas = this.estacionesUnicas(aliasRows ?? []).filter((row) =>
+          estacionPerteneceAEmpresa(row, empresaId)
+        );
         if (exactas.length === 1) {
           return {
             valorProveedor: valor,
@@ -193,33 +218,7 @@ export class PeajesCatalogoSupabaseService implements PeajesCatalogoService {
           .limit(500);
         if (error) throw error;
 
-        const candidatas = (estaciones ?? [])
-          .filter((row: Estacion) => !empresaId || row.peaje?.empresa_id === empresaId)
-          .filter((row: Estacion) => {
-            const nombre = this.normalizarEstacion(row.nombre);
-            return nombre === normalizado || nombre.includes(normalizado) || normalizado.includes(nombre);
-          })
-          .sort((a: Estacion, b: Estacion) => {
-            const aNombre = this.normalizarEstacion(a.nombre);
-            const bNombre = this.normalizarEstacion(b.nombre);
-            const rank = (nombre: string) => nombre === normalizado ? 0 : nombre.startsWith(normalizado) ? 1 : 2;
-            return rank(aNombre) - rank(bNombre) || a.nombre.localeCompare(b.nombre);
-          }) as Estacion[];
-
-        if (candidatas.length === 1 && this.normalizarEstacion(candidatas[0].nombre) === normalizado) {
-          return {
-            valorProveedor: valor,
-            tipo: 'exacta' as const,
-            estacion: candidatas[0],
-            sugerencias: [],
-          };
-        }
-        return {
-          valorProveedor: valor,
-          tipo: (candidatas.length ? 'sugerencias' : 'sin_coincidencia') as ResultadoReconocimientoEstacion['tipo'],
-          estacion: null,
-          sugerencias: candidatas,
-        };
+        return reconocerEstacionEnCatalogo((estaciones ?? []) as Estacion[], valor, empresaId);
       })
     );
   }

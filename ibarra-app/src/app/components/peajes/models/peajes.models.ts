@@ -11,6 +11,8 @@ export interface Empresa {
   id: string;
   nombre: string;
   descripcion?: string | null;
+  /** URL pública de tarifas (http/https). */
+  tarifa_url?: string | null;
   created_at?: string;
 }
 

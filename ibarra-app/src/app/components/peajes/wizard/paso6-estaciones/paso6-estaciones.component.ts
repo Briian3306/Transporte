@@ -22,6 +22,8 @@ import {
   RelacionEstacionProveedor,
   reconocerPeajeDesdeConcesion,
   ResultadoReconocimientoEstacion,
+  estacionCoincideCodigoProveedor,
+  estacionPerteneceAEmpresa,
 } from '../../models';
 import { DialogComponent, SearchSelectComponent, SearchSelectOption } from '../../../shared';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
@@ -73,6 +75,8 @@ export class Paso6EstacionesComponent implements OnInit {
   rowPage = 0;
   pendientesCount = 0;
   relacionadasCount = 0;
+  /** Códigos cuya plantilla/relación previa apuntaba a otra empresa (p. ej. 0001 → DOCK SUD). */
+  codigosFueraDeEmpresa: string[] = [];
 
   constructor(
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
@@ -106,6 +110,14 @@ export class Paso6EstacionesComponent implements OnInit {
 
   get sinPeajesEmpresa(): boolean {
     return !!this.state.snapshot().empresaId && this.peajesUnicos.length === 0;
+  }
+
+  get alcanceEmpresaLabel(): string {
+    const empresaId = this.state.snapshot().empresaId;
+    if (!empresaId) return '';
+    if (this.peajesUnicos.length === 1) return this.peajesUnicos[0].nombre;
+    if (this.peajesUnicos.length) return this.peajesUnicos.map((p) => p.nombre).join(' · ');
+    return 'la empresa del Paso 1';
   }
 
   get relacionesFiltradas(): RelacionEstacionProveedor[] {
@@ -243,6 +255,7 @@ export class Paso6EstacionesComponent implements OnInit {
     const empresaId = this.state.snapshot().empresaId;
     const peajeUnicoEmpresa =
       this.peajesUnicos.length === 1 ? this.peajesUnicos[0] : null;
+    this.codigosFueraDeEmpresa = [];
 
     this.relaciones = valores.map((valorProveedor) => {
       const existente = prev.find((r) => r.valorProveedor === valorProveedor);
@@ -279,13 +292,20 @@ export class Paso6EstacionesComponent implements OnInit {
       const pool = peajeAlcance
         ? this.todasEstaciones.filter((e) => e.peaje_id === peajeAlcance)
         : this.estaciones;
-      const match =
-        existente?.estacionId && pool.some((e) => e.id === existente.estacionId)
-          ? existente
-          : null;
-      const auto = pool.find((e) =>
-        (e.codigos_proveedor ?? []).map(String).includes(valorProveedor)
+      const estPrev = existente?.estacionId
+        ? this.estacionById.get(existente.estacionId)
+        : undefined;
+      const existenteEnEmpresa = !!(
+        existente?.estacionId &&
+        pool.some((e) => e.id === existente.estacionId) &&
+        (!estPrev || estacionPerteneceAEmpresa(estPrev, empresaId, this.todosPeajes))
       );
+      if (existente?.estacionId && !existenteEnEmpresa) {
+        this.codigosFueraDeEmpresa.push(valorProveedor);
+      }
+      const match = existenteEnEmpresa ? existente : null;
+      const autoMatches = pool.filter((e) => estacionCoincideCodigoProveedor(e, valorProveedor));
+      const auto = autoMatches.length === 1 ? autoMatches[0] : null;
 
       return {
         valorProveedor,
@@ -345,7 +365,6 @@ export class Paso6EstacionesComponent implements OnInit {
 
   private async reconocerFila(valorProveedor: string): Promise<void> {
     const peajeId = this.peajeAlcanceDe(valorProveedor);
-    // Preferir empresa del wizard (Paso 1); no reconocer contra peajes ajenos.
     const empresaId =
       this.state.snapshot().empresaId ??
       this.peajeById.get(peajeId ?? '')?.empresa_id ??
@@ -380,6 +399,7 @@ export class Paso6EstacionesComponent implements OnInit {
       .filter(
         (e) =>
           e.nombre.toUpperCase().includes(q) ||
+          estacionCoincideCodigoProveedor(e, valorProveedor) ||
           (e.codigos_proveedor ?? []).some((c) => String(c).toUpperCase().includes(q))
       )
       .slice(0, 6);
@@ -425,8 +445,7 @@ export class Paso6EstacionesComponent implements OnInit {
     this.todasEstaciones = await firstValueFrom(this.catalogo.listarEstaciones());
 
     // RN-23 / RN-26: con empresa en Paso 1, NUNCA caer a peajes de otras empresas.
-    // (Antes: si la empresa no tenía peajes, se usaba el catálogo completo →
-    //  AUTOVIA DEL MERCOSUR auto-matcheaba AUBASA DOCK SUD por codigo 0001.)
+    // Código 0001 es Zarate (MERCOSUR) y DOCK SUD (AUBASA): el pool queda en la empresa.
     const peajesEmpresa = empresaId
       ? this.todosPeajes.filter(
           (p) => p.empresa_id === empresaId || p.empresa_id === '__global__'

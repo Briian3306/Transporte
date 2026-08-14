@@ -124,6 +124,7 @@
         <tr>
           <th scope="col" class="at__th-expand"><span class="at__sr">Expandir</span></th>
           <th scope="col" [attr.aria-sort]="ariaSort('estacion_nombre')"><button type="button" class="at__sort" (click)="onSort('estacion_nombre')">Estación</button></th>
+          <th scope="col" [attr.aria-sort]="ariaSort('peaje_nombre')"><button type="button" class="at__sort" (click)="onSort('peaje_nombre')">Peaje</button></th>
           <th scope="col" [attr.aria-sort]="ariaSort('categoria')"><button type="button" class="at__sort" (click)="onSort('categoria')">Categoría</button></th>
           <th scope="col" class="at__num at__col--secundaria" [attr.aria-sort]="ariaSort('importe')"><button type="button" class="at__sort" (click)="onSort('importe')">Importe</button></th>
           <th scope="col" class="at__num" [attr.aria-sort]="ariaSort('cases')"><button type="button" class="at__sort" (click)="onSort('cases')">Casos</button></th>
@@ -144,6 +145,29 @@
               </button>
             </td>
             <td><strong>{{ row.estacion_nombre }}</strong></td>
+            <td>
+              <div class="at__peaje-cell">
+                <a
+                  *ngIf="tarifaUrlForRow(row) as url; else peajeName"
+                  class="at__peaje-link"
+                  [href]="url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [title]="'Abrir tarifas de ' + row.peaje_nombre"
+                >{{ row.peaje_nombre }}</a>
+                <ng-template #peajeName><span class="at__peaje-name">{{ row.peaje_nombre }}</span></ng-template>
+                <button
+                  type="button"
+                  class="at__peaje-edit"
+                  [disabled]="!empresaForRow(row)"
+                  [title]="empresaForRow(row) ? 'Editar URL de tarifas' : 'Este peaje no tiene empresa asociada'"
+                  [attr.aria-label]="'Editar URL de tarifas de ' + row.peaje_nombre"
+                  (click)="openTarifaUrlDialog(row, $event)"
+                >
+                  <i class="fas fa-pen" aria-hidden="true"></i>
+                </button>
+              </div>
+            </td>
             <td>{{ row.categoria ?? '—' }}</td>
             <td class="at__num at__price at__col--secundaria">{{ row.importe | number: '1.2-2' }}</td>
             <td class="at__num">{{ row.cases | number }}</td>
@@ -156,13 +180,10 @@
               <button type="button" class="at__action" (click)="toggleExpand(row)" [attr.aria-label]="expandedId === row.id ? 'Ocultar niveles de ' + row.estacion_nombre : 'Ver niveles de ' + row.estacion_nombre" title="Ver niveles">
                 <i class="fas" [class.fa-eye]="expandedId !== row.id" [class.fa-eye-slash]="expandedId === row.id" aria-hidden="true"></i><span>{{ expandedId === row.id ? 'Ocultar' : 'Ver' }}</span>
               </button>
-              <button type="button" class="at__btn at__btn--primary at__btn--compact" (click)="openDetail(row)">
-                <i class="fas fa-tags" aria-hidden="true"></i><span>Asignar status</span>
-              </button>
             </td>
           </tr>
           <tr class="at__detail" *ngIf="expandedId === row.id" [id]="'detail-' + row.id">
-            <td colspan="11">
+            <td colspan="12">
               <div class="at__detail-inner">
                 <p class="at__empty" *ngIf="familiaLoading">Cargando niveles de tarifa…</p>
                 <app-tarifa-familia-panel *ngIf="!familiaLoading" [niveles]="familiaNiveles" [catalogo]="expandedCatalogo" [saving]="familiaSaving" [confirmError]="familiaConfirmError" (confirm)="onConfirmFamilia($event)" (marcarDiagnostico)="onMarcarDiagnostico($event)" (comparar)="expandedId && openCompare(row)" (verCasos)="openVerCasos($event)"></app-tarifa-familia-panel>
@@ -182,7 +203,7 @@
   </footer>
 
   <ng-template #emptyOrLoading>
-    <tbody><tr><td colspan="11" class="at__empty">{{ emptyMessage() }}</td></tr></tbody>
+    <tbody><tr><td colspan="12" class="at__empty">{{ emptyMessage() }}</td></tr></tbody>
   </ng-template>
 
   <app-dialog [open]="recalcDialogOpen" eyebrow="Auditoría de tarifas" [title]="'Recalcular tarifas de ' + recalcPeajeName" description="Se vuelven a detectar las familias de tarifa a partir de las pasadas actuales. Las clasificaciones confirmadas a mano se conservan." (closed)="recalcDialogOpen = false">
@@ -209,4 +230,30 @@
     (sortChange)="onCasosSort($event)"
     (pageChange)="onCasosPage($event)"
   ></app-tarifa-casos-dialog>
+
+  <app-dialog
+    [open]="tarifaUrlDialogOpen"
+    eyebrow="Auditoría de tarifas"
+    [title]="tarifaUrlDialogTitle"
+    description="Link a la tabla de tarifas pública de la empresa. El nombre del peaje abre esta URL."
+    (closed)="closeTarifaUrlDialog()"
+  >
+    <label class="at__url-field">
+      <span>URL de tarifas</span>
+      <input
+        type="url"
+        [ngModel]="tarifaUrlDraft"
+        (ngModelChange)="tarifaUrlDraft = $event"
+        placeholder="https://…"
+        autocomplete="off"
+      />
+    </label>
+    <p class="at__error" *ngIf="tarifaUrlError" role="alert">{{ tarifaUrlError }}</p>
+    <div appDialogActions class="at__dialog-actions">
+      <button type="button" class="at__btn" (click)="closeTarifaUrlDialog()">Cancelar</button>
+      <button type="button" class="at__btn at__btn--primary" [disabled]="tarifaUrlSaving" (click)="saveTarifaUrl()">
+        {{ tarifaUrlSaving ? 'Guardando…' : 'Guardar' }}
+      </button>
+    </div>
+  </app-dialog>
 </div>

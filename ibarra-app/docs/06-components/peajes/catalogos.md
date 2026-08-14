@@ -52,6 +52,7 @@ Fragmento `PEAJES_CATALOGOS_ROUTES` (fusionado en `peajes.routes.ts`):
 
 - Card **Empresas** en el home (`CATALOGOS_CARDS`).
 - Alta por nombre/descripción vía `crearEmpresa` / `listarEmpresas`.
+- `tarifa_url` se edita desde Auditoría de tarifas (lápiz junto al peaje), no desde este catálogo.
 - En **Catálogo de peajes**, el campo libre `empresa_id` se reemplazó por un **dropdown** + diálogo **+ Crear empresa** (mismo patrón que Paso 1 del wizard).
 - La lista de peajes muestra el nombre de empresa.
 

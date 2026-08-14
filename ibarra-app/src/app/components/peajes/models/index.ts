@@ -4,3 +4,4 @@ export * from './peajes-services.contracts';
 export * from './auditoria-tarifas.contracts';
 export * from './documento.helpers';
 export * from './consumos-resumen.helpers';
+export * from './estacion-reconocimiento.helpers';

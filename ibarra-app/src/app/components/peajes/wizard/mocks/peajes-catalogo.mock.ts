@@ -9,6 +9,7 @@ import {
   PeajesCatalogoService,
   EstacionAliasProveedor,
   ResultadoReconocimientoEstacion,
+  reconocerEstacionEnCatalogo,
 } from '../../models';
 
 /**
@@ -114,6 +115,15 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
     const empresa = { ...data, id: `EMP-${String(this.empresas.length + 1).padStart(3, '0')}` };
     this.empresas = [...this.empresas, empresa]; return of(empresa);
   }
+  actualizarEmpresa(id: string, data: Partial<Empresa>): Observable<Empresa> {
+    const idx = this.empresas.findIndex((e) => e.id === id);
+    if (idx < 0) {
+      return throwError(() => new Error(`Empresa no encontrada: ${id}`));
+    }
+    const updated = { ...this.empresas[idx], ...data, id };
+    this.empresas = this.empresas.map((e, i) => (i === idx ? updated : e));
+    return of(updated);
+  }
   listarPeajes(empresaId?: string): Observable<Peaje[]> {
     return of(this.peajes.filter((p) => !empresaId || p.empresa_id === empresaId));
   }
@@ -193,16 +203,12 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
     );
   }
 
-  reconocerEstacion(valorProveedor: string, _empresaId?: string): Observable<ResultadoReconocimientoEstacion> {
-    const normalizar = (valor: string) => valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toUpperCase();
-    const buscado = normalizar(valorProveedor);
-    const exacta = this.estaciones.find((e) => normalizar(e.nombre) === buscado || (e.codigos_proveedor ?? []).some((a) => normalizar(a) === buscado));
-    if (exacta) return of({ valorProveedor, tipo: 'exacta', estacion: { ...exacta, peaje: this.peajes.find((p) => p.id === exacta.peaje_id) }, sugerencias: [] });
-    const sugerencias = this.estaciones.filter((e) => {
-      const nombre = normalizar(e.nombre);
-      return nombre.includes(buscado) || buscado.includes(nombre);
-    }).map((e) => ({ ...e, peaje: this.peajes.find((p) => p.id === e.peaje_id) }));
-    return of({ valorProveedor, tipo: sugerencias.length ? 'sugerencias' : 'sin_coincidencia', estacion: null, sugerencias });
+  reconocerEstacion(valorProveedor: string, empresaId?: string): Observable<ResultadoReconocimientoEstacion> {
+    const conPeaje = this.estaciones.map((e) => ({
+      ...e,
+      peaje: this.peajes.find((p) => p.id === e.peaje_id),
+    }));
+    return of(reconocerEstacionEnCatalogo(conPeaje, valorProveedor, empresaId, this.peajes));
   }
 
   confirmarAliasEstacion(data: Omit<EstacionAliasProveedor, 'id' | 'created_at' | 'valor_normalizado'>): Observable<EstacionAliasProveedor> {

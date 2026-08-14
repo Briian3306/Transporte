@@ -101,6 +101,16 @@
               (valueChange)="onEmpresaChange($event)"
             ></app-search-select>
             <button type="button" class="pw__btn pw__btn--small" (click)="crearEmpresaAbierto = true">+ Crear empresa</button>
+            <aside class="paso1__lock" *ngIf="modoImportacion === 'simple'" role="note">
+              <i class="fas fa-lock" aria-hidden="true"></i>
+              <div>
+                <strong>La empresa cierra el peaje</strong>
+                <p>
+                  Las estaciones se reconocen solo en los peajes de esta empresa.
+                  El código 0001 es Zárate en MERCOSUR y DOCK SUD en AUBASA.
+                </p>
+              </div>
+            </aside>
             <p class="paso1__hint" *ngIf="modoImportacion === 'masiva'">
               En masiva podés dejar la empresa vacía y asignarla por cada FACTURA en el paso Documento.
             </p>

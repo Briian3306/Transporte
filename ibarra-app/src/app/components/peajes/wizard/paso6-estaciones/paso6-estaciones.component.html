@@ -27,6 +27,11 @@
       No se usan peajes de otras empresas (p. ej. AUBASA).
     </div>
 
+    <div class="pw__alert pw__alert--info" *ngIf="codigosFueraDeEmpresa.length" role="status">
+      La plantilla apuntaba a una estación de otra empresa
+      ({{ codigosFueraDeEmpresa.join(', ') }}). Se reconoció de nuevo con la empresa del Paso 1.
+    </div>
+
     <div class="paso6__layout">
       <div class="paso6__relation">
         <aside
@@ -49,7 +54,15 @@
           </div>
         </aside>
 
-        <div class="paso6__hero" [class.paso6__hero--compact]="esCargaDensa">
+        <aside class="paso6__lock" *ngIf="alcanceEmpresaLabel" role="note">
+          <i class="fas fa-lock" aria-hidden="true"></i>
+          <div>
+            <strong>{{ alcanceEmpresaLabel }}</strong>
+            <span>Los códigos del archivo se resuelven solo en peajes de esta empresa. El código 0001 no puede caer en otro peaje.</span>
+          </div>
+        </aside>
+
+        <div class="paso6__hero" [class.paso6__hero--compact]="esCargaDensa" *ngIf="!alcanceEmpresaLabel">
           <div class="paso6__link-icon"><i class="fas fa-link" aria-hidden="true"></i></div>
           <div>
             <strong>Relación confirmada para el archivo</strong>

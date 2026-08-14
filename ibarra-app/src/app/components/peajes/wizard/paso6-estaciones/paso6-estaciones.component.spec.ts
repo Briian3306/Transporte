@@ -218,6 +218,38 @@ describe('Paso6EstacionesComponent', () => {
     expect(component.peajeDe(component.relaciones[0].estacionId)).toContain('Mercosur');
     expect(component.peajeDe(component.relaciones[0].estacionId)).not.toContain('AUBASA');
     expect(component.mostrarColumnaPeaje).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('Los códigos del archivo se resuelven solo');
+  });
+
+  it('descarta plantilla de DOCK SUD y reconoce Zarate si la empresa es MERCOSUR', async () => {
+    state.reiniciar();
+    state.setEmpresaId('37ab9246-a07a-40b5-b62d-7a8b8e7782db');
+    state.setPreview({
+      nombreArchivo: 'pasadas_2026-07-16_86802.csv',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['ESTACION'],
+      filasPreview: [{ ESTACION: '0001' }],
+      filasOrigen: [{ ESTACION: '0001' }],
+      tiposInferidos: { ESTACION: 'texto' },
+    });
+    state.setSeleccionColumnas(['ESTACION'], []);
+    state.setMapeos([
+      { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID', excluida: false },
+    ]);
+    state.setRelacionesEstacion([
+      { valorProveedor: '0001', estacionId: 'EST-DOCK' },
+    ]);
+
+    fixture = TestBed.createComponent(Paso6EstacionesComponent);
+    component = fixture.componentInstance;
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(component.codigosFueraDeEmpresa).toEqual(['0001']);
+    expect(component.relaciones[0].estacionId).toBe('EST-MER-0001');
+    expect(component.relaciones[0].estacionId).not.toBe('EST-DOCK');
+    expect(fixture.nativeElement.textContent).toContain('estación de otra empresa');
   });
 
   it('sin peajes de la empresa no cae al catálogo global ni muestra AUBASA', async () => {

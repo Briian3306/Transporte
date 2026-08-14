@@ -21,6 +21,8 @@ Sin filtro, Σ TARIFA de las 540 filas es `7932125.41` y no concilia. Con `FILTR
 
 Columnas de interés: `FECHA`, `HORA`, `ESTACION`, `DISPOSITIVON`, `DOMINIO`, `TARIFA`, `BONIFICACION`. `VIA` y los campos de documento/cuenta no alimentan el Structure Goal de este ejemplo.
 
+`CATEGORIA` del CSV Telepase **no se mapea** (Patrón A). El código de proveedor no coincide con la clase tarifaria (cat `7` mezcla varios múltiplos del importe base). Destino `CATEGORIA` queda excluido en las plantillas `MERCA-SUR-*`.
+
 `ESTACION` llega padded (`0001`); el filtro acepta `valor: 1` / `"1"` / `"0001"` como equivalentes numéricos.
 
 ## Pipeline y plantilla MERCOSUR

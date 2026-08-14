@@ -103,6 +103,50 @@
   line-height: 1.35;
 }
 
+.paso6__lock {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 0.85rem;
+  border: 1px dashed #6d86a6;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(
+      -72deg,
+      transparent,
+      transparent 7px,
+      rgb(22 50 79 / 0.045) 7px,
+      rgb(22 50 79 / 0.045) 8px
+    ),
+    #e8eef5;
+  color: #16324f;
+}
+
+.paso6__lock i {
+  flex: 0 0 auto;
+  width: 1.85rem;
+  height: 1.85rem;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #16324f;
+  color: #f4efe6;
+  font-size: 0.75rem;
+}
+
+.paso6__lock strong {
+  display: block;
+  margin-bottom: 0.12rem;
+  font-size: 0.86rem;
+}
+
+.paso6__lock span {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: #3d5570;
+}
+
 .paso6__toolbar {
   display: flex;
   flex-wrap: wrap;

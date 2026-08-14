@@ -42,6 +42,50 @@
   line-height: 1.4;
 }
 
+.paso1__lock {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 0.65rem 0.75rem;
+  border: 1px dashed #6d86a6;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(
+      -72deg,
+      transparent,
+      transparent 7px,
+      rgb(22 50 79 / 0.045) 7px,
+      rgb(22 50 79 / 0.045) 8px
+    ),
+    #e8eef5;
+  color: #16324f;
+}
+
+.paso1__lock i {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #16324f;
+  color: #f4efe6;
+  font-size: 0.72rem;
+}
+
+.paso1__lock strong {
+  display: block;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.paso1__lock p {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: #3d5570;
+}
+
 .paso1__layout {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;

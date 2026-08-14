@@ -39,7 +39,7 @@
 | 3 | Transformaciones | `paso3-transformaciones` | Motor 03 |
 | 4 | Plantilla | `paso4-plantilla` | Aplica pipeline + `mapeos` + estaciones (F09). Sin excepciones → `facturaDirecta` Paso 7; si no, `irAExcepcion` 5 o 6 |
 | 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal. Destino opcional **`CATEGORIA`** (F14-3 / RN-15; Patrón B si se mapea). Detecta `Concesion`→Peaje (RN-26). Patentes: [patentes-sin-resolver.md](./patentes-sin-resolver.md) (F02-14) |
-| 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación filtrada por peaje de `Concesion`/empresa (RN-26); alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13) |
+| 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación filtrada por peaje de `Concesion`/empresa (RN-26); alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13). Código `0001` Zarate vs DOCK SUD: la empresa del Paso 1 acota `reconocerEstacion` (F02-17) |
 | 7 | Factura | `paso7-factura` | Cuenta opcional; subtotal, percepciones, IVA y total declarados; empresa SMS single (Paso 1); fecha DRP single. Recomienda crear plantilla completa (pipeline+mapeos+estaciones) |
 | 8 | Validación | `paso8-validacion` | Errores fila/columna/valor/motivo y diferencia neto de factura vs. pasadas |
 | 9 | Revisión | `paso9-revision` | Confirmación de carga |

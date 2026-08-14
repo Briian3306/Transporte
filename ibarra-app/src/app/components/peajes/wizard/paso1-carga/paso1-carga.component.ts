@@ -44,6 +44,11 @@ export class Paso1CargaComponent implements OnInit {
   plantillas: PlantillaConfiguracion[] = [];
   empresas: Empresa[] = [];
   plantillaId = '';
+  /**
+   * Empresa of this load (simple mode). Paso 6 recognizes estaciones only
+   * inside this company's peajes. Required in simple Telepase CSV because
+   * provider code `0001` is Zarate (MERCOSUR) and DOCK SUD (AUBASA).
+   */
   empresaId = '';
   modoImportacion: ModoImportacion = 'simple';
   crearEmpresaAbierto = false;

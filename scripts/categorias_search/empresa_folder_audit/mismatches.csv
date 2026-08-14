@@ -1,0 +1,4 @@
+file_upload_name,relative_folder,expected_empresa_id,expected_empresa_nombre,db_empresa_id,db_empresa_nombre,db_peaje_nombre,db_estacion_nombre,n_pasadas,documento_empresa
+pasadas_2026-07-01_79158.csv,MERCOSUR/julio/pasadas_2026-07-01_79158.csv,37ab9246-a07a-40b5-b62d-7a8b8e7782db,AUTOVIA DEL MERCOSUR,75d868b4-aef5-409a-8d12-973506656811,AUBASA,AUBASA,DOCK SUD,49,AUTOVIA DEL MERCOSUR (49)
+pasadas_2026-07-16_86802.csv,MERCOSUR/julio/pasadas_2026-07-16_86802.csv,37ab9246-a07a-40b5-b62d-7a8b8e7782db,AUTOVIA DEL MERCOSUR,75d868b4-aef5-409a-8d12-973506656811,AUBASA,AUBASA,DOCK SUD,148,AUTOVIA DEL MERCOSUR (148)
+pasadas_2026-07-16_86803.csv,MERCOSUR/julio/pasadas_2026-07-16_86803.csv,37ab9246-a07a-40b5-b62d-7a8b8e7782db,AUTOVIA DEL MERCOSUR,75d868b4-aef5-409a-8d12-973506656811,AUBASA,AUBASA,DOCK SUD,47,AUTOVIA DEL MERCOSUR (47)

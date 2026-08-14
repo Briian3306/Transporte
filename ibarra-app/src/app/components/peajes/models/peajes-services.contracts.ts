@@ -169,6 +169,7 @@ export interface ConfirmacionCargaResultado {
 export interface PeajesCatalogoService {
   listarEmpresas(): Observable<Empresa[]>;
   crearEmpresa(data: Omit<Empresa, 'id' | 'created_at'>): Observable<Empresa>;
+  actualizarEmpresa(id: string, data: Partial<Empresa>): Observable<Empresa>;
   listarPeajes(empresaId?: string): Observable<Peaje[]>;
   obtenerPeaje(id: string): Observable<Peaje | null>;
   crearPeaje(data: Omit<Peaje, 'id' | 'created_at'>): Observable<Peaje>;

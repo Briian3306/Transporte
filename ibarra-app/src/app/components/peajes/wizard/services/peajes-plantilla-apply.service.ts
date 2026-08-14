@@ -4,10 +4,12 @@ import {
   ConfiguracionPlantilla,
   PEAJES_CATALOGO_SERVICE,
   PEAJES_PLANTILLAS_SERVICE,
+  Peaje,
   PeajesCatalogoService,
   PeajesPlantillasService,
   PlantillaConfiguracion,
   PlantillaMapeoColumna,
+  estacionPerteneceAEmpresa,
 } from '../../models';
 import { PeajesMotorTransformacionService } from '../../plantillas/motor/peajes-motor-transformacion.service';
 import { PeajesWizardStateService } from './peajes-wizard-state.service';
@@ -152,10 +154,32 @@ export class PeajesPlantillaApplyService {
     }
 
     const estaciones = await firstValueFrom(this.catalogo.listarEstaciones());
+    const peajes = await this.listarPeajesCatalogo();
     const idsEstacion = new Set(estaciones.map((e) => e.id));
     const filas = this.state.construirPasadasDesdeMapeo();
     if (!filas.length || filas.some((f) => !f.ESTACION_ID || !idsEstacion.has(String(f.ESTACION_ID)))) {
       return 6;
+    }
+
+    const empresaId = this.state.snapshot().empresaId;
+    const simple = this.state.snapshot().modoImportacion !== 'masiva';
+    if (simple && empresaId) {
+      const fueraDeEmpresa = filas.some((f) => {
+        const est = estaciones.find((e) => e.id === String(f.ESTACION_ID));
+        return !est || !estacionPerteneceAEmpresa(est, empresaId, peajes);
+      });
+      if (fueraDeEmpresa) {
+        this.state.setRelacionesEstacion(
+          this.state.snapshot().relacionesEstacion.map((r) => {
+            const est = estaciones.find((e) => e.id === r.estacionId);
+            if (!est || !estacionPerteneceAEmpresa(est, empresaId, peajes)) {
+              return { ...r, estacionId: null };
+            }
+            return r;
+          })
+        );
+        return 6;
+      }
     }
 
     const patentes = await firstValueFrom(this.catalogo.listarPatentes());
@@ -169,6 +193,13 @@ export class PeajesPlantillaApplyService {
     }
     this.state.setPasadasEstandarizadas(filas);
     return null;
+  }
+
+  private async listarPeajesCatalogo(): Promise<Peaje[]> {
+    if (typeof this.catalogo.listarPeajes !== 'function') {
+      return [];
+    }
+    return firstValueFrom(this.catalogo.listarPeajes());
   }
 
   private filasParaMotor(columnas: string[]): Record<string, unknown>[] {

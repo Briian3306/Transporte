@@ -92,7 +92,16 @@
 .at__btn--primary { border-color: var(--at-signal); background: var(--at-signal); color: #fff; }
 .at__btn--compact { min-height: 2.25rem; }
 .at__btn:disabled { opacity: .55; cursor: not-allowed; }
-.at__btn:focus-visible, .at__action:focus-visible, .at__status-chip:focus-visible, .at__seg-btn:focus-visible, .at__progress-toggle:focus-visible, .at__sort:focus-visible { outline: 2px solid #6ea0ee; outline-offset: 2px; }
+.at__btn:focus-visible, .at__action:focus-visible, .at__status-chip:focus-visible, .at__seg-btn:focus-visible, .at__progress-toggle:focus-visible, .at__sort:focus-visible, .at__peaje-edit:focus-visible, .at__peaje-link:focus-visible { outline: 2px solid #6ea0ee; outline-offset: 2px; }
+.at__peaje-cell { display: inline-flex; align-items: center; gap: .35rem; max-width: 16rem; }
+.at__peaje-link, .at__peaje-name { font-weight: 700; }
+.at__peaje-link { color: var(--at-signal); text-decoration: none; }
+.at__peaje-link:hover { text-decoration: underline; }
+.at__peaje-edit { appearance: none; display: inline-grid; place-items: center; flex: 0 0 auto; width: 1.55rem; height: 1.55rem; border: 1px solid var(--at-line); border-radius: .35rem; background: #fff; color: var(--at-muted); font-size: .68rem; cursor: pointer; }
+.at__peaje-edit:hover:not(:disabled) { border-color: #93b4e9; background: #edf4ff; color: var(--at-signal); }
+.at__peaje-edit:disabled { opacity: .4; cursor: not-allowed; }
+.at__url-field { display: flex; flex-direction: column; gap: .35rem; color: var(--at-muted); font-size: .72rem; font-weight: 800; }
+.at__url-field input { appearance: none; min-height: 2.35rem; padding: .5rem .65rem; border: 1px solid var(--at-line); border-radius: .45rem; background: #fff; color: var(--at-ink); font: inherit; font-weight: 500; }
 .at__pager { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .55rem; padding-top: .8rem; color: var(--at-muted); font-size: .75rem; }
 .at__pager label { display: inline-flex; align-items: center; gap: .35rem; }
 .at__pager select { min-height: 2.15rem; border: 1px solid var(--at-line); border-radius: .4rem; background: #fff; }

@@ -276,3 +276,210 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
     ).toBeTrue();
   });
 });
+
+describe('PeajesPlantillaApplyService alcance empresa 0001', () => {
+  const mercosurId = '37ab9246-a07a-40b5-b62d-7a8b8e7782db';
+  const dockId = 'EST-DOCK';
+  const patenteId = 'pat-ae751pa';
+
+  const plantillaMercosur: PlantillaConfiguracion = {
+    id: 'plt-mercosur',
+    nombre: 'MERCA-SUR-7-2026',
+    empresa_id: mercosurId,
+    estado: 'activa',
+    mapeos: [
+      { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID', excluida: false },
+      { columnaOrigen: 'FECHA_HORA', columnaDestino: 'FECHA_HORA', excluida: false },
+      { columnaOrigen: 'PASE_ID', columnaDestino: 'PASE_ID', excluida: false },
+      { columnaOrigen: 'PATENTE', columnaDestino: 'PATENTE_ID', excluida: false },
+      { columnaOrigen: 'PRECIO', columnaDestino: 'PRECIO', excluida: false },
+      { columnaOrigen: 'BONIFICACION', columnaDestino: 'BONIFICACION', excluida: false },
+      { columnaOrigen: 'QUANTITY', columnaDestino: 'QUANTITY', excluida: false },
+      { columnaOrigen: 'IMPORTE_NETO', columnaDestino: 'IMPORTE_NETO', excluida: false },
+    ],
+    estaciones_reconocidas: [
+      {
+        id: 'rel-0001',
+        plantilla_id: 'plt-mercosur',
+        valor_proveedor: '0001',
+        valor_normalizado: '0001',
+        estacion_id: dockId,
+        origen: 'plantilla',
+      },
+    ],
+    configuraciones: [
+      {
+        id: 'c10',
+        plantilla_id: 'plt-mercosur',
+        nombre_columna: 'FECHA',
+        columna_destino: 'FECHA_HORA',
+        orden: 10,
+        tipo: 'transformacion',
+        algoritmo_combinado_id: null,
+        obligatoria: true,
+        configuracion: {
+          algoritmo_codigo: 'COMBINAR_COLUMNAS',
+          columnas_entrada: ['FECHA', 'HORA'],
+          separador: ' ',
+        },
+      },
+      {
+        id: 'c20',
+        plantilla_id: 'plt-mercosur',
+        nombre_columna: 'DISPOSITIVO',
+        columna_destino: 'PASE_ID',
+        orden: 20,
+        tipo: 'transformacion',
+        algoritmo_combinado_id: null,
+        obligatoria: true,
+        configuracion: { algoritmo_codigo: 'COPIAR_COLUMNA', columna: 'DISPOSITIVO' },
+      },
+      {
+        id: 'c30',
+        plantilla_id: 'plt-mercosur',
+        nombre_columna: 'PATENTE',
+        columna_destino: 'PATENTE_ID',
+        orden: 30,
+        tipo: 'transformacion',
+        algoritmo_combinado_id: null,
+        obligatoria: true,
+        configuracion: { algoritmo_codigo: 'BORRAR_ESPACIOS', columna: 'PATENTE' },
+      },
+      {
+        id: 'c50',
+        plantilla_id: 'plt-mercosur',
+        nombre_columna: 'TARIFA',
+        columna_destino: 'PRECIO',
+        orden: 50,
+        tipo: 'transformacion',
+        algoritmo_combinado_id: null,
+        obligatoria: true,
+        configuracion: { algoritmo_codigo: 'CONVERTIR_NUMERO', columna: 'TARIFA' },
+      },
+      {
+        id: 'c60',
+        plantilla_id: 'plt-mercosur',
+        nombre_columna: 'BONIFICACION',
+        columna_destino: 'BONIFICACION',
+        orden: 60,
+        tipo: 'transformacion',
+        algoritmo_combinado_id: null,
+        obligatoria: true,
+        configuracion: { algoritmo_codigo: 'CONVERTIR_NUMERO', columna: 'BONIFICACION' },
+      },
+      {
+        id: 'c70',
+        plantilla_id: 'plt-mercosur',
+        nombre_columna: 'IMPORTE_NETO',
+        columna_destino: 'IMPORTE_NETO',
+        orden: 70,
+        tipo: 'transformacion',
+        algoritmo_combinado_id: null,
+        obligatoria: true,
+        configuracion: {
+          algoritmo_codigo: 'CALCULAR_IMPORTE_NETO',
+          precio_columna: 'TARIFA',
+          bonificacion_columna: 'BONIFICACION',
+        },
+      },
+    ],
+  };
+
+  it('no salta a Factura si la plantilla restauró DOCK SUD en una carga MERCOSUR', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        PeajesWizardStateService,
+        PeajesPlantillaApplyService,
+        {
+          provide: PEAJES_PLANTILLAS_SERVICE,
+          useValue: {
+            obtenerPlantilla: () => of(plantillaMercosur),
+            listarAlgoritmos: () => of([]),
+          },
+        },
+        {
+          provide: PEAJES_CATALOGO_SERVICE,
+          useValue: {
+            listarEstaciones: () =>
+              of([
+                {
+                  id: dockId,
+                  nombre: 'DOCK SUD',
+                  peaje_id: 'PEA-AUBASA',
+                  codigos_proveedor: ['0001', '1'],
+                  peaje: {
+                    id: 'PEA-AUBASA',
+                    nombre: 'AUBASA',
+                    empresa_id: '75d868b4-aef5-409a-8d12-973506656811',
+                  },
+                },
+                {
+                  id: 'EST-MER-0001',
+                  nombre: 'Zarate',
+                  peaje_id: 'PEA-MERCOSUR',
+                  codigos_proveedor: ['0001', '1'],
+                  peaje: {
+                    id: 'PEA-MERCOSUR',
+                    nombre: 'Autovía del Mercosur',
+                    empresa_id: mercosurId,
+                  },
+                },
+              ]),
+            listarPeajes: () =>
+              of([
+                {
+                  id: 'PEA-AUBASA',
+                  nombre: 'AUBASA',
+                  empresa_id: '75d868b4-aef5-409a-8d12-973506656811',
+                },
+                { id: 'PEA-MERCOSUR', nombre: 'Autovía del Mercosur', empresa_id: mercosurId },
+              ]),
+            listarPatentes: () =>
+              of([{ id: patenteId, patente: 'AE751PA', categoria: 'TRANSPORTE' }]),
+          },
+        },
+      ],
+    });
+
+    const apply = TestBed.inject(PeajesPlantillaApplyService);
+    const state = TestBed.inject(PeajesWizardStateService);
+    state.reiniciar();
+    state.setEmpresaId(mercosurId);
+    state.setPreview({
+      nombreArchivo: 'pasadas_2026-07-16_86802.csv',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['FECHA', 'HORA', 'ESTACION', 'DISPOSITIVO', 'PATENTE', 'TARIFA', 'BONIFICACION'],
+      filasPreview: [
+        {
+          FECHA: '2026-07-16',
+          HORA: '10:00:00',
+          ESTACION: '0001',
+          DISPOSITIVO: '1',
+          PATENTE: 'AE751PA',
+          TARIFA: '18829.29',
+          BONIFICACION: '0.00',
+        },
+      ],
+      filasOrigen: [
+        {
+          FECHA: '2026-07-16',
+          HORA: '10:00:00',
+          ESTACION: '0001',
+          DISPOSITIVO: '1',
+          PATENTE: 'AE751PA',
+          TARIFA: '18829.29',
+          BONIFICACION: '0.00',
+        },
+      ],
+      tiposInferidos: {},
+    });
+
+    const result = await apply.aplicarYEvaluar(plantillaMercosur.id);
+
+    expect(result.ok).toBeTrue();
+    expect(result.excepcion).toBe(6);
+    expect(state.snapshot().relacionesEstacion[0]?.estacionId).toBeNull();
+  });
+});
+

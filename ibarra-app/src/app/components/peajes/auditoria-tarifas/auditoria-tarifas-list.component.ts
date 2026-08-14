@@ -18,6 +18,7 @@ import {
   rangeToIsoFilters,
 } from '../../shared';
 import {
+  Empresa,
   Estacion,
   PEAJES_CATALOGO_SERVICE,
   PEAJES_PASADAS_SERVICE,
@@ -92,6 +93,7 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
   filters: TarifasNormalizadasFilters = {};
 
   peajes: Peaje[] = [];
+  empresas: Empresa[] = [];
   estaciones: Estacion[] = [];
   categorias: string[] = [];
   catalogByPeaje = new Map<string, TarifaStatusCatalogo[]>();
@@ -130,7 +132,14 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
   casosPageSize = 50;
   casosSort: DataTableSort = { key: 'fecha_hora', direction: 'desc' };
 
+  tarifaUrlDialogOpen = false;
+  tarifaUrlEmpresa: Empresa | null = null;
+  tarifaUrlDraft = '';
+  tarifaUrlSaving = false;
+  tarifaUrlError: string | null = null;
+
   readonly diagnosticoOptions = DIAGNOSTICO_OPTIONS;
+  private readonly tarifaUrlPattern = /^https?:\/\/\S+$/i;
 
   constructor(
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService,
@@ -294,8 +303,9 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
 
   async loadCatalogData(): Promise<void> {
     try {
-      [this.peajes, this.estaciones] = await Promise.all([
+      [this.peajes, this.empresas, this.estaciones] = await Promise.all([
         firstValueFrom(this.catalogo.listarPeajes()),
+        firstValueFrom(this.catalogo.listarEmpresas()),
         firstValueFrom(this.catalogo.listarEstaciones()),
       ]);
       await Promise.all(
@@ -307,6 +317,7 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
       await this.loadCategorias();
     } catch {
       this.peajes = [];
+      this.empresas = [];
       this.estaciones = [];
     }
   }
@@ -678,6 +689,65 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
     this.casosRows = [];
     this.casosTotal = 0;
     this.casosError = null;
+  }
+
+  empresaForRow(row: TarifaNormalizadaRow): Empresa | null {
+    const peaje = this.peajes.find((item) => item.id === row.peaje_id);
+    if (!peaje?.empresa_id || peaje.empresa_id === '__global__') return null;
+    return this.empresas.find((item) => item.id === peaje.empresa_id) ?? null;
+  }
+
+  tarifaUrlForRow(row: TarifaNormalizadaRow): string | null {
+    const url = this.empresaForRow(row)?.tarifa_url?.trim();
+    return url || null;
+  }
+
+  openTarifaUrlDialog(row: TarifaNormalizadaRow, event?: Event): void {
+    event?.stopPropagation();
+    const empresa = this.empresaForRow(row);
+    if (!empresa) {
+      this.tarifaUrlError = 'Este peaje no tiene empresa asociada.';
+      return;
+    }
+    this.tarifaUrlEmpresa = empresa;
+    this.tarifaUrlDraft = empresa.tarifa_url ?? '';
+    this.tarifaUrlError = null;
+    this.tarifaUrlDialogOpen = true;
+  }
+
+  closeTarifaUrlDialog(): void {
+    this.tarifaUrlDialogOpen = false;
+    this.tarifaUrlEmpresa = null;
+    this.tarifaUrlDraft = '';
+    this.tarifaUrlError = null;
+  }
+
+  get tarifaUrlDialogTitle(): string {
+    return this.tarifaUrlEmpresa
+      ? `URL de tarifas · ${this.tarifaUrlEmpresa.nombre}`
+      : 'URL de tarifas';
+  }
+
+  async saveTarifaUrl(): Promise<void> {
+    if (!this.tarifaUrlEmpresa) return;
+    const url = this.tarifaUrlDraft.trim() || null;
+    if (url && !this.tarifaUrlPattern.test(url)) {
+      this.tarifaUrlError = 'La URL debe empezar con http:// o https://';
+      return;
+    }
+    this.tarifaUrlSaving = true;
+    this.tarifaUrlError = null;
+    try {
+      const updated = await firstValueFrom(
+        this.catalogo.actualizarEmpresa(this.tarifaUrlEmpresa.id, { tarifa_url: url })
+      );
+      this.empresas = this.empresas.map((item) => (item.id === updated.id ? updated : item));
+      this.closeTarifaUrlDialog();
+    } catch {
+      this.tarifaUrlError = 'No se pudo guardar la URL. Revisá el formato y volvé a intentar.';
+    } finally {
+      this.tarifaUrlSaving = false;
+    }
   }
 
   openRecalcDialog(): void {

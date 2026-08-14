@@ -4,6 +4,16 @@
 
 En el wizard **simple**, tras elegir **empresa** en Paso 1, el Paso 6 solo ofrece estaciones de los **peajes de esa empresa**. Usa `reconocerEstacion` del catálogo para auto-seleccionar coincidencias exactas y recomendar alta cuando no hay match.
 
+### Código `0001` (Zarate vs DOCK SUD) — F02-17
+
+Telepase MERCOSUR usa `ESTACION=0001`. Ese código está en **Zarate** (`c9ed477b-11e7-4698-a81d-97813a9ae538`, AUTOVIA DEL MERCOSUR) **y** en **DOCK SUD** (AUBASA). Prevención:
+
+1. Paso 1 (simple) exige empresa. El recuadro «La empresa cierra el peaje» explica el alcance.
+2. `reconocerEstacion(valor, empresaId)` filtra aliases y `codigos_proveedor` (`1` ≡ `0001`) a esa empresa. Sin empresa, un código compartido queda en **sugerencias** (no se toma el primero).
+3. Una plantilla que restaura una estación de otra empresa no salta a Factura: abre Paso 6, descarta el id ajeno y vuelve a reconocer.
+
+DESARROLLO data fix 2026-08-14: `pasadas_2026-07-16_86802.csv` (148), `86803.csv` (47), `pasadas_2026-07-01_79158.csv` (49) movidas a Zarate; `peajes_recalcular_tarifas` en Autovía del Mercosur + AUBASA. Auditoría: `scripts/categorias_search/empresa_folder_audit/REPORT.md`.
+
 Con columna Excel **`Concesion`** (RN-26): ese valor representa el **peaje**. Paso 5 recomienda el peaje; Paso 6 filtra estaciones a ese peaje/empresa. El usuario puede corregir peaje o estación. No se listan estaciones de peajes/empresas ajenos por defecto. Ver [importacion-masiva-consumos-resumen.md](./importacion-masiva-consumos-resumen.md) y [wizard.md](./wizard.md).
 
 ## Flujo
@@ -90,8 +100,8 @@ Modelo completo: [APENDICE-B](../../plan/auditoria-pasadas-patrones/APENDICE-B-d
 
 ## Feature
 
-**F02-13** (passing) · **F02-15** (fix VIA exclusion) · **F13-4** (RN-26 Concesion→Peaje→Estaciones) · ver `feature_list.json` y [wizard.md](./wizard.md).
+**F02-13** (passing) · **F02-15** (fix VIA exclusion) · **F02-17** (código `0001` Zarate vs DOCK SUD) · **F13-4** (RN-26 Concesion→Peaje→Estaciones) · ver `feature_list.json` y [wizard.md](./wizard.md).
 
 ---
 
-> Última actualización: 2026-08-12
+> Última actualización: 2026-08-14

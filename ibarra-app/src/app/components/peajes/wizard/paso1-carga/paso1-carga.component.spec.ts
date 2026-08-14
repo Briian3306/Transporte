@@ -290,4 +290,23 @@ describe('Paso1CargaComponent', () => {
     expect(excepcion).not.toHaveBeenCalled();
     expect(state.snapshot().plantillaId).toBe(plantillaAusolLike.id);
   });
+
+  it('en importación simple muestra que la empresa cierra el peaje', async () => {
+    excel.esArchivoValido.and.returnValue(true);
+    excel.parsearArchivo.and.resolveTo({
+      nombreArchivo: 'pasadas_2026-07-16_86802.csv',
+      tamanioBytes: 100,
+      totalFilas: 1,
+      columnas: ['ESTACION'],
+      filasPreview: [{ ESTACION: '0001' }],
+      filasOrigen: [{ ESTACION: '0001' }],
+      tiposInferidos: { ESTACION: 'texto' },
+    });
+    const file = new File(['x'], 'pasadas_2026-07-16_86802.csv', { type: 'text/csv' });
+    await component.procesar(file);
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('La empresa cierra el peaje');
+    expect(text).toContain('0001');
+  });
 });

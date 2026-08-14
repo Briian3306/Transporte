@@ -29,7 +29,17 @@ describe('AuditoriaTarifasListComponent', () => {
         {
           provide: PEAJES_CATALOGO_SERVICE,
           useValue: {
-            listarPeajes: () => of([{ id: 'p1', nombre: 'Peaje 1', empresa_id: 'e1' }]),
+            listarPeajes: () => of([{ id: 'peaje-corredores-viales', nombre: 'CORREDORES VIALES SA', empresa_id: 'e1' }]),
+            listarEmpresas: () =>
+              of([
+                {
+                  id: 'e1',
+                  nombre: 'AUSA',
+                  tarifa_url: 'https://www.ausa.com.ar/sections/tarifas.html',
+                },
+              ]),
+            actualizarEmpresa: (id: string, data: { tarifa_url?: string | null }) =>
+              of({ id, nombre: 'AUSA', ...data }),
             listarEstaciones: () => of([]),
           },
         },
@@ -143,4 +153,30 @@ describe('AuditoriaTarifasListComponent', () => {
     expect(args.sort).toBe('fecha_hora');
     expect(args.dir).toBe('desc');
   }));
+
+  it('resuelve tarifa_url desde la empresa del peaje', () => {
+    const row = component.rows[0];
+    expect(component.tarifaUrlForRow(row)).toBe('https://www.ausa.com.ar/sections/tarifas.html');
+  });
+
+  it('abre el dialogo de URL de tarifas y guarda en la empresa', fakeAsync(async () => {
+    const row = component.rows[0];
+    component.openTarifaUrlDialog(row);
+    expect(component.tarifaUrlDialogOpen).toBeTrue();
+    expect(component.tarifaUrlEmpresa?.id).toBe('e1');
+    component.tarifaUrlDraft = 'https://www.ausa.com.ar/sections/tarifas.html';
+    await component.saveTarifaUrl();
+    tick();
+    await fixture.whenStable();
+    expect(component.tarifaUrlDialogOpen).toBeFalse();
+    expect(component.empresas[0].tarifa_url).toBe('https://www.ausa.com.ar/sections/tarifas.html');
+  }));
+
+  it('rechaza una URL sin http(s)', async () => {
+    component.openTarifaUrlDialog(component.rows[0]);
+    component.tarifaUrlDraft = 'ftp://example.com';
+    await component.saveTarifaUrl();
+    expect(component.tarifaUrlDialogOpen).toBeTrue();
+    expect(component.tarifaUrlError).toContain('http://');
+  });
 });

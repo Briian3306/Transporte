@@ -25,9 +25,10 @@ Catálogos base del módulo (F01-1): peajes/corredores, estaciones, patentes y p
 | `id` | uuid PK | No | `gen_random_uuid()` |
 | `nombre` | text UNIQUE | No | Nombre de la empresa |
 | `descripcion` | text | Sí | — |
+| `tarifa_url` | text | Sí | URL pública de tarifas (`http`/`https`). CHECK `empresas_tarifa_url_http_chk` |
 | `created_at` | timestamptz | No | Default `now()` |
 
-Índice: `nombre`. Relación lógica: `peajes.empresa_id` / `documentos.empresa_id` / plantillas y algoritmos usan `empresas.id::text` o `'__global__'` (sin FK uuid; RN-23).
+Índice: `nombre`. Relación lógica: `peajes.empresa_id` / `documentos.empresa_id` / plantillas y algoritmos usan `empresas.id::text` o `'__global__'` (sin FK uuid; RN-23). `tarifa_url` se edita desde Auditoría de tarifas (lápiz junto al nombre del peaje). Seed: AUSA → `https://www.ausa.com.ar/sections/tarifas.html`. Migración: `20260813195728_peajes_empresas_tarifa_url.sql`.
 
 ---
 
@@ -119,7 +120,7 @@ Detalle UI: [docs/06-components/peajes/catalogos.md](../../06-components/peajes/
 
 `estaciones` incorpora coordenadas, camino y estado geográfico `OK`/`REVIEW`. `estaciones_alias_proveedor` conserva equivalencias normalizadas y confirmadas por empresa; es la fuente de resolución reutilizable antes de sugerir coincidencias parciales.
 
-- SQL: `supabase/migrations/20260730125513_peajes_catalogos.sql`, `supabase/migrations/20260731124502_peajes_empresas.sql`
+- SQL: `supabase/migrations/20260730125513_peajes_catalogos.sql`, `supabase/migrations/20260731124502_peajes_empresas.sql`, `supabase/migrations/20260813195728_peajes_empresas_tarifa_url.sql`
 - SQL fuente: `supabase/migrations/`.
 - Servicio: `src/app/components/peajes/services/peajes-catalogo.service.ts`
 - UI catálogos: [docs/06-components/peajes/catalogos.md](../../06-components/peajes/catalogos.md)
