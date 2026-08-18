@@ -62,9 +62,17 @@ export class SearchSelectComponent implements ControlValueAccessor {
 
   get filteredOptions(): SearchSelectOption[] {
     const q = this.query.trim().toLowerCase();
-    let list = this.options.filter((o) => o.id !== this.value);
+    let list = [...this.options];
     if (q) {
-      list = list.filter((o) => o.label.toLowerCase().includes(q)).slice(0, this.maxResults);
+      const exact = list.filter(
+        (o) => o.id.toLowerCase() === q || o.label.toLowerCase() === q
+      );
+      list = exact.length
+        ? exact
+        : list.filter(
+            (o) => o.id.toLowerCase().includes(q) || o.label.toLowerCase().includes(q)
+          );
+      list = list.slice(0, this.maxResults);
     } else if (!this.showAllWhenEmpty) {
       list = list.slice(0, this.maxResults);
     }
@@ -103,15 +111,15 @@ export class SearchSelectComponent implements ControlValueAccessor {
 
   onQueryChange(q: string): void {
     this.query = q;
-    this.highlightedIndex = 0;
     this.open = true;
+    this.highlightedIndex = this.defaultHighlight();
     this.onTouched();
   }
 
   onFocus(): void {
     if (this.disabled) return;
     this.open = true;
-    this.highlightedIndex = this.filteredOptions.length ? 0 : -1;
+    this.highlightedIndex = this.defaultHighlight();
     this.onTouched();
   }
 
@@ -129,7 +137,7 @@ export class SearchSelectComponent implements ControlValueAccessor {
     this.emit(null);
     this.query = '';
     this.open = true;
-    this.highlightedIndex = this.filteredOptions.length ? 0 : -1;
+    this.highlightedIndex = this.defaultHighlight();
     queueMicrotask(() => this.focusInput());
   }
 
@@ -146,7 +154,7 @@ export class SearchSelectComponent implements ControlValueAccessor {
     if (ev.key === 'ArrowDown' && !this.open) {
       ev.preventDefault();
       this.open = true;
-      this.highlightedIndex = 0;
+      this.highlightedIndex = this.defaultHighlight();
       return;
     }
 
@@ -180,5 +188,12 @@ export class SearchSelectComponent implements ControlValueAccessor {
     this.value = next;
     this.valueChange.emit(next);
     this.onChange(next);
+  }
+
+  private defaultHighlight(): number {
+    const list = this.filteredOptions;
+    if (!list.length) return -1;
+    const currentIdx = list.findIndex((o) => o.id === this.value);
+    return currentIdx >= 0 ? currentIdx : 0;
   }
 }

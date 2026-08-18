@@ -3,7 +3,16 @@ BEGIN;
 SELECT plan(3);
 
 SELECT has_column('public', 'empresas', 'tarifa_url', 'empresas.tarifa_url existe');
-SELECT col_is_nullable('public', 'empresas', 'tarifa_url', 'empresas.tarifa_url es nullable');
+SELECT ok(
+  (
+    SELECT is_nullable = 'YES'
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'empresas'
+      AND column_name = 'tarifa_url'
+  ),
+  'empresas.tarifa_url es nullable'
+);
 SELECT ok(
   EXISTS (
     SELECT 1

@@ -10,7 +10,7 @@ Parámetros por peaje: `umbral_muestra_minima` (default 15), `umbral_dispersion`
 
 ## tarifas_status_catalogo
 
-Vocabulario de status por peaje (`codigo`, `etiqueta`, `color`, `tipo_meta` ∈ `PICO|NO_PICO|NEUTRO`, `orden`). Unique `(peaje_id, codigo)`.
+Vocabulario de status por peaje (`codigo`, `etiqueta`, `color`, `tipo_meta` ∈ `PICO|NO_PICO|NEUTRO`, `orden`). Unique `(peaje_id, codigo)`. Al insertar un peaje, el trigger `trg_peajes_seed_status_catalogo` crea `NO_PICO` y `PICO` si aún no hay filas.
 
 ## tarifas_normalizadas
 
@@ -24,4 +24,4 @@ Ver [documentos-pasadas.md](./documentos-pasadas.md): `categoria`, `tarifa_norma
 
 ---
 
-> Última actualización: 2026-08-14
+> Última actualización: 2026-08-18

@@ -137,7 +137,7 @@
         </tr>
       </thead>
       <tbody *ngIf="!loading && rows.length; else emptyOrLoading">
-        <ng-container *ngFor="let row of rows">
+        <ng-container *ngFor="let row of rows; trackBy: trackByRowId">
           <tr class="at__row" [class.at__row--open]="expandedId === row.id">
             <td>
               <button type="button" class="at__expand" [attr.aria-expanded]="expandedId === row.id" [attr.aria-controls]="'detail-' + row.id" [attr.aria-label]="expandedId === row.id ? 'Ocultar niveles de tarifa' : 'Ver niveles de tarifa'" (click)="toggleExpand(row)">

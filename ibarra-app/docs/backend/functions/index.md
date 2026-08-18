@@ -32,6 +32,7 @@ Ofrecer un índice rápido nombre → módulo → documento de detalle, sin dupl
 | `peajes_marcar_diagnostico_tarifa` | peajes | Marca CATEGORIA/REVISAR | [auditoria-tarifas](../peajes/auditoria-tarifas.md) |
 | `peajes_listar_tarifas_normalizadas` | peajes | Listado paginado auditoría | [auditoria-tarifas](../peajes/auditoria-tarifas.md) |
 | `peajes_grupos_similares_tarifa` | peajes | Familias con mismo ratio max/min | [auditoria-tarifas](../peajes/auditoria-tarifas.md) |
+| `peajes_seed_status_catalogo_default` | peajes | Semilla PICO/NO_PICO por peaje | [auditoria-tarifas](../peajes/auditoria-tarifas.md) |
 | `peajes_listar_pasadas` | peajes | Listado paginado gestión | [gestion-pasadas](../peajes/gestion-pasadas.md) |
 | `peajes_listar_estaciones_pendientes` | peajes | Agregado estaciones PENDING (coords) | [estaciones-pendientes](../peajes/estaciones-pendientes.md) |
 | `peajes_crear_pasada` | peajes | Alta manual pasada | [gestion-pasadas](../peajes/gestion-pasadas.md) |

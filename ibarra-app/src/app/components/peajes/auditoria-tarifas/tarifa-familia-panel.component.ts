@@ -76,7 +76,11 @@ export class TarifaFamiliaPanelComponent implements OnChanges, OnInit {
   ];
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['niveles'] || changes['catalogo']) this.applySuggestion();
+    const nivelesChanged = !!changes['niveles'];
+    const catalogoChanged = !!changes['catalogo'];
+    if (!nivelesChanged && !catalogoChanged) return;
+    if (catalogoChanged && !nivelesChanged && !this.suggestionPristine) return;
+    this.applySuggestion();
   }
 
   ngOnInit(): void {
@@ -293,11 +297,37 @@ export class TarifaFamiliaPanelComponent implements OnChanges, OnInit {
   }
 
   private applySuggestion(): void {
-    this.selections = suggestStatusByPrice(this.niveles, this.catalogo);
-    this.clases = new Map(this.niveles.map((n) => [n.id, n.categoria_calculated ?? null]));
-    this.suggestionPristine = true;
-    this.touchedIds.clear();
+    const suggested = suggestStatusByPrice(this.niveles, this.catalogo);
+    const ids = new Set(this.niveles.map((n) => n.id));
+    const nextSelections = new Map<string, string>();
+    const nextClases = new Map<string, number | null>();
+
+    for (const nivel of this.niveles) {
+      const saved = this.classifiedStatus(nivel.status);
+      const code = saved ?? suggested.get(nivel.id);
+      if (code) nextSelections.set(nivel.id, code);
+      nextClases.set(nivel.id, nivel.categoria_calculated ?? null);
+    }
+
+    if (!this.suggestionPristine) {
+      for (const [id, code] of this.selections) {
+        if (ids.has(id)) nextSelections.set(id, code);
+      }
+      for (const [id, cat] of this.clases) {
+        if (ids.has(id)) nextClases.set(id, cat);
+      }
+    } else {
+      this.touchedIds.clear();
+    }
+
+    this.selections = nextSelections;
+    this.clases = nextClases;
     this.detailPage = Math.min(this.detailPage, this.detailTotalPages);
+  }
+
+  private classifiedStatus(status: string | null | undefined): string | null {
+    if (!status || status === 'PENDIENTE') return null;
+    return status;
   }
 
   private shouldAutoConfirmPicoNoPico(): boolean {

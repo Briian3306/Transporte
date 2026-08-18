@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TarifaFamiliaPanelComponent } from './tarifa-familia-panel.component';
 import { buildZarate, MOCK_STATUS_CATALOG, PEAJE_CV } from './mocks/auditoria-tarifas.mock';
+import { TarifaAsignacion } from './contracts.local';
 
 describe('TarifaFamiliaPanelComponent', () => {
   let fixture: ComponentFixture<TarifaFamiliaPanelComponent>;
@@ -167,7 +168,8 @@ describe('TarifaFamiliaPanelComponent', () => {
     fixture.detectChanges();
     const stamps: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.at__clase-stamp');
     expect(stamps.length).toBe(component.niveles.length);
-    expect(stamps[0].querySelector('.at__clase-kicker')?.textContent?.trim()).toBe('CAT');
+    expect(stamps[0].querySelector('.at__clase-kicker')?.textContent?.trim()).toBe('Sin clase');
+    expect(stamps[0].classList.contains('at__clase-stamp--filled')).toBeFalse();
     const asignaciones = component.buildAsignaciones();
     expect(asignaciones.length).toBeGreaterThan(0);
     expect(asignaciones.every((a) => a.categoria_calculated === undefined)).toBeTrue();
@@ -192,5 +194,56 @@ describe('TarifaFamiliaPanelComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.at__clase-stamp')).toBeNull();
     expect(fixture.nativeElement.querySelector('.at__clase-dash')?.textContent?.trim()).toBe('—');
+  });
+
+  it('conserva NO_PICO y CAT guardados y no vuelve a sugerir PICO', () => {
+    component.niveles = component.niveles.map((n) => ({
+      ...n,
+      status: 'NO_PICO',
+      categoria_calculated: 5,
+    }));
+    component.ngOnChanges({ niveles: {} as never });
+    fixture.detectChanges();
+
+    expect(component.niveles.every((n) => component.selections.get(n.id) === 'NO_PICO')).toBeTrue();
+    expect(component.niveles.every((n) => component.claseValue(n.id) === 5)).toBeTrue();
+    const stamps: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.at__clase-stamp--filled');
+    expect(stamps.length).toBe(component.niveles.length);
+    expect(stamps[0].querySelector('.at__clase-kicker')?.textContent?.trim()).toBe('CAT');
+  });
+
+  it('emite NO_PICO y CAT 5 en Asignar status y los conserva al recargar', () => {
+    for (const n of component.niveles) {
+      component.onSelect(n.id, 'NO_PICO');
+      component.onClase(n.id, 5);
+    }
+    const emitted: TarifaAsignacion[][] = [];
+    component.confirm.subscribe((asignaciones) => emitted.push(asignaciones));
+    component.onConfirm();
+
+    expect(emitted.length).toBe(1);
+    expect(emitted[0].length).toBe(component.niveles.length);
+    expect(
+      emitted[0].every((a) => a.status_codigo === 'NO_PICO' && a.categoria_calculated === 5)
+    ).toBeTrue();
+
+    component.niveles = component.niveles.map((n) => ({
+      ...n,
+      status: 'PENDIENTE',
+      categoria_calculated: null,
+    }));
+    component.ngOnChanges({ niveles: {} as never });
+    expect(component.niveles.every((n) => component.selections.get(n.id) === 'NO_PICO')).toBeTrue();
+    expect(component.niveles.every((n) => component.claseValue(n.id) === 5)).toBeTrue();
+  });
+
+  it('no pisa una edición manual si solo cambia el catálogo', () => {
+    const cheapest = [...component.niveles].sort((a, b) => a.importe - b.importe)[0];
+    component.onSelect(cheapest.id, 'NO_PICO');
+    component.onClase(cheapest.id, 3);
+    component.catalogo = [...catalog];
+    component.ngOnChanges({ catalogo: {} as never });
+    expect(component.selections.get(cheapest.id)).toBe('NO_PICO');
+    expect(component.claseValue(cheapest.id)).toBe(3);
   });
 });

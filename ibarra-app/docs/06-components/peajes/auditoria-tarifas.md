@@ -74,7 +74,7 @@ La detección de columna `CATEGORIA` y el mapeo opcional están en [reconocimien
 
 Orden sugerido: filtrar **Status = Sin clasificar (PENDIENTE)** y un peaje; ir fila por fila con **Clasificar**.
 
-El sistema **preselecciona** un status por precio (más barato → primer código del catálogo). Podés cambiarlo en el select antes de confirmar. Limpiar el select vuelve a «Sin clasificar» (`PENDIENTE`). Los códigos nuevos no se inventan a mano: deben existir en `tarifas_status_catalogo` del peaje.
+El sistema **preselecciona** un status por precio (más barato → primer código del catálogo) **solo en niveles Sin clasificar (`PENDIENTE`)**. Si el nivel ya tiene `PICO` / `NO_PICO` (u otro código del catálogo), se muestra el valor guardado y no se pisa al recargar. Lo mismo para el sello **CAT**: la clase 0–10 que escribiste o que ya estaba guardada viaja en **Asignar status** y sobrevive el refresh. Podés cambiar el select antes de confirmar. Limpiar el select vuelve a «Sin clasificar» (`PENDIENTE`). Los códigos nuevos no se inventan a mano: deben existir en `tarifas_status_catalogo` del peaje. Cada peaje nuevo recibe `PICO` / `NO_PICO` al crearse; si el select solo muestra Pendiente / Posible horario, falta ese catálogo.
 ---
 
 ## Filtros
@@ -323,4 +323,4 @@ npx --yes tsx src/app/components/peajes/auditoria-tarifas/clasificacion.verify.t
 
 ---
 
-> Última actualización: 2026-08-14 (Recalcular borra niveles sin pasadas FC / MUESTRA_INSUFICIENTE fantasma)
+> Última actualización: 2026-08-18 (Asignar status conserva PICO/NO_PICO y CAT; no se pisan con la sugerencia por precio)

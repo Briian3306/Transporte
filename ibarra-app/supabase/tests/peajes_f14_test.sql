@@ -24,7 +24,8 @@ INSERT INTO public.pases (id, pase, patente_id) VALUES
 INSERT INTO public.tarifas_status_catalogo (peaje_id, codigo, etiqueta, color, tipo_meta, orden)
 VALUES
   ('a1111111-1111-1111-1111-111111111111', 'NO_PICO', 'No Pico', '#22C55E', 'NO_PICO', 1),
-  ('a1111111-1111-1111-1111-111111111111', 'PICO', 'Pico', '#EF4444', 'PICO', 2);
+  ('a1111111-1111-1111-1111-111111111111', 'PICO', 'Pico', '#EF4444', 'PICO', 2)
+ON CONFLICT (peaje_id, codigo) DO NOTHING;
 
 -- Schema checks
 SELECT has_table('public', 'tarifas_normalizadas', 'F14-1 tarifas_normalizadas existe');

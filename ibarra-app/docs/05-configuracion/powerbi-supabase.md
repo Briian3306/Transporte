@@ -13,6 +13,7 @@ Proyecto: **DESARROLLO** `SUPABASE_URL` (Check-list).
 - [Endpoints de las vistas `pwbi_*`](#endpoints-de-las-vistas-pwbi_)
 - [Pasos en Power BI Desktop (Web)](#pasos-en-power-bi-desktop-web)
 - [Power Query M (recomendado)](#power-query-m-recomendado)
+- [Tipos de columnas (obligatorio)](#tipos-de-columnas-obligatorio)
 - [Paginación (>1000 filas)](#paginación-1000-filas)
 - [Relaciones en el modelo](#relaciones-en-el-modelo)
 - [Prerrequisito de permisos (anon + RLS)](#prerrequisito-de-permisos-anon--rls)
@@ -51,6 +52,7 @@ Authorization: Bearer <anon_key>
 | `pwbi_estacion` | Dimensión | `https://SUPABASE_URL.supabase.co/rest/v1/pwbi_estacion?select=*` |
 | `pwbi_patentes` | Dimensión | `https://SUPABASE_URL.supabase.co/rest/v1/pwbi_patentes?select=*` |
 | `pwbi_documentos` | Dimensión | `https://SUPABASE_URL.supabase.co/rest/v1/pwbi_documentos?select=*` |
+| `pwbi_tarifas` | Dimensión | `https://SUPABASE_URL.supabase.co/rest/v1/pwbi_tarifas?select=*` |
 | `pwbi_pasadas` | Hecho | `https://SUPABASE_URL.supabase.co/rest/v1/pwbi_pasadas?select=*` |
 
 Detalle de columnas: [pwbi-views.md](../backend/peajes/pwbi-views.md).
@@ -79,16 +81,32 @@ Query params útiles:
 
 5. Aceptá → Power Query abre JSON (lista de records).
 6. Convertí a tabla: clic derecho en lista → **Convertir en tabla** → expandí las columnas del record.
-7. Repetí para `pwbi_patentes`, `pwbi_documentos` y `pwbi_pasadas`.
+7. Repetí para `pwbi_patentes`, `pwbi_documentos`, `pwbi_tarifas` y `pwbi_pasadas`.
 8. **Cerrar y aplicar**.
 
 Autenticación del origen Web: si Power BI pide credenciales del origen, usá **Anónimo** (la auth va en los headers `apikey` / `Authorization`, no en el diálogo de usuario/contraseña).
 
 ## Power Query M (recomendado)
 
-PostgREST / Supabase limita **1000 filas por request** (`max_rows`). Para `pwbi_pasadas` (~3500+) usá **paginación**. Para catálogos chicos (`pwbi_estacion`, `pwbi_patentes`) alcanza una sola página.
+PostgREST / Supabase limita **1000 filas por request** (`max_rows`). Para `pwbi_pasadas` (~3500+) usá **paginación**. Para catálogos chicos (`pwbi_estacion`, `pwbi_patentes`, `pwbi_documentos`, `pwbi_tarifas` ~300 filas) alcanza una sola página.
 
-### `pwbi_pasadas` (paginado — pegar completo)
+El JSON de la Data API **no trae tipos**: fechas llegan como texto ISO, UUID como texto, importes a veces como `Any`. Sin `Table.TransformColumnTypes` Power BI no suma, no filtra por fecha ni relaciona bien. Pegá las consultas de abajo **completas** (incluye tipos en todas las columnas). Cultura `"en-US"`: el JSON usa punto decimal e ISO-8601.
+
+### Tipos de columnas (obligatorio)
+
+| Postgres / vista | Power Query | Ejemplo |
+|------------------|-------------|---------|
+| `uuid` | `type text` | `Pasada_ID`, `Estacion_ID` |
+| `text` | `type text` | `Peaje_Nombre`, `Status`, `Tarifa_Status` |
+| `timestamptz` | `type datetimezone` | `fecha_hora`, `created_at` |
+| `date` | `type date` | `fecha_factura` |
+| `numeric` | `type number` | `precio`, `importe_neto`, `Latitud`, `Hora_Min` |
+| `integer` / `smallint` | `Int64.Type` | `quantity`, `Cases`, `Categoria_Calculated` |
+| `boolean` | `type logical` | `Muestra_Confiable`, `Confirmado_Manual` |
+
+`ExpandRecordColumn` lista las columnas **por nombre** (no uses `Record.FieldNames` de la primera fila: si esa fila omite un null, falta la columna).
+
+### `pwbi_pasadas` (paginado + tipos — pegar completo)
 
 ```powerquery
 let
@@ -100,6 +118,15 @@ let
         apikey = AnonKey,
         Authorization = "Bearer " & AnonKey
     ],
+    Cols = {
+        "Pasada_ID", "fecha_hora", "Pase_ID", "Patente_ID", "Estacion_ID", "Documento_ID",
+        "Peaje_ID", "Empresa_ID", "precio", "bonificacion", "quantity", "importe_neto",
+        "Categoria", "Tarifa_Normalizada_ID", "Tarifa_Status", "created_at", "user_id",
+        "file_upload_name", "Estacion_Nombre", "Estacion_Geocodificacion_Status",
+        "Estacion_Latitud", "Estacion_Longitud", "Peaje_Nombre", "Empresa_Nombre",
+        "Patente", "Patente_Categoria", "Pase", "Documento_Numero", "Documento_Tipo",
+        "Documento_Cuenta", "fecha_factura", "Documento_Importe_Sin_Iva", "Documento_Importe_Total"
+    },
     GetPage = (offset as number) as list =>
         Json.Document(
             Web.Contents(
@@ -128,14 +155,51 @@ let
     ),
     Origen = List.Combine(Pages),
     AsTable = Table.FromList(Origen, Splitter.SplitByNothing(), {"Row"}),
-    Expanded = Table.ExpandRecordColumn(AsTable, "Row", Record.FieldNames(AsTable{0}[Row]))
+    Expanded = Table.ExpandRecordColumn(AsTable, "Row", Cols, Cols),
+    Typed = Table.TransformColumnTypes(
+        Expanded,
+        {
+            {"Pasada_ID", type text},
+            {"fecha_hora", type datetimezone},
+            {"Pase_ID", type text},
+            {"Patente_ID", type text},
+            {"Estacion_ID", type text},
+            {"Documento_ID", type text},
+            {"Peaje_ID", type text},
+            {"Empresa_ID", type text},
+            {"precio", type number},
+            {"bonificacion", type number},
+            {"quantity", Int64.Type},
+            {"importe_neto", type number},
+            {"Categoria", type text},
+            {"Tarifa_Normalizada_ID", type text},
+            {"Tarifa_Status", type text},
+            {"created_at", type datetimezone},
+            {"user_id", type text},
+            {"file_upload_name", type text},
+            {"Estacion_Nombre", type text},
+            {"Estacion_Geocodificacion_Status", type text},
+            {"Estacion_Latitud", type number},
+            {"Estacion_Longitud", type number},
+            {"Peaje_Nombre", type text},
+            {"Empresa_Nombre", type text},
+            {"Patente", type text},
+            {"Patente_Categoria", type text},
+            {"Pase", type text},
+            {"Documento_Numero", type text},
+            {"Documento_Tipo", type text},
+            {"Documento_Cuenta", type text},
+            {"fecha_factura", type date},
+            {"Documento_Importe_Sin_Iva", type number},
+            {"Documento_Importe_Total", type number}
+        },
+        "en-US"
+    )
 in
-    Expanded
+    Typed
 ```
 
-### Catálogos (`pwbi_estacion` / `pwbi_patentes` / `pwbi_documentos`)
-
-Misma idea, sin bucle (o con `Resource` distinto y `limit = "1000"`). Cambiá solo `Resource` a `pwbi_estacion`, `pwbi_patentes` o `pwbi_documentos`.
+### `pwbi_estacion` (tipos)
 
 ```powerquery
 let
@@ -146,26 +210,192 @@ let
         apikey = AnonKey,
         Authorization = "Bearer " & AnonKey
     ],
+    Cols = {
+        "Estacion_ID", "Estacion_Nombre", "Peaje_ID", "Peaje_Nombre",
+        "Ubicacion", "Latitud", "Longitud", "Status", "created_at"
+    },
     Origen = Json.Document(
         Web.Contents(
             SupabaseUrl,
             [
                 RelativePath = "rest/v1/" & Resource,
-                Query = [
-                    select = "*",
-                    limit = "1000"
-                ],
+                Query = [select = "*", limit = "1000"],
                 Headers = Headers
             ]
         )
     ),
     AsTable = Table.FromList(Origen, Splitter.SplitByNothing(), {"Row"}),
-    Expanded = Table.ExpandRecordColumn(AsTable, "Row", Record.FieldNames(AsTable{0}[Row]))
+    Expanded = Table.ExpandRecordColumn(AsTable, "Row", Cols, Cols),
+    Typed = Table.TransformColumnTypes(
+        Expanded,
+        {
+            {"Estacion_ID", type text},
+            {"Estacion_Nombre", type text},
+            {"Peaje_ID", type text},
+            {"Peaje_Nombre", type text},
+            {"Ubicacion", type text},
+            {"Latitud", type number},
+            {"Longitud", type number},
+            {"Status", type text},
+            {"created_at", type datetimezone}
+        },
+        "en-US"
+    )
 in
-    Expanded
+    Typed
 ```
 
-> Tip: guardá `SupabaseUrl` y `AnonKey` en un parámetro / consulta `Config` para no duplicar la key.
+### `pwbi_patentes` (tipos)
+
+```powerquery
+let
+    SupabaseUrl = "https://SUPABASE_URL.supabase.co",
+    AnonKey = "SUPABASE_KEY",
+    Resource = "pwbi_patentes",
+    Headers = [
+        apikey = AnonKey,
+        Authorization = "Bearer " & AnonKey
+    ],
+    Cols = {"Patente_ID", "Patente", "created_at"},
+    Origen = Json.Document(
+        Web.Contents(
+            SupabaseUrl,
+            [
+                RelativePath = "rest/v1/" & Resource,
+                Query = [select = "*", limit = "1000"],
+                Headers = Headers
+            ]
+        )
+    ),
+    AsTable = Table.FromList(Origen, Splitter.SplitByNothing(), {"Row"}),
+    Expanded = Table.ExpandRecordColumn(AsTable, "Row", Cols, Cols),
+    Typed = Table.TransformColumnTypes(
+        Expanded,
+        {
+            {"Patente_ID", type text},
+            {"Patente", type text},
+            {"created_at", type datetimezone}
+        },
+        "en-US"
+    )
+in
+    Typed
+```
+
+### `pwbi_documentos` (tipos)
+
+```powerquery
+let
+    SupabaseUrl = "https://SUPABASE_URL.supabase.co",
+    AnonKey = "SUPABASE_KEY",
+    Resource = "pwbi_documentos",
+    Headers = [
+        apikey = AnonKey,
+        Authorization = "Bearer " & AnonKey
+    ],
+    Cols = {
+        "Documento_ID", "Documento_Numero", "Documento_Tipo", "Documento_Cuenta",
+        "Empresa_ID", "Empresa_Nombre", "fecha_factura", "Documento_Importe_Sin_Iva",
+        "Documento_Bonificacion", "Documento_Percepciones", "Documento_Iva",
+        "Documento_Importe_Total", "created_at"
+    },
+    Origen = Json.Document(
+        Web.Contents(
+            SupabaseUrl,
+            [
+                RelativePath = "rest/v1/" & Resource,
+                Query = [select = "*", limit = "1000"],
+                Headers = Headers
+            ]
+        )
+    ),
+    AsTable = Table.FromList(Origen, Splitter.SplitByNothing(), {"Row"}),
+    Expanded = Table.ExpandRecordColumn(AsTable, "Row", Cols, Cols),
+    Typed = Table.TransformColumnTypes(
+        Expanded,
+        {
+            {"Documento_ID", type text},
+            {"Documento_Numero", type text},
+            {"Documento_Tipo", type text},
+            {"Documento_Cuenta", type text},
+            {"Empresa_ID", type text},
+            {"Empresa_Nombre", type text},
+            {"fecha_factura", type date},
+            {"Documento_Importe_Sin_Iva", type number},
+            {"Documento_Bonificacion", type number},
+            {"Documento_Percepciones", type number},
+            {"Documento_Iva", type number},
+            {"Documento_Importe_Total", type number},
+            {"created_at", type datetimezone}
+        },
+        "en-US"
+    )
+in
+    Typed
+```
+
+### `pwbi_tarifas` (tipos)
+
+```powerquery
+let
+    SupabaseUrl = "https://SUPABASE_URL.supabase.co",
+    AnonKey = "SUPABASE_KEY",
+    Resource = "pwbi_tarifas",
+    Headers = [
+        apikey = AnonKey,
+        Authorization = "Bearer " & AnonKey
+    ],
+    Cols = {
+        "Tarifa_Normalizada_ID", "Peaje_ID", "Peaje_Nombre", "Estacion_ID", "Estacion_Nombre",
+        "Categoria", "Categoria_Calculated", "Importe", "Importe_Base", "Cases",
+        "Multiplicador", "Desvio", "Hora_Min", "Hora_Max", "Hora_Media",
+        "Patron", "Diagnostico", "Status", "Muestra_Confiable", "Confirmado_Manual",
+        "created_at"
+    },
+    Origen = Json.Document(
+        Web.Contents(
+            SupabaseUrl,
+            [
+                RelativePath = "rest/v1/" & Resource,
+                Query = [select = "*", limit = "1000"],
+                Headers = Headers
+            ]
+        )
+    ),
+    AsTable = Table.FromList(Origen, Splitter.SplitByNothing(), {"Row"}),
+    Expanded = Table.ExpandRecordColumn(AsTable, "Row", Cols, Cols),
+    Typed = Table.TransformColumnTypes(
+        Expanded,
+        {
+            {"Tarifa_Normalizada_ID", type text},
+            {"Peaje_ID", type text},
+            {"Peaje_Nombre", type text},
+            {"Estacion_ID", type text},
+            {"Estacion_Nombre", type text},
+            {"Categoria", type text},
+            {"Categoria_Calculated", Int64.Type},
+            {"Importe", type number},
+            {"Importe_Base", type number},
+            {"Cases", Int64.Type},
+            {"Multiplicador", type number},
+            {"Desvio", type number},
+            {"Hora_Min", type number},
+            {"Hora_Max", type number},
+            {"Hora_Media", type number},
+            {"Patron", type text},
+            {"Diagnostico", type text},
+            {"Status", type text},
+            {"Muestra_Confiable", type logical},
+            {"Confirmado_Manual", type logical},
+            {"created_at", type datetimezone}
+        },
+        "en-US"
+    )
+in
+    Typed
+```
+
+> Tip: guardá `SupabaseUrl` y `AnonKey` en un parámetro / consulta `Config` para no duplicar la key. En el Editor, el icono de tipo a la izquierda de cada columna debe coincidir con la tabla de arriba (ABC = texto, 123 = entero, 1.2 = decimal, calendario = fecha).
 
 ## Paginación (>1000 filas)
 
@@ -178,6 +408,7 @@ Es el comportamiento normal de la Data API: **no** se puede pedir `limit=3500` d
 | `pwbi_pasadas` | `pwbi_estacion` | `Estacion_ID` |
 | `pwbi_pasadas` | `pwbi_patentes` | `Patente_ID` |
 | `pwbi_pasadas` | `pwbi_documentos` | `Documento_ID` |
+| `pwbi_pasadas` | `pwbi_tarifas` | `Tarifa_Normalizada_ID` |
 
 Cardinalidad: muchos a uno.
 
@@ -204,6 +435,7 @@ Solo si preferís el conector nativo (usuario/password DB del Dashboard → Conn
 | Solo 1000 filas | Paginación (`limit`/`offset`) |
 | Power BI pide login Web | Credencial **Anónimo**; auth en headers |
 | Columnas con mayúsculas raras | En PostgREST las columnas entrecomilladas salen con el nombre exacto (`Estacion_ID`, etc.) |
+| Fechas como texto / no suma importes / tipo `Any` | Falta `Table.TransformColumnTypes` (ver [Tipos de columnas](#tipos-de-columnas-obligatorio)). Reemplazá la consulta M; no alcanza con “Detectar tipo de datos”. |
 
 ## Seguridad
 
@@ -221,4 +453,4 @@ Solo si preferís el conector nativo (usuario/password DB del Dashboard → Conn
 
 ---
 
-> Última actualización: agosto 2026 · Conexión canónica: **API URL + anon key** (sin Postgres)
+> Última actualización: 2026-08-18 · Conexión canónica: **API URL + anon key** (sin Postgres) · M con tipos explícitos en todas las `pwbi_*`

@@ -58,10 +58,22 @@ describe('SearchSelectComponent', () => {
     expect(component.value).toBeNull();
   });
 
-  it('hides current selection from dropdown results', () => {
+  it('keeps current selection in dropdown results', () => {
     component.value = 'e1';
-    component.onQueryChange('Auto');
-    expect(component.filteredOptions.every((o) => o.id !== 'e1')).toBeTrue();
+    component.showAllWhenEmpty = true;
+    component.onFocus();
+    expect(component.filteredOptions.some((o) => o.id === 'e1')).toBeTrue();
+  });
+
+  it('ranks exact PICO over NO_PICO when query is pico', () => {
+    component.options = [
+      { id: 'NO_PICO', label: 'No pico' },
+      { id: 'PICO', label: 'Pico' },
+    ];
+    component.value = 'NO_PICO';
+    component.showAllWhenEmpty = true;
+    component.onQueryChange('pico');
+    expect(component.filteredOptions.map((o) => o.id)).toEqual(['PICO']);
   });
 
   it('implements ControlValueAccessor for string | null', () => {

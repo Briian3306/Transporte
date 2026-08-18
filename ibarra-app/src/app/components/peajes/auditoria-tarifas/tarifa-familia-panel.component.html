@@ -86,8 +86,9 @@
           class="at__clase-stamp"
           [class.at__clase-stamp--filled]="claseValue(row['id']) != null"
           [attr.title]="claseValue(row['id']) == null ? 'Sin clase' : 'Categoría ' + claseValue(row['id'])"
+          [attr.aria-label]="claseValue(row['id']) == null ? 'Categoría opcional, 0 a 10. Sin clase' : 'Categoría ' + claseValue(row['id'])"
         >
-          <span class="at__clase-kicker">CAT</span>
+          <span class="at__clase-kicker">{{ claseValue(row['id']) == null ? 'Sin clase' : 'CAT' }}</span>
           <input
             class="at__clase-digit"
             type="number"

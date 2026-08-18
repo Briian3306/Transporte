@@ -179,4 +179,33 @@ describe('AuditoriaTarifasListComponent', () => {
     expect(component.tarifaUrlDialogOpen).toBeTrue();
     expect(component.tarifaUrlError).toContain('http://');
   });
+
+  it('envía status y CAT al confirmar y no remonta el panel de familia', fakeAsync(async () => {
+    const confirmSpy = spyOn(auditoria, 'confirmarStatus').and.callThrough();
+    const row = component.rows[0];
+    component.toggleExpand(row);
+    tick(80);
+    await fixture.whenStable();
+    expect(component.familiaNiveles.length).toBeGreaterThan(0);
+
+    const asignaciones = component.familiaNiveles.map((n) => ({
+      tarifa_normalizada_id: n.id,
+      status_codigo: 'NO_PICO',
+      categoria_calculated: 5,
+    }));
+    const pending = component.onConfirmFamilia(asignaciones);
+    expect(component.familiaLoading).toBeFalse();
+    tick(200);
+    await pending;
+    await fixture.whenStable();
+
+    expect(confirmSpy).toHaveBeenCalled();
+    const payload = confirmSpy.calls.mostRecent().args[0] as Array<{
+      status_codigo: string;
+      categoria_calculated?: number;
+    }>;
+    expect(payload.every((a) => a.status_codigo === 'NO_PICO' && a.categoria_calculated === 5)).toBeTrue();
+    expect(component.familiaLoading).toBeFalse();
+    expect(component.familiaNiveles.length).toBeGreaterThan(0);
+  }));
 });

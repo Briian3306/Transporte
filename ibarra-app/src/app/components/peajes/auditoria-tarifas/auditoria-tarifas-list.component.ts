@@ -532,8 +532,14 @@ export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
     this.familiaConfirmError = null;
   }
 
+  trackByRowId(_index: number, row: TarifaNormalizadaRow): string {
+    return row.id;
+  }
+
   async loadFamilia(row: TarifaNormalizadaRow): Promise<void> {
-    this.familiaLoading = true;
+    const keepVisible =
+      this.familiaNiveles.length > 0 && this.familiaNiveles[0]?.estacion_id === row.estacion_id;
+    if (!keepVisible) this.familiaLoading = true;
     try {
       const result = await firstValueFrom(
         this.auditoria.listar({

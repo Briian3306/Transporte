@@ -1407,7 +1407,8 @@
         "Verificado contra Supabase CLI local desde cero + supabase db advisors sin hallazgos nuevos sin justificar"
       ],
       "evidence": [
-        "2026-08-12: migraciones 20260812140628 + 20260812140633 + 20260812140648. npx supabase db reset --local --no-seed OK. npx supabase test db → 144 PASS (incl. peajes_f14_test B-06/B-07/B-08 schema). Sin peaje_id en pasadas. Docs docs/backend/peajes/auditoria-tarifas.md. Nota: F14-0 (CATEGORIA en types) sigue pendiente de agente 00; el DDL no lo requiere."
+        "2026-08-12: migraciones 20260812140628 + 20260812140633 + 20260812140648. npx supabase db reset --local --no-seed OK. npx supabase test db → 144 PASS (incl. peajes_f14_test B-06/B-07/B-08 schema). Sin peaje_id en pasadas. Docs docs/backend/peajes/auditoria-tarifas.md. Nota: F14-0 (CATEGORIA en types) sigue pendiente de agente 00; el DDL no lo requiere.",
+        "2026-08-18: pwbi_tarifas + pwbi_pasadas.Estacion_Geocodificacion_Status. Migración 20260818131012_peajes_pwbi_tarifas.sql. npx supabase db reset --local --no-seed OK. npx supabase test db → 187 PASS (peajes_pwbi_views_test plan 33). db push --linked DESARROLLO kfffigvyvtzyczeiadxh: pwbi_tarifas 304 filas, pwbi_pasadas 4900, anon SELECT."
       ]
     },
     {
@@ -1553,7 +1554,8 @@
         "2026-08-13: npx tsc --noEmit -p tsconfig.app.json EXIT 0; npx tsc --noEmit -p tsconfig.spec.json EXIT 0. Karma/ChromeHeadless pendiente de ejecucion por bloqueo GPU del entorno Windows.",
         "2026-08-13: plantillas appDataTableColumn=\"clave\" (ya no key=); Clasificación = search-select; franja HH:mm – HH:mm; Acciones Ver casos + dialogo pasadas; filtro RPC tarifa_normalizada_id (20260813175138).",
         "2026-08-13 DESARROLLO: peajes_listar_pasadas filtra tarifa_normalizada_id. Smoke PASEO DEL BAJO 9731.46 → total 6 (antes 3465).",
-        "2026-08-13: npx tsc --noEmit app+spec EXIT 0; ng test auditoria-tarifas **29/29 SUCCESS** (ChromeHeadless)."
+        "2026-08-13: npx tsc --noEmit app+spec EXIT 0; ng test auditoria-tarifas **29/29 SUCCESS** (ChromeHeadless).",
+        "2026-08-18: bugfix selección PICO/NO_PICO y CAT. applySuggestion no pisa status guardado ni ediciones; Asignar status conserva NO_PICO; sello CAT filled vs Sin clase; search-select ranking exacto PICO. ng test auditoria-tarifas **49/49 SUCCESS** (ChromeHeadless); search-select **9/9 SUCCESS**."
       ]
     },
     {
@@ -1572,7 +1574,8 @@
         "ng test --include=**/peajes/auditoria-tarifas/**/*.spec.ts --watch=false --browsers=ChromeHeadless"
       ],
       "evidence": [
-        "2026-08-14: migración 20260814204300_peajes_tarifas_categoria_calculated.sql. npx supabase db reset --local --no-seed OK. peajes_f14_test.sql 42/42 PASS. ng test auditoria-tarifas 45/45 SUCCESS. Campo opcional: confirmar sin clave no borra; 11 → CHECK 23514. DESARROLLO db push --linked kfffigvyvtzyczeiadxh aplicó la migración."
+        "2026-08-14: migración 20260814204300_peajes_tarifas_categoria_calculated.sql. npx supabase db reset --local --no-seed OK. peajes_f14_test.sql 42/42 PASS. ng test auditoria-tarifas 45/45 SUCCESS. Campo opcional: confirmar sin clave no borra; 11 → CHECK 23514. DESARROLLO db push --linked kfffigvyvtzyczeiadxh aplicó la migración.",
+        "2026-08-18: CAT typed/saved sobrevive ngOnChanges y viaja en Asignar status; sello filled vs Sin clase. ng test auditoria-tarifas 49/49 SUCCESS (ChromeHeadless)."
       ]
     }
   ]
