@@ -17,7 +17,7 @@ SELECT cmp_ok(
   'F06-1 carga las 148 estaciones del archivo de semillas'
 );
 SELECT is(
-  (SELECT count(*)::integer FROM public.patentes WHERE categoria IN ('TRANSPORTE', 'REMIS', 'OBRA', 'AUTO')),
+  (SELECT count(*)::integer FROM public.patentes WHERE categoria IN ('FLOTA CAMIONES', 'FLOTA UTILITARIA', 'REMIS', 'OBRA', 'AUTO')),
   (SELECT count(*)::integer FROM public.patentes),
   'F06-1 las categorías de patentes pertenecen al dominio ampliado'
 );

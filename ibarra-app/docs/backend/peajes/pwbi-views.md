@@ -22,9 +22,9 @@ Exponer un esquema estrella estable para relaciones en Power BI sin alterar las 
 ## Business Logic
 
 - `pwbi_estacion`: una fila por estación; `Status` = `estaciones.estado_geocodificacion` (`OK` | `REVIEW`); incluye `Peaje_ID` / `Peaje_Nombre` y `Latitud` / `Longitud`.
-- `pwbi_patentes`: una fila por patente (`Patente_ID`, `Patente`, `created_at`).
+- `pwbi_patentes`: una fila por patente (`Patente_ID`, `Patente`, `Patente_Categoria`, `Patente_Tipo_Trabajo`, `Patente_Activa`, `created_at`).
 - `pwbi_documentos`: una fila por documento FC|NC (importes de cabecera + empresa).
-- `pwbi_pasadas`: hecho denormalizado (pasada + estación + peaje + empresa + patente + pase + documento) con FKs para relacionar dimensiones. Incluye `Tarifa_Status` (PICO/NO_PICO) y `Estacion_Geocodificacion_Status` (`OK`|`REVIEW`, calidad de coordenadas; no es tarifa).
+- `pwbi_pasadas`: hecho denormalizado (pasada + estación + peaje + empresa + patente + pase + documento) con FKs para relacionar dimensiones. Incluye `Patente_Categoria`, `Patente_Tipo_Trabajo` y `Patente_Activa`, además de `Tarifa_Status` (PICO/NO_PICO) y `Estacion_Geocodificacion_Status` (`OK`|`REVIEW`, calidad de coordenadas; no es tarifa). `Categoria_Calculated` / `Categoria_Calculated_Boolean`: si `Categoria` es NULL se copia `tarifas_normalizadas.categoria_calculated` (Patrón A) y el boolean es TRUE; si hay categoría de proveedor, calculated queda NULL y el boolean es FALSE.
 - `pwbi_tarifas`: una fila por nivel de `tarifas_normalizadas`; `Status` es PICO/NO_PICO (sin `Tipo_Meta`); expone `Hora_Min` / `Hora_Max` / `Hora_Media`.
 - Vistas con `security_invoker = false` y `GRANT SELECT` a `anon`, `authenticated`, `service_role`.
 - Columnas PascalCase entrecomilladas en SQL para conservar el nombre exacto en el cliente.
@@ -69,6 +69,9 @@ Exponer un esquema estrella estable para relaciones en Power BI sin alterar las 
 |---------|--------|
 | `Patente_ID` | `patentes.id` |
 | `Patente` | `patentes.patente` |
+| `Patente_Categoria` | `patentes.categoria` (`FLOTA CAMIONES`, `FLOTA UTILITARIA`, `REMIS`, `OBRA`, `AUTO`) |
+| `Patente_Tipo_Trabajo` | `patentes.tipo_trabajo` |
+| `Patente_Activa` | `patentes.activa` |
 | `created_at` | `patentes.created_at` |
 
 ### Columnas `pwbi_documentos`
@@ -117,7 +120,7 @@ Exponer un esquema estrella estable para relaciones en Power BI sin alterar las 
 
 FKs: `Pasada_ID`, `Estacion_ID`, `Patente_ID`, `Pase_ID`, `Documento_ID`, `Peaje_ID`, `Empresa_ID`, `Tarifa_Normalizada_ID`.
 
-Medidas / atributos: `fecha_hora`, `precio`, `bonificacion`, `quantity`, `importe_neto`, `file_upload_name`, `created_at`, `user_id`, `Categoria`, `Tarifa_Status` (PICO/NO_PICO; no confundir con geocodificación), `Estacion_Geocodificacion_Status` (`OK`\|`REVIEW` desde `estaciones.estado_geocodificacion`), nombres denormalizados (`Estacion_Nombre`, `Peaje_Nombre`, `Empresa_Nombre`, `Patente`, `Patente_Categoria`, `Pase`), geo (`Estacion_Latitud`, `Estacion_Longitud`), documento (`Documento_Numero`, `Documento_Tipo`, `Documento_Cuenta`, `fecha_factura`, `Documento_Importe_Sin_Iva`, `Documento_Importe_Total`).
+Medidas / atributos: `fecha_hora`, `precio`, `bonificacion`, `quantity`, `importe_neto`, `file_upload_name`, `created_at`, `user_id`, `Categoria` (texto crudo proveedor; NULL = Patrón A), `Categoria_Calculated` (smallint 0–10 desde `tarifas_normalizadas` **solo si** `Categoria` es NULL; si hay categoría de proveedor queda NULL), `Categoria_Calculated_Boolean` (`TRUE` si se rellenó con esa clase, `FALSE` si no), `Tarifa_Status` (PICO/NO_PICO; no confundir con geocodificación), `Estacion_Geocodificacion_Status` (`OK`\|`REVIEW` desde `estaciones.estado_geocodificacion`), nombres denormalizados (`Estacion_Nombre`, `Peaje_Nombre`, `Empresa_Nombre`, `Patente`, `Patente_Categoria`, `Patente_Tipo_Trabajo`, `Patente_Activa`, `Pase`), geo (`Estacion_Latitud`, `Estacion_Longitud`), documento (`Documento_Numero`, `Documento_Tipo`, `Documento_Cuenta`, `fecha_factura`, `Documento_Importe_Sin_Iva`, `Documento_Importe_Total`).
 
 ## Policies
 
@@ -132,11 +135,11 @@ Medidas / atributos: `fecha_hora`, `precio`, `bonificacion`, `quantity`, `import
 | `supabase_db_test` | `supabase/tests/peajes_pwbi_views_test.sql` | Existencia, columnas, GRANT anon |
 | CLI | `npx supabase db reset --local --no-seed` + `npx supabase test db` | Rebuild + suite |
 
-**Estado:** DESARROLLO con `pwbi_tarifas` + `Estacion_Geocodificacion_Status` (migración `20260818131012`; CLI 2026-08-18).
+**Estado:** DESARROLLO con `pwbi_tarifas` + `Estacion_Geocodificacion_Status` + `Patente_Categoria` / `Patente_Tipo_Trabajo` / `Patente_Activa` + `Categoria_Calculated` / `Categoria_Calculated_Boolean` en `pwbi_pasadas` (migración `20260818171958`).
 
 ## Notes
 
-- Migraciones: `20260810194113_peajes_pwbi_views.sql`, `20260811114646_peajes_pwbi_anon_api_access.sql`, `20260811121811_peajes_pwbi_documentos.sql`, `20260812140648_peajes_tarifas_vistas.sql`, `20260818131012_peajes_pwbi_tarifas.sql`.
+- Migraciones: `20260810194113_peajes_pwbi_views.sql`, `20260811114646_peajes_pwbi_anon_api_access.sql`, `20260811121811_peajes_pwbi_documentos.sql`, `20260812140648_peajes_tarifas_vistas.sql`, `20260818131012_peajes_pwbi_tarifas.sql`, `20260818144011_peajes_pwbi_pasadas_categoria_calculated.sql`, `20260818171958_peajes_patentes_categoria_tipo_trabajo_estado.sql`.
 - No reemplaza `pasadas_gestion` ni los RPC de la UI.
 - Guía de conexión Power BI (**API URL + anon key** + tipos en Power Query): [docs/05-configuracion/powerbi-supabase.md](../../05-configuracion/powerbi-supabase.md).
 - Lectura Data API: `security_invoker=false` + `GRANT SELECT` a `anon`.

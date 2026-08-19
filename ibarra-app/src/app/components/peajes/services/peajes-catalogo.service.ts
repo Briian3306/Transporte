@@ -286,6 +286,17 @@ export class PeajesCatalogoSupabaseService implements PeajesCatalogoService {
     );
   }
 
+  actualizarPatente(id: string, data: Partial<Omit<Patente, 'id' | 'created_at'>>): Observable<Patente> {
+    return from(
+      this.supabase.executeWithRetry(async () => {
+        const client = await this.supabase.getClient();
+        const { data: row, error } = await client.from('patentes').update(data).eq('id', id).select('*').single();
+        if (error) throw error;
+        return row as Patente;
+      })
+    );
+  }
+
   listarPases(patenteId?: string): Observable<Pase[]> {
     return from(
       this.supabase.executeWithRetry(async () => {

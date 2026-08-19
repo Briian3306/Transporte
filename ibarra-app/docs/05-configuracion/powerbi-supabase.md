@@ -102,7 +102,7 @@ El JSON de la Data API **no trae tipos**: fechas llegan como texto ISO, UUID com
 | `date` | `type date` | `fecha_factura` |
 | `numeric` | `type number` | `precio`, `importe_neto`, `Latitud`, `Hora_Min` |
 | `integer` / `smallint` | `Int64.Type` | `quantity`, `Cases`, `Categoria_Calculated` |
-| `boolean` | `type logical` | `Muestra_Confiable`, `Confirmado_Manual` |
+| `boolean` | `type logical` | `Muestra_Confiable`, `Confirmado_Manual`, `Categoria_Calculated_Boolean` |
 
 `ExpandRecordColumn` lista las columnas **por nombre** (no uses `Record.FieldNames` de la primera fila: si esa fila omite un null, falta la columna).
 
@@ -121,10 +121,11 @@ let
     Cols = {
         "Pasada_ID", "fecha_hora", "Pase_ID", "Patente_ID", "Estacion_ID", "Documento_ID",
         "Peaje_ID", "Empresa_ID", "precio", "bonificacion", "quantity", "importe_neto",
-        "Categoria", "Tarifa_Normalizada_ID", "Tarifa_Status", "created_at", "user_id",
+        "Categoria", "Categoria_Calculated", "Categoria_Calculated_Boolean",
+        "Tarifa_Normalizada_ID", "Tarifa_Status", "created_at", "user_id",
         "file_upload_name", "Estacion_Nombre", "Estacion_Geocodificacion_Status",
         "Estacion_Latitud", "Estacion_Longitud", "Peaje_Nombre", "Empresa_Nombre",
-        "Patente", "Patente_Categoria", "Pase", "Documento_Numero", "Documento_Tipo",
+        "Patente", "Patente_Categoria", "Patente_Tipo_Trabajo", "Patente_Activa", "Pase", "Documento_Numero", "Documento_Tipo",
         "Documento_Cuenta", "fecha_factura", "Documento_Importe_Sin_Iva", "Documento_Importe_Total"
     },
     GetPage = (offset as number) as list =>
@@ -172,6 +173,8 @@ let
             {"quantity", Int64.Type},
             {"importe_neto", type number},
             {"Categoria", type text},
+            {"Categoria_Calculated", Int64.Type},
+            {"Categoria_Calculated_Boolean", type logical},
             {"Tarifa_Normalizada_ID", type text},
             {"Tarifa_Status", type text},
             {"created_at", type datetimezone},
@@ -185,6 +188,8 @@ let
             {"Empresa_Nombre", type text},
             {"Patente", type text},
             {"Patente_Categoria", type text},
+            {"Patente_Tipo_Trabajo", type text},
+            {"Patente_Activa", type logical},
             {"Pase", type text},
             {"Documento_Numero", type text},
             {"Documento_Tipo", type text},
@@ -256,7 +261,7 @@ let
         apikey = AnonKey,
         Authorization = "Bearer " & AnonKey
     ],
-    Cols = {"Patente_ID", "Patente", "created_at"},
+    Cols = {"Patente_ID", "Patente", "Patente_Categoria", "Patente_Tipo_Trabajo", "Patente_Activa", "created_at"},
     Origen = Json.Document(
         Web.Contents(
             SupabaseUrl,
@@ -274,6 +279,9 @@ let
         {
             {"Patente_ID", type text},
             {"Patente", type text},
+            {"Patente_Categoria", type text},
+            {"Patente_Tipo_Trabajo", type text},
+            {"Patente_Activa", type logical},
             {"created_at", type datetimezone}
         },
         "en-US"

@@ -58,5 +58,12 @@
       <p>Builder de plantillas, algoritmos combinados y motor Strategy.</p>
       <span class="peajes-home__link">Abrir plantillas</span>
     </a>
+
+    <a routerLink="/peajes/plantillas" [queryParams]="{ vista: 'documentos' }" class="peajes-home__card">
+      <div class="peajes-home__icon"><i class="fas fa-file-invoice" aria-hidden="true"></i></div>
+      <h2>Documentos</h2>
+      <p>Consultá facturas y notas de crédito con filtros por fecha, empresa, número y tipo.</p>
+      <span class="peajes-home__link">Abrir documentos</span>
+    </a>
   </section>
 </div>

@@ -10,6 +10,8 @@
 
 ## Estado actual
 
+Fecha: 2026-08-18 — **`pwbi_pasadas.Categoria_Calculated`**. Si `Categoria` es NULL (Patrón A), la vista copia `tarifas_normalizadas.categoria_calculated` (0–10) y `Categoria_Calculated_Boolean = TRUE`; si hay categoría de proveedor, calculated queda NULL y el boolean es FALSE. Migración `20260818144011_peajes_pwbi_pasadas_categoria_calculated.sql`. M de Power BI actualizado. `db push --linked` DESARROLLO: 4900 pasadas; 2860 TRUE (clase rellenada); 2040 FALSE. Docker local apagado: pgTAP CLI pendiente.
+
 Fecha: 2026-08-18 — **Bugfix auditoría PICO/NO_PICO + CAT**. El panel ya no pisa la clasificación ni la clase 0–10 con la sugerencia por precio al recargar. Status guardado (≠ `PENDIENTE`) y ediciones manuales se conservan; Asignar status envía `NO_PICO`/`PICO` y `categoria_calculated`. Search-select deja la opción actual visible y rankea `PICO` exacto sobre «No pico». Sello CAT: vacío = «Sin clase», filled = CAT + dígito. Verify: `ng test` auditoria-tarifas **49/49 SUCCESS** (ChromeHeadless); search-select **9/9 SUCCESS**.
 
 Fecha: 2026-08-18 — **Power Query M con tipos**. `docs/05-configuracion/powerbi-supabase.md`: cada consulta `pwbi_*` expande columnas por nombre y aplica `Table.TransformColumnTypes` (texto, `datetimezone`, `date`, `number`, `Int64`, `logical`, cultura `en-US`). Sin eso el JSON deja fechas como texto e importes como `Any`.

@@ -182,7 +182,7 @@ export class PeajesPlantillaApplyService {
       }
     }
 
-    const patentes = await firstValueFrom(this.catalogo.listarPatentes());
+    const patentes = (await firstValueFrom(this.catalogo.listarPatentes())).filter((p) => p.activa !== false);
     const porPatente = new Map(patentes.map((p) => [this.normalizarPatente(p.patente), p.id]));
     for (const fila of filas) {
       const patenteId = porPatente.get(this.normalizarPatente(fila.PATENTE_ID));

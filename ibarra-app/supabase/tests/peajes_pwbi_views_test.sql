@@ -1,6 +1,6 @@
 -- pgTAP: vistas Power BI pwbi_* (+ anon API + documentos + tarifas)
 BEGIN;
-SELECT plan(33);
+SELECT plan(40);
 
 SELECT has_view('public', 'pwbi_estacion', 'vista pwbi_estacion existe');
 SELECT has_view('public', 'pwbi_patentes', 'vista pwbi_patentes existe');
@@ -20,6 +20,9 @@ SELECT has_column('public', 'pwbi_estacion', 'created_at', 'pwbi_estacion.create
 
 SELECT has_column('public', 'pwbi_patentes', 'Patente_ID', 'pwbi_patentes.Patente_ID');
 SELECT has_column('public', 'pwbi_patentes', 'Patente', 'pwbi_patentes.Patente');
+SELECT has_column('public', 'pwbi_patentes', 'Patente_Categoria', 'pwbi_patentes.Patente_Categoria');
+SELECT has_column('public', 'pwbi_patentes', 'Patente_Tipo_Trabajo', 'pwbi_patentes.Patente_Tipo_Trabajo');
+SELECT has_column('public', 'pwbi_patentes', 'Patente_Activa', 'pwbi_patentes.Patente_Activa');
 SELECT has_column('public', 'pwbi_patentes', 'created_at', 'pwbi_patentes.created_at');
 
 SELECT has_column('public', 'pwbi_pasadas', 'Pasada_ID', 'pwbi_pasadas.Pasada_ID');
@@ -29,6 +32,10 @@ SELECT has_column('public', 'pwbi_pasadas', 'Pase_ID', 'pwbi_pasadas.Pase_ID');
 SELECT has_column('public', 'pwbi_pasadas', 'Documento_ID', 'pwbi_pasadas.Documento_ID');
 SELECT has_column('public', 'pwbi_pasadas', 'Tarifa_Status', 'pwbi_pasadas.Tarifa_Status');
 SELECT has_column('public', 'pwbi_pasadas', 'Estacion_Geocodificacion_Status', 'pwbi_pasadas.Estacion_Geocodificacion_Status');
+SELECT has_column('public', 'pwbi_pasadas', 'Categoria_Calculated', 'pwbi_pasadas.Categoria_Calculated');
+SELECT has_column('public', 'pwbi_pasadas', 'Categoria_Calculated_Boolean', 'pwbi_pasadas.Categoria_Calculated_Boolean');
+SELECT has_column('public', 'pwbi_pasadas', 'Patente_Tipo_Trabajo', 'pwbi_pasadas.Patente_Tipo_Trabajo');
+SELECT has_column('public', 'pwbi_pasadas', 'Patente_Activa', 'pwbi_pasadas.Patente_Activa');
 
 SELECT has_column('public', 'pwbi_documentos', 'Documento_ID', 'pwbi_documentos.Documento_ID');
 SELECT has_column('public', 'pwbi_documentos', 'Documento_Numero', 'pwbi_documentos.Documento_Numero');

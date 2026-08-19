@@ -102,8 +102,8 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
   ];
 
   private patentes: Patente[] = [
-    { id: 'PAT-001', patente: 'AD625QB', categoria: 'TRANSPORTE', created_at: '2026-01-01T00:00:00Z' },
-    { id: 'PAT-002', patente: 'AB456CU', categoria: 'TRANSPORTE', created_at: '2026-01-01T00:00:00Z' },
+    { id: 'PAT-001', patente: 'AD625QB', categoria: 'FLOTA CAMIONES', activa: true, created_at: '2026-01-01T00:00:00Z' },
+    { id: 'PAT-002', patente: 'AB456CU', categoria: 'FLOTA CAMIONES', activa: true, created_at: '2026-01-01T00:00:00Z' },
   ];
 
   private pases: Pase[] = [
@@ -231,6 +231,14 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
     };
     this.patentes = [...this.patentes, patente];
     return of(patente);
+  }
+
+  actualizarPatente(id: string, data: Partial<Omit<Patente, 'id' | 'created_at'>>): Observable<Patente> {
+    const idx = this.patentes.findIndex((p) => p.id === id);
+    if (idx < 0) return throwError(() => new Error(`Patente no encontrada: ${id}`));
+    const updated = { ...this.patentes[idx], ...data, id };
+    this.patentes = this.patentes.map((p, i) => (i === idx ? updated : p));
+    return of(updated);
   }
 
   listarPases(patenteId?: string): Observable<Pase[]> {

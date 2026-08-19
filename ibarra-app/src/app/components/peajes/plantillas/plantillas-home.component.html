@@ -28,6 +28,10 @@
       >
         Algoritmos
       </button>
+      <button type="button" class="plt__btn" [class.plt__btn--primary]="vista === 'documentos'" (click)="mostrar('documentos')">
+        <i class="fas fa-file-invoice" aria-hidden="true"></i>
+        Documentos
+      </button>
     </div>
   </header>
 
@@ -70,5 +74,8 @@
   }
   @if (vista === 'algoritmos') {
     <app-algoritmo-builder />
+  }
+  @if (vista === 'documentos') {
+    <app-documentos-plantillas-list />
   }
 </div>

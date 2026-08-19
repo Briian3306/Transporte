@@ -139,7 +139,7 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
             listarEstaciones: () =>
               of([{ id: estacionId, nombre: 'Campana', peaje_id: 'p1', codigos_proveedor: ['CAMPANA'] }]),
             listarPatentes: () =>
-              of([{ id: patenteId, patente: 'AE751PA', categoria: 'TRANSPORTE' }]),
+              of([{ id: patenteId, patente: 'AE751PA', categoria: 'FLOTA CAMIONES', activa: true }]),
           },
         },
       ],
@@ -435,7 +435,7 @@ describe('PeajesPlantillaApplyService alcance empresa 0001', () => {
                 { id: 'PEA-MERCOSUR', nombre: 'Autovía del Mercosur', empresa_id: mercosurId },
               ]),
             listarPatentes: () =>
-              of([{ id: patenteId, patente: 'AE751PA', categoria: 'TRANSPORTE' }]),
+              of([{ id: patenteId, patente: 'AE751PA', categoria: 'FLOTA CAMIONES', activa: true }]),
           },
         },
       ],

@@ -534,7 +534,8 @@ export class Paso5MapeoComponent implements OnInit {
     const creada = await firstValueFrom(
       this.catalogo.crearPatente({
         patente: patente.toUpperCase(),
-        categoria: 'TRANSPORTE',
+        categoria: 'FLOTA CAMIONES',
+        activa: true,
       })
     );
     this.catalogoPatentes.set(this.normalizarPatente(creada.patente), creada.id);
@@ -581,7 +582,7 @@ export class Paso5MapeoComponent implements OnInit {
   private async cargarCatalogoPatentes(): Promise<void> {
     const patentes = await firstValueFrom(this.catalogo.listarPatentes());
     this.catalogoPatentes = new Map<string, string>();
-    for (const patente of patentes) {
+    for (const patente of patentes.filter((p) => p.activa !== false)) {
       this.catalogoPatentes.set(this.normalizarPatente(patente.patente), patente.id);
       this.catalogoPatentes.set(patente.id, patente.id);
     }

@@ -69,6 +69,8 @@ export interface Patente {
   id: string;
   patente: string;
   categoria: CategoriaPatente;
+  tipo_trabajo?: string | null;
+  activa: boolean;
   created_at?: string;
 }
 

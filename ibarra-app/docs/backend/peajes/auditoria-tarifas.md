@@ -34,7 +34,7 @@ Exponer el motor de diagnóstico (capa 1), la confirmación humana de status (ca
 |------------|-----------|
 | `PeajesCargaSupabaseService.confirmarCarga` | post-commit → `peajes_normalizar_tarifas` |
 | `PeajesAuditoriaTarifasSupabaseService` | listar / confirmar / marcar / grupos / recalcular / catálogo |
-| Power BI `pwbi_pasadas` | `Categoria`, `Tarifa_Normalizada_ID`, `Tarifa_Status`, `Estacion_Geocodificacion_Status` |
+| Power BI `pwbi_pasadas` | `Categoria`, `Categoria_Calculated`, `Categoria_Calculated_Boolean`, `Tarifa_Normalizada_ID`, `Tarifa_Status`, `Estacion_Geocodificacion_Status` |
 | Power BI `pwbi_tarifas` | dimensión `tarifas_normalizadas`; relación `Tarifa_Normalizada_ID` |
 
 ## Tables
@@ -81,7 +81,7 @@ npx supabase test db
 
 - RLS plana `*_authenticated_all` (PRD §5.2); RLS por empresa diferida.
 - `pg_cron` no instalado: recálculo solo manual.
-- Migraciones: `20260812140628`…`20260812140653_peajes_tarifas_*` + `20260814190600_peajes_recalcular_prune_orphans` + `20260814204300_peajes_tarifas_categoria_calculated` + `20260818125312_peajes_tarifas_status_catalogo_default` + `20260818131012_peajes_pwbi_tarifas` (vista Power BI).
+- Migraciones: `20260812140628`…`20260812140653_peajes_tarifas_*` + `20260814190600_peajes_recalcular_prune_orphans` + `20260814204300_peajes_tarifas_categoria_calculated` + `20260818125312_peajes_tarifas_status_catalogo_default` + `20260818131012_peajes_pwbi_tarifas` + `20260818144011_peajes_pwbi_pasadas_categoria_calculated`.
 - Servicio: `src/app/components/peajes/services/peajes-auditoria-tarifas.service.ts`.
 - Provider en `auditoria-tarifas.routes.ts` apunta al servicio Supabase (no mock).
 - **Autovía del Mercosur (excepción Pattern A):** el CSV Telepase trae `CATEGORIA`, pero el código de proveedor no coincide con la clase tarifaria (p. ej. cat `7` agrupa 5×/6×/7×/9×). Las plantillas `MERCA-SUR-*` excluyen el destino `CATEGORIA` (`20260814180732_peajes_mercosur_plantillas_patron_a.sql`). Pasadas existentes: `categoria = NULL` + borrar niveles B + `peajes_recalcular_tarifas`. No tocar `importe_neto`. Post-condición RN-13/17: `Σ pasadas.importe_neto` vs `documentos.importe_sin_iva` (+ bonificación de cabecera) dentro del 1% (`peajes_validar_documento_id`). Tests: `supabase/tests/peajes_mercosur_patron_a_test.sql`.

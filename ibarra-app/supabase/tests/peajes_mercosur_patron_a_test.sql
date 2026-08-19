@@ -134,7 +134,7 @@ VALUES (
 );
 
 INSERT INTO public.patentes (id, patente, categoria)
-VALUES ('cc111111-1111-4111-8111-111111111111', 'MSRPAT', 'TRANSPORTE');
+VALUES ('cc111111-1111-4111-8111-111111111111', 'MSRPAT', 'FLOTA CAMIONES');
 
 INSERT INTO public.pases (id, pase, patente_id)
 VALUES (

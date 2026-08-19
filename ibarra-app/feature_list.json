@@ -1408,7 +1408,8 @@
       ],
       "evidence": [
         "2026-08-12: migraciones 20260812140628 + 20260812140633 + 20260812140648. npx supabase db reset --local --no-seed OK. npx supabase test db → 144 PASS (incl. peajes_f14_test B-06/B-07/B-08 schema). Sin peaje_id en pasadas. Docs docs/backend/peajes/auditoria-tarifas.md. Nota: F14-0 (CATEGORIA en types) sigue pendiente de agente 00; el DDL no lo requiere.",
-        "2026-08-18: pwbi_tarifas + pwbi_pasadas.Estacion_Geocodificacion_Status. Migración 20260818131012_peajes_pwbi_tarifas.sql. npx supabase db reset --local --no-seed OK. npx supabase test db → 187 PASS (peajes_pwbi_views_test plan 33). db push --linked DESARROLLO kfffigvyvtzyczeiadxh: pwbi_tarifas 304 filas, pwbi_pasadas 4900, anon SELECT."
+        "2026-08-18: pwbi_tarifas + pwbi_pasadas.Estacion_Geocodificacion_Status. Migración 20260818131012_peajes_pwbi_tarifas.sql. npx supabase db reset --local --no-seed OK. npx supabase test db → 187 PASS (peajes_pwbi_views_test plan 33). db push --linked DESARROLLO kfffigvyvtzyczeiadxh: pwbi_tarifas 304 filas, pwbi_pasadas 4900, anon SELECT.",
+        "2026-08-18: pwbi_pasadas.Categoria_Calculated + Categoria_Calculated_Boolean. Migración 20260818144011. db push --linked DESARROLLO: 2860 TRUE / 2040 FALSE. M Power BI actualizado."
       ]
     },
     {

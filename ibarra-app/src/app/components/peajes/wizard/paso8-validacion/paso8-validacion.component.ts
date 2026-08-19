@@ -299,7 +299,7 @@ export class Paso8ValidacionComponent implements OnInit {
       necesitaPatentes ? firstValueFrom(this.catalogo.listarPatentes()) : Promise.resolve([]),
     ]);
     const pasePorCodigo = new Map(pases.map((p) => [this.normalizarCodigo(p.pase), p.id]));
-    const patentePorCodigo = new Map(patentes.map((p) => [this.normalizarCodigo(p.patente), p.id]));
+    const patentePorCodigo = new Map(patentes.filter((p) => p.activa !== false).map((p) => [this.normalizarCodigo(p.patente), p.id]));
     const conPatentes = pasadas.map((pasada) => ({
       ...pasada,
       PATENTE_ID: this.esUuid(pasada.PATENTE_ID) ? pasada.PATENTE_ID : (patentePorCodigo.get(this.normalizarCodigo(pasada.PATENTE_ID)) ?? pasada.PATENTE_ID),

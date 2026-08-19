@@ -154,7 +154,7 @@ describe('Paso4PlantillaComponent F09', () => {
             listarEstaciones: () =>
               of([{ id: estacionId, nombre: 'Campana', peaje_id: 'peaje-1', codigos_proveedor: ['CAMPANA'] }]),
             listarPatentes: () =>
-              of([{ id: patenteId, patente: 'AE751PA', categoria: 'TRANSPORTE' }]),
+              of([{ id: patenteId, patente: 'AE751PA', categoria: 'FLOTA CAMIONES', activa: true }]),
           },
         },
       ],

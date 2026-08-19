@@ -1,5 +1,5 @@
 /** Categoría interna de patente (PRD §11.4). */
-export type CategoriaPatente = 'TRANSPORTE' | 'REMIS';
+export type CategoriaPatente = 'FLOTA CAMIONES' | 'FLOTA UTILITARIA' | 'REMIS' | 'OBRA' | 'AUTO';
 
 /** Estado de plantilla / algoritmo combinado. */
 export type EstadoRecursoPeaje = 'borrador' | 'activa' | 'inactiva';

@@ -184,6 +184,7 @@ export interface PeajesCatalogoService {
 
   listarPatentes(): Observable<Patente[]>;
   crearPatente(data: Omit<Patente, 'id' | 'created_at'>): Observable<Patente>;
+  actualizarPatente(id: string, data: Partial<Omit<Patente, 'id' | 'created_at'>>): Observable<Patente>;
 
   listarPases(patenteId?: string): Observable<Pase[]>;
   crearPase(data: Omit<Pase, 'id' | 'created_at' | 'patente'>): Observable<Pase>;

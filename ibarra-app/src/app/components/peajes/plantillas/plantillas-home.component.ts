@@ -11,6 +11,7 @@ import { PeajesMotorTransformacionService } from './motor/peajes-motor-transform
 import { PlantillaBuilderComponent } from './plantilla-builder.component';
 import { AplicarPlantillaComponent } from './aplicar-plantilla.component';
 import { AlgoritmoBuilderComponent } from './algoritmo-builder.component';
+import { DocumentosPlantillasListComponent } from './documentos-plantillas-list.component';
 
 /**
  * Hub de plantillas y algoritmos (área plantillas/**).
@@ -23,6 +24,7 @@ import { AlgoritmoBuilderComponent } from './algoritmo-builder.component';
     PlantillaBuilderComponent,
     AplicarPlantillaComponent,
     AlgoritmoBuilderComponent,
+    DocumentosPlantillasListComponent,
   ],
   templateUrl: './plantillas-home.component.html',
   styleUrl: './plantillas-shared.css',
@@ -35,7 +37,7 @@ export class PlantillasHomeComponent implements OnInit {
     @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService
   ) {}
 
-  vista: 'lista' | 'builder' | 'aplicar' | 'algoritmos' = 'lista';
+  vista: 'lista' | 'builder' | 'aplicar' | 'algoritmos' | 'documentos' = 'lista';
   plantillas: PlantillaConfiguracion[] = [];
   algoritmos: AlgoritmoCombinado[] = [];
   estrategias: string[] = [];
@@ -44,7 +46,10 @@ export class PlantillasHomeComponent implements OnInit {
     this.estrategias = this.motor.getRegistry().codigos();
     this.plantillasSvc.listarPlantillas().subscribe((p) => (this.plantillas = p));
     this.plantillasSvc.listarAlgoritmos().subscribe((a) => (this.algoritmos = a));
-    if (this.route.snapshot.queryParamMap.get('desdeWizard') === '1') {
+    const vistaParam = this.route.snapshot.queryParamMap.get('vista');
+    if (vistaParam === 'documentos') {
+      this.vista = 'documentos';
+    } else if (this.route.snapshot.queryParamMap.get('desdeWizard') === '1') {
       this.vista = 'builder';
     }
   }

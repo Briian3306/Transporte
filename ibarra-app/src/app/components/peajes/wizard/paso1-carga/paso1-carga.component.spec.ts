@@ -163,7 +163,7 @@ describe('Paso1CargaComponent', () => {
       of([{ id: estacionId, nombre: 'Campana', peaje_id: 'peaje-1', codigos_proveedor: ['CAMPANA'] }])
     );
     catalogoMock.listarPatentes.and.returnValue(
-      of([{ id: patenteId, patente: 'AE751PA', categoria: 'TRANSPORTE' }])
+      of([{ id: patenteId, patente: 'AE751PA', categoria: 'FLOTA CAMIONES', activa: true }])
     );
 
     await TestBed.configureTestingModule({

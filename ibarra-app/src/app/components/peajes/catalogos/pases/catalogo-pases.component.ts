@@ -64,7 +64,7 @@ export class CatalogoPasesComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    this.patentes = await firstValueFrom(this.catalogo.listarPatentes());
+    this.patentes = (await firstValueFrom(this.catalogo.listarPatentes())).filter((p) => p.activa !== false);
     await this.cargar();
   }
 
