@@ -35,7 +35,7 @@ describe('PermissionGuard: permisos de Peajes', () => {
     ).toBeTrue();
     expect(
       matchesPermissionRequirement(
-        PEAJES_ROUTE_PERMISSIONS['/peajes/auditoria-tarifas'],
+        PEAJES_ROUTE_PERMISSIONS['/peajes/auditoria-estaciones'],
         hasPermission(operatorPermissions),
       ),
     ).toBeTrue();
@@ -45,6 +45,22 @@ describe('PermissionGuard: permisos de Peajes', () => {
         hasPermission(operatorPermissions),
       ),
     ).toBeFalse();
+    expect(
+      matchesPermissionRequirement(
+        PEAJES_ROUTE_PERMISSIONS['/peajes/catalogos/empresas'],
+        hasPermission(operatorPermissions),
+      ),
+    ).toBeFalse();
+  });
+
+  it('exige peajes:manage para el catálogo de empresas', () => {
+    expect(PEAJES_ROUTE_PERMISSIONS['/peajes/catalogos/empresas']).toBeDefined();
+    expect(
+      matchesPermissionRequirement(
+        PEAJES_ROUTE_PERMISSIONS['/peajes/catalogos/empresas'],
+        hasPermission(adminPermissions),
+      ),
+    ).toBeTrue();
   });
 
   it('requiere también create para las vistas operativas', () => {

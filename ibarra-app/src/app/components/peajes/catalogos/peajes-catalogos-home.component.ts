@@ -84,4 +84,8 @@ export class PeajesCatalogosHomeComponent {
       new Set(this.permissionState.getUserPermissions()),
     ).includes(sectionId);
   }
+
+  get hasVisibleCards(): boolean {
+    return this.cards.some((card) => this.isSectionVisible(card.route));
+  }
 }

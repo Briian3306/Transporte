@@ -25,6 +25,7 @@ import {
   ResultadoReconocimientoEstacion,
   estacionCoincideCodigoProveedor,
   estacionPerteneceAEmpresa,
+  claveRelacionEstacion,
 } from '../../models';
 import {
   DialogComponent,
@@ -271,7 +272,9 @@ export class Paso6EstacionesComponent implements OnInit {
     this.codigosFueraDeEmpresa = [];
 
     this.relaciones = valores.map((valorProveedor) => {
-      const existente = prev.find((r) => r.valorProveedor === valorProveedor);
+      const existente = prev.find(
+        (r) => claveRelacionEstacion(r.valorProveedor) === claveRelacionEstacion(valorProveedor)
+      );
       const concesion = concesionMap.get(valorProveedor) ?? existente?.concesionProveedor ?? null;
       const peajeRec = concesion
         ? reconocerPeajeDesdeConcesion(

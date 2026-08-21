@@ -1458,7 +1458,8 @@
       "evidence": [
         "2026-08-12: migraciones 20260812140628 + 20260812140633 + 20260812140648. npx supabase db reset --local --no-seed OK. npx supabase test db → 144 PASS (incl. peajes_f14_test B-06/B-07/B-08 schema). Sin peaje_id en pasadas. Docs docs/backend/peajes/auditoria-tarifas.md. Nota: F14-0 (CATEGORIA en types) sigue pendiente de agente 00; el DDL no lo requiere.",
         "2026-08-18: pwbi_tarifas + pwbi_pasadas.Estacion_Geocodificacion_Status. Migración 20260818131012_peajes_pwbi_tarifas.sql. npx supabase db reset --local --no-seed OK. npx supabase test db → 187 PASS (peajes_pwbi_views_test plan 33). db push --linked DESARROLLO kfffigvyvtzyczeiadxh: pwbi_tarifas 304 filas, pwbi_pasadas 4900, anon SELECT.",
-        "2026-08-18: pwbi_pasadas.Categoria_Calculated + Categoria_Calculated_Boolean. Migración 20260818144011. db push --linked DESARROLLO: 2860 TRUE / 2040 FALSE. M Power BI actualizado."
+        "2026-08-18: pwbi_pasadas.Categoria_Calculated + Categoria_Calculated_Boolean. Migración 20260818144011. db push --linked DESARROLLO: 2860 TRUE / 2040 FALSE. M Power BI actualizado.",
+        "2026-08-21 (agente 01 gap-fill §7.1, CLI): esquema F14-1 intacto (3 tablas, 3 cols pasadas, sin peaje_id, UK duplicado intacta, índices, RLS plana, trigger 23514). MCP DESARROLLO kfffigvyvtzyczeiadxh (SELECT): tablas/RPC ya existían; peajes.empresa_id text; sin concesiones; sin pg_cron/pg_net; auto_confirmar_horario false. Drift 20260811190002 ya aplicado en remoto (sesión 2026-08-12). Docs backend auditoria-tarifas.md. Sin ALTER pasadas extra; sin recrear vistas. Sin db push."
       ]
     },
     {
@@ -1477,7 +1478,8 @@
         "supabase db advisors EXIT limpio tras crear las funciones"
       ],
       "evidence": [
-        "2026-08-12: RPC en 20260812140637/40/44/53. Enganche opción (b) en PeajesCargaSupabaseService + persiste categoria. PeajesAuditoriaTarifasSupabaseService + provider swap en auditoria-tarifas.routes. npx supabase test db → 144 PASS (B-01..B-16 sintéticos: MUESTRA_INSUFICIENTE, TARIFA_UNICA, POSIBLE_HORARIO, confirmado_manual, NC=0, listar). Recálculo dataset 1711/119 diferido a F14-6 (DESARROLLO/seed). Contratos models/auditoria-tarifas.contracts.ts."
+        "2026-08-12: RPC en 20260812140637/40/44/53. Enganche opción (b) en PeajesCargaSupabaseService + persiste categoria. PeajesAuditoriaTarifasSupabaseService + provider swap en auditoria-tarifas.routes. npx supabase test db → 144 PASS (B-01..B-16 sintéticos: MUESTRA_INSUFICIENTE, TARIFA_UNICA, POSIBLE_HORARIO, confirmado_manual, NC=0, listar). Recálculo dataset 1711/119 diferido a F14-6 (DESARROLLO/seed). Contratos models/auditoria-tarifas.contracts.ts.",
+        "2026-08-21 (agente 01 gap-fill §7.1): hook SQL peajes_confirmar_carga → peajes_normalizar_tarifas (firma pública intacta; fallo clasificador no revierte carga). Migración 20260821141019_peajes_confirmar_carga_hook_normalizar.sql. COMMENT ON POLICY RLS plana + rol/empresa diferida. Angular conserva .rpc idempotente (B-10) hasta db push DESARROLLO. npx supabase db reset --local --no-seed OK; npx supabase test db → 198 PASS (10 files; peajes_f14_test plan 46 incl. hook FC/NC). ng test peajes-carga.service.spec 1 SUCCESS. Advisors: security_definer_view en pwbi_* preexistente (anon Power BI); sin hallazgo nuevo del hook. Sin db push --linked. F14-6 no cerrado."
       ]
     },
     {
@@ -1497,7 +1499,8 @@
       "evidence": [
         "2026-08-12: COLUMN_ALIASES.category + kind categoria + rec-categoria (draftSteps=[], mapeoHints→CATEGORIA). MVP/AU: CATEGORIA incluida y mapeada; EXCLUIDAS sin CATEGORIA. Paso 5 marca destinos opcionales. Payload peajes_confirmar_carga.categoria con trim (F14-2).",
         "npx tsc --noEmit -p tsconfig.app.json EXIT 0",
-        "ng test --include=\"**/peajes/wizard/**/*.spec.ts\" --include=\"**/peajes/services/peajes-carga.service.spec.ts\" --watch=false --browsers=ChromeHeadless → 96 SUCCESS"
+        "ng test --include=\"**/peajes/wizard/**/*.spec.ts\" --include=\"**/peajes/services/peajes-carga.service.spec.ts\" --watch=false --browsers=ChromeHeadless → 96 SUCCESS",
+        "2026-08-21 (agente 02 gap-fill §7.2): descartar rec-categoria excluye columna y limpia mapeo (Patrón A). npx tsc --noEmit -p tsconfig.app.json EXIT 0. Focused wizard-state + column-recognition + paso5 + auditoria-tarifas → 90 SUCCESS. Full wizard/** 129 SUCCESS / 5 FAILED (carga-express + Paso 6 preexistentes). Persistencia categoria ya en PeajesCargaSupabaseService (F14-2). F14-6 no cerrado."
       ]
     },
     {
@@ -1521,7 +1524,8 @@
         "npx tsc --noEmit -p tsconfig.app.json EXIT 0",
         "ng test --include=\"**/peajes/auditoria-tarifas/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless → 14/14 SUCCESS (post F14-0 CATEGORIA)",
         "npx --yes tsx src/app/components/peajes/auditoria-tarifas/clasificacion.verify.ts → ZARATE 5/5 OK (evidencia previa 706beee)",
-        "npm run build EXIT 0 (lazy chunk peajes-routes incluye auditoria-tarifas) — evidencia previa 706beee"
+        "npm run build EXIT 0 (lazy chunk peajes-routes incluye auditoria-tarifas) — evidencia previa 706beee",
+        "2026-08-21 (agente 02 gap-fill §7.2): expand fila padre, POSIBLE_HORARIO en botones de catálogo, layout móvil at__. ng test auditoria-tarifas incluido en focused 90 SUCCESS. Ruta/permiso/home ya fusionados."
       ]
     },
     {
@@ -1581,6 +1585,46 @@
       "evidence": [
         "2026-08-13: migración 20260813100000_peajes_plantillas_mapeo_categoria.sql. DESARROLLO apply via MCP apply_migration peajes_plantillas_mapeo_categoria (project-ref kfffigvyvtzyczeiadxh). Pre: 7 Telepase cat_activa=0; post: cat_activa=1 (AUSA-8-2026, AUSA-V2, AUSA-V3, AUSOL-7-2026, AUBASA-7-2026, AU-OESTE-V1-08-26, CORRE-VIALES-V1); MASIVOOO=0. pasadas: consumos 1711 null, telepase 1750 con cat, tarifas 281. ng test plantilla-apply 3/3 + paso5 8/8 SUCCESS. Spec CATEGORIA restore en peajes-plantilla-apply.service.spec.ts."
       ]
+    },
+    {
+      "id": "F16-0",
+      "title": "Contrato canónico para persistencia de relaciones y casos auditables de estaciones",
+      "prd_refs": ["RF-16", "RF-17", "§7.5", "docs/plan/auditoria-reconocimiento-estaciones/PLAN_auditoria-reconocimiento-estaciones.md"],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": ["F02-17"],
+      "status": "passing",
+      "verification": ["Contrato de filtros, hallazgos, paginación, estados, preview/corrección, token y clave canónica de relación publicado", "Criterios 0001=1, 3=0003, relación persistida válida, perfil de secuencia y estados de caso", "npx tsc --noEmit -p tsconfig.app.json y tsconfig.spec.json"],
+      "evidence": ["2026-08-21: models/auditoria-estaciones.contracts.ts + spec 4 SUCCESS. claveRelacionEstacion 0001=1 / 0003=3. ng test contracts + list + home 31 SUCCESS."]
+    },
+    {
+      "id": "F16-1",
+      "title": "Casos, estados y corrección transaccional en auditoría de estaciones",
+      "prd_refs": ["RF-16", "RF-17", "§7.5", "docs/plan/auditoria-reconocimiento-estaciones/backend_plan.md"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F16-0"],
+      "status": "passing",
+      "verification": ["pgTAP con UUID 67486ca3-6e88-49a8-b628-7f41e946da5a y 60014adb-62f4-4ad9-86a0-50bd36efd1e3, equivalencias, secuencia 1,2,3,5 y fingerprint", "Caso validado/descartado no vuelve a Pendientes; cambio de datos crea caso nuevo", "Preview y confirmación protegen correcciones de catálogo/alias y pasadas históricas; antes/después queda trazado", "npx supabase db reset --local --no-seed; npx supabase test db; tipado Angular; documentación SQL/RPC"],
+      "evidence": ["2026-08-21: migración 20260821151207_peajes_auditoria_estaciones.sql + peajes-auditoria-estaciones.service.ts. npx supabase test db → 210 PASS (11 files, incl. peajes_auditoria_estaciones_test). Sin db push --linked."]
+    },
+    {
+      "id": "F16-2",
+      "title": "Paso 6 conserva relaciones guardadas y bandeja de auditoría de estaciones",
+      "prd_refs": ["RF-16", "RF-17", "§7.5", "docs/plan/auditoria-reconocimiento-estaciones/frontend_plan.md"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F16-0"],
+      "status": "passing",
+      "verification": ["Paso 6 conserva una relación guardada tras recrearse y reconoce 0001/1 y 3/0003 para los fixtures UUID, respetando empresa/Concesión", "Solo una relación ausente o fuera de alcance exige seleccionar otra vez", "Bandeja filtra estados, no repite casos resueltos y exige preview/confirmación antes de corregir", "La auditoría no interviene directamente en Paso 6; las correcciones previenen cargas futuras a través de catálogo/alias", "Specs focalizadas Paso 6 y auditoría con ChromeHeadless"],
+      "evidence": ["2026-08-21: /peajes/auditoria-estaciones clona tarifas (ae__, Ver casos vía tarifa-casos-dialog). Paso 6 restore claveRelacionEstacion. Specs home/catalogos/F16/Paso 6 re-ejecutados tras evitar doble ngOnInit."]
+    },
+    {
+      "id": "F16-3",
+      "title": "Integración, documentación y QA de auditoría de estaciones",
+      "prd_refs": ["docs/06-components/peajes/reconocimiento-estaciones.md", "docs/plan/auditoria-reconocimiento-estaciones/testing_plan.md"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F16-1", "F16-2"],
+      "status": "passing",
+      "verification": ["Ruta, tarjeta y permiso peajes:read integrados sin conflicto", "Docs actualizadas tras implementación", "pgTAP, specs focalizadas, tsc y build verdes", "Smoke opcional DESARROLLO solo lectura registrado"],
+      "evidence": ["2026-08-21: tarjeta home Auditoría de estaciones; /peajes/auditoria-estaciones = peajesOperational. Docs 06-components + backend. Catálogos: PEAJES_HOME_SECTION_IDS incluye catalogos; empresas en PEAJES_ROUTE_PERMISSIONS. pgTAP 210 PASS. Seed DESARROLLO empresas+peajes (dump --linked 403); pasadas siguen en seed_peajes_f14."]
     },
     {
       "id": "F14-8",

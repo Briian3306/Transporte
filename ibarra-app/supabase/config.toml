@@ -66,9 +66,19 @@ schema_paths = []
 [db.seed]
 # If enabled, seeds the database after migrations during a db reset.
 enabled = true
-# DEV seeds (committed): Auth users from DESARROLLO, then host RBAC.
-# Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed_auth.sql", "./seed_rbac.sql"]
+# DEV seeds (committed): Auth dump, CLI login override, host RBAC, DESARROLLO pasadas, F14 fixture.
+# Applied automatically by `npx supabase db reset --local` (omit --no-seed).
+# pgTAP should keep `--no-seed` so this fixture does not mix with synthetic tests.
+sql_paths = [
+  "./seed_auth.sql",
+  "./seed_cli_login.sql",
+  "./seed_rbac_schema.sql",
+  "./seed_rbac.sql",
+  "./seed_peajes_desarrollo.sql",
+  "./seed_peajes_pasadas_fks.sql",
+  "./pasadas_rows.sql",
+  "./seed_peajes_f14.sql",
+]
 
 [db.network_restrictions]
 # Enable management of network restrictions.

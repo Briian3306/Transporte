@@ -2,6 +2,18 @@
 
 ## Fuente de verdad
 
+## Handoff F16 — DONE local (2026-08-21)
+
+- F16-0..3 `passing` en `feature_list.json`. Ruta `/peajes/auditoria-estaciones`; tarjeta home distinta de **Auditoría de tarifas** (F14).
+- Catálogos visibles con `peajes:manage` (sección `catalogos` + cards por ruta). `/peajes/catalogos/empresas` en el guard.
+- Seed: `config.toml` / `npm run seed:local` aplican empresas/peajes, padres de pasadas (`seed_peajes_pasadas_fks.sql`), `pasadas_rows.sql` (~8326) y F14. Nunca `db reset --linked`.
+- Plan canónico: `docs/plan/auditoria-reconocimiento-estaciones/PLAN_auditoria-reconocimiento-estaciones.md`.
+- Repro principal: guardar una relación, recrear Paso 6 y continuar sin seleccionar otra vez. Cubrir claves equivalentes `0001`/`1` para `67486ca3-6e88-49a8-b628-7f41e946da5a` y `3`/`0003` para `60014adb-62f4-4ad9-86a0-50bd36efd1e3`; son fixtures locales, nunca constantes de producción.
+- Ruta propuesta: `/peajes/auditoria-estaciones`; `['3','5']` es válido y se muestra como contexto. Solo reporta un posible problema cuando el perfil numérico secuencial del ámbito tenga huecos/inversiones, por ejemplo `1,2,3,5` ⇒ falta candidata `4`.
+- Los casos se persisten por fingerprint y se gestionan como PENDIENTE, VALIDADO, DESCARTADO, REQUIERE_CORRECCION o CORREGIDO. El detalle ofrece preview y confirmación para “solo futuros” (catálogo/alias) o “futuros + históricos” (solo pasadas exactas del preview), dejando before/after trazable. La auditoría nunca interviene directamente en Paso 6.
+- Propiedad: 00 contratos; 01 migración/RPC/servicio/pgTAP; 02 Paso 6/UI; 04 docs después de verde; 05 ruta/home/permisos/integración/evidencias.
+- Supabase CLI local es el entorno de prueba. No `db push --linked` ni update remoto sin nueva autorización. DESARROLLO se limita a SELECT/read-only.
+
 Consultar, en este orden: `docs/plan/peaje-prd-short.md.md`, `feature_list.json`, `docs/claude-progress.md` y el código actual. Las migraciones reales están en `supabase/migrations`; no existe documentación SQL duplicada.
 
 ## Estado Peajes
@@ -38,23 +50,26 @@ Consultar, en este orden: `docs/plan/peaje-prd-short.md.md`, `feature_list.json`
 - Wizard: `construirPasadasDesdeMapeo` inicializa `CATEGORIA: null` (Patrón A por defecto).
 - Desbloquea F14-3 (aliases Paso 2, MVP fixtures, persistencia mapeo).
 
-**F14-1 / F14-2 (agente 01) — DONE (CLI, sin push remoto)**
+**F14-1 / F14-2 (agente 01) — DONE + gap-fill 2026-08-21 (CLI, sin push remoto)**
 
 - Contratos canónicos: `models/auditoria-tarifas.contracts.ts` (re-export desde `contracts.local.ts`).
 - Servicio: `PeajesAuditoriaTarifasSupabaseService`; provider swapped en `auditoria-tarifas.routes.ts`.
 - RPCs: `peajes_listar_tarifas_normalizadas` (`p_filtros` con `peaje_ids[]` / `solo_muestra_confiable`, `p_sort` = `campo:dir`); `peajes_confirmar_status_tarifa` acepta N asignaciones multi-estación; `peajes_recalcular_tarifas` respeta `confirmado_manual`; `peajes_grupos_similares_tarifa` devuelve `tarifa_ids[]` ordenados por importe.
-- Enganche: `peajes_confirmar_carga` persiste `categoria`; normalización post-commit vía segundo `.rpc` (opción b).
+- Enganche: `peajes_confirmar_carga` persiste `categoria` y **llama** `peajes_normalizar_tarifas` (migración `20260821141019`). Firma pública intacta. Angular conserva segundo `.rpc` idempotente (B-10) hasta que DESARROLLO reciba el hook.
+- Verify 2026-08-21: `db reset --local --no-seed` OK; `test db` 198 PASS; carga spec 1 SUCCESS. F14-6 sigue abierto.
 
-**F14-4 — DONE (UI + provider real)**
+**F14-4 — DONE (UI + provider real) + gap-fill 2026-08-21**
 
-- Pantalla `/peajes/auditoria-tarifas` + tarjeta home; specs 14/14 con mock; runtime Supabase.
+- Pantalla `/peajes/auditoria-tarifas` + tarjeta home; runtime Supabase.
+- Gap-fill: expand al click de fila padre (stopPropagation en acciones/peaje); catálogo incluye `POSIBLE_HORARIO`; sugerencia ignora `PENDIENTE`/`CONFIRMADO`; CSS móvil `at__` (sticky estación, hide multiplicador/desvío en tablet, 44px bajo 720px).
 
-**F14-3 — DONE (wizard CATEGORIA)**
+**F14-3 — DONE (wizard CATEGORIA) + gap-fill 2026-08-21**
 
 - `column-recognition.ts`: kind `categoria`, aliases inline, `rec-categoria` (sin pipeline).
 - Fixtures MVP/AU: `CATEGORIA` incluida + `MVP_MAPEO_SUGERIDO` / `AU_MAPEO_SUGERIDO`.
-- Paso 5: destino opcional en UI; `construirPasadasDesdeMapeo` + payload carga ya propagaban `categoria`.
-- Verify: wizard specs **96 SUCCESS** (include `**/*.spec.ts`).
+- Paso 5: destino opcional; payload carga ya propaga `categoria` trim (01).
+- Gap-fill: descartar `rec-categoria` excluye la columna y limpia el destino → Patrón A.
+- Verify 2026-08-21: tsc OK; focused 90 SUCCESS. Wizard full 129/5: fallos Paso 6 / carga-express preexistentes → 05.
 
 **F14-5 — DONE (docs)**
 

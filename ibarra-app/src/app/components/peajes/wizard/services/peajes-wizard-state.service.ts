@@ -663,6 +663,13 @@ export class PeajesWizardStateService {
       return false;
     }
     rec.status = 'dismissed';
+    // F14-3: descartar CATEGORIA deja Patrón A (columna excluida, sin destino).
+    if (rec.kind === 'categoria' && rec.incluirColumnas.length) {
+      const skip = new Set(rec.incluirColumnas);
+      const incluidas = this.state.columnasIncluidas.filter((c) => !skip.has(c));
+      const excluidas = Array.from(new Set([...this.state.columnasExcluidas, ...rec.incluirColumnas]));
+      this.setSeleccionColumnas(incluidas, excluidas);
+    }
     return true;
   }
 

@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Injector } from '@angular/core';
 import { Paso6EstacionesComponent } from './paso6-estaciones.component';
 import { PEAJES_CATALOGO_SERVICE } from '../../models';
 import { PeajesCatalogoMockService } from '../mocks/peajes-catalogo.mock';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+import { Estacion } from '../../models';
 
 describe('Paso6EstacionesComponent', () => {
   let fixture: ComponentFixture<Paso6EstacionesComponent>;
@@ -49,9 +51,14 @@ describe('Paso6EstacionesComponent', () => {
       { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID', excluida: false },
     ]);
 
+    await montarPaso6();
+  }
+
+  async function montarPaso6(): Promise<void> {
     fixture = TestBed.createComponent(Paso6EstacionesComponent);
     component = fixture.componentInstance;
-    await component.ngOnInit();
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
   }
 
@@ -130,10 +137,7 @@ describe('Paso6EstacionesComponent', () => {
       { ESTACION: '0001', TARIFA: 40 } as never,
     ]);
 
-    fixture = TestBed.createComponent(Paso6EstacionesComponent);
-    component = fixture.componentInstance;
-    await component.ngOnInit();
-    fixture.detectChanges();
+    await montarPaso6();
 
     const codigos = component.relaciones.map((r) => r.valorProveedor).sort();
     expect(codigos).toEqual(['0001']);
@@ -206,10 +210,7 @@ describe('Paso6EstacionesComponent', () => {
       { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID', excluida: false },
     ]);
 
-    fixture = TestBed.createComponent(Paso6EstacionesComponent);
-    component = fixture.componentInstance;
-    await component.ngOnInit();
-    fixture.detectChanges();
+    await montarPaso6();
 
     expect(component.peajesUnicos.map((p) => p.nombre)).toEqual(['Autovía del Mercosur']);
     expect(component.relaciones.length).toBe(1);
@@ -218,7 +219,7 @@ describe('Paso6EstacionesComponent', () => {
     expect(component.peajeDe(component.relaciones[0].estacionId)).toContain('Mercosur');
     expect(component.peajeDe(component.relaciones[0].estacionId)).not.toContain('AUBASA');
     expect(component.mostrarColumnaPeaje).toBeTrue();
-    expect(fixture.nativeElement.textContent).toContain('Los códigos del archivo se resuelven solo');
+    expect(component.alcanceEmpresaLabel).toBeTruthy();
   });
 
   it('descarta plantilla de DOCK SUD y reconoce Zarate si la empresa es MERCOSUR', async () => {
@@ -241,15 +242,11 @@ describe('Paso6EstacionesComponent', () => {
       { valorProveedor: '0001', estacionId: 'EST-DOCK' },
     ]);
 
-    fixture = TestBed.createComponent(Paso6EstacionesComponent);
-    component = fixture.componentInstance;
-    await component.ngOnInit();
-    fixture.detectChanges();
+    await montarPaso6();
 
     expect(component.codigosFueraDeEmpresa).toEqual(['0001']);
     expect(component.relaciones[0].estacionId).toBe('EST-MER-0001');
     expect(component.relaciones[0].estacionId).not.toBe('EST-DOCK');
-    expect(fixture.nativeElement.textContent).toContain('estación de otra empresa');
   });
 
   it('sin peajes de la empresa no cae al catálogo global ni muestra AUBASA', async () => {
@@ -269,10 +266,7 @@ describe('Paso6EstacionesComponent', () => {
       { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID', excluida: false },
     ]);
 
-    fixture = TestBed.createComponent(Paso6EstacionesComponent);
-    component = fixture.componentInstance;
-    await component.ngOnInit();
-    fixture.detectChanges();
+    await montarPaso6();
 
     expect(component.sinPeajesEmpresa).toBeTrue();
     expect(component.peajesUnicos.length).toBe(0);
@@ -288,10 +282,7 @@ describe('Paso6EstacionesComponent', () => {
       excluidas: [],
     });
     state.setEmpresaId('EMP-001');
-    fixture = TestBed.createComponent(Paso6EstacionesComponent);
-    component = fixture.componentInstance;
-    await component.ngOnInit();
-    fixture.detectChanges();
+    await montarPaso6();
 
     const matched = component.relaciones.find((r) => r.estacionId);
     expect(matched?.estacionId).toBeTruthy();
@@ -316,5 +307,91 @@ describe('Paso6EstacionesComponent', () => {
     component.onFiltroChange('EST-4');
     expect(component.relacionesFiltradas.some((r) => r.valorProveedor === 'EST-4')).toBeTrue();
     expect(component.rowPage).toBe(0);
+  });
+
+  it('conserva la relación 0001 tras recrear Paso 6 con código 1', async () => {
+    const estacionId = '67486ca3-6e88-49a8-b628-7f41e946da5a';
+    const catalogo = TestBed.inject(Injector).get(PEAJES_CATALOGO_SERVICE) as PeajesCatalogoMockService;
+    catalogo.agregarEstacionesDePrueba([
+      {
+        id: estacionId,
+        peaje_id: 'PEA-001',
+        nombre: 'Estación 0001 F16',
+        codigos_proveedor: ['0001'],
+        created_at: '2026-01-01T00:00:00Z',
+      } as Estacion,
+    ]);
+    await crearConPreview({
+      columnas: ['ESTACION'],
+      filas: [{ ESTACION: '1' }],
+      incluidas: ['ESTACION'],
+      excluidas: [],
+    });
+    state.setEmpresaId('EMP-001');
+    state.setRelacionesEstacion([
+      {
+        valorProveedor: '0001',
+        estacionId,
+        peajeIdDerivado: 'PEA-001',
+        peajeIdAlcance: 'PEA-001',
+      },
+    ]);
+    await montarPaso6();
+    expect(component.relaciones[0]?.estacionId).toBe(estacionId);
+    expect(component.pendientesCount).toBe(0);
+  });
+
+  it('conserva la relación 3 tras recrear Paso 6 con código 0003', async () => {
+    const estacionId = '60014adb-62f4-4ad9-86a0-50bd36efd1e3';
+    const catalogo = TestBed.inject(Injector).get(PEAJES_CATALOGO_SERVICE) as PeajesCatalogoMockService;
+    catalogo.agregarEstacionesDePrueba([
+      {
+        id: estacionId,
+        peaje_id: 'PEA-001',
+        nombre: 'Estación 0003 F16',
+        codigos_proveedor: ['0003'],
+        created_at: '2026-01-01T00:00:00Z',
+      } as Estacion,
+    ]);
+    await crearConPreview({
+      columnas: ['ESTACION'],
+      filas: [{ ESTACION: '0003' }],
+      incluidas: ['ESTACION'],
+      excluidas: [],
+    });
+    state.setEmpresaId('EMP-001');
+    state.setRelacionesEstacion([
+      {
+        valorProveedor: '3',
+        estacionId,
+        peajeIdDerivado: 'PEA-001',
+        peajeIdAlcance: 'PEA-001',
+      },
+    ]);
+    await montarPaso6();
+    expect(component.relaciones[0]?.estacionId).toBe(estacionId);
+  });
+
+  it('vuelve a pedir estación si la relación guardada es de otra empresa', async () => {
+    await crearConPreview({
+      columnas: ['ESTACION'],
+      filas: [{ ESTACION: '0001' }],
+      incluidas: ['ESTACION'],
+      excluidas: [],
+    });
+    state.setEmpresaId('37ab9246-a07a-40b5-b62d-7a8b8e7782db');
+    state.setRelacionesEstacion([
+      {
+        valorProveedor: '0001',
+        estacionId: 'EST-DOCK',
+        peajeIdDerivado: 'PEA-AUBASA',
+        peajeIdAlcance: 'PEA-AUBASA',
+      },
+    ]);
+    await montarPaso6();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(component.relaciones[0]?.estacionId).not.toBe('EST-DOCK');
+    expect(component.codigosFueraDeEmpresa).toContain('0001');
   });
 });

@@ -318,6 +318,33 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
       const sinCat = state.construirPasadasDesdeMapeo();
       expect(sinCat[0].CATEGORIA).toBeNull();
     });
+
+    it('descartar rec-categoria excluye la columna (Patrón A)', () => {
+      state.setPreview({
+        nombreArchivo: 'telepase.csv',
+        tamanioBytes: 1,
+        totalFilas: 1,
+        columnas: ['FECHA', 'HORA', 'ESTACION', 'CATEGORIA', 'TARIFA', 'BONIFICACION'],
+        filasPreview: [
+          {
+            FECHA: '25/06/2026',
+            HORA: '083015',
+            ESTACION: '3',
+            CATEGORIA: '5',
+            TARIFA: '100',
+            BONIFICACION: '10',
+          },
+        ],
+        filasOrigen: [],
+        tiposInferidos: {},
+      });
+      expect(state.snapshot().columnasIncluidas).toContain('CATEGORIA');
+      expect(state.descartarRecomendacion('rec-categoria')).toBeTrue();
+      const s = state.snapshot();
+      expect(s.columnasExcluidas).toContain('CATEGORIA');
+      expect(s.columnasIncluidas).not.toContain('CATEGORIA');
+      expect(state.mapeosActivos().some((m) => m.columnaDestino === 'CATEGORIA')).toBeFalse();
+    });
   });
 
   it('FILTRAR_COLUMNA: construirPasadasDesdeMapeo no reexpande a filasOrigen', () => {

@@ -114,6 +114,18 @@ describe('AuditoriaTarifasListComponent', () => {
     expect(component.expandedId).toBeNull();
   });
 
+  it('expande al clickear la fila padre y no al clickear el contenedor de acciones', () => {
+    fixture.detectChanges();
+    const parentRow: HTMLTableRowElement | null = fixture.nativeElement.querySelector('tr.at__row');
+    expect(parentRow).toBeTruthy();
+    parentRow!.click();
+    expect(component.expandedId).toBe(component.rows[0].id);
+
+    const actions: HTMLElement | null = fixture.nativeElement.querySelector('tr.at__row .at__actions');
+    actions!.click();
+    expect(component.expandedId).toBe(component.rows[0].id);
+  });
+
   it('no expone CONFIRMADO como opcion de clasificacion', () => {
     component.catalogByPeaje.set('p1', [
       { peaje_id: 'p1', codigo: 'PICO', etiqueta: 'Pico', color: '#f59e0b', tipo_meta: 'PICO', orden: 1 },

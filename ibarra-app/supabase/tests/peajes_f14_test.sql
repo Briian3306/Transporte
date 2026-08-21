@@ -1,6 +1,6 @@
 -- pgTAP: F14-1 / F14-2 — auditoría tarifaria (casos B del Apéndice D, síntesis CLI)
 BEGIN;
-SELECT plan(42);
+SELECT plan(46);
 
 -- -----------------------------------------------------------------------------
 -- Seed catálogos
@@ -525,6 +525,102 @@ SELECT is(
   ),
   5::smallint,
   'F14-9 recalcular no pisa categoria_calculated'
+);
+
+-- -----------------------------------------------------------------------------
+-- F14-2 hook: peajes_confirmar_carga dispara peajes_normalizar_tarifas
+-- (sin segundo RPC). Firma pública intacta. NC → (0,0), sin nivel.
+-- -----------------------------------------------------------------------------
+SELECT lives_ok(
+  $$SELECT public.peajes_confirmar_carga(
+      jsonb_build_object(
+        'factura', 'F14-HOOK-FC',
+        'cuenta', 'C-HOOK',
+        'empresa_id', '66666666-6666-6666-6666-666666666666',
+        'fecha_factura', '2026-08-21',
+        'importe_sin_iva', 500,
+        'percepciones', 0,
+        'iva', 0,
+        'importe_total', 500
+      ),
+      jsonb_build_array(
+        jsonb_build_object(
+          'fecha_hora', '2026-08-21T08:00:00Z',
+          'pase_id', 'd1111111-1111-1111-1111-111111111111',
+          'patente_id', 'c1111111-1111-1111-1111-111111111111',
+          'estacion_id', 'b1111111-1111-1111-1111-111111111111',
+          'precio', 500,
+          'bonificacion', 0,
+          'quantity', 1,
+          'importe_neto', 500
+        )
+      ),
+      NULL,
+      '{}'::jsonb,
+      '[]'::jsonb,
+      '[]'::jsonb,
+      'f14-hook-fc.xlsx'
+    )$$,
+  'F14-2 hook: confirmar_carga FC ok (firma pública)'
+);
+
+SELECT ok(
+  EXISTS (
+    SELECT 1
+    FROM public.pasadas p
+    JOIN public.documentos d ON d.id = p.documento_id
+    JOIN public.tarifas_normalizadas tn ON tn.id = p.tarifa_normalizada_id
+    WHERE d.factura = 'F14-HOOK-FC'
+      AND p.precio = 500
+      AND tn.importe = 500
+      AND tn.estacion_id = 'b1111111-1111-1111-1111-111111111111'
+  ),
+  'F14-2 hook: confirmar_carga llama peajes_normalizar_tarifas (pasada matcheada)'
+);
+
+SELECT lives_ok(
+  $$SELECT public.peajes_confirmar_carga(
+      jsonb_build_object(
+        'factura', 'F14-HOOK-NC',
+        'cuenta', 'C-HOOK-NC',
+        'empresa_id', '66666666-6666-6666-6666-666666666666',
+        'fecha_factura', '2026-08-21',
+        'tipo', 'NC',
+        'importe_sin_iva', 400,
+        'percepciones', 0,
+        'iva', 0,
+        'importe_total', 400
+      ),
+      jsonb_build_array(
+        jsonb_build_object(
+          'fecha_hora', '2026-08-21T09:00:00Z',
+          'pase_id', 'd1111111-1111-1111-1111-111111111111',
+          'patente_id', 'c1111111-1111-1111-1111-111111111111',
+          'estacion_id', 'b1111111-1111-1111-1111-111111111111',
+          'precio', 400,
+          'bonificacion', 0,
+          'quantity', 1,
+          'importe_neto', 400
+        )
+      ),
+      NULL,
+      '{}'::jsonb,
+      '[]'::jsonb,
+      '[]'::jsonb,
+      'f14-hook-nc.xlsx'
+    )$$,
+  'F14-2 hook: confirmar_carga NC ok'
+);
+
+SELECT is(
+  (
+    SELECT count(*)::integer
+    FROM public.tarifas_normalizadas
+    WHERE estacion_id = 'b1111111-1111-1111-1111-111111111111'
+      AND importe = 400
+  ),
+  0,
+  'F14-2 hook: NC no crea nivel tarifario'
 );
 
 SELECT * FROM finish();

@@ -1,9 +1,11 @@
 import {
   buildPicoNoPicoAsignaciones,
+  buildStatusCatalogoButtons,
   detectPicoNoPicoPair,
   isPicoNoPicoSelection,
   pairAlreadyConfirmed,
   parseCategoriaCalculated,
+  suggestStatusByPrice,
 } from './auditoria-tarifas.helpers';
 import { MOCK_STATUS_CATALOG, PEAJE_CV, buildZarate } from './mocks/auditoria-tarifas.mock';
 import { TarifaNormalizadaRow } from './contracts.local';
@@ -62,6 +64,41 @@ describe('auditoria-tarifas.helpers pico/no pico', () => {
       catalog
     )!;
     expect(pairAlreadyConfirmed(confirmed)).toBeTrue();
+  });
+});
+
+describe('buildStatusCatalogoButtons', () => {
+  const catalog = MOCK_STATUS_CATALOG.filter((c) => c.peaje_id === PEAJE_CV);
+
+  it('agrega POSIBLE_HORARIO si el catálogo no lo define', () => {
+    const codes = buildStatusCatalogoButtons(catalog).map((c) => c.codigo);
+    expect(codes).toContain('NO_PICO');
+    expect(codes).toContain('PICO');
+    expect(codes).toContain('POSIBLE_HORARIO');
+    expect(codes).not.toContain('PENDIENTE');
+    expect(codes).not.toContain('CONFIRMADO');
+  });
+});
+
+describe('suggestStatusByPrice', () => {
+  const catalog = MOCK_STATUS_CATALOG.filter((c) => c.peaje_id === PEAJE_CV);
+
+  it('ignora PENDIENTE y CONFIRMADO al sugerir por precio', () => {
+    const [low, high] = [...buildZarate()].sort((a, b) => a.importe - b.importe).slice(0, 2);
+    const withMeta = [
+      {
+        peaje_id: PEAJE_CV,
+        codigo: 'PENDIENTE',
+        etiqueta: 'Pendiente',
+        color: '#f59e0b',
+        tipo_meta: 'NEUTRO' as const,
+        orden: 0,
+      },
+      ...catalog,
+    ];
+    const map = suggestStatusByPrice([low, high], withMeta);
+    expect(map.get(low.id)).toBe('NO_PICO');
+    expect(map.get(high.id)).toBe('PICO');
   });
 });
 

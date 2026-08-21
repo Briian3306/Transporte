@@ -124,28 +124,28 @@
         <tr>
           <th scope="col" class="at__th-expand"><span class="at__sr">Expandir</span></th>
           <th scope="col" [attr.aria-sort]="ariaSort('estacion_nombre')"><button type="button" class="at__sort" (click)="onSort('estacion_nombre')">Estación</button></th>
-          <th scope="col" [attr.aria-sort]="ariaSort('peaje_nombre')"><button type="button" class="at__sort" (click)="onSort('peaje_nombre')">Peaje</button></th>
-          <th scope="col" [attr.aria-sort]="ariaSort('categoria')"><button type="button" class="at__sort" (click)="onSort('categoria')">Categoría</button></th>
-          <th scope="col" class="at__num at__col--secundaria" [attr.aria-sort]="ariaSort('importe')"><button type="button" class="at__sort" (click)="onSort('importe')">Importe</button></th>
+          <th scope="col" class="at__col--mobile-hide" [attr.aria-sort]="ariaSort('peaje_nombre')"><button type="button" class="at__sort" (click)="onSort('peaje_nombre')">Peaje</button></th>
+          <th scope="col" class="at__col--mobile-hide" [attr.aria-sort]="ariaSort('categoria')"><button type="button" class="at__sort" (click)="onSort('categoria')">Categoría</button></th>
+          <th scope="col" class="at__num" [attr.aria-sort]="ariaSort('importe')"><button type="button" class="at__sort" (click)="onSort('importe')">Importe</button></th>
           <th scope="col" class="at__num" [attr.aria-sort]="ariaSort('cases')"><button type="button" class="at__sort" (click)="onSort('cases')">Casos</button></th>
           <th scope="col" class="at__num at__col--secundaria" [attr.aria-sort]="ariaSort('multiplicador')"><button type="button" class="at__sort" (click)="onSort('multiplicador')">Multiplicador</button></th>
           <th scope="col" class="at__num at__col--secundaria" [attr.aria-sort]="ariaSort('desvio')"><button type="button" class="at__sort" (click)="onSort('desvio')">Desvío horario</button></th>
           <th scope="col" [attr.aria-sort]="ariaSort('diagnostico')"><button type="button" class="at__sort" (click)="onSort('diagnostico')">Diagnóstico</button></th>
           <th scope="col" [attr.aria-sort]="ariaSort('status')"><button type="button" class="at__sort" (click)="onSort('status')">Status</button></th>
-          <th scope="col">Patrón</th>
+          <th scope="col" class="at__col--mobile-hide">Patrón</th>
           <th scope="col" class="at__th-actions">Acciones</th>
         </tr>
       </thead>
       <tbody *ngIf="!loading && rows.length; else emptyOrLoading">
         <ng-container *ngFor="let row of rows; trackBy: trackByRowId">
-          <tr class="at__row" [class.at__row--open]="expandedId === row.id">
+          <tr class="at__row" [class.at__row--open]="expandedId === row.id" (click)="toggleExpand(row)">
             <td>
-              <button type="button" class="at__expand" [attr.aria-expanded]="expandedId === row.id" [attr.aria-controls]="'detail-' + row.id" [attr.aria-label]="expandedId === row.id ? 'Ocultar niveles de tarifa' : 'Ver niveles de tarifa'" (click)="toggleExpand(row)">
+              <button type="button" class="at__expand" [attr.aria-expanded]="expandedId === row.id" [attr.aria-controls]="'detail-' + row.id" [attr.aria-label]="expandedId === row.id ? 'Ocultar niveles de tarifa' : 'Ver niveles de tarifa'" (click)="$event.stopPropagation(); toggleExpand(row)">
                 <i class="fas" [class.fa-chevron-right]="expandedId !== row.id" [class.fa-chevron-down]="expandedId === row.id" aria-hidden="true"></i>
               </button>
             </td>
-            <td><strong>{{ row.estacion_nombre }}</strong></td>
-            <td>
+            <td data-label="Estación"><strong>{{ row.estacion_nombre }}</strong></td>
+            <td class="at__col--mobile-hide" data-label="Peaje">
               <div class="at__peaje-cell">
                 <a
                   *ngIf="tarifaUrlForRow(row) as url; else peajeName"
@@ -153,6 +153,7 @@
                   [href]="url"
                   target="_blank"
                   rel="noopener noreferrer"
+                  (click)="$event.stopPropagation()"
                   [title]="'Abrir tarifas de ' + row.peaje_nombre"
                 >{{ row.peaje_nombre }}</a>
                 <ng-template #peajeName><span class="at__peaje-name">{{ row.peaje_nombre }}</span></ng-template>
@@ -168,15 +169,15 @@
                 </button>
               </div>
             </td>
-            <td>{{ row.categoria ?? '—' }}</td>
-            <td class="at__num at__price at__col--secundaria">{{ row.importe | number: '1.2-2' }}</td>
-            <td class="at__num">{{ row.cases | number }}</td>
-            <td class="at__num at__col--secundaria">{{ row.multiplicador | number: '1.2-3' }}×</td>
-            <td class="at__num at__col--secundaria">{{ row.desvio != null ? (row.desvio | number: '1.2-2') : '—' }}</td>
-            <td><span [class]="diagnosticoClass(row.diagnostico)">{{ diagnosticoLabel(row.diagnostico) }}</span></td>
-            <td><app-tarifa-status-badge [codigo]="row.status" [catalogo]="catalogForRow(row)"></app-tarifa-status-badge></td>
-            <td class="at__patron"><span class="at__badge at__badge--neutral">{{ patronLabel(row) }}</span></td>
-            <td class="at__actions">
+            <td class="at__col--mobile-hide" data-label="Categoría">{{ row.categoria ?? '—' }}</td>
+            <td class="at__num at__price" data-label="Importe">{{ row.importe | number: '1.2-2' }}</td>
+            <td class="at__num" data-label="Casos">{{ row.cases | number }}</td>
+            <td class="at__num at__col--secundaria" data-label="Multiplicador">{{ row.multiplicador | number: '1.2-3' }}×</td>
+            <td class="at__num at__col--secundaria" data-label="Desvío">{{ row.desvio != null ? (row.desvio | number: '1.2-2') : '—' }}</td>
+            <td data-label="Diagnóstico"><span [class]="diagnosticoClass(row.diagnostico)">{{ diagnosticoLabel(row.diagnostico) }}</span></td>
+            <td data-label="Status"><app-tarifa-status-badge [codigo]="row.status" [catalogo]="catalogForRow(row)"></app-tarifa-status-badge></td>
+            <td class="at__patron at__col--mobile-hide" data-label="Patrón"><span class="at__badge at__badge--neutral">{{ patronLabel(row) }}</span></td>
+            <td class="at__actions" (click)="$event.stopPropagation()">
               <button type="button" class="at__action" (click)="toggleExpand(row)" [attr.aria-label]="expandedId === row.id ? 'Ocultar niveles de ' + row.estacion_nombre : 'Ver niveles de ' + row.estacion_nombre" title="Ver niveles">
                 <i class="fas" [class.fa-eye]="expandedId !== row.id" [class.fa-eye-slash]="expandedId === row.id" aria-hidden="true"></i><span>{{ expandedId === row.id ? 'Ocultar' : 'Ver' }}</span>
               </button>

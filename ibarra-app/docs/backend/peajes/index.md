@@ -23,6 +23,7 @@ Detalle de RPCs y flujos backend del dominio Peajes (documentos FC|NC, pasadas, 
 | [aliases-estaciones.md](./aliases-estaciones.md) | Normalización y aliases AUSOL |
 | [pwbi-views.md](./pwbi-views.md) | Vistas Power BI `pwbi_estacion` / `pwbi_patentes` / `pwbi_documentos` / `pwbi_tarifas` / `pwbi_pasadas` |
 | [auditoria-tarifas.md](./auditoria-tarifas.md) | F14: tablas tarifas_* + 6 RPC peajes_* de normalización/auditoría |
+| [auditoria-estaciones.md](./auditoria-estaciones.md) | F16: casos por fingerprint, listado, preview y corrección |
 | [empresas-tarifa-url.md](./empresas-tarifa-url.md) | `empresas.tarifa_url` (link de tarifas desde auditoría) |
 
 ## Referencias

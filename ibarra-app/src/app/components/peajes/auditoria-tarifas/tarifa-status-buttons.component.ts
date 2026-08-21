@@ -84,22 +84,7 @@ export class TarifaStatusButtonsComponent implements OnChanges, OnInit, AfterVie
   }
 
   private rebuildOptions(): void {
-    this.buttons = buildStatusCatalogoButtons(this.catalogo).filter(
-      (status) => status.codigo !== 'PENDIENTE' && status.codigo !== 'CONFIRMADO'
-    );
-    if (this.catalogo.length && !this.buttons.some((status) => status.codigo === 'POSIBLE_HORARIO')) {
-      this.buttons = [
-        ...this.buttons,
-        {
-          peaje_id: this.catalogo[0]?.peaje_id ?? '',
-          codigo: 'POSIBLE_HORARIO',
-          etiqueta: 'Posible horario',
-          color: '#2563eb',
-          tipo_meta: 'NEUTRO',
-          orden: 999,
-        },
-      ];
-    }
+    this.buttons = buildStatusCatalogoButtons(this.catalogo);
     this.options = this.buttons.map((b) => ({
       id: b.codigo,
       label: b.etiqueta,

@@ -2,7 +2,7 @@
 
 ## Resumen
 
-En el wizard **simple**, tras elegir **empresa** en Paso 1, el Paso 6 solo ofrece estaciones de los **peajes de esa empresa**. Usa `reconocerEstacion` del catálogo para auto-seleccionar coincidencias exactas y recomendar alta cuando no hay match.
+En el wizard **simple**, tras elegir **empresa** en Paso 1, el Paso 6 solo ofrece estaciones de los **peajes de esa empresa**. Usa `reconocerEstacion` del catálogo para auto-seleccionar coincidencias exactas y recomendar alta cuando no hay match. F16 restaura relaciones guardadas por clave canónica (`0001` ≡ `1`) y ofrece [auditoria-estaciones.md](./auditoria-estaciones.md) para marcar códigos bien/mal.
 
 ### Código `0001` (Zarate vs DOCK SUD) — F02-17
 

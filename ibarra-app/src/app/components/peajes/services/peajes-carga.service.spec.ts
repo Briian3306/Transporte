@@ -68,7 +68,9 @@ describe('PeajesCargaSupabaseService', () => {
     expect(result.pasadas[0].id).toBe('22222222-2222-4222-8222-222222222222');
     expect(result.registro.id).toBe('33333333-3333-4333-8333-333333333333');
     expect(from).not.toHaveBeenCalled();
-    // Primera llamada = peajes_confirmar_carga (la 2ª es peajes_normalizar_tarifas post-commit).
+    expect(rpc).toHaveBeenCalledTimes(2);
+    expect(rpc.calls.argsFor(0)[0]).toBe('peajes_confirmar_carga');
+    expect(rpc.calls.argsFor(1)[0]).toBe('peajes_normalizar_tarifas');
     const confirmarArgs = rpc.calls.argsFor(0)[1] as {
       p_pasadas: Array<{ categoria: string | null }>;
     };

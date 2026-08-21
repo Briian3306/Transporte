@@ -36,3 +36,13 @@
   border-radius: 0.45rem;
   font-size: 0.75rem;
 }
+
+@media (max-width: 720px) {
+  .at__status-select {
+    min-width: 0;
+    grid-template-columns: 1fr;
+  }
+  :host {
+    min-width: 0;
+  }
+}

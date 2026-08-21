@@ -52,6 +52,13 @@
       <span class="peajes-home__link">Auditar tarifas</span>
     </a>
 
+    <a *ngIf="isSectionVisible('auditoria-estaciones')" routerLink="/peajes/auditoria-estaciones" class="peajes-home__card">
+      <div class="peajes-home__icon"><i class="fas fa-map-signs" aria-hidden="true"></i></div>
+      <h2>Auditoría de estaciones</h2>
+      <p>Revisá códigos de proveedor y marcá si el reconocimiento está bien o mal.</p>
+      <span class="peajes-home__link">Auditar estaciones</span>
+    </a>
+
     <a *ngIf="isSectionVisible('plantillas')" routerLink="/peajes/plantillas" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-cogs" aria-hidden="true"></i></div>
       <h2>Plantillas y algoritmos</h2>

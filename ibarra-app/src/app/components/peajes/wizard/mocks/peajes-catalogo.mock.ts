@@ -152,6 +152,10 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
     return of(updated);
   }
 
+  agregarEstacionesDePrueba(items: Estacion[]): void {
+    this.estaciones = [...this.estaciones, ...items];
+  }
+
   listarEstaciones(peajeId?: string): Observable<Estacion[]> {
     const list = peajeId
       ? this.estaciones.filter((e) => e.peaje_id === peajeId)

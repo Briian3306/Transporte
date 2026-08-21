@@ -180,7 +180,9 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
           throw new Error('Respuesta incompleta de peajes_confirmar_carga');
         }
 
-        // F14-2 opción (b): normalización post-commit. No debe invalidar una carga ya confirmada.
+        // F14-2: el hook canónico está en peajes_confirmar_carga (SQL).
+        // Segundo .rpc idempotente (B-10) por si DESARROLLO aún no tiene
+        // 20260821141019. Un fallo no invalida la carga ya confirmada.
         try {
           const { error: normError } = await client.rpc('peajes_normalizar_tarifas', {
             p_documento_id: documentoId,

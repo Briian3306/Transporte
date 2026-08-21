@@ -8,6 +8,8 @@ export const PEAJES_HOME_SECTION_IDS = [
   'pasadas',
   'pasadas-pendientes',
   'auditoria-tarifas',
+  'auditoria-estaciones',
+  'catalogos',
   'plantillas',
   'carga-express',
   'documentos',
@@ -19,6 +21,7 @@ const PEAJES_OPERATIONAL_SECTION_IDS = [
   'pasadas',
   'pasadas-pendientes',
   'auditoria-tarifas',
+  'auditoria-estaciones',
 ] as const;
 
 export function getVisiblePeajesHomeSectionIds(

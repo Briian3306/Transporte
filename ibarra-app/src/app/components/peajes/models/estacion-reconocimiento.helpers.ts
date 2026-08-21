@@ -10,6 +10,14 @@ export function normalizarCodigoEstacion(valor: unknown): string {
     .replace(/\s+/g, ' ');
 }
 
+/** Identidad canónica de una relación: dígitos sin ceros a la izquierda (`0001` → `1`). */
+export function claveCanonicoCodigoEstacion(valor: unknown): string {
+  const n = normalizarCodigoEstacion(valor);
+  if (!n) return '';
+  if (/^\d+$/.test(n)) return String(Number(n));
+  return n;
+}
+
 /** `0001` y `1` son el mismo código Telepase. */
 export function variantesCodigoEstacion(valor: unknown): string[] {
   const n = normalizarCodigoEstacion(valor);

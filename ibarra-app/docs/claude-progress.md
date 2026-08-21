@@ -2,6 +2,10 @@
 
 ## Fuente de verdad
 
+> 2026-08-21 — **CLI seed pasadas DESARROLLO.** `seed:local` / `db reset --local` aplican `seed_peajes_pasadas_fks.sql` (UUID de patentes/pases/estaciones/documentos/tarifas) y luego `pasadas_rows.sql` (~8326, `ON CONFLICT (id)`). F14 sintético queda al final. pgTAP sigue con `--no-seed`. Sin `db push --linked`.
+
+> 2026-08-21 — **F16 passing (local).** F14 (auditoría de tarifas) ya estaba en home; F16 es **Auditoría de estaciones**. Catálogos: `peajes:manage` no veía la tarjeta porque `PEAJES_HOME_SECTION_IDS` omitía `'catalogos'` y el grid filtraba `isSectionVisible('catalogos')`. Seed CLI: `seed_peajes_desarrollo.sql` (24 empresas / 22 peajes MCP); `db dump --linked` 403; pasadas 8326 no versionadas — sigue `seed_peajes_f14.sql`. pgTAP **210 PASS**. Sin `db push --linked`.
+
 - PRD principal: `docs/plan/peaje-prd-short.md.md`
 - Ejemplo operativo: `docs/plan/ejemplo-mvp-procesamiento-pasadas.md`
 - Estado de features: `feature_list.json`
@@ -9,6 +13,14 @@
 - Handoff: `docs/session-handoff.md`
 
 ## Estado actual
+
+Fecha: 2026-08-21 — **CLI seed F14 + login**. `db reset --local` aplica `seed_auth` → `seed_cli_login` (francis@transporteibarra.com.ar password CLI) → `seed_rbac_schema`/`seed_rbac` → `seed_peajes_f14` (80 pasadas sintéticas, peaje CLI Auditoría tarifas). Verify: reset OK; login GoTrue local OK; tarifas 4 niveles (PICO 3000 POSIBLE_HORARIO + 3 CATEGORIA). pgTAP sigue con `--no-seed`.
+
+Fecha: 2026-08-21 — **F14-0/F14-3/F14-4 gap-fill agente 02**. Contrato CATEGORIA ya ok. Wizard: descartar `rec-categoria` excluye columna y limpia mapeo (Patrón A). Auditoría: expand al click de fila padre, `POSIBLE_HORARIO` en botones de catálogo, sticky estación y layout móvil `at__` bajo 720px. Verify: `tsc` app OK; wizard-state + column-recognition + paso5 + auditoria-tarifas **90 SUCCESS**. Suite wizard completa **129 SUCCESS / 5 FAILED** (carga-express conteo de pasos y specs Paso 6 preexistentes). Persistencia `categoria` ya está en `PeajesCargaSupabaseService` (01). **F14-6 no cerrado.** Sin commit/push.
+
+Fecha: 2026-08-21 — **F14-1/F14-2 gap-fill agente 01 (CLI)**. Checklist §7.1: tablas/RPC/índices/RLS/UTC ya estaban; hueco real = hook SQL. Migración `20260821141019_peajes_confirmar_carga_hook_normalizar.sql`: `peajes_confirmar_carga` llama `peajes_normalizar_tarifas` por documento (firma pública intacta; `EXCEPTION` no revierte carga válida). Angular conserva `.rpc` idempotente hasta push DESARROLLO. Verify: `npx supabase db reset --local --no-seed` OK; `npx supabase test db` → **198 PASS**; `ng test` peajes-carga **1 SUCCESS**. Advisors: `security_definer_view` en `pwbi_*` preexistente. **No** `db push --linked`. **F14-6 no cerrado.**
+
+Fecha: 2026-08-21 — **Plan F16 corregido: persistencia Paso 6 + auditoría con estados**. Plan: `docs/plan/auditoria-reconocimiento-estaciones/PLAN_auditoria-reconocimiento-estaciones.md`. Ola 0: F16-0 (`00`, contrato); ola 1 en paralelo: F16-1 (`01`, casos/RPC/pgTAP/servicio) y F16-2 (`02`, Paso 6 + UI); ola 2: F16-3 (`04` documentación y `05` integración/QA). La regresión principal es guardar una relación, recrear Paso 6 y continuar sin volver a seleccionar, usando la clave canónica `0001=1`/`0003=3`. Los casos persisten por fingerprint con estados PENDIENTE, VALIDADO, DESCARTADO, REQUIERE_CORRECCION y CORREGIDO para no revisar lo mismo. `['3','5']` es válido: solo alerta con perfil secuencial (p. ej. `1,2,3,5` ⇒ falta `4`). La auditoría no toca Paso 6: una corrección confirmada puede prevenir futuros movimientos vía catálogo/alias y, con preview/confirmación adicional, corregir las pasadas históricas exactas y dejar trazabilidad. Todas las features quedan `not_started`; UUID como fixtures locales y DESARROLLO solo lectura.
 
 Fecha: 2026-08-19 — **F02-18 Paso 5 blockers + último pase por patente**. `PASE_ID` deja de ser obligatorio en mapeo; Paso 8 toma `pases.created_at` más reciente de la `patente_id` (sin crear pase con el texto de la placa). Sin `PRECIO` y con `IMPORTE_NETO`, se completa el precio. Continuar en Paso 5 permanece clicable y la tira «Para avanzar» nombra destinos. Verify: `ng test` paso5+paso8+ultimo-pase+plantilla-apply **27 SUCCESS** (ChromeHeadless). Docs `wizard.md` + `validacion-carga.md`.
 

@@ -20,6 +20,7 @@ import { formatUtcDateTime } from '../wizard/services/peajes-fecha.util';
 })
 export class TarifaCasosDialogComponent {
   @Input() open = false;
+  @Input() eyebrow = 'Auditoría de tarifas';
   @Input() title = 'Pasadas';
   @Input() description = '';
   @Input() rows: PasadaGestion[] = [];

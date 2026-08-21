@@ -10,16 +10,25 @@ describe('PeajesHomeComponent: secciones visibles', () => {
     ).toEqual(PEAJES_HOME_SECTION_IDS);
   });
 
-  it('muestra solo las cuatro secciones operativas al usuario de carga y revisión', () => {
+  it('incluye catálogos para peajes:manage', () => {
+    expect(PEAJES_HOME_SECTION_IDS).toContain('catalogos');
+    expect(
+      getVisiblePeajesHomeSectionIds(new Set(['peajes:manage'])),
+    ).toContain('catalogos');
+  });
+
+  it('muestra las secciones operativas al usuario de carga y revisión', () => {
     expect(
       getVisiblePeajesHomeSectionIds(
         new Set(['peajes:read', 'peajes:create']),
       ),
     ).toEqual([
       'wizard',
+      'catalogos',
       'pasadas',
       'pasadas-pendientes',
       'auditoria-tarifas',
+      'auditoria-estaciones',
     ]);
   });
 

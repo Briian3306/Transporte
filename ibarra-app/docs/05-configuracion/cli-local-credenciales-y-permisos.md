@@ -38,7 +38,7 @@ Scripts en `package.json`:
 "seed:local": "…"
 ```
 
-Script `pnpm seed:local` / `npm run seed:local`: aplica `seed_auth.sql` + `seed_rbac.sql` vía `psql` en el contenedor (sin `db reset`).
+Script `pnpm seed:local` / `npm run seed:local`: `scripts/seed-local.mjs` aplica Auth/RBAC + catálogos + pasadas vía `psql` en el contenedor (sin `db reset`). Si `auth.users` ya tiene filas, **salta** `seed_auth.sql` (dump no idempotente: `audit_log_entries_pkey`) y sigue con login CLI, RBAC y peajes. Para recrear Auth desde cero: `npx supabase db reset --local`.
 
 Contrato de entornos: CLI = testing; DESARROLLO = remoto. No hay staging/prod separados en este flujo.
 
@@ -79,10 +79,17 @@ pnpm dev
 Studio local: http://127.0.0.1:54323  
 API local: http://127.0.0.1:54321  
 
-Con `config.toml` → `[db.seed]`, un `npx supabase db reset --local` aplica automáticamente:
+Con `config.toml` → `[db.seed]`, un `npx supabase db reset --local` (sin `--no-seed`) aplica automáticamente:
 
 1. `supabase/seed_auth.sql` — usuarios Auth (hashes de DESARROLLO)
-2. `supabase/seed_rbac.sql` — tablas/roles/permisos + perfil admin de Francis
+2. `supabase/seed_cli_login.sql` — fija login CLI `francis@transporteibarra.com.ar` / `Transporte2026`
+3. `supabase/seed_rbac_schema.sql` + `supabase/seed_rbac.sql` — tablas/roles/permisos + perfil admin de Francis
+4. `supabase/seed_peajes_desarrollo.sql` — empresas (24) y peajes (22) de DESARROLLO.
+5. `supabase/seed_peajes_pasadas_fks.sql` — patentes, pases, estaciones, documentos y tarifas con los UUID de DESARROLLO (necesarios para las FK de pasadas).
+6. `supabase/pasadas_rows.sql` — pasadas DESARROLLO (~8326), un solo `INSERT` por lotes + `ON CONFLICT (id) DO NOTHING`.
+7. `supabase/seed_peajes_f14.sql` — peaje/estaciones/pasadas sintéticas + recálculo para `/peajes/auditoria-tarifas`
+
+Los tests pgTAP siguen usando `npx supabase db reset --local --no-seed` para no mezclar este fixture. Nunca `db reset --linked`.
 
 ---
 
@@ -93,7 +100,12 @@ Archivos canónicos (commiteados, solo DEV):
 | Archivo | Contenido |
 |---------|-----------|
 | `supabase/seed_auth.sql` | Dump data-only del schema `auth` (usuarios, identidades, etc.) |
+| `supabase/seed_cli_login.sql` | Password CLI conocida para Francis (bcrypt local). Solo CLI. |
 | `supabase/seed_rbac.sql` | Tablas host RBAC, módulos (incl. `peajes`), roles admin, perfil `francis@transporteibarra.com.ar` |
+| `supabase/seed_peajes_desarrollo.sql` | Empresas y peajes DESARROLLO (MCP). |
+| `supabase/seed_peajes_pasadas_fks.sql` | Catálogos padre (UUID DESARROLLO) para que `pasadas_rows.sql` respete FK |
+| `supabase/pasadas_rows.sql` | Pasadas DESARROLLO (~8326). Regenerar padres: `node scripts/generate-peajes-pasadas-fk-seed.mjs` |
+| `supabase/seed_peajes_f14.sql` | Fixture F14: 80 pasadas Patrón A, dos estaciones, recálculo de tarifas |
 
 Dumps ad-hoc con sufijo `.local.sql` siguen en `.gitignore` por si regenerás sin pisar el canónico.
 
@@ -144,7 +156,7 @@ npx supabase db query --local "select p.email, r.name as role from user_profiles
 npx supabase db query --local "select count(*)::int as peajes_admin_perms from role_permissions rp join module_permissions mp on mp.id = rp.module_permission_id join system_modules m on m.id = mp.module_id join user_roles r on r.id = rp.role_id where m.name = 'peajes' and r.name = 'admin';"
 ```
 
-Luego: cerrar sesión en la app, `pnpm dev`, login con el email/password de DESARROLLO.
+Luego: cerrar sesión en la app, `pnpm dev`, login con `francis@transporteibarra.com.ar` / `Transporte2026`. En `/peajes/auditoria-tarifas` debe aparecer el peaje **CLI Auditoría tarifas**.
 
 ---
 

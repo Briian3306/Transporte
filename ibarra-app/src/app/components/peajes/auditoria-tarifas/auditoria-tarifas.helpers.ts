@@ -35,20 +35,24 @@ export function buildStatusCatalogoButtons(catalogo: TarifaStatusCatalogo[]): Ta
   const sorted = [...catalogo]
     .filter((status) => status.codigo !== 'PENDIENTE' && status.codigo !== 'CONFIRMADO')
     .sort((a, b) => a.orden - b.orden);
-  const hasPosibleHorario = sorted.some((c) => c.codigo === 'POSIBLE_HORARIO');
-  if (hasPosibleHorario) {
+  if (sorted.some((c) => c.codigo === 'POSIBLE_HORARIO')) {
     return sorted;
   }
-  return sorted;
+  return [
+    ...sorted,
+    {
+      peaje_id: catalogo[0]?.peaje_id ?? '',
+      codigo: 'POSIBLE_HORARIO',
+      etiqueta: 'Posible horario',
+      color: '#2563eb',
+      tipo_meta: 'NEUTRO',
+      orden: 999,
+    },
+  ];
 }
 
 export function statusCodesForPeaje(catalogo: TarifaStatusCatalogo[]): string[] {
-  const sorted = buildStatusCatalogoButtons(catalogo);
-  const codes = sorted.map((c) => c.codigo);
-  if (!codes.includes('POSIBLE_HORARIO')) {
-    codes.push('POSIBLE_HORARIO');
-  }
-  return codes;
+  return buildStatusCatalogoButtons(catalogo).map((c) => c.codigo);
 }
 
 export interface PicoNoPicoPair {
@@ -126,8 +130,8 @@ export function suggestStatusByPrice(
 ): Map<string, string> {
   const result = new Map<string, string>();
   const sortedLevels = [...niveles].sort((a, b) => a.importe - b.importe);
-  const codes = [...catalogo]
-    .sort((a, b) => a.orden - b.orden)
+  const codes = buildStatusCatalogoButtons(catalogo)
+    .filter((c) => c.codigo !== 'POSIBLE_HORARIO')
     .map((c) => c.codigo);
   if (!codes.length) {
     return result;

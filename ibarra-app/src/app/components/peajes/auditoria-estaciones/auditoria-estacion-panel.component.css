@@ -1,0 +1,10 @@
+.ae__familia { display: grid; gap: .7rem; }
+.ae__familia-note { margin: 0; color: #52647a; font-size: .82rem; }
+.ae__error { margin: 0; color: #b91c1c; font-size: .84rem; }
+.ae__field { display: flex; flex-direction: column; gap: .32rem; color: #52647a; font-size: .72rem; font-weight: 800; }
+.ae__field textarea { min-height: 3.2rem; padding: .5rem .65rem; border: 1px solid #dbe4ee; border-radius: .45rem; font: inherit; font-weight: 500; }
+.ae__estado-btns, .ae__familia-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+.ae__btn { appearance: none; min-height: 2.35rem; padding: .45rem .72rem; border: 1px solid #dbe4ee; border-radius: .5rem; background: #fff; font-size: .75rem; font-weight: 750; cursor: pointer; }
+.ae__btn--primary { border-color: #0f766e; background: #0f766e; color: #fff; }
+.ae__btn:disabled { opacity: .55; cursor: not-allowed; }
+.ae__casos-btn { appearance: none; min-height: 2.15rem; padding: .3rem .55rem; border: 1px solid #dbe4ee; border-radius: .45rem; background: #fff; color: #0f766e; font-size: .75rem; font-weight: 750; cursor: pointer; }

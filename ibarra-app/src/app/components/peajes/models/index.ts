@@ -5,3 +5,4 @@ export * from './auditoria-tarifas.contracts';
 export * from './documento.helpers';
 export * from './consumos-resumen.helpers';
 export * from './estacion-reconocimiento.helpers';
+export * from './auditoria-estaciones.contracts';
