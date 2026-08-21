@@ -28,12 +28,6 @@ DESARROLLO (remote)   =  development remote only
 
 There is **no** staging/prod split in this flow. See [entornos.md](entornos.md).
 
-### DO NOT reuse OrdenCompra project refs
-
-Forbidden (belong to another product):
-
-- `edxoqshrzdqpnldktpzy`
-- `uurlssweuhshbwpxxatw`
 
 ## Main responsibility
 

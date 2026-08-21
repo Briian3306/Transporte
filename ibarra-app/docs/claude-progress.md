@@ -10,6 +10,8 @@
 
 ## Estado actual
 
+Fecha: 2026-08-19 — **F02-18 Paso 5 blockers + último pase por patente**. `PASE_ID` deja de ser obligatorio en mapeo; Paso 8 toma `pases.created_at` más reciente de la `patente_id` (sin crear pase con el texto de la placa). Sin `PRECIO` y con `IMPORTE_NETO`, se completa el precio. Continuar en Paso 5 permanece clicable y la tira «Para avanzar» nombra destinos. Verify: `ng test` paso5+paso8+ultimo-pase+plantilla-apply **27 SUCCESS** (ChromeHeadless). Docs `wizard.md` + `validacion-carga.md`.
+
 Fecha: 2026-08-18 — **`pwbi_pasadas.Categoria_Calculated`**. Si `Categoria` es NULL (Patrón A), la vista copia `tarifas_normalizadas.categoria_calculated` (0–10) y `Categoria_Calculated_Boolean = TRUE`; si hay categoría de proveedor, calculated queda NULL y el boolean es FALSE. Migración `20260818144011_peajes_pwbi_pasadas_categoria_calculated.sql`. M de Power BI actualizado. `db push --linked` DESARROLLO: 4900 pasadas; 2860 TRUE (clase rellenada); 2040 FALSE. Docker local apagado: pgTAP CLI pendiente.
 
 Fecha: 2026-08-18 — **Bugfix auditoría PICO/NO_PICO + CAT**. El panel ya no pisa la clasificación ni la clase 0–10 con la sugerencia por precio al recargar. Status guardado (≠ `PENDIENTE`) y ediciones manuales se conservan; Asignar status envía `NO_PICO`/`PICO` y `categoria_calculated`. Search-select deja la opción actual visible y rankea `PICO` exacto sobre «No pico». Sello CAT: vacío = «Sin clase», filled = CAT + dígito. Verify: `ng test` auditoria-tarifas **49/49 SUCCESS** (ChromeHeadless); search-select **9/9 SUCCESS**.
@@ -581,3 +583,23 @@ Criterio de cierre: (2) y (3) en verde sin paso de transformación parche no aco
 - La migración posterior `20260804175001_peajes_facturas_iva_total_manual.sql` agrega `facturas.iva` y elimina la restricción de total derivado: subtotal, percepciones, IVA y total son valores ingresados de factura. RAE se ignora.
 - Paso 7 conserva la suma por centavos de las pasadas y compara únicamente subtotal contra pasadas, con tolerancia de $5,00. Se cubrió la factura AUSOL `0840-0557074` del `2026-08-01`: subtotal 560832.27, percepciones 24676.62, IVA 117774.78, total 703283.67.
 - `npx supabase migration up --local` OK; `peajes_f01_test.sql` OK (46 pruebas, incluidas F11). La suite global mantiene un fallo preexistente de AUSOL: REVIEW 19 vs 18. `npx tsc --noEmit -p tsconfig.app.json` y `git diff --check` OK. La suite Angular focalizada generó el bundle, pero ChromeHeadless no termina en el host.
+### 2026-08-20 — F15-1 Vista Express de carga de Peajes
+
+- Implementado `PeajesCargaExpressComponent` en `wizard/carga-express/` con los pasos 1, 6, 7, 8 condicional y 9.
+- Agregada la ruta `/peajes/carga-express`, tarjeta `Carga rápida` y permiso `peajes:read`.
+- Paso 1 admite `expressMode`: exige plantilla y oculta el ejemplo MVP y configuración avanzada únicamente en Express.
+- Agregada prueba focalizada del shell; `tsc` app/spec pasa y `ng build --configuration=development` genera el bundle. Karma/ChromeHeadless compila el bundle pero queda bloqueado por exports faltantes preexistentes en `peajes-home.component.spec.ts` y `permission.guard.spec.ts`.
+
+### 2026-08-20 — F15-1 Patentes Express y pasos dinámicos
+
+- Express incorpora `patentes-express` para altas individuales, altas masivas y exclusión de patentes nuevas.
+- El stepper ordena Patentes antes de Estaciones y omite Estaciones cuando el reconocimiento es completo.
+- `PeajesPlantillaApplyService` distingue excepciones de mapeo, patentes y estaciones; el wizard administrativo conserva el Paso 5 completo.
+- `patente-reference.helper.ts` convierte códigos de proveedor a UUID y devuelve `null` para referencias no encontradas; Paso 8 bloquea antes de detectar duplicados o confirmar.
+- Verificación: `npx tsc --noEmit -p tsconfig.app.json` y `tsconfig.spec.json` pasan; `ng build --configuration=development` pasa con warning preexistente NG8107 en Paso 9. ChromeHeadless no inicia en este host por `GPU process isn't usable`.
+
+### 2026-08-21 — Skill de orquestación de planes
+
+- Agregada `.agents/skills/plan-orchestrator/` para producir planes sin código de producto.
+- Su salida canónica es `docs/plan/<epic>/PLAN_<epic>.md`, con planes de frontend/backend/testing solo si aplican; asigna dueños, skills, olas y evidencia de verificación.
+- Las tareas planificadas se registran como `not_started` y se sincronizan con esta bitácora; ningún plan puede marcar una feature como `passing`.

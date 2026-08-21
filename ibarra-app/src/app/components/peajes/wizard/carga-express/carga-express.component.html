@@ -1,0 +1,80 @@
+<div class="pwe">
+  <header class="pwe__intro">
+    <div>
+      <p class="pwe__eyebrow">Peajes / carga rápida</p>
+      <h1 class="pwe__title">Cargá tus pasadas con una plantilla.</h1>
+      <p class="pwe__lede">
+        Elegí la empresa y el formato, revisá las estaciones cuando sea necesario y completá la factura.
+      </p>
+    </div>
+    <div class="pwe__actions">
+      <button type="button" class="pw__btn pw__btn--ghost" (click)="reiniciar()">
+        <i class="fas fa-undo" aria-hidden="true"></i>
+        Reiniciar
+      </button>
+      <a routerLink="/peajes" class="pw__btn pw__btn--ghost">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Volver
+      </a>
+    </div>
+  </header>
+
+  <nav class="pwe__stepper" aria-label="Pasos de la carga rápida">
+    <button
+      type="button"
+      class="pwe__step"
+      *ngFor="let paso of pasos"
+      [class.pwe__step--active]="paso.id === pasoActual"
+      [class.pwe__step--done]="paso.numero < pasoVisualActual"
+      [disabled]="paso.numero > pasoVisualActual"
+      (click)="irA(paso)"
+    >
+      <span class="pwe__step-number">{{ paso.numero < pasoVisualActual ? '✓' : paso.numero }}</span>
+      <span>{{ paso.label }}</span>
+    </button>
+  </nav>
+
+  <div class="pwe__notice" *ngIf="error" role="alert">
+    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+    {{ error }}
+  </div>
+
+  <section class="pwe__card fade-in" [attr.data-paso]="pasoActual">
+    <app-paso1-carga
+      *ngIf="pasoActual === 1"
+      [expressMode]="true"
+      (completado)="onCargaCompletada()"
+      (facturaDirecta)="onCargaFacturaDirecta()"
+      (irAExcepcion)="onCargaExcepcion($event)"
+    />
+    <app-patentes-express
+      *ngIf="pasoActual === 5"
+      (completado)="onPatentesCompletadas()"
+      (atras)="pasoActual = 1"
+    />
+    <app-paso6-estaciones
+      *ngIf="pasoActual === 6"
+      [expressMode]="true"
+      (completado)="onEstacionesCompletadas()"
+      (atras)="pasoActual = 1"
+    />
+    <app-paso7-factura
+      *ngIf="pasoActual === 7"
+      [expressMode]="true"
+      (completado)="onFacturaCompletada()"
+      (atras)="pasoActual = 6"
+    />
+    <app-paso8-validacion
+      *ngIf="pasoActual === 8"
+      (completado)="onValidacionCompletada()"
+      (atras)="onValidacionAtras()"
+      (irAPaso)="onValidacionIrAPaso($event)"
+    />
+    <app-paso9-revision
+      *ngIf="pasoActual === 9"
+      [expressMode]="true"
+      (atras)="onRevisionAtras()"
+      (reiniciar)="reiniciar()"
+    />
+  </section>
+</div>

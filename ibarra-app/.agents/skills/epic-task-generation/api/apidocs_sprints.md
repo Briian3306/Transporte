@@ -4,13 +4,11 @@ Usar solo si la operación involucra sprints. Auth y PATCH genérico de WP
 están en `apidocs_main.md`. Cargar main **además** cuando haga falta GET del
 WP o un `lockVersion` que aún no se tiene.
 
-```
-$BASE_URL = "https://jira.tpteibarra.ar"
-$AUTH = ""
-```
+`$BASE_URL` y `$AUTH`: cargar `OPENPROJECT_AUTH` desde `.env` como en
+`apidocs_main.md` (Basic `apikey:` + token). No hardcodear el token.
 
 Headers: `-H "Accept: application/hal+json"` y `-H "Authorization: $AUTH"`.
-PATCH: también `-H "Content-Type: application/json"`. `$AUTH` vacío en templates.
+PATCH: también `-H "Content-Type: application/json"`.
 
 ## Listar sprints de un proyecto
 

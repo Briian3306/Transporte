@@ -10,6 +10,31 @@ Peajes automatiza la carga de archivos Excel/CSV, reconocimiento, transformació
 
 El wizard conserva estado, muestra preview de hasta 10 filas, recomienda columnas y transformaciones (incluye categoría del proveedor opcional → Patrón B), permite pipeline editable, resuelve estaciones (RN-26) y patentes, valida **Σ pasadas − bonificación de cabecera** vs subtotal con tolerancia del 1%, confirma por documento (`peajes_confirmar_carga`) y en masiva permite omitir documentos inválidos. Tras la carga, el motor de tarifas normaliza niveles; el analista confirma status en [auditoría de tarifas](../06-components/peajes/auditoria-tarifas.md).
 
+## Permisos y vistas
+
+El acceso se resuelve mediante permisos granulares del módulo `peajes`, no por el nombre literal del rol.
+
+| Permiso | Significado |
+| --- | --- |
+| `peajes:read` | Consultar y revisar información del módulo. |
+| `peajes:create` | Subir y procesar archivos de pasadas. |
+| `peajes:manage` | Administrar todas las secciones, catálogos, plantillas y documentos. |
+
+El home `/peajes` requiere `peajes:manage` o la combinación `peajes:read` + `peajes:create`. Su contenido se filtra de la siguiente manera:
+
+| Vista | Permiso requerido |
+| --- | --- |
+| Asistente de carga (`/peajes/wizard`) | `peajes:read` + `peajes:create` |
+| Pasadas (`/peajes/pasadas`) | `peajes:read` + `peajes:create` |
+| Ubicaciones pendientes (`/peajes/pasadas-pendientes`) | `peajes:read` + `peajes:create` |
+| Auditoría de tarifas (`/peajes/auditoria-tarifas`) | `peajes:read` + `peajes:create` |
+| Catálogos | `peajes:manage` |
+| Plantillas y algoritmos | `peajes:manage` |
+| Carga rápida | `peajes:manage` |
+| Documentos | `peajes:manage` |
+
+Los usuarios administrativos ven todas las tarjetas del home. Los usuarios operativos de carga y revisión ven únicamente las cuatro vistas operativas. Ocultar una tarjeta es solo una mejora de navegación: las rutas también están protegidas por `PermissionGuard`, por lo que una navegación directa sin permisos termina en `/access-denied`.
+
 ## Estructura
 
 - `src/app/components/peajes/wizard`: carga e importación (simple/masiva).

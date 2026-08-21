@@ -12,15 +12,18 @@ import {
   estacionPerteneceAEmpresa,
 } from '../../models';
 import { PeajesMotorTransformacionService } from '../../plantillas/motor/peajes-motor-transformacion.service';
+import { resolvePatenteReferences } from './patente-reference.helper';
 import { PeajesWizardStateService } from './peajes-wizard-state.service';
 
 export type PlantillaExcepcionPaso = 5 | 6;
+export type PlantillaExcepcionMotivo = 'mapeo' | 'patentes' | 'estaciones';
 
 export interface ResultadoAplicarPlantilla {
   ok: boolean;
   errores: string[];
   /** null = sin excepciones (puede ir a Factura); 5/6 = paso a abrir. */
   excepcion: PlantillaExcepcionPaso | null;
+  motivoExcepcion?: PlantillaExcepcionMotivo;
   mensaje: string;
   plantillaNombre?: string;
 }
@@ -66,6 +69,9 @@ export class PeajesPlantillaApplyService {
         plantillaNombre: plantilla.nombre,
       };
     }
+    const motivoExcepcion: PlantillaExcepcionMotivo = excepcion === 6
+      ? 'estaciones'
+      : (this.mapeosObligatoriosCompletos() ? 'patentes' : 'mapeo');
     const mensaje =
       excepcion === 5
         ? `Plantilla «${plantilla.nombre}» aplicada, pero faltan mapeos o patentes: revisá Paso 5.`
@@ -74,9 +80,31 @@ export class PeajesPlantillaApplyService {
       ok: true,
       errores: [],
       excepcion,
+      motivoExcepcion,
       mensaje,
       plantillaNombre: plantilla.nombre,
     };
+  }
+
+  async obtenerPatentesPendientes(): Promise<string[]> {
+    const patentes = (await firstValueFrom(this.catalogo.listarPatentes())).filter(
+      (patente) => patente.activa !== false
+    );
+    const snapshot = this.state.snapshot();
+    const filas = snapshot.pasadasEstandarizadas.length
+      ? snapshot.pasadasEstandarizadas
+      : this.state.construirPasadasDesdeMapeo();
+    const resultado = resolvePatenteReferences(filas, patentes);
+    const excluidas = new Set(snapshot.patentesExcluidas);
+    return resultado.unresolved.filter((codigo) => !excluidas.has(codigo));
+  }
+
+  async resolverSiguienteExcepcion(): Promise<PlantillaExcepcionPaso | null> {
+    return this.evaluarExcepciones();
+  }
+
+  tieneMapeosObligatorios(): boolean {
+    return this.mapeosObligatoriosCompletos();
   }
 
   private async aplicarAlEstado(
@@ -147,16 +175,24 @@ export class PeajesPlantillaApplyService {
   }
 
   private async evaluarExcepciones(): Promise<PlantillaExcepcionPaso | null> {
-    const mapeados = this.state.mapeosActivos();
-    const obligatorias = ['FECHA_HORA', 'PASE_ID', 'PATENTE_ID', 'ESTACION_ID', 'PRECIO'];
-    if (obligatorias.some((destino) => !mapeados.some((m) => m.columnaDestino === destino))) {
+    if (!this.mapeosObligatoriosCompletos()) {
       return 5;
+    }
+
+    const filas = this.state.construirPasadasDesdeMapeo();
+    const patentes = (await firstValueFrom(this.catalogo.listarPatentes())).filter((p) => p.activa !== false);
+    const resolucionPatentes = resolvePatenteReferences(filas, patentes);
+    if (resolucionPatentes.unresolved.length) {
+      return 5;
+    }
+    this.state.setPasadasEstandarizadas(resolucionPatentes.rows);
+    if (!filas.length) {
+      return null;
     }
 
     const estaciones = await firstValueFrom(this.catalogo.listarEstaciones());
     const peajes = await this.listarPeajesCatalogo();
     const idsEstacion = new Set(estaciones.map((e) => e.id));
-    const filas = this.state.construirPasadasDesdeMapeo();
     if (!filas.length || filas.some((f) => !f.ESTACION_ID || !idsEstacion.has(String(f.ESTACION_ID)))) {
       return 6;
     }
@@ -182,17 +218,14 @@ export class PeajesPlantillaApplyService {
       }
     }
 
-    const patentes = (await firstValueFrom(this.catalogo.listarPatentes())).filter((p) => p.activa !== false);
-    const porPatente = new Map(patentes.map((p) => [this.normalizarPatente(p.patente), p.id]));
-    for (const fila of filas) {
-      const patenteId = porPatente.get(this.normalizarPatente(fila.PATENTE_ID));
-      if (!patenteId) {
-        return 5;
-      }
-      fila.PATENTE_ID = patenteId;
-    }
-    this.state.setPasadasEstandarizadas(filas);
     return null;
+  }
+
+  private mapeosObligatoriosCompletos(): boolean {
+    const mapeados = this.state.mapeosActivos();
+    return !['FECHA_HORA', 'PATENTE_ID', 'ESTACION_ID', 'PRECIO'].some(
+      (destino) => !mapeados.some((m) => m.columnaDestino === destino)
+    );
   }
 
   private async listarPeajesCatalogo(): Promise<Peaje[]> {

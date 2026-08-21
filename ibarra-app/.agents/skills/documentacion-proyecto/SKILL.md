@@ -51,7 +51,7 @@ docs/
     └── supabase/
 ```
 
-**No usar `docs/08-sql/`** para Peajes. La fuente SQL es `supabase/migrations/`; la documentación de funciones y lógica backend vive en `docs/backend/`.
+
 
 Para Peajes, el agente 04 documenta tras features `passing`. No inventar comportamiento no implementado.
 

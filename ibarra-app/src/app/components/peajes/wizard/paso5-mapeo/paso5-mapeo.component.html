@@ -6,7 +6,7 @@
       <p>Confirmá cómo cada columna del archivo alimenta el modelo estándar de pasadas.</p>
     </div>
     <span class="pw__status" [class.pw__status--valid]="!faltantes().length" [class.pw__status--warn]="!!faltantes().length">
-      {{ faltantes().length ? 'Mapeo incompleto' : 'Mapeo completo' }}
+      {{ etiquetaEstadoMapeo }}
     </span>
   </div>
 
@@ -364,24 +364,46 @@
       <span class="pw__mono">ASIGNAR_VALOR</span> cuando el archivo no trae la columna).
       Si el archivo no trae descuento, BONIFICACION se genera en <span class="pw__mono">0</span>
       (mismo patrón) e IMPORTE_NETO queda igual a PRECIO.
-      IMPORTE_NETO se completa al estandarizar si falta.
+      IMPORTE_NETO se completa al estandarizar si falta; si falta PRECIO y hay IMPORTE_NETO, se toma el neto.
+      PASE_ID es opcional: sin dispositivo se usa el último pase de cada patente.
       Si hay <span class="pw__mono">Concesion</span>, ese valor es peaje (RN-26), no estación.
+    </div>
+
+    <div
+      #coberturaStrip
+      class="paso5__cobertura"
+      role="alert"
+      tabindex="-1"
+      *ngIf="destinosCobertura.length"
+    >
+      <div class="paso5__cobertura-label">Para avanzar</div>
+      <ul class="paso5__cobertura-list">
+        <li
+          *ngFor="let chip of destinosCobertura"
+          class="paso5__chip"
+          [class.paso5__chip--ok]="chip.estado === 'ok'"
+          [class.paso5__chip--catalogo]="chip.estado === 'catalogo'"
+          [class.paso5__chip--falta]="chip.estado === 'falta'"
+        >
+          <span class="paso5__chip-key pw__mono">{{ chip.key }}</span>
+          <span class="paso5__chip-detalle">{{ chip.detalle }}</span>
+        </li>
+      </ul>
     </div>
 
     <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
   </div>
 
   <div class="pw__footer">
-    <div class="pw__footer-hint">
-      Obligatorias: {{ obligatorias.join(', ') }}. CATEGORIA es opcional (Patrón B si se mapea).
-    </div>
+    <div class="pw__footer-hint">{{ resumenBloqueo || 'Mapeo listo para continuar.' }}</div>
     <div class="pw__footer-actions">
       <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
       <button
         type="button"
         class="pw__btn pw__btn--primary"
         (click)="continuar()"
-        [disabled]="!puedeContinuar"
+        [disabled]="resolviendoPatentes"
+        [attr.title]="resumenBloqueo || 'Continuar'"
       >
         {{ resolviendoPatentes ? 'Resolviendo patentes…' : 'Continuar' }}
       </button>

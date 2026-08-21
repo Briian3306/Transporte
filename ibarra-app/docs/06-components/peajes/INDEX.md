@@ -28,4 +28,4 @@ Ver `feature_list.json` (F02/F03/F13) y `docs/claude-progress.md`.
 
 ---
 
-> Última actualización: 2026-08-13
+> Última actualización: 2026-08-19

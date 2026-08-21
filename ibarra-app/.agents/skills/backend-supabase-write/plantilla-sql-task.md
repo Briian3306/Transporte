@@ -48,7 +48,6 @@ npx supabase test db
 
 ## Notes
 
-- No `docs/08-sql/`. Fuente SQL: `supabase/migrations/`.
 - Invocar `backend-documenter` para actualizar catálogo/detalle y luego `backend-tester`.
 ```
 

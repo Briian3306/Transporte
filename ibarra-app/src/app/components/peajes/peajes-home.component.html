@@ -17,49 +17,56 @@
   </header>
 
   <section class="peajes-home__grid" aria-label="Secciones del módulo">
-    <a routerLink="/peajes/wizard" class="peajes-home__card">
+    <a *ngIf="isSectionVisible('wizard')" routerLink="/peajes/wizard" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-file-excel" aria-hidden="true"></i></div>
       <h2>Asistente de carga</h2>
       <p>Wizard de carga, preview, transformaciones, mapeo, factura y validación.</p>
       <span class="peajes-home__link">Abrir asistente</span>
     </a>
 
-    <a routerLink="/peajes/catalogos" class="peajes-home__card">
+    <a *ngIf="isSectionVisible('catalogos')" routerLink="/peajes/catalogos" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-map-marker-alt" aria-hidden="true"></i></div>
       <h2>Catálogos</h2>
       <p>Peajes, estaciones, patentes y pases.</p>
       <span class="peajes-home__link">Gestionar catálogos</span>
     </a>
 
-    <a routerLink="/peajes/pasadas" class="peajes-home__card">
+    <a *ngIf="isSectionVisible('pasadas')" routerLink="/peajes/pasadas" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-table" aria-hidden="true"></i></div>
       <h2>Pasadas</h2>
       <p>Consultá, filtrá y gestioná pasadas guardadas con auditoría de carga.</p>
       <span class="peajes-home__link">Abrir gestión</span>
     </a>
 
-    <a routerLink="/peajes/pasadas-pendientes" class="peajes-home__card">
+    <a *ngIf="isSectionVisible('pasadas-pendientes')" routerLink="/peajes/pasadas-pendientes" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-map-marker-alt" aria-hidden="true"></i></div>
       <h2>Ubicaciones pendientes</h2>
       <p>Estaciones sin coordenadas: completá ubicación y revisá las pasadas asociadas.</p>
       <span class="peajes-home__link">Completar ubicaciones</span>
     </a>
 
-    <a routerLink="/peajes/auditoria-tarifas" class="peajes-home__card">
+    <a *ngIf="isSectionVisible('auditoria-tarifas')" routerLink="/peajes/auditoria-tarifas" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-chart-line" aria-hidden="true"></i></div>
       <h2>Auditoría de tarifas</h2>
       <p>Clasificá los niveles de precio detectados por estación como pico o no pico.</p>
       <span class="peajes-home__link">Auditar tarifas</span>
     </a>
 
-    <a routerLink="/peajes/plantillas" class="peajes-home__card">
+    <a *ngIf="isSectionVisible('plantillas')" routerLink="/peajes/plantillas" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-cogs" aria-hidden="true"></i></div>
       <h2>Plantillas y algoritmos</h2>
       <p>Builder de plantillas, algoritmos combinados y motor Strategy.</p>
       <span class="peajes-home__link">Abrir plantillas</span>
     </a>
 
-    <a routerLink="/peajes/plantillas" [queryParams]="{ vista: 'documentos' }" class="peajes-home__card">
+    <a *ngIf="isSectionVisible('carga-express')" routerLink="/peajes/carga-express" class="peajes-home__card">
+      <div class="peajes-home__icon"><i class="fas fa-cloud-upload-alt" aria-hidden="true"></i></div>
+      <h2>Carga rápida</h2>
+      <p>Cargá un archivo con una plantilla y completá estaciones y factura.</p>
+      <span class="peajes-home__link">Iniciar carga</span>
+    </a>
+
+    <a *ngIf="isSectionVisible('documentos')" routerLink="/peajes/plantillas" [queryParams]="{ vista: 'documentos' }" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-file-invoice" aria-hidden="true"></i></div>
       <h2>Documentos</h2>
       <p>Consultá facturas y notas de crédito con filtros por fecha, empresa, número y tipo.</p>

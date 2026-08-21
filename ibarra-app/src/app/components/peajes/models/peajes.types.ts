@@ -42,10 +42,9 @@ export const PASADA_COLUMN_KEYS: readonly PasadaColumnKey[] = [
   'CATEGORIA',
 ] as const;
 
-/** Columnas obligatorias para avanzar el mapeo (MVP). CATEGORIA es opcional (Patrón A). */
+/** Columnas obligatorias para avanzar el mapeo. CATEGORIA y PASE_ID son opcionales (Patrón A / sin dispositivo). */
 export const PASADA_COLUMNAS_OBLIGATORIAS: readonly PasadaColumnKey[] = [
   'FECHA_HORA',
-  'PASE_ID',
   'PATENTE_ID',
   'ESTACION_ID',
   'PRECIO',

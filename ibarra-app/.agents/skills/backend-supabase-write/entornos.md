@@ -18,14 +18,7 @@ DESARROLLO (remoto)   =  desarrollo remoto
 
 `environment.ts` apunta a DESARROLLO. Eso **no** autoriza usar DESARROLLO como sustituto del testing: todo test SQL/migración se hace contra **Supabase CLI**.
 
-## Prohibido — refs de OrdenCompra Ibarra
 
-**Nunca** reutilizar project refs del repo hermano OrdenCompra:
-
-| Ref prohibido | Motivo |
-|---------------|--------|
-| `edxoqshrzdqpnldktpzy` | OrdenCompra (DEV hermano) — otro proyecto |
-| `uurlssweuhshbwpxxatw` | OrdenCompra (PROD hermano) — otro proyecto |
 
 Si un skill o doc heredado menciona esos refs, ignorarlos y usar la tabla de arriba.
 

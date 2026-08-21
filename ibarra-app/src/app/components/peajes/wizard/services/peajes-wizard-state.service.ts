@@ -912,6 +912,7 @@ export class PeajesWizardStateService {
 
     this.asegurarQuantityMapeoYPipeline();
     this.asegurarBonificacionMapeoYPipeline();
+    this.asegurarPrecioDesdeImporteNeto();
   }
 
   /**
@@ -994,6 +995,34 @@ export class PeajesWizardStateService {
         ...this.state.configuracionesDraft,
         bonifDraft,
       ]);
+    }
+  }
+
+  /**
+   * Archivos sin tarifa: si hay IMPORTE_NETO y no hay PRECIO, origina un mapeo
+   * sintético. El valor se completa al estandarizar (IMPORTE_NETO + BONIFICACION).
+   */
+  asegurarPrecioDesdeImporteNeto(): void {
+    const tienePrecio = this.state.mapeos.some((m) => !m.excluida && m.columnaDestino === 'PRECIO');
+    if (tienePrecio) {
+      return;
+    }
+    const tieneImporte = this.state.mapeos.some(
+      (m) => !m.excluida && m.columnaDestino === 'IMPORTE_NETO'
+    );
+    if (!tieneImporte) {
+      return;
+    }
+    const existente = this.state.mapeos.find((m) => m.columnaOrigen === 'PRECIO');
+    if (existente) {
+      existente.excluida = false;
+      existente.columnaDestino = 'PRECIO';
+    } else {
+      this.state.mapeos.push({
+        columnaOrigen: 'PRECIO',
+        columnaDestino: 'PRECIO',
+        excluida: false,
+      });
     }
   }
 
@@ -1192,19 +1221,7 @@ export class PeajesWizardStateService {
         if (out['BONIFICACION'] === null || out['BONIFICACION'] === undefined) {
           out['BONIFICACION'] = 0;
         }
-        if (
-          (out['IMPORTE_NETO'] === null || out['IMPORTE_NETO'] === undefined) &&
-          out['PRECIO'] !== null &&
-          out['PRECIO'] !== undefined
-        ) {
-          const precio = Number(out['PRECIO']);
-          const bonif = Number(out['BONIFICACION'] ?? 0);
-          const qty = Number(out['QUANTITY'] ?? 1);
-          if (Number.isFinite(precio)) {
-            out['IMPORTE_NETO'] =
-              (precio - (Number.isFinite(bonif) ? bonif : 0)) * (Number.isFinite(qty) ? qty : 1);
-          }
-        }
+        this.completarPrecioEImporteNeto(out);
 
         return out as PasadaEstandarizada;
       });
@@ -1263,22 +1280,35 @@ export class PeajesWizardStateService {
         if (out.BONIFICACION === null || out.BONIFICACION === undefined) {
           out.BONIFICACION = 0;
         }
-
-        if (out.IMPORTE_NETO === null && out.PRECIO !== null) {
-          const precio = Number(out.PRECIO);
-          const bonif = Number(out.BONIFICACION ?? 0);
-          const qty = Number(out.QUANTITY ?? 1);
-          if (Number.isFinite(precio)) {
-            out.IMPORTE_NETO =
-              (precio - (Number.isFinite(bonif) ? bonif : 0)) * (Number.isFinite(qty) ? qty : 1);
-          }
-        }
+        this.completarPrecioEImporteNeto(out);
 
         return out as PasadaEstandarizada;
       });
     }
 
     return this.filtrarPasadasPorPatentesExcluidas(rows);
+  }
+
+  /** PRECIO ← IMPORTE_NETO + BONIFICACION when tarifa is missing; inverse of IMPORTE_NETO. */
+  private completarPrecioEImporteNeto(
+    out: Record<string, string | number | null> | Partial<Record<PasadaColumnKey, string | number | null>>
+  ): void {
+    const vacio = (v: unknown) => v === null || v === undefined || v === '';
+    const bonif = Number(out['BONIFICACION'] ?? 0);
+    const qty = Number(out['QUANTITY'] ?? 1);
+    if (vacio(out['PRECIO']) && !vacio(out['IMPORTE_NETO'])) {
+      const neto = Number(out['IMPORTE_NETO']);
+      if (Number.isFinite(neto)) {
+        out['PRECIO'] = neto + (Number.isFinite(bonif) ? bonif : 0);
+      }
+    }
+    if (vacio(out['IMPORTE_NETO']) && !vacio(out['PRECIO'])) {
+      const precio = Number(out['PRECIO']);
+      if (Number.isFinite(precio)) {
+        out['IMPORTE_NETO'] =
+          (precio - (Number.isFinite(bonif) ? bonif : 0)) * (Number.isFinite(qty) ? qty : 1);
+      }
+    }
   }
 
   reiniciar(): void {

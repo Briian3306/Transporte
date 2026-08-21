@@ -9,9 +9,9 @@ docs/
 ├── INDEX.md                      # Índice maestro del repositorio (crear/mantener)
 │
 ├── plan/                         # PRD y planes (peajes)
-├── 05-configuracion/             # Secrets, entorno, despliegue
-├── 06-components/                # Componentes (peajes + shared)
-├── 06-tablas/                    # Modelo de datos / tablas de dominio
+├── configuracion/             # Secrets, entorno, despliegue
+├── components/                # Componentes (peajes + shared)
+├── tablas/                    # Modelo de datos / tablas de dominio
 └── backend/                      # RPCs, Edge, workflow y testing Supabase
 ```
 
@@ -50,9 +50,9 @@ Organizar por **dominio de negocio**, luego por **feature** si aplica.
 
 | Código fuente | Documentación |
 |---------------|---------------|
-| `src/app/features/pedidos/**/*.spec.ts` | `docs/01-tests/pedidos/` |
-| `src/app/features/orden-compra/**/*.spec.ts` | `docs/01-tests/orden-compra/` |
-| `src/app/shared/**/*.spec.ts` | `docs/01-tests/shared/` o subcarpeta temática |
+| `src/app/features/pedidos/**/*.spec.ts` | `docs/tests/pedidos/` |
+| `src/app/features/orden-compra/**/*.spec.ts` | `docs/tests/orden-compra/` |
+| `src/app/shared/**/*.spec.ts` | `docs/tests/shared/` o subcarpeta temática |
 
 ## 06-components — Componentes
 
@@ -60,19 +60,19 @@ Subnumeración interna para tipos de UI:
 
 | Subcarpeta | Contenido | Ejemplo existente |
 |------------|-----------|-------------------|
-| `08-buttons/` | Botones shared | `BUTTON_SPLIT_GUIDE.md` |
-| `09-cards/` | Cards y KPIs | `CARD_INFO_GRID_GUIDE.md` |
-| `10-inputs/` | Inputs, selectores | (crear al documentar) |
-| `11-modals/` | Diálogos, popups | — |
-| `12-loaders/` | Skeleton, loading | — |
-| Raíz `06-components/` | Patrones transversales | `DYNAMIC_DIALOG_GUIDE.md` |
+| `buttons/` | Botones shared | `BUTTON_SPLIT_GUIDE.md` |
+| `cards/` | Cards y KPIs | `CARD_INFO_GRID_GUIDE.md` |
+| `inputs/` | Inputs, selectores | (crear al documentar) |
+| `modals/` | Diálogos, popups | — |
+| `loaders/` | Skeleton, loading | — |
+| Raíz `components/` | Patrones transversales | `DYNAMIC_DIALOG_GUIDE.md` |
 
-**Regla**: Componente en `src/app/shared/buttons/` → `06-components/08-buttons/`. Tabla reusable documentada aquí solo si es patrón de componente; guías de **uso de tabla** van en `06-tablas/`.
+**Regla**: Componente en `src/app/shared/buttons/` → `06-components/08-buttons/`. Tabla reusable documentada aquí solo si es patrón de componente; guías de **uso de tabla** van en `tablas/`.
 
-## 06-tablas — Tablas UI
+## tablas — Tablas UI
 
 ```
-06-tablas/
+tablas/
 ├── INDEX.md
 ├── EJEMPLO_SELECCION_TABLA.md
 ├── import-excel.md

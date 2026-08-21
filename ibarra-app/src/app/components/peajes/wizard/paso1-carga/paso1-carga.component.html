@@ -1,7 +1,7 @@
 <div class="paso1">
   <div class="pw__head">
     <div>
-      <div class="pw__eyebrow">Paso 01 · origen y configuración</div>
+      <div class="pw__eyebrow">{{ expressMode ? 'Paso 1 · cargar archivo' : 'Paso 01 · origen y configuración' }}</div>
       <h2>Cargar archivo de pasadas</h2>
       <p>
         Subí el archivo, elegí empresa y plantilla. Si la plantilla es compatible, el asistente
@@ -59,7 +59,7 @@
           <h3>Arrastrá tu archivo aquí</h3>
           <p>
             o seleccioná un archivo <strong>.xlsx</strong> desde tu equipo<br />
-            El MVP limita la vista previa a 10 registros.
+            {{ expressMode ? 'La plantilla se aplicará automáticamente.' : 'El MVP limita la vista previa a 10 registros.' }}
           </p>
           <span class="pw__btn pw__btn--ghost">Seleccionar archivo</span>
           <input
@@ -100,7 +100,7 @@
               [value]="empresaId || null"
               (valueChange)="onEmpresaChange($event)"
             ></app-search-select>
-            <button type="button" class="pw__btn pw__btn--small" (click)="crearEmpresaAbierto = true">+ Crear empresa</button>
+            <button type="button" class="pw__btn pw__btn--small" *ngIf="!expressMode" (click)="crearEmpresaAbierto = true">+ Crear empresa</button>
             <aside class="paso1__lock" *ngIf="modoImportacion === 'simple'" role="note">
               <i class="fas fa-lock" aria-hidden="true"></i>
               <div>
@@ -122,11 +122,11 @@
                   Sin plantilla: seguís el wizard desde la previsualización.
                 </p>
               </div>
-              <span class="pw__status pw__status--valid" *ngIf="esEjemploMvp">Ejemplo MVP</span>
+              <span class="pw__status pw__status--valid" *ngIf="!expressMode && esEjemploMvp">Ejemplo MVP</span>
             </div>
             <app-search-select
               label="Plantilla a aplicar"
-              placeholder="Elegir más adelante / buscar…"
+              [placeholder]="expressMode ? 'Buscar plantilla obligatoria…' : 'Elegir más adelante / buscar…'"
               [options]="plantillaOptions"
               [value]="plantillaId || null"
               [showAllWhenEmpty]="true"
@@ -142,10 +142,10 @@
             <div class="paso1__file-icon paso1__file-icon--empty">—</div>
             <div>
               <div class="paso1__file-name">Sin archivo</div>
-              <div class="paso1__file-meta">Cargá un .xlsx o el ejemplo MVP</div>
+              <div class="paso1__file-meta">{{ expressMode ? 'Cargá un .xlsx o .csv' : 'Cargá un .xlsx o el ejemplo MVP' }}</div>
             </div>
           </div>
-          <div class="paso1__template-box">
+          <div class="paso1__template-box" *ngIf="!expressMode">
             <div class="paso1__template-head">
               <div>
                 <strong>Fixture del ejemplo</strong>
@@ -163,10 +163,14 @@
               [showAllWhenEmpty]="true"
               (valueChange)="onPlantillaChange($event)"
             ></app-search-select>
-            <button type="button" class="pw__btn pw__btn--primary" (click)="cargarEjemploMvp()" style="width: 100%">
+            <button type="button" class="pw__btn pw__btn--primary" *ngIf="!expressMode" (click)="cargarEjemploMvp()" style="width: 100%">
               <i class="fas fa-flask" aria-hidden="true"></i>
               Cargar ejemplo MVP
             </button>
+          </div>
+          <div class="paso1__template-box" *ngIf="expressMode">
+            <strong>Prepará tu archivo</strong>
+            <p>Después de cargarlo vas a seleccionar la empresa y la plantilla de esta importación.</p>
           </div>
         </ng-template>
       </aside>
@@ -190,7 +194,7 @@
       }}
     </div>
     <div class="pw__footer-actions">
-      <button type="button" class="pw__btn pw__btn--ghost" *ngIf="!meta" (click)="cargarEjemploMvp()">
+      <button type="button" class="pw__btn pw__btn--ghost" *ngIf="!meta && !expressMode" (click)="cargarEjemploMvp()">
         Usar ejemplo MVP
       </button>
       <button

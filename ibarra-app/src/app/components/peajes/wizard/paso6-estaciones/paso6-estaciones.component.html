@@ -1,7 +1,7 @@
 <div class="paso6" [class.paso6--dense]="esCargaDensa">
   <div class="pw__head">
     <div>
-      <div class="pw__eyebrow">Paso 06 · catálogo maestro</div>
+      <div class="pw__eyebrow">{{ expressMode ? 'Paso 2 · estaciones' : 'Paso 06 · catálogo maestro' }}</div>
       <h2>Relacionar estaciones</h2>
       <p *ngIf="scopingPorConcesion">
         RN-26: <span class="pw__mono">{{ columnaConcesion }}</span> identifica el peaje.
@@ -21,6 +21,13 @@
   </div>
 
   <div class="pw__body">
+    <app-loading-spinner
+      *ngIf="reconociendo"
+      label="Reconociendo estaciones"
+      detail="Buscando coincidencias por empresa, peaje y alias confirmados."
+    ></app-loading-spinner>
+
+    <ng-container *ngIf="!reconociendo">
     <div class="pw__alert pw__alert--warn" *ngIf="sinPeajesEmpresa" role="status">
       La empresa del Paso 1 no tiene peajes en el catálogo. Creá un peaje en
       Catálogos → Peajes (asociado a esa empresa) antes de relacionar estaciones.
@@ -43,7 +50,7 @@
               <div class="paso6__label">Peaje relacionado</div>
               <div class="paso6__value paso6__value--inline">{{ peaje.nombre }}</div>
             </div>
-            <div>
+            <div *ngIf="!expressMode">
               <div class="paso6__label">ID</div>
               <div class="paso6__value pw__mono paso6__value--sm">{{ peaje.id }}</div>
             </div>
@@ -176,7 +183,7 @@
                     </ng-container>
                     <ng-template #estacionCompact>
                       <div class="paso6__compact">
-                        <span class="paso6__compact-id pw__mono">{{ r.estacionId }}</span>
+                        <span class="paso6__compact-id pw__mono" *ngIf="!expressMode">{{ r.estacionId }}</span>
                         <span class="paso6__compact-name">{{ estacionNombre(r.estacionId) }}</span>
                       </div>
                     </ng-template>
@@ -222,7 +229,7 @@
           </div>
         </div>
 
-        <div class="paso6__path" *ngIf="!esCargaDensa && ejemploResolucion as ej">
+        <div class="paso6__path" *ngIf="!expressMode && !esCargaDensa && ejemploResolucion as ej">
           <div class="paso6__label">Ejemplo de resolución</div>
           <div class="paso6__pills">
             <span class="paso6__pill pw__mono">ESTACION = {{ ej.codigo }}</span>
@@ -236,6 +243,7 @@
         </div>
       </div>
     </div>
+    </ng-container>
 
     <div class="pw__alert pw__alert--ok" *ngIf="successMsg">{{ successMsg }}</div>
     <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
@@ -244,16 +252,16 @@
   <div class="pw__footer">
     <div class="pw__footer-hint">La pasada guarda estacion_id; el peaje se deriva de la estación.</div>
     <div class="pw__footer-actions">
-      <button type="button" class="pw__btn" (click)="atras.emit()">Volver</button>
+      <button type="button" class="pw__btn" (click)="atras.emit()" [disabled]="reconociendo">Volver</button>
       <button
         type="button"
         class="pw__btn pw__btn--ghost"
         (click)="guardarPlantillaRelaciones()"
-        [disabled]="guardandoRelaciones || !relaciones.length"
+        [disabled]="reconociendo || guardandoRelaciones || !relaciones.length"
       >
         {{ guardandoRelaciones ? 'Guardando…' : 'Guardar relaciones' }}
       </button>
-      <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>
+      <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()" [disabled]="reconociendo">Continuar</button>
     </div>
   </div>
 

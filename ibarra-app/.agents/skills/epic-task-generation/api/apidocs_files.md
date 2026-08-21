@@ -3,14 +3,11 @@
 Usar solo para archivos de un work package. Autocontenido: no hace falta
 cargar `apidocs_main.md` ni sprints si el `work_package_id` ya se conoce.
 
-```
-$BASE_URL = "https://jira.tpteibarra.ar"
-$AUTH = ""
-```
+`$BASE_URL` y `$AUTH`: cargar `OPENPROJECT_AUTH` desde `.env` como en
+`apidocs_main.md` (Basic `apikey:` + token). No hardcodear el token.
 
 Headers: `-H "Accept: application/hal+json"` y `-H "Authorization: $AUTH"`.
-Upload: multipart; no enviar `Content-Type: application/json`. `$AUTH` vacío
-en templates. No inventar tokens.
+Upload: multipart; no enviar `Content-Type: application/json`. No inventar tokens.
 
 ## Listar adjuntos
 

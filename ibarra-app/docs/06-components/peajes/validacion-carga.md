@@ -22,7 +22,12 @@ validarCarga + detectarDuplicados
 Checklist diagnóstico → habilitar Paso 9 si no hay bloqueos y |diferencia| ≤ 1% del subtotal
 ```
 
-El CSV puede traer códigos operativos, como `DISPOSITIVO=94891934`; no son UUID. Antes de invocar el RPC de duplicados, el Paso 8 busca el pase y la patente en los catálogos. Si el pase no existe y la patente sí fue resuelta, crea el pase reutilizable y lo vincula a esa patente. Si una referencia continúa sin resolver, no envía un UUID inválido al backend.
+El CSV puede traer códigos operativos, como `DISPOSITIVO=94891934`; no son UUID. Antes de invocar el RPC de duplicados, el Paso 8 busca el pase y la patente en los catálogos.
+
+- Si hay un código de dispositivo y la patente ya está resuelta, crea (o reutiliza) el pase y lo vincula a esa patente.
+- Si **no hay `PASE_ID`** (archivo solo con dominio, p. ej. Caminos de las Sierras), usa el **último pase** de esa `patente_id` en `pases` (`created_at` desc). No inventa un pase con el texto de la placa. Si la patente no tiene ningún pase, el error nombra la placa y no llama al RPC con `undefined`.
+
+Si una referencia continúa sin resolver, no envía un UUID inválido al backend.
 
 ## Controles visibles
 
@@ -30,7 +35,7 @@ El CSV puede traer códigos operativos, como `DISPOSITIVO=94891934`; no son UUID
 |---|---|---|---|
 | Importe de factura | `abs(suma_neta − (subtotal + bonificacion)) <= abs(subtotal) * 0.01` | Sí | 7 |
 | Detección de duplicados | No hay claves repetidas en lote ni en base | Sí | 5 |
-| Campos obligatorios | Fecha, pase, patente, estación, precio, bonificación, cantidad e importe neto presentes | Sí | 5 |
+| Campos obligatorios | Fecha, pase, patente, estación, precio, bonificación, cantidad e importe neto presentes (`PASE_ID` puede venir del último pase de la patente) | Sí | 5 |
 | Estaciones | `ESTACION_ID` es UUID del catálogo | Sí | 6 |
 | Patentes | `PATENTE_ID` es UUID del catálogo | Sí | 5 |
 
@@ -45,8 +50,14 @@ Cada tarjeta presenta estado, explicación, recomendación y un botón para volv
 | `IMPORTE_NETO difiere de PRECIO - BONIFICACION` | El proveedor declaró descuentos netos no desglosados en `BONIFICACION` | No modificar la factura si el subtotal total coincide | No bloquea por sí solo; se conserva el neto declarado |
 | Diferencia de subtotal mayor al 1% | Total de las pasadas no concilia con el subtotal | Corregir subtotal o importes/mapeo | Bloquea |
 | Duplicado | Misma combinación pase + fecha/hora + estación + patente | Quitar/corregir la fila o revisar una carga previa | Bloquea |
+| `{placa} no tiene pase en el catálogo` | Archivo sin dispositivo y esa patente no tiene filas en `pases` | Alta de pase en el catálogo o mapear TAG si el archivo lo trae | Bloquea; no llama `peajes_detectar_duplicados` |
 
 ## Frontend
+
+En Express, las patentes faltantes se resuelven antes de abrir Factura mediante
+`patentes-express`. Un código operativo como `97267763` nunca se conserva como supuesto UUID:
+si no existe en el catálogo se convierte en una referencia inválida, se informa con fila,
+columna, valor y motivo, y se bloquea la detección de duplicados y la confirmación.
 
 `Paso8ValidacionComponent` usa `PeajesWizardStateService` para obtener las filas y `PeajesCargaSupabaseService` para validar.
 
@@ -54,6 +65,7 @@ Cada tarjeta presenta estado, explicación, recomendación y un botón para volv
 - Si el origen lo declaró, conserva ese valor: es el importe facturado que participa en la conciliación total.
 - No realiza una llamada HTTP por fila a `peajes_calcular_importe_neto`; evita el patrón N llamadas por N pasadas.
 - Resuelve `PASE_ID` y `PATENTE_ID` mediante `PeajesCatalogoService` antes de la detección de duplicados.
+- Sin `PASE_ID`, asigna el último pase de la patente (`ultimoPaseIdPorPatente`); no crea un pase sintético con la placa.
 - Guarda las referencias UUID resueltas en el estado para la revisión y confirmación.
 
 Fuentes:
@@ -99,3 +111,7 @@ El test SQL `peajes_f01_test.sql` incluye casos F11 de tolerancia porcentual. La
 - Backend / RPC: `docs/backend/` (catálogo y detalle; no `docs/08-sql/`)
 - Migración tolerancia: `supabase/migrations/20260805113339_peajes_tolerancia_factura_uno_por_ciento.sql`
 - [Workflow AUSOL](../../plan/prueba-workflow-557074-ausol.md)
+
+---
+
+> Última actualización: 2026-08-19

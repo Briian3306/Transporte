@@ -275,6 +275,23 @@ describe('PeajesPlantillaApplyService QUANTITY repair', () => {
       )
     ).toBeTrue();
   });
+
+  it('does not send the user to Paso 5 only because PASE_ID is unmapped', async () => {
+    plantillaActual = {
+      ...plantillaSinQuantity,
+      id: 'plt-caminos',
+      nombre: 'CAMINOS-SIN-PASE',
+      mapeos: plantillaSinQuantity.mapeos!.filter((m) => m.columnaDestino !== 'PASE_ID'),
+      configuraciones: plantillaSinQuantity.configuraciones!.filter(
+        (c) => c.columna_destino !== 'PASE_ID' && c.nombre_columna !== 'DISPOSITIVO'
+      ),
+    };
+
+    const result = await apply.aplicarYEvaluar(plantillaActual.id);
+
+    expect(result.ok).toBeTrue();
+    expect(result.excepcion).not.toBe(5);
+  });
 });
 
 describe('PeajesPlantillaApplyService alcance empresa 0001', () => {

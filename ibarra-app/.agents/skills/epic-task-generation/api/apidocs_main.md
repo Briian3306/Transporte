@@ -5,15 +5,33 @@ obtener, actualizar, comentarios y watchers. No cubre sprints ni adjuntos.
 
 ## Autenticación
 
+Token en `.env` de esta skill (junto a `SKILL.md`), no en este archivo ni en
+chat:
+
+```
+OPENPROJECT_AUTH=opapi-...
+```
+
+Solo el valor del API token. No incluir `Basic`, `apikey:` ni comillas.
+
+Cargar y armar el header (Basic usuario `apikey` + token). No `Write-Output`
+del token ni pasarlo como literal en la línea de comando:
+
 ```
 $BASE_URL = "https://jira.tpteibarra.ar"
-$AUTH = ""
+$envPath = Join-Path $PSScriptRoot ".env"
+if (-not (Test-Path $envPath)) { $envPath = Join-Path $PSScriptRoot "..\.env" }
+$line = Get-Content $envPath | Where-Object { $_ -match '^OPENPROJECT_AUTH=' } | Select-Object -First 1
+$token = $line.Substring('OPENPROJECT_AUTH='.Length).Trim()
+$AUTH = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("apikey:$token"))
 ```
 
-Headers: `-H "Accept: application/hal+json"` y `-H "Authorization: $AUTH"`.
-JSON: también `-H "Content-Type: application/json"`.
+Si el script no está en `api/`, usar la carpeta de la skill como raíz del
+`.env`. Headers: `-H "Accept: application/hal+json"` y
+`-H "Authorization: $AUTH"`. JSON: también `-H "Content-Type: application/json"`.
 
-No inventar tokens. No guardar credenciales acá. `$AUTH` vacío en templates.
+No inventar tokens. Si falta `.env` o `OPENPROJECT_AUTH`, no adivinar: pedir
+al usuario que lo cree (ver `.env.example`).
 
 ## Crear task
 
@@ -81,8 +99,7 @@ Un `curl.exe` por task. `$body` en una línea, a `$BODY_FILE`, envío con
 200 o 201. Al final solo `"Subida terminada."` o `"Hubo errores."`.
 
 ```
-$BASE_URL = "https://jira.tpteibarra.ar"
-$AUTH = ""
+# Cargar $BASE_URL y $AUTH desde .env (bloque Autenticación)
 $ERRORS = 0
 $BODY_FILE = Join-Path $PSScriptRoot "_body.json"
 
@@ -103,21 +120,49 @@ if ($ERRORS -eq 0) { Write-Output "Subida terminada." } else { Write-Output "Hub
 
 ## Consultas
 
-Listar por proyecto (código nuevo; no usar `/api/v3/projects/{id}/work_packages`):
+Un GET, no un GET por task. `$AUTH` siempre desde `.env` (bloque Autenticación).
+URL-encode `filters` y `select` (`[uri]::EscapeDataString`). `pageSize=100`.
+Si `total > count`, paginar con `offset`. No asumir una sola página.
 
-`GET /api/v3/workspaces/{project_id}/work_packages`
+### Mis tasks (asignado = yo)
+
+`GET /api/v3/work_packages` — no listar por workspace ni filtrar en cliente.
+
+Filtro: `[{"assignee":{"operator":"=","values":["me"]}}]`. No hace falta
+`GET /api/v3/users/me` para este filtro. `me` es el usuario del token.
+
+`select` de colección (no incluir `lockVersion`; la API responde 400):
+
+`total,count,elements/id,elements/subject,elements/status,elements/project,elements/type,elements/dueDate`
 
 ```
+$filters = [uri]::EscapeDataString('[{"assignee":{"operator":"=","values":["me"]}}]')
+$select = [uri]::EscapeDataString('total,count,elements/id,elements/subject,elements/status,elements/project,elements/type,elements/dueDate')
 curl.exe -s `
-  -X GET "$BASE_URL/api/v3/workspaces/$PROJECT_ID/work_packages?filters=[]&pageSize=100" `
+  -X GET "$BASE_URL/api/v3/work_packages?filters=$filters&pageSize=100&offset=1&select=$select" `
   -H "Accept: application/hal+json" `
   -H "Authorization: $AUTH"
 ```
 
-Si no hace falta el WP completo: `select=total,elements/id,elements/subject,elements/lockVersion,self`.
+Respuesta: `total` / `count`; cada elemento trae `id`, `subject`, `dueDate` y
+`_links.status|project|type` con `title`. Solo abiertas: agregar al array de
+filtros `{"status":{"operator":"o","values":[]}}` (open) si se pide.
 
-Paginación: `offset`, `pageSize`. Si `total > count`, pedir la página siguiente.
-Sin filtros: `filters=[]`. No asumir que todo entra en la primera página.
+### Listar por proyecto
+
+Código nuevo; no usar `/api/v3/projects/{id}/work_packages`:
+
+`GET /api/v3/workspaces/{project_id}/work_packages`
+
+```
+$select = [uri]::EscapeDataString('total,count,elements/id,elements/subject,elements/status,elements/project,elements/type')
+curl.exe -s `
+  -X GET "$BASE_URL/api/v3/workspaces/$PROJECT_ID/work_packages?filters=[]&pageSize=100&offset=1&select=$select" `
+  -H "Accept: application/hal+json" `
+  -H "Authorization: $AUTH"
+```
+
+Sin filtros: `filters=[]`. `lockVersion` para PATCH: GET de un WP, no del listado.
 
 Obtener uno: `GET /api/v3/work_packages/{id}`
 
@@ -208,6 +253,7 @@ curl.exe -s --output NUL -w "%{http_code}" `
 | Acción | Método | Endpoint |
 |--------|--------|----------|
 | Crear task | POST | `/api/v3/work_packages` |
+| Listar WP asignados a mí | GET | `/api/v3/work_packages` (`filters` assignee=`me`) |
 | Listar WP de proyecto | GET | `/api/v3/workspaces/{project_id}/work_packages` |
 | Obtener WP | GET | `/api/v3/work_packages/{id}` |
 | Actualizar WP | PATCH | `/api/v3/work_packages/{id}` |

@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { PermissionStateService } from '../../../services/permission-state.service';
 
 export interface CatalogoCard {
   route: string;
@@ -42,6 +43,31 @@ export const CATALOGOS_CARDS: CatalogoCard[] = [
   },
 ];
 
+export const PEAJES_HOME_SECTION_IDS = [
+  'empresas',
+  'peajes',
+  'estaciones',
+  'patentes',
+  'pases',
+] as const;
+
+const PEAJES_OPERATIONAL_SECTION_IDS = [
+  'patentes',
+] as const;
+
+export function getVisiblePeajesHomeSectionIds(
+  permissions: ReadonlySet<string>,
+): string[] {
+  if (permissions.has('*:*') || permissions.has('peajes:manage')) {
+    return [...PEAJES_HOME_SECTION_IDS];
+  }
+
+  if (permissions.has('peajes:read') && permissions.has('peajes:create')) {
+    return [...PEAJES_OPERATIONAL_SECTION_IDS];
+  }
+
+  return [];
+}
 @Component({
   selector: 'app-peajes-catalogos-home',
   standalone: true,
@@ -49,6 +75,13 @@ export const CATALOGOS_CARDS: CatalogoCard[] = [
   templateUrl: './peajes-catalogos-home.component.html',
   styleUrl: './peajes-catalogos-home.component.css',
 })
+
 export class PeajesCatalogosHomeComponent {
+  private readonly permissionState = inject(PermissionStateService);
   readonly cards = CATALOGOS_CARDS;
+  isSectionVisible(sectionId: string): boolean {
+    return getVisiblePeajesHomeSectionIds(
+      new Set(this.permissionState.getUserPermissions()),
+    ).includes(sectionId);
+  }
 }

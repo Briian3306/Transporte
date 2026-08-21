@@ -4,6 +4,7 @@ import {
   Component,
   EventEmitter,
   Inject,
+  Input,
   OnInit,
   Output,
   inject,
@@ -25,18 +26,24 @@ import {
   estacionCoincideCodigoProveedor,
   estacionPerteneceAEmpresa,
 } from '../../models';
-import { DialogComponent, SearchSelectComponent, SearchSelectOption } from '../../../shared';
+import {
+  DialogComponent,
+  LoadingSpinnerComponent,
+  SearchSelectComponent,
+  SearchSelectOption,
+} from '../../../shared';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 
 @Component({
   selector: 'app-paso6-estaciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, DialogComponent, SearchSelectComponent],
+  imports: [CommonModule, FormsModule, DialogComponent, LoadingSpinnerComponent, SearchSelectComponent],
   templateUrl: './paso6-estaciones.component.html',
   styleUrl: './paso6-estaciones.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Paso6EstacionesComponent implements OnInit {
+  @Input() expressMode = false;
   @Output() completado = new EventEmitter<void>();
   @Output() atras = new EventEmitter<void>();
 
@@ -75,6 +82,8 @@ export class Paso6EstacionesComponent implements OnInit {
   rowPage = 0;
   pendientesCount = 0;
   relacionadasCount = 0;
+  reconociendo = false;
+  reconocimientoCompleto = false;
   /** Códigos cuya plantilla/relación previa apuntaba a otra empresa (p. ej. 0001 → DOCK SUD). */
   codigosFueraDeEmpresa: string[] = [];
 
@@ -248,7 +257,11 @@ export class Paso6EstacionesComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    await this.recargarCatalogos();
+    this.reconociendo = true;
+    this.error = null;
+    this.cdr.markForCheck();
+    try {
+      await this.recargarCatalogos();
     const valores = this.valoresProveedorUnicos();
     const prev = this.state.snapshot().relacionesEstacion;
     const concesionMap = this.construirMapaConcesion();
@@ -316,12 +329,26 @@ export class Paso6EstacionesComponent implements OnInit {
       };
     });
 
-    await this.reconocerTodas(valores);
+      await this.reconocerTodas(valores);
 
-    this.nuevaEstacionPeajeId =
-      this.relaciones[0]?.peajeIdAlcance ?? this.peajesUnicos[0]?.id ?? '';
-    this.refreshCounts();
-    this.cdr.markForCheck();
+      this.nuevaEstacionPeajeId =
+        this.relaciones[0]?.peajeIdAlcance ?? this.peajesUnicos[0]?.id ?? '';
+      this.refreshCounts();
+      this.reconocimientoCompleto = true;
+      this.cdr.markForCheck();
+
+      if (this.expressMode && this.relaciones.length > 0 && this.pendientesCount === 0) {
+        queueMicrotask(() => this.continuar());
+      }
+    } catch (e) {
+      this.error = e instanceof Error
+        ? e.message
+        : 'No se pudo reconocer las estaciones. Revisá el catálogo e intentá nuevamente.';
+      this.cdr.markForCheck();
+    } finally {
+      this.reconociendo = false;
+      this.cdr.markForCheck();
+    }
   }
 
   private peajeIdDesdeRecomendacionPaso5(concesion: string | null): string | null {
@@ -360,6 +387,7 @@ export class Paso6EstacionesComponent implements OnInit {
     for (let i = 0; i < valores.length; i += chunkSize) {
       const chunk = valores.slice(i, i + chunkSize);
       await Promise.all(chunk.map((v) => this.reconocerFila(v)));
+      this.cdr.markForCheck();
     }
   }
 
@@ -723,6 +751,7 @@ export class Paso6EstacionesComponent implements OnInit {
   }
 
   continuar(): void {
+    if (this.reconociendo) return;
     const pendientes = this.sinRelacion();
     if (pendientes.length) {
       this.error = `Hay estaciones sin relacionar: ${pendientes.map((p) => p.valorProveedor).join(', ')}`;

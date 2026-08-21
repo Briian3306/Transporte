@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -32,6 +32,7 @@ import {
   styleUrl: './paso1-carga.component.css',
 })
 export class Paso1CargaComponent implements OnInit {
+  @Input() expressMode = false;
   @Output() completado = new EventEmitter<void>();
   /** Plantilla aplicada sin excepciones → Factura. */
   @Output() facturaDirecta = new EventEmitter<void>();
@@ -148,7 +149,8 @@ export class Paso1CargaComponent implements OnInit {
   get puedeContinuar(): boolean {
     // Masiva: empresa se asigna por documento en Paso 7 (archivo multi-empresa).
     const empresaOk = this.modoImportacion === 'masiva' || !!this.empresaId;
-    return !!this.meta && empresaOk && !this.cargando && !this.aplicandoPlantilla;
+    const plantillaOk = !this.expressMode || !!this.plantillaId;
+    return !!this.meta && empresaOk && plantillaOk && !this.cargando && !this.aplicandoPlantilla;
   }
 
   onFileInput(event: Event): void {
@@ -212,6 +214,10 @@ export class Paso1CargaComponent implements OnInit {
     }
     if (this.modoImportacion !== 'masiva' && !this.empresaId) {
       this.error = 'Seleccioná un archivo y una empresa para continuar.';
+      return;
+    }
+    if (this.expressMode && !this.plantillaId) {
+      this.error = 'Seleccioná una plantilla para continuar con la carga rápida.';
       return;
     }
     if (this.modoImportacion === 'masiva' && !excelTieneColumnaFactura(this.meta.columnas)) {

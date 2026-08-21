@@ -7,6 +7,7 @@ import {
   EventEmitter,
   HostListener,
   Inject,
+  Input,
   OnInit,
   Output,
   ViewChild,
@@ -79,6 +80,7 @@ type DocFormGroup = ReturnType<Paso7FacturaComponent['crearDocGroup']>;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Paso7FacturaComponent implements OnInit, AfterViewInit {
+  @Input() expressMode = false;
   @Output() completado = new EventEmitter<void>();
   @Output() atras = new EventEmitter<void>();
   /** En masiva: volver a mapeo/estaciones cuando cambia la empresa del archivo. */

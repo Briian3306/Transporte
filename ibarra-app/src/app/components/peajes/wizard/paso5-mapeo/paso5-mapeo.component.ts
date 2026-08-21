@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, Output, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Inject, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -44,6 +44,8 @@ import {
 export class Paso5MapeoComponent implements OnInit {
   @Output() completado = new EventEmitter<void>();
   @Output() atras = new EventEmitter<void>();
+
+  @ViewChild('coberturaStrip') coberturaStrip?: ElementRef<HTMLElement>;
 
   readonly state = inject(PeajesWizardStateService);
   readonly destinos = PASADA_COLUMN_KEYS;
@@ -374,6 +376,78 @@ export class Paso5MapeoComponent implements OnInit {
     );
   }
 
+  get etiquetaEstadoMapeo(): string {
+    const keys = this.faltantes();
+    if (!keys.length) {
+      return 'Mapeo completo';
+    }
+    if (keys.length === 1) {
+      return `Falta ${keys[0]}`;
+    }
+    if (keys.length === 2) {
+      return `Faltan ${keys[0]} y ${keys[1]}`;
+    }
+    return `Faltan ${keys.slice(0, -1).join(', ')} y ${keys[keys.length - 1]}`;
+  }
+
+  get resumenBloqueo(): string {
+    const keys = this.faltantes();
+    if (keys.length) {
+      return `Columnas obligatorias sin mapear: ${keys.join(', ')}`;
+    }
+    if (this.unresolvedPatentes.length) {
+      return `Resolvé las patentes pendientes (${this.unresolvedPatentes.length}) antes de continuar.`;
+    }
+    return '';
+  }
+
+  get destinosCobertura(): Array<{ key: string; estado: 'ok' | 'catalogo' | 'falta'; detalle: string }> {
+    const mapeados = new Set(
+      this.mapeos.filter((m) => m.columnaDestino).map((m) => m.columnaDestino as string)
+    );
+    const chips: Array<{ key: string; estado: 'ok' | 'catalogo' | 'falta'; detalle: string }> = [];
+    if (!mapeados.has('PASE_ID')) {
+      chips.push({
+        key: 'PASE_ID',
+        estado: 'catalogo',
+        detalle: 'Sin columna de dispositivo. Se usa el último pase de cada patente.',
+      });
+    }
+    if (this.precioDesdeImporteNeto) {
+      chips.push({
+        key: 'PRECIO',
+        estado: 'catalogo',
+        detalle: 'Sin tarifa. Se toma IMPORTE_NETO.',
+      });
+    }
+    for (const key of this.faltantes()) {
+      chips.push({
+        key,
+        estado: 'falta',
+        detalle: `Mapeá ${key} para continuar.`,
+      });
+    }
+    if (!chips.length && mapeados.size) {
+      chips.push({ key: 'Structure Goal', estado: 'ok', detalle: 'Cubierto.' });
+    }
+    return chips;
+  }
+
+  get precioDesdeImporteNeto(): boolean {
+    const mapeados = new Set(
+      this.mapeos.filter((m) => m.columnaDestino).map((m) => m.columnaDestino as string)
+    );
+    return (
+      mapeados.has('IMPORTE_NETO') &&
+      this.mapeos.some(
+        (m) =>
+          m.columnaDestino === 'PRECIO' &&
+          m.columnaOrigen === 'PRECIO' &&
+          !this.origenEnArchivo('PRECIO')
+      )
+    );
+  }
+
   get accionesPatenteOcupadas(): boolean {
     return this.agregandoTodas || !!this.accionPatente;
   }
@@ -386,6 +460,9 @@ export class Paso5MapeoComponent implements OnInit {
     // Sin columna de descuento: BONIFICACION = 0 (ASIGNAR_VALOR).
     if (col === 'BONIFICACION' && !this.origenEnArchivo(col)) {
       return 'BONIFICACION (valor generado)';
+    }
+    if (col === 'PRECIO' && !this.origenEnArchivo(col) && this.precioDesdeImporteNeto) {
+      return 'PRECIO (desde IMPORTE_NETO)';
     }
     if (this.esSalidaPipeline(col)) {
       return `${col} (pipeline)`;
@@ -405,6 +482,14 @@ export class Paso5MapeoComponent implements OnInit {
 
   descripcionTransform(m: MapeoColumna): string {
     const dest = m.columnaDestino;
+    if (
+      m.columnaOrigen === 'PRECIO' &&
+      !this.origenEnArchivo('PRECIO') &&
+      dest === 'PRECIO' &&
+      this.precioDesdeImporteNeto
+    ) {
+      return 'Tomar IMPORTE_NETO';
+    }
     if (
       m.columnaOrigen === 'BONIFICACION' &&
       !this.origenEnArchivo('BONIFICACION') &&
@@ -550,11 +635,13 @@ export class Paso5MapeoComponent implements OnInit {
     const faltan = this.faltantes();
     if (faltan.length) {
       this.error = `Columnas obligatorias sin mapear: ${faltan.join(', ')}`;
+      this.enfocarCobertura();
       return;
     }
     this.recomputarUnresolved();
     if (this.unresolvedPatentes.length) {
       this.error = `Resolvé las patentes pendientes (${this.unresolvedPatentes.length}) antes de continuar.`;
+      this.enfocarCobertura();
       return;
     }
     this.resolviendoPatentes = true;
@@ -577,6 +664,10 @@ export class Paso5MapeoComponent implements OnInit {
     } finally {
       this.resolviendoPatentes = false;
     }
+  }
+
+  private enfocarCobertura(): void {
+    this.coberturaStrip?.nativeElement.focus();
   }
 
   private async cargarCatalogoPatentes(): Promise<void> {

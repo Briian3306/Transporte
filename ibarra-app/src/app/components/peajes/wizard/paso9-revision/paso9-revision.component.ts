@@ -1,25 +1,33 @@
-import { Component, EventEmitter, Inject, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Inject, Input, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import {
   ConfirmacionCargaResultado,
+  Estacion,
+  PasadaEstandarizada,
+  Pase,
+  Patente,
   PEAJES_CARGA_SERVICE,
+  PEAJES_CATALOGO_SERVICE,
   PeajesCargaService,
+  PeajesCatalogoService,
   normalizarImportesPasada,
 } from '../../models';
 import {
   PeajesWizardStateService,
   WizardDocumentoGrupo,
 } from '../services/peajes-wizard-state.service';
+import { DialogComponent } from '../../../shared';
 
 @Component({
   selector: 'app-paso9-revision',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DialogComponent],
   templateUrl: './paso9-revision.component.html',
   styleUrl: './paso9-revision.component.css',
 })
-export class Paso9RevisionComponent {
+export class Paso9RevisionComponent implements OnInit {
+  @Input() expressMode = false;
   @Output() atras = new EventEmitter<void>();
   @Output() reiniciar = new EventEmitter<void>();
 
@@ -32,8 +40,33 @@ export class Paso9RevisionComponent {
   erroresPorDocumento: Array<{ numero: string; error: string }> = [];
   /** Números de documentos confirmados OK (para el resumen). */
   importadosResumen: Array<{ numero: string; pasadas: number }> = [];
+  exitoAbierto = false;
 
-  constructor(@Inject(PEAJES_CARGA_SERVICE) private readonly carga: PeajesCargaService) {}
+  private pases: Pase[] = [];
+  private patentes: Patente[] = [];
+  private estaciones: Estacion[] = [];
+
+  constructor(
+    @Inject(PEAJES_CARGA_SERVICE) private readonly carga: PeajesCargaService,
+    @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
+  ) {}
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const [pases, patentes, estaciones] = await Promise.all([
+        firstValueFrom(this.catalogo.listarPases()),
+        firstValueFrom(this.catalogo.listarPatentes()),
+        firstValueFrom(this.catalogo.listarEstaciones()),
+      ]);
+      this.pases = pases;
+      this.patentes = patentes.filter((p) => p.activa !== false);
+      this.estaciones = estaciones;
+    } catch {
+      this.pases = [];
+      this.patentes = [];
+      this.estaciones = [];
+    }
+  }
 
   get snap() {
     return this.state.snapshot();
@@ -90,12 +123,56 @@ export class Paso9RevisionComponent {
     return this.pasadas.reduce((acc, p) => acc + Number(p.IMPORTE_NETO ?? 0), 0);
   }
 
+  get registrosConfirmados(): number {
+    if (this.importadosResumen.length) {
+      return this.importadosResumen.reduce((n, d) => n + d.pasadas, 0);
+    }
+    return this.pasadas.length;
+  }
+
+  get mensajeExito(): string {
+    return `Se subieron ${this.registrosConfirmados} registros correctamente!`;
+  }
+
+  paseExt(pasada: PasadaEstandarizada): string {
+    const raw = String(pasada.PASE_ID ?? '');
+    if (!raw) return '—';
+    const porId = this.pases.find((p) => p.id === raw);
+    if (porId) return porId.pase;
+    const porCodigo = this.pases.find((p) => p.pase === raw);
+    return porCodigo?.pase ?? raw;
+  }
+
+  patenteTexto(pasada: PasadaEstandarizada): string {
+    const raw = String(pasada.PATENTE_ID ?? '');
+    if (!raw) return '—';
+    const porId = this.patentes.find((p) => p.id === raw);
+    if (porId) return porId.patente;
+    const porCodigo = this.patentes.find((p) => p.patente === raw);
+    return porCodigo?.patente ?? raw;
+  }
+
+  estacionNombre(pasada: PasadaEstandarizada): string {
+    const raw = String(pasada.ESTACION_ID ?? '');
+    if (!raw) return '—';
+    const porId = this.estaciones.find((e) => e.id === raw);
+    if (porId) return porId.nombre;
+    const porNombre = this.estaciones.find((e) => e.nombre === raw);
+    return porNombre?.nombre ?? raw;
+  }
+
+  onExitoCerrado(): void {
+    this.exitoAbierto = false;
+    this.reiniciar.emit();
+  }
+
   async confirmar(): Promise<void> {
     this.guardando = true;
     this.error = null;
     this.erroresPorDocumento = [];
     this.resultados = [];
     this.importadosResumen = [];
+    this.exitoAbierto = false;
     try {
       const s = this.state.snapshot();
       // rowIndexes apuntan al Excel / pasadasEstandarizadas, no a validacion.validas.
@@ -159,6 +236,8 @@ export class Paso9RevisionComponent {
         this.error = `Confirmados ${this.resultados.length}; con error: ${this.erroresPorDocumento
           .map((e) => e.numero)
           .join(', ')}`;
+      } else {
+        this.exitoAbierto = true;
       }
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'No se pudo confirmar la carga';

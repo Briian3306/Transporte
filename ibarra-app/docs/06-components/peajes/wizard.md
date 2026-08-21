@@ -26,6 +26,22 @@
 | Fragmento rutas | `wizard/wizard.routes.ts` → `PEAJES_WIZARD_ROUTES` |
 | Path esperado | `/peajes/wizard` |
 
+### Vista Express para usuarios
+
+La ruta `/peajes/carga-express` ofrece una variante reducida del wizard para usuarios que
+trabajan con plantillas ya configuradas. Solo muestra Carga, Estaciones, Factura y Revisión;
+el Paso 8 de Validación aparece como pantalla intermedia cuando la validación encuentra errores
+o una diferencia de factura fuera de tolerancia.
+
+El Paso 1 exige archivo, empresa y plantilla. La plantilla se aplica automáticamente y el usuario
+no modifica transformaciones, mapeos ni configuraciones. Si todas las estaciones quedan reconocidas,
+el flujo salta directamente a Factura. Las recomendaciones o estaciones sin resolver mantienen
+visible el Paso 6 para que el usuario las confirme.
+
+La tarjeta de inicio está en `peajes-home.component.html` como **Carga rápida** y utiliza el mismo
+permiso `peajes:read` que el módulo. El wizard administrativo `/peajes/wizard` conserva sus nueve
+pasos y el acceso al ejemplo MVP.
+
 **Estado de integración:** el fragmento **no** está mergeado en `peajes.routes.ts` (solo home). Merge = Agente 05.
 
 ---
@@ -38,15 +54,39 @@
 | 2 | Preview | `paso2-preview` | Máx. 10 filas (RNF-03). Rail de recomendaciones semánticas (F02-11). Por defecto solo columnas reconocidas quedan incluidas (F02-12): ver [reconocimiento-columnas.md](./reconocimiento-columnas.md) |
 | 3 | Transformaciones | `paso3-transformaciones` | Motor 03 |
 | 4 | Plantilla | `paso4-plantilla` | Aplica pipeline + `mapeos` + estaciones (F09). Sin excepciones → `facturaDirecta` Paso 7; si no, `irAExcepcion` 5 o 6 |
-| 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal. Destino opcional **`CATEGORIA`** (F14-3 / RN-15; Patrón B si se mapea). Detecta `Concesion`→Peaje (RN-26). Patentes: [patentes-sin-resolver.md](./patentes-sin-resolver.md) (F02-14) |
+| 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal. Destinos opcionales: **`CATEGORIA`** (F14-3 / RN-15) y **`PASE_ID`** (F02-18: último `pases.created_at` de la patente). Sin `PRECIO` y con `IMPORTE_NETO`, se toma el neto. Tira «Para avanzar» nombra destinos cubiertos / de catálogo / faltantes; Continuar no se deshabilita en silencio. Detecta `Concesion`→Peaje (RN-26). Patentes: [patentes-sin-resolver.md](./patentes-sin-resolver.md) (F02-14) |
 | 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación filtrada por peaje de `Concesion`/empresa (RN-26); alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13). Código `0001` Zarate vs DOCK SUD: la empresa del Paso 1 acota `reconocerEstacion` (F02-17) |
 | 7 | Factura | `paso7-factura` | Cuenta opcional; subtotal, percepciones, IVA y total declarados; empresa SMS single (Paso 1); fecha DRP single. Recomienda crear plantilla completa (pipeline+mapeos+estaciones) |
 | 8 | Validación | `paso8-validacion` | Errores fila/columna/valor/motivo y diferencia neto de factura vs. pasadas |
 | 9 | Revisión | `paso9-revision` | Confirmación de carga |
 
+### Paso 5 — cobertura y destinos opcionales (F02-18)
+
+Continuar permanece clicable. Si falta un destino, el badge dice `Falta ESTACION_ID` (claves reales) y la tira **Para avanzar** explica cada chip: cubierto, cubierto por catálogo, o falta + cómo resolverlo. No se usa un botón primario deshabilitado sin mensaje.
+
+| Destino | Si el archivo no lo trae |
+|---------|--------------------------|
+| `PASE_ID` | Opcional. Paso 8 toma el último pase de `pases` (`created_at` desc) para esa `patente_id`. Si la patente no tiene pase, el error nombra la placa. Un TAG/dispositivo mapeado sigue resolviéndose (o creándose) por código. |
+| `PRECIO` | Si hay `IMPORTE_NETO`, se completa PRECIO = neto + bonificación (mismo patrón que QUANTITY/BONIFICACION sintéticos). |
+| `CATEGORIA` | Sigue opcional (Patrón A / F14-3). |
+
+Helper: `ultimo-pase-patente.helper.ts`. Catálogo vía `PeajesCatalogoService.listarPases()`.
+
 ---
 
 ## Estado (RF-25)
+
+### Flujo Express de patentes y pasos dinámicos
+
+En `/peajes/carga-express`, el Paso 5 administrativo se reemplaza por `patentes-express`
+cuando la plantilla deja dominios sin catálogo. El usuario puede agregar patentes de forma
+individual, agregarlas masivamente o excluirlas del import. Antes de validar, cada patente
+del proveedor se convierte a su UUID interno.
+
+El stepper Express asigna números visuales consecutivos y ordena Patentes antes de Estaciones.
+Estaciones solo se muestra cuando el reconocimiento deja recomendaciones o pendientes; si todas
+las estaciones están reconocidas, el flujo avanza directamente a Factura. La aplicación de
+plantilla distingue excepciones de `mapeo`, `patentes` y `estaciones`.
 
 > Para controles, errores técnicos y el criterio de avance del Paso 8, consultar [validacion-carga.md](./validacion-carga.md).
 
@@ -152,4 +192,4 @@ Guía operativa: [importacion-masiva-consumos-resumen.md](./importacion-masiva-c
 
 ---
 
-> Última actualización: 2026-08-07
+> Última actualización: 2026-08-19

@@ -10,6 +10,8 @@ import {
   ResultadoValidacionCarga,
 } from '../../models';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+import { paseIdVacio, ultimoPaseIdPorPatente } from '../services/ultimo-pase-patente.helper';
+import { resolvePatenteReferences } from '../services/patente-reference.helper';
 
 @Component({
   selector: 'app-paso8-validacion',
@@ -30,6 +32,7 @@ export class Paso8ValidacionComponent implements OnInit {
   cargando = false;
   error: string | null = null;
   diagnosticos: DiagnosticoValidacion[] = [];
+  private patenteTextoPorId = new Map<string, string>();
 
   constructor(
     @Inject(PEAJES_CARGA_SERVICE) private readonly carga: PeajesCargaService,
@@ -137,6 +140,9 @@ export class Paso8ValidacionComponent implements OnInit {
         dentroTolerancia: dentroTodos,
       };
       this.state.setValidacion(this.resultado);
+      if (this.puedeContinuar) {
+        this.completado.emit();
+      }
     } catch (e) {
       this.error = this.mensajeError(e);
     } finally {
@@ -248,7 +254,24 @@ export class Paso8ValidacionComponent implements OnInit {
   }
 
   private async ejecutarDeteccionDuplicados(pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>): Promise<ResultadoDiagnosticoDuplicados> {
-    const idsInvalidos = pasadas.flatMap((p, index) => this.idsRequeridos.filter((columna) => !this.esUuid(p[columna])).map((columna) => ({ fila: index + 1, columna, valor: p[columna], motivo: 'Debe ser un UUID para ejecutar la detección de duplicados.' })));
+    const idsInvalidos = pasadas.flatMap((p, index) =>
+      this.idsRequeridos
+        .filter((columna) => !this.esUuid(p[columna]))
+        .map((columna) => {
+          const placa =
+            columna === 'PASE_ID' && paseIdVacio(p.PASE_ID)
+              ? this.patenteTextoPorId.get(String(p.PATENTE_ID))
+              : null;
+          return {
+            fila: index + 1,
+            columna,
+            valor: p[columna],
+            motivo: placa
+              ? `${placa} no tiene pase en el catálogo.`
+              : 'Debe ser un UUID para ejecutar la detección de duplicados.',
+          };
+        })
+    );
     if (idsInvalidos.length) {
       return {
         errores: idsInvalidos,
@@ -292,31 +315,54 @@ export class Paso8ValidacionComponent implements OnInit {
   ): Promise<ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>> {
     const necesitaPases = pasadas.some((p) => !this.esUuid(p.PASE_ID));
     const necesitaPatentes = pasadas.some((p) => !this.esUuid(p.PATENTE_ID));
+    const necesitaUltimoPase = pasadas.some((p) => paseIdVacio(p.PASE_ID));
     if (!necesitaPases && !necesitaPatentes) return pasadas;
 
     const [pases, patentes] = await Promise.all([
       necesitaPases ? firstValueFrom(this.catalogo.listarPases()) : Promise.resolve([]),
-      necesitaPatentes ? firstValueFrom(this.catalogo.listarPatentes()) : Promise.resolve([]),
+      necesitaPatentes || necesitaUltimoPase
+        ? firstValueFrom(this.catalogo.listarPatentes())
+        : Promise.resolve([]),
     ]);
+    this.patenteTextoPorId = new Map(
+      patentes.filter((p) => p.activa !== false).map((p) => [p.id, p.patente])
+    );
     const pasePorCodigo = new Map(pases.map((p) => [this.normalizarCodigo(p.pase), p.id]));
-    const patentePorCodigo = new Map(patentes.filter((p) => p.activa !== false).map((p) => [this.normalizarCodigo(p.patente), p.id]));
-    const conPatentes = pasadas.map((pasada) => ({
-      ...pasada,
-      PATENTE_ID: this.esUuid(pasada.PATENTE_ID) ? pasada.PATENTE_ID : (patentePorCodigo.get(this.normalizarCodigo(pasada.PATENTE_ID)) ?? pasada.PATENTE_ID),
-    }));
-    // Los dispositivos AUSOL son códigos del proveedor, no UUIDs. Si la
-    // patente ya fue reconocida, el pase reutilizable se da de alta una sola
-    // vez y se reutiliza para todas sus pasadas.
+    const patentesActivas = patentes.filter((p) => p.activa !== false);
+    const ultimoPorPatente = ultimoPaseIdPorPatente(pases);
+    const conPatentes = resolvePatenteReferences(pasadas, patentesActivas).rows;
+    // Dispositivo del proveedor: crear pase reutilizable si la patente ya está en catálogo.
     for (const pasada of conPatentes) {
       const codigo = this.normalizarCodigo(pasada.PASE_ID);
-      if (!codigo || this.esUuid(pasada.PASE_ID) || pasePorCodigo.has(codigo) || !this.esUuid(pasada.PATENTE_ID)) continue;
-      const creado = await firstValueFrom(this.catalogo.crearPase({ pase: codigo, patente_id: String(pasada.PATENTE_ID) }));
+      if (
+        !codigo ||
+        this.esUuid(pasada.PASE_ID) ||
+        pasePorCodigo.has(codigo) ||
+        !this.esUuid(pasada.PATENTE_ID)
+      ) {
+        continue;
+      }
+      const creado = await firstValueFrom(
+        this.catalogo.crearPase({ pase: codigo, patente_id: String(pasada.PATENTE_ID) })
+      );
       pasePorCodigo.set(codigo, creado.id);
     }
-    return conPatentes.map((pasada) => ({
-      ...pasada,
-      PASE_ID: this.esUuid(pasada.PASE_ID) ? String(pasada.PASE_ID) : (pasePorCodigo.get(this.normalizarCodigo(pasada.PASE_ID)) ?? pasada.PASE_ID),
-    }));
+    return conPatentes.map((pasada) => {
+      if (this.esUuid(pasada.PASE_ID)) {
+        return { ...pasada, PASE_ID: String(pasada.PASE_ID) };
+      }
+      const codigo = this.normalizarCodigo(pasada.PASE_ID);
+      if (codigo && pasePorCodigo.has(codigo)) {
+        return { ...pasada, PASE_ID: pasePorCodigo.get(codigo)! };
+      }
+      if (paseIdVacio(pasada.PASE_ID) && this.esUuid(pasada.PATENTE_ID)) {
+        const ultimo = ultimoPorPatente.get(String(pasada.PATENTE_ID));
+        if (ultimo) {
+          return { ...pasada, PASE_ID: ultimo };
+        }
+      }
+      return { ...pasada, PASE_ID: pasada.PASE_ID };
+    });
   }
 
   private validarReferencias(pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>, columna: 'ESTACION_ID' | 'PATENTE_ID', titulo: string, paso: 5 | 6): DiagnosticoValidacion {

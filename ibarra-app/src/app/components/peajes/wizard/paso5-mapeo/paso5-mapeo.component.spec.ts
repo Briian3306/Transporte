@@ -221,4 +221,97 @@ describe('Paso5MapeoComponent', () => {
     expect(component.esDestinoOpcional('FECHA_HORA')).toBeFalse();
     expect(component.faltantes()).not.toContain('CATEGORIA');
   });
+
+  it('names the missing destinos in the badge and keeps Continuar clickable', async () => {
+    state.setPreview({
+      nombreArchivo: 'caminos.xlsx',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['Fecha_Hora', 'Dominio', 'IMPORTE_NETO'],
+      filasPreview: [
+        { Fecha_Hora: '2026-07-01 10:00:00', Dominio: 'AD625QB', IMPORTE_NETO: 100 },
+      ],
+      filasOrigen: [
+        { Fecha_Hora: '2026-07-01 10:00:00', Dominio: 'AD625QB', IMPORTE_NETO: 100 },
+      ],
+      tiposInferidos: {},
+    });
+    state.setMapeos([
+      { columnaOrigen: 'Fecha_Hora', columnaDestino: 'FECHA_HORA', excluida: false },
+      { columnaOrigen: 'Dominio', columnaDestino: 'PATENTE_ID', excluida: false },
+      { columnaOrigen: 'IMPORTE_NETO', columnaDestino: 'IMPORTE_NETO', excluida: false },
+    ]);
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    const badge = fixture.nativeElement.querySelector('.pw__head .pw__status') as HTMLElement;
+    expect(badge.textContent ?? '').toContain('ESTACION_ID');
+    expect(badge.textContent ?? '').not.toContain('Mapeo incompleto');
+
+    const continuar = fixture.nativeElement.querySelector(
+      '.pw__footer .pw__btn--primary'
+    ) as HTMLButtonElement;
+    expect(continuar.disabled).toBeFalse();
+
+    await component.continuar();
+    fixture.detectChanges();
+    const alert = fixture.nativeElement.querySelector('[role="alert"]') as HTMLElement;
+    expect(alert).toBeTruthy();
+    expect(alert.textContent ?? '').toContain('ESTACION_ID');
+  });
+
+  it('does not require mapping PASE_ID when PATENTE_ID is mapped', async () => {
+    state.setPreview({
+      nombreArchivo: 'caminos.xlsx',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['Fecha_Hora', 'Dominio', 'Estacion', 'IMPORTE_NETO'],
+      filasPreview: [
+        { Fecha_Hora: '2026-07-01 10:00:00', Dominio: 'AD625QB', Estacion: 'E1', IMPORTE_NETO: 100 },
+      ],
+      filasOrigen: [
+        { Fecha_Hora: '2026-07-01 10:00:00', Dominio: 'AD625QB', Estacion: 'E1', IMPORTE_NETO: 100 },
+      ],
+      tiposInferidos: {},
+    });
+    state.setMapeos([
+      { columnaOrigen: 'Fecha_Hora', columnaDestino: 'FECHA_HORA', excluida: false },
+      { columnaOrigen: 'Dominio', columnaDestino: 'PATENTE_ID', excluida: false },
+      { columnaOrigen: 'Estacion', columnaDestino: 'ESTACION_ID', excluida: false },
+      { columnaOrigen: 'IMPORTE_NETO', columnaDestino: 'IMPORTE_NETO', excluida: false },
+    ]);
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(component.faltantes()).not.toContain('PASE_ID');
+    expect(component.esDestinoOpcional('PASE_ID')).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('último pase');
+  });
+
+  it('does not require mapping PRECIO when IMPORTE_NETO is mapped', async () => {
+    state.setPreview({
+      nombreArchivo: 'caminos.xlsx',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['Fecha_Hora', 'Dominio', 'Estacion', 'IMPORTE_NETO'],
+      filasPreview: [
+        { Fecha_Hora: '2026-07-01 10:00:00', Dominio: 'AD625QB', Estacion: 'E1', IMPORTE_NETO: 1840 },
+      ],
+      filasOrigen: [
+        { Fecha_Hora: '2026-07-01 10:00:00', Dominio: 'AD625QB', Estacion: 'E1', IMPORTE_NETO: 1840 },
+      ],
+      tiposInferidos: {},
+    });
+    state.setMapeos([
+      { columnaOrigen: 'Fecha_Hora', columnaDestino: 'FECHA_HORA', excluida: false },
+      { columnaOrigen: 'Dominio', columnaDestino: 'PATENTE_ID', excluida: false },
+      { columnaOrigen: 'Estacion', columnaDestino: 'ESTACION_ID', excluida: false },
+      { columnaOrigen: 'IMPORTE_NETO', columnaDestino: 'IMPORTE_NETO', excluida: false },
+    ]);
+    await component.ngOnInit();
+
+    expect(component.faltantes()).not.toContain('PRECIO');
+    const pasadas = state.construirPasadasDesdeMapeo();
+    expect(pasadas[0].PRECIO).toBe(1840);
+  });
 });

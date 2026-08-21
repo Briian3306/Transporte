@@ -1,7 +1,7 @@
 <div class="paso7" tabindex="-1">
   <div class="pw__head">
     <div>
-      <div class="pw__eyebrow">Paso 07 · asociación contable</div>
+      <div class="pw__eyebrow">{{ expressMode ? 'Paso 3 · factura' : 'Paso 07 · asociación contable' }}</div>
       <h2>{{ esMasiva ? 'Ingresar documentos' : 'Ingresar documento' }}</h2>
       <p *ngIf="!esMasiva">
         Asociá el lote con un documento (factura o nota de crédito). Tab entre campos; escribí la fecha como 13/6/2020.
@@ -218,7 +218,7 @@
         <div class="paso7__form-card">
           <div class="paso7__form-head">
             <h3>Datos del documento</h3>
-            <span class="paso7__form-chip">Teclado primero</span>
+            <!-- <span class="paso7__form-chip">T</span> -->
           </div>
 
           <form [formGroup]="form" class="pw__form-grid paso7__form" (ngSubmit)="continuar()">
@@ -305,9 +305,9 @@
             </div>
           </form>
 
-          <button type="button" class="pw__btn pw__btn--ghost pw__btn--small paso7__mvp" (click)="cargarFacturaMvp()">
+          <!-- <button type="button" class="pw__btn pw__btn--ghost pw__btn--small paso7__mvp" (click)="cargarFacturaMvp()">
             Prefijar documento del ejemplo MVP
-          </button>
+          </button> -->
         </div>
 
         <aside class="paso7__side" aria-live="polite">

@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Paso9RevisionComponent } from './paso9-revision.component';
-import { PEAJES_CARGA_SERVICE } from '../../models';
+import { PEAJES_CARGA_SERVICE, PEAJES_CATALOGO_SERVICE } from '../../models';
 import { PeajesCargaMockService } from '../mocks/peajes-carga.mock';
+import { PeajesCatalogoMockService } from '../mocks/peajes-catalogo.mock';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 
 describe('Paso9RevisionComponent', () => {
@@ -15,6 +16,7 @@ describe('Paso9RevisionComponent', () => {
       providers: [
         PeajesWizardStateService,
         { provide: PEAJES_CARGA_SERVICE, useClass: PeajesCargaMockService },
+        { provide: PEAJES_CATALOGO_SERVICE, useClass: PeajesCatalogoMockService },
       ],
     }).compileComponents();
 
@@ -44,8 +46,8 @@ describe('Paso9RevisionComponent', () => {
       {
         PASADA_ID: null,
         FECHA_HORA: '2026-06-25 20:50:05',
-        PASE_ID: '98702170',
-        PATENTE_ID: 'AD625QB',
+        PASE_ID: 'PAS-001',
+        PATENTE_ID: 'PAT-001',
         ESTACION_ID: 'EST-096',
         PRECIO: 17400,
         BONIFICACION: 5220,
@@ -63,6 +65,7 @@ describe('Paso9RevisionComponent', () => {
 
     fixture = TestBed.createComponent(Paso9RevisionComponent);
     component = fixture.componentInstance;
+    await component.ngOnInit();
     fixture.detectChanges();
   });
 
@@ -74,6 +77,39 @@ describe('Paso9RevisionComponent', () => {
     expect(component.resultado!.registro.filas_procesadas).toBe(1);
     expect(component.resultado!.registro.parametros_efectivos).toBeTruthy();
     expect(fixture.nativeElement.textContent).toContain('Carga confirmada');
+  });
+
+  it('muestra Pase (ext), Patente y Estación en vez de IDs internos', () => {
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Pase (ext)');
+    expect(text).toContain('Patente');
+    expect(text).toContain('Estación');
+    expect(text).not.toContain('PASE_ID');
+    expect(text).not.toContain('PATENTE_ID');
+    expect(text).not.toContain('ESTACION_ID');
+    expect(text).toContain('98702170');
+    expect(text).toContain('AD625QB');
+    expect(text).toContain('Monte Grande');
+    expect(text).not.toContain('PAS-001');
+    expect(text).not.toContain('PAT-001');
+  });
+
+  it('pone Confirmar carga en el encabezado, no en el pie', () => {
+    const head = fixture.nativeElement.querySelector('.pw__head') as HTMLElement;
+    const footer = fixture.nativeElement.querySelector('.pw__footer') as HTMLElement;
+    expect(head.textContent).toContain('Confirmar carga');
+    expect(head.textContent).toContain('Volver');
+    expect(footer.textContent).not.toContain('Confirmar carga');
+  });
+
+  it('tras confirmar muestra el diálogo y al cerrarlo emite reiniciar', async () => {
+    const spy = spyOn(component.reiniciar, 'emit');
+    await component.confirmar();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Se subieron 1 registros correctamente!');
+    expect(fixture.nativeElement.textContent).toContain('Cargar otro archivo');
+    component.onExitoCerrado();
+    expect(spy).toHaveBeenCalled();
   });
 
   it('masiva: no confirma documentos omitidos y los lista en el resumen', async () => {

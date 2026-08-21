@@ -12,9 +12,15 @@ description: >-
 
 # Generación de tasks y acciones OpenProject
 
-Skill distinta al resto: no implementa código de producto. El agente
-**nunca ejecuta** scripts ni curls; deja archivos o comandos para el
-desarrollador.
+Skill distinta al resto: no implementa código de producto.
+
+**Auth:** el token vive en `.env` de esta carpeta (`OPENPROJECT_AUTH=`), nunca
+en chat ni en docs. Cómo armar el header y las queries: `api/apidocs_main.md`.
+
+**Ejecución:** no correr `upload_tasks.ps1` ni curls de escritura (POST/PATCH/
+DELETE). Un GET de consulta sí se puede ejecutar si el usuario lo pide y
+existe `.env`: leer el token del archivo, no echo, no pegarlo en el comando
+como literal. Sin `.env`, dejar el curl para el desarrollador.
 
 Hay dos modos. No mezclarlos:
 
@@ -157,8 +163,9 @@ localhost. El agente **no** lo ejecuta.
    `curl.exe` por task aprobada. Seguir `apidocs_main.md` (no reexpandir el
    template JSON). `parent` = id de épica; `project` y demás campos del
    payload: completar según el template; `description.raw` = texto crudo de
-   la descripción armada en el planteo; `AUTH` vacío.
-2. **Entregar** el archivo (indicar completar `AUTH` si hace falta). Un
+   la descripción armada en el planteo. El script carga `OPENPROJECT_AUTH`
+   desde `.env` (ver `apidocs_main.md`); no hardcodear el token.
+2. **Entregar** el archivo. Un
    bloque `$body` + `curl.exe` por cada task del planteo aprobado;
    `description.raw` = el párrafo de esa task (sin la línea de SP).
 3. **No ejecutar** el script ni lanzar los curls.
@@ -173,9 +180,10 @@ nueva aprobación.
 ## Modo 2 — Acciones específicas
 
 El usuario pide una operación concreta sobre un work package o sprint
-existente. Leer los docs de la tabla de ruteo, armar el curl según ese
-archivo y **no ejecutarlo**. No escribir `upload_tasks.ps1` salvo que el
-pedido sea el script de la etapa 2.
+existente. Leer los docs de la tabla de ruteo. GET de consulta: ejecutar
+cargando `.env` (ver main). Escritura: armar el curl o script y no
+ejecutarlo. No escribir `upload_tasks.ps1` salvo que el pedido sea el
+script de la etapa 2.
 
 No inventar IDs, `lockVersion` ni proyectos. Reutilizar datos ya obtenidos.
 Si el usuario no dio un ID obligatorio, pedirlo; no adivinarlo.

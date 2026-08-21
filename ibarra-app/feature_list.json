@@ -2,8 +2,8 @@
   "project": "peajes-module-automation-tool",
   "source_of_truth": "docs/plan/peaje-prd-es.md",
   "single_active_feature_per_agent": true,
-  "documentation_last_reviewed": "2026-08-12",
-  "documentation_status": "docs/backend RPCs + F14 docs; F13 passing; F14-0..F14-5 passing (CLI + wizard CATEGORIA + UI + docs); F14-7 plantillas CATEGORIA DESARROLLO 2026-08-13; DESARROLLO db push 2026-08-12 (F14 tarifas + FILTRAR_COLUMNA); F14-6 DESARROLLO recalc+reconcile 2026-08-13 (in_progress; falta E2E UI)",
+  "documentation_last_reviewed": "2026-08-21",
+  "documentation_status": "docs/backend RPCs + F14 docs; F13 passing; F14-0..F14-5 passing (CLI + wizard CATEGORIA + UI + docs); F14-7 plantillas CATEGORIA DESARROLLO 2026-08-13; DESARROLLO db push 2026-08-12 (F14 tarifas + FILTRAR_COLUMNA); F14-6 DESARROLLO recalc+reconcile 2026-08-13 (in_progress; falta E2E UI). Planificación: plan-orchestrator crea planes sin código en docs/plan/<epic>/ y registra tareas nuevas como not_started.",
   "agents": [
     "00-orquestador-setup",
     "01-backend-supabase",
@@ -13,6 +13,36 @@
     "05-integrador-qa"
   ],
   "features": [
+    {
+      "id": "F15-1",
+      "title": "Vista Express de carga de pasadas para usuarios",
+      "prd_refs": ["RF-14", "RF-17", "RF-19", "RF-25", "RF-32"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-9", "F09-1", "F01-9"],
+      "status": "in_progress",
+      "verification": [
+        "Ruta /peajes/carga-express registrada con permiso peajes:read",
+        "La vista muestra Carga, Patentes y Estaciones solo cuando requieren acción, además de Factura, Validación condicional y Revisión",
+        "Las patentes inexistentes se pueden agregar individualmente, en forma masiva o excluir del import",
+        "Las patentes del proveedor se convierten a UUID antes de ejecutar validaciones o RPCs",
+        "Archivo, empresa y plantilla son obligatorios",
+        "La plantilla se aplica automáticamente sin mostrar transformaciones ni mapeo",
+        "El botón Ejemplo MVP no aparece en la vista Express",
+        "El reconocimiento completo de estaciones evita interacción adicional",
+        "Las recomendaciones o estaciones sin resolver mantienen abierto el Paso 6",
+        "El stepper Express ordena Patentes antes de Estaciones y omite Estaciones si no hay pendientes",
+        "Los errores después de Factura muestran el Paso 8",
+        "Los errores bloqueantes impiden confirmar la carga",
+        "ng test focalizado, TypeScript y build pasan"
+      ],
+      "evidence": [
+        "2026-08-20: corrección de referencias nulas: UUIDs ya resueltos se conservan aunque la consulta posterior del catálogo no los devuelva; prueba directa con 485 filas EXIT 0; tsc app/spec EXIT 0; build development EXIT 0.",
+        "2026-08-20: npx tsc --noEmit -p tsconfig.app.json EXIT 0; npx tsc --noEmit -p tsconfig.spec.json EXIT 0.",
+        "2026-08-20: ng build --configuration=development generó dist/ibarra-app; bundle peajes-routes incluye la vista Express. Warning preexistente NG8107 en paso9-revision.",
+        "2026-08-20: ng test focalizado compiló el bundle, pero la carga global de specs se bloquea por exports faltantes preexistentes en peajes-home.component.spec.ts y permission.guard.spec.ts; F15-1 permanece in_progress."
+        ,"2026-08-20: tsc app/spec EXIT 0; ng build development EXIT 0. La suite ChromeHeadless no inicia por fallo del entorno Windows/GPU (GPU process isn't usable); pendiente de reejecución en un runner con Chrome estable."
+      ]
+    },
     {
       "id": "F00-1",
       "title": "Registrar módulo peajes en el dashboard",
@@ -684,6 +714,25 @@
         "2026-08-14: helper reconocerEstacionEnCatalogo (1 ≡ 0001); mock + PeajesCatalogoSupabaseService scope by empresaId; plantilla apply rejects other-company estacion and opens Paso 6",
         "2026-08-14: ng test helpers+paso1+paso6+plantilla-apply — 26 SUCCESS (ChromeHeadless)",
         "2026-08-14: docs reconocimiento-estaciones.md + wizard.md (F02-17)"
+      ]
+    },
+    {
+      "id": "F02-18",
+      "title": "Paso 5 — destinos opcionales PASE_ID/PRECIO y tira de bloqueo; último pase por patente",
+      "prd_refs": ["RN-02", "RN-16", "RF-12"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-14"],
+      "status": "passing",
+      "verification": [
+        "Paso 5: Continuar clickable; badge nombra destinos faltantes (no solo 'Mapeo incompleto')",
+        "PASE_ID no está en PASADA_COLUMNAS_OBLIGATORIAS; sin TAG se usa el último pases.created_at de la patente",
+        "Sin PRECIO y con IMPORTE_NETO, construirPasadas llena PRECIO",
+        "Patente sin pase: error nombra la placa; no llama peajes_detectar_duplicados con undefined",
+        "Docs: wizard.md + validacion-carga.md (F02-18)"
+      ],
+      "evidence": [
+        "2026-08-19: helper ultimoPaseIdPorPatente; Paso 5 coverage strip; Paso 8 last-pase resolver (no crearPase sintético)",
+        "2026-08-19: ng test paso5+paso8+ultimo-pase+plantilla-apply — 27 SUCCESS (ChromeHeadless)"
       ]
     },
     {

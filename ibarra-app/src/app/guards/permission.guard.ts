@@ -5,8 +5,68 @@ import { map, catchError, switchMap } from 'rxjs/operators';
 import { AuthStateService } from '../services/auth-state.service';
 import { PermissionStateService } from '../services/permission-state.service';
 
+export interface PermissionPair {
+  module: string;
+  action: string;
+}
+
+export interface CompositePermissionRequirement {
+  all?: PermissionRequirement[];
+  any?: PermissionRequirement[];
+}
+
+export type PermissionRequirement = PermissionPair | CompositePermissionRequirement;
+
+const all = (...permissions: PermissionRequirement[]): CompositePermissionRequirement => ({ all: permissions });
+const any = (...permissions: PermissionRequirement[]): CompositePermissionRequirement => ({ any: permissions });
+
+const peajesRead = { module: 'peajes', action: 'read' };
+const peajesCreate = { module: 'peajes', action: 'create' };
+const peajesManage = { module: 'peajes', action: 'manage' };
+const peajesOperational = all(peajesRead, peajesCreate);
+const peajesAdminOrOperational = any(peajesManage, peajesOperational);
+
+export const PEAJES_ROUTE_PERMISSIONS: Record<string, PermissionRequirement> = {
+  '/peajes': peajesAdminOrOperational,
+  '/peajes/wizard': peajesOperational,
+  '/peajes/pasadas': peajesOperational,
+  '/peajes/pasadas-pendientes': peajesOperational,
+  '/peajes/auditoria-tarifas': peajesOperational,
+  '/peajes/carga-express': all(peajesManage),
+  '/peajes/catalogos': all(peajesManage),
+  '/peajes/catalogos/peajes': all(peajesManage),
+  '/peajes/catalogos/estaciones': all(peajesManage),
+  '/peajes/catalogos/patentes': all(peajesManage),
+  '/peajes/catalogos/pases': all(peajesManage),
+  '/peajes/plantillas': all(peajesManage),
+};
+
+export function matchesPermissionRequirement(
+  requirement: PermissionRequirement,
+  hasPermission: (module: string, action: string) => boolean,
+  hasGlobalPermission = false,
+): boolean {
+  if (hasGlobalPermission) return true;
+
+  if ('module' in requirement) {
+    return (
+      hasPermission(requirement.module, requirement.action) ||
+      (requirement.module === 'peajes' &&
+        requirement.action !== 'manage' &&
+        hasPermission('peajes', 'manage'))
+    );
+  }
+
+  const matches = (permission: PermissionRequirement) =>
+    matchesPermissionRequirement(permission, hasPermission);
+  const matchesAll = requirement.all?.every(matches) ?? true;
+  const matchesAny = requirement.any ? requirement.any.some(matches) : true;
+
+  return matchesAll && matchesAny;
+}
+
 // Mapeo de rutas a permisos requeridos
-const ROUTE_PERMISSIONS: { [key: string]: { module: string; action: string } } = {
+const ROUTE_PERMISSIONS: { [key: string]: PermissionRequirement } = {
   // Dashboard - siempre accesible si está autenticado
   
   // Templates
@@ -37,18 +97,8 @@ const ROUTE_PERMISSIONS: { [key: string]: { module: string; action: string } } =
   '/stock/salida': { module: 'stock', action: 'create' },
   '/stock/historial': { module: 'stock', action: 'read' },
 
-  // Peajes (módulo aislado; create/manage se agregarán con pantallas posteriores)
-  '/peajes': { module: 'peajes', action: 'read' },
-  '/peajes/wizard': { module: 'peajes', action: 'read' },
-  '/peajes/catalogos': { module: 'peajes', action: 'read' },
-  '/peajes/catalogos/peajes': { module: 'peajes', action: 'read' },
-  '/peajes/catalogos/estaciones': { module: 'peajes', action: 'read' },
-  '/peajes/catalogos/patentes': { module: 'peajes', action: 'read' },
-  '/peajes/catalogos/pases': { module: 'peajes', action: 'read' },
-  '/peajes/plantillas': { module: 'peajes', action: 'read' },
-  '/peajes/pasadas': { module: 'peajes', action: 'read' },
-  '/peajes/pasadas-pendientes': { module: 'peajes', action: 'read' },
-  '/peajes/auditoria-tarifas': { module: 'peajes', action: 'read' },
+  // Peajes: requisitos compuestos por perfil operativo o administrativo
+  ...PEAJES_ROUTE_PERMISSIONS,
   
   // Usuarios y Roles
   '/users': { module: 'users', action: 'read' },
@@ -160,12 +210,10 @@ export class PermissionGuard implements CanActivate {
     }
 
     // Verificar si el usuario tiene el permiso requerido
-    const hasPermission = this.permissionStateService.hasPermission(
-      requiredPermission.module,
-      requiredPermission.action
+    return matchesPermissionRequirement(
+      requiredPermission,
+      (module, action) => this.permissionStateService.hasPermission(module, action),
     );
-
-    return hasPermission;
   }
 
   /**
@@ -199,7 +247,7 @@ export class PermissionGuard implements CanActivate {
   /**
    * Obtiene los permisos requeridos para una ruta específica
    */
-  static getRequiredPermission(url: string): { module: string; action: string } | null {
+  static getRequiredPermission(url: string): PermissionRequirement | null {
     for (const [route, permission] of Object.entries(ROUTE_PERMISSIONS)) {
       if (route.includes(':')) {
         const routePattern = route.replace(/:[^/]+/g, '[^/]+');

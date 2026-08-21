@@ -11,13 +11,13 @@
     </a>
   </header>
 
-  <section class="pc-home__grid" aria-label="Catálogos disponibles">
+  <section class="pc-home__grid" aria-label="Catálogos disponibles" *ngIf="isSectionVisible('catalogos')">
     <a
       *ngFor="let card of cards"
       [routerLink]="card.route"
       class="pc-home__card"
     >
-      <div class="pc-home__icon">
+      <div class="pc-home__icon" *ngIf="isSectionVisible(card.route)">
         <i class="fas" [ngClass]="card.icon" aria-hidden="true"></i>
       </div>
       <h2>{{ card.title }}</h2>
