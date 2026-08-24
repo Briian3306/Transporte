@@ -14,6 +14,7 @@ Primitivas UI reutilizables bajo `src/app/components/shared/`. El `data-table` e
 | [search-multi-select.md](./search-multi-select.md) | Búsqueda multi/single con chips (≤10 resultados) |
 | [search-select.md](./search-select.md) | Búsqueda single scalar (`string \| null`, ≤10 resultados) |
 | [dialog.md](./dialog.md) | Modal compartido (altas de catálogo / wizard) |
+| [graph-loader.md](./graph-loader.md) | Espera activa (canvas + frases rotativas); no bloquea el formulario |
 
 ## Código fuente
 
@@ -24,6 +25,8 @@ src/app/components/shared/
   search-multi-select/
   search-select/
   dialog/
+  graph-loader/
+  loading-spinner/
   filter-bar/          # FilterChipRail
   index.ts             # barrel
 ```
@@ -32,7 +35,8 @@ src/app/components/shared/
 
 - Catálogos UI: [../peajes/catalogos.md](../peajes/catalogos.md)
 - Tablas catálogo: [../../06-tablas/peajes/catalogos.md](../../06-tablas/peajes/catalogos.md)
+- [IA de factura (consumo)](../peajes/ia-factura.md)
 
 ---
 
-> Última actualización: 2026-08-05
+> Última actualización: 2026-08-24

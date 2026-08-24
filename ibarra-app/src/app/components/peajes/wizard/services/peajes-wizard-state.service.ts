@@ -43,6 +43,11 @@ import {
   tieneHeadersParaSeedDemo,
 } from './column-recognition';
 import { ConfiguracionPlantillaDraft } from './wizard-draft.types';
+import {
+  InvoiceAiAnalysisState,
+  InvoiceAiResult,
+  InvoiceAiStatus,
+} from '../../services/ai/invoice/invoice-ai.models';
 
 export type { ConfiguracionPlantillaDraft } from './wizard-draft.types';
 export type { ColumnRecommendation } from './column-recognition';
@@ -123,6 +128,16 @@ export interface PeajesWizardState {
   patentesExcluidas: string[];
   /** RN-26: Concesion → Peaje detectado en Paso 5. */
   recomendacionesPeajeConcesion: RecomendacionPeajeConcesion[];
+  /** PDF de factura opcional (solo memoria, importación simple). */
+  invoicePdf: WizardInvoicePdf | null;
+  invoiceAi: InvoiceAiAnalysisState;
+}
+
+export interface WizardInvoicePdf {
+  fileName: string;
+  size: number;
+  lastModified: number;
+  text: string;
 }
 
 const FACTURA_VACIA: WizardFacturaForm = {
@@ -174,6 +189,8 @@ function estadoInicial(): PeajesWizardState {
     recomendaciones: [],
     patentesExcluidas: [],
     recomendacionesPeajeConcesion: [],
+    invoicePdf: null,
+    invoiceAi: { status: 'idle', result: null, error: null, fingerprint: null },
   };
 }
 
@@ -256,6 +273,7 @@ export class PeajesWizardStateService {
         }),
       ]);
     }
+    this.invalidateInvoiceAi();
   }
 
   /**
@@ -356,9 +374,13 @@ export class PeajesWizardStateService {
   }
 
   setModoImportacion(modo: ModoImportacion): void {
+    const changed = this.state.modoImportacion !== modo;
     this.state.modoImportacion = modo;
     if (modo === 'simple' && this.state.documentos.length === 0) {
       this.state.documentos = [documentoVacio({ empresa_id: this.state.empresaId ?? '' })];
+    }
+    if (changed && modo === 'masiva') {
+      this.invalidateInvoiceAi();
     }
   }
 
@@ -482,6 +504,9 @@ export class PeajesWizardStateService {
   }
 
   setPlantillaId(id: string | null): void {
+    if (this.state.plantillaId !== id) {
+      this.invalidateInvoiceAi();
+    }
     this.state.plantillaId = id;
   }
 
@@ -1316,6 +1341,86 @@ export class PeajesWizardStateService {
           (precio - (Number.isFinite(bonif) ? bonif : 0)) * (Number.isFinite(qty) ? qty : 1);
       }
     }
+  }
+
+  /**
+   * PDF opcional en memoria. Reemplazarlo invalida sugerencias previas.
+   */
+  setInvoicePdf(file: File | null, text: string | null): void {
+    this.invalidateInvoiceAi();
+    if (!file || text == null || !String(text).trim()) {
+      this.state.invoicePdf = null;
+      return;
+    }
+    this.state.invoicePdf = {
+      fileName: file.name,
+      size: file.size,
+      lastModified: file.lastModified,
+      text,
+    };
+  }
+
+  setInvoiceAiAnalysis(
+    status: InvoiceAiStatus,
+    result: InvoiceAiResult | null,
+    error: string | null
+  ): void {
+    this.state.invoiceAi = {
+      status,
+      result,
+      error,
+      fingerprint:
+        status === 'idle' ? null : this.invoiceAiFingerprint() ?? this.state.invoiceAi.fingerprint,
+    };
+  }
+
+  /**
+   * Neto de referencia post-plantilla (pesos), sumando IMPORTE_NETO en centavos.
+   * Null si no hay plantilla aplicada, el neto no es positivo o el modo no es simple.
+   */
+  invoiceExpectedNetAmount(): number | null {
+    if (this.state.modoImportacion !== 'simple') {
+      return null;
+    }
+    const postTemplate =
+      this.state.pasadasEstandarizadas.length > 0 &&
+      (!!this.state.plantillaId || this.state.configuracionesDraft.length > 0);
+    if (!postTemplate) {
+      return null;
+    }
+    const pasadas = this.state.preview
+      ? this.construirPasadasDesdeMapeo()
+      : this.state.pasadasEstandarizadas;
+    const cents = pasadas.reduce((sum, pasada) => sum + this.aCentavos(pasada.IMPORTE_NETO), 0);
+    return cents > 0 ? cents / 100 : null;
+  }
+
+  invoiceAiFingerprint(netAmount = this.invoiceExpectedNetAmount()): string | null {
+    const pdf = this.state.invoicePdf;
+    if (!pdf?.text || netAmount == null || netAmount <= 0) {
+      return null;
+    }
+    return [
+      pdf.fileName,
+      pdf.size,
+      pdf.lastModified,
+      this.state.plantillaId ?? '',
+      Math.round(netAmount * 100),
+    ].join('|');
+  }
+
+  private invalidateInvoiceAi(): void {
+    this.state.invoiceAi = {
+      status: 'idle',
+      result: null,
+      error: null,
+      fingerprint: null,
+    };
+  }
+
+  private aCentavos(valor: unknown): number {
+    const numero = Number(valor);
+    return Number.isFinite(numero) ? Math.round(numero * 100) : 0;
   }
 
   reiniciar(): void {

@@ -398,4 +398,51 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
     expect(filasRec.length).toBe(2);
     expect(filasRec.map((f) => String(f['ESTACION']))).toEqual(['0001', '0001']);
   });
+
+  it('computes invoice expected net from post-template IMPORTE_NETO using integer cents', () => {
+    state.setPlantillaId('template-1');
+    state.setPasadasEstandarizadas([
+      { IMPORTE_NETO: 560832.27 },
+      { IMPORTE_NETO: 0.01 },
+      { IMPORTE_NETO: -0.01 },
+    ] as never);
+    expect(state.invoiceExpectedNetAmount()).toBe(560832.27);
+  });
+
+  it('does not compute invoice net from preview-only rows', () => {
+    state.setPreview({
+      nombreArchivo: 'a.xlsx',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['IMPORTE_NETO'],
+      filasPreview: [{ IMPORTE_NETO: 999 }],
+      filasOrigen: [{ IMPORTE_NETO: 999 }],
+      tiposInferidos: { IMPORTE_NETO: 'número' },
+    });
+    expect(state.invoiceExpectedNetAmount()).toBeNull();
+  });
+
+  it('invalidates invoice AI suggestions when the PDF is replaced', () => {
+    const first = new File(['a'], 'a.pdf', { type: 'application/pdf' });
+    const second = new File(['b'], 'b.pdf', { type: 'application/pdf' });
+    state.setInvoicePdf(first, 'invoice text');
+    state.setInvoiceAiAnalysis(
+      'ready',
+      {
+        invoiceNumber: [],
+        invoiceDate: [],
+        vat: [],
+        perceptions: [],
+        subtotal: [],
+        total: [],
+        expectedNetAmount: 100,
+      },
+      null
+    );
+    expect(state.snapshot().invoiceAi.status).toBe('ready');
+    state.setInvoicePdf(second, 'other text');
+    expect(state.snapshot().invoiceAi.status).toBe('idle');
+    expect(state.snapshot().invoiceAi.result).toBeNull();
+    expect(state.snapshot().invoicePdf?.text).toBe('other text');
+  });
 });

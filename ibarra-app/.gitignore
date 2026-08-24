@@ -37,6 +37,9 @@ yarn-error.log
 testem.log
 /typings
 
+# Netlify CLI local state (created next to netlify.toml / this app)
+.netlify/
+
 # Environment secrets (keep .env.example committed)
 .env
 .env.*

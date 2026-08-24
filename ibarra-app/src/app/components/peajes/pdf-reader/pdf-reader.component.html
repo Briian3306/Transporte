@@ -1,0 +1,85 @@
+<main class="pdf-reader" aria-labelledby="pdf-reader-title">
+  <header class="pdf-reader__hero">
+    <div class="pdf-reader__signal" aria-hidden="true"><i class="fas fa-file-invoice-dollar"></i></div>
+    <div>
+      <p class="pdf-reader__eyebrow">Peajes · laboratorio de facturas</p>
+      <h1 id="pdf-reader-title">Lector PDF de diagnóstico</h1>
+      <p>Analizá la última página de una factura para revisar texto, tablas e importes antes de cargarlos manualmente.</p>
+    </div>
+  </header>
+
+  <section class="pdf-reader__upload" aria-label="Seleccionar PDF">
+    <label class="pdf-reader__file-picker" for="pdf-reader-file">
+      <i class="fas fa-arrow-up-from-bracket" aria-hidden="true"></i>
+      <span>{{ archivoSeleccionado?.name || 'Elegí una factura PDF' }}</span>
+      <small>{{ archivoSeleccionado ? (archivoSeleccionado.size / 1024 | number: '1.0-0') + ' KB' : 'El archivo se procesa solo en este navegador.' }}</small>
+    </label>
+    <input id="pdf-reader-file" type="file" accept="application/pdf" (change)="seleccionarArchivo($event)" />
+    <button type="button" class="pdf-reader__parse" (click)="analizar()" [disabled]="leyendo">
+      <i class="fas" [class.fa-magnifying-glass-chart]="!leyendo" [class.fa-spinner]="leyendo" [class.fa-spin]="leyendo" aria-hidden="true"></i>
+      {{ leyendo ? 'Analizando PDF…' : 'Analizar última página' }}
+    </button>
+  </section>
+
+  <p class="pdf-reader__error" role="alert" *ngIf="error"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> {{ error }}</p>
+
+  <section class="pdf-reader__empty" *ngIf="!analysis && !leyendo && !error">
+    <i class="fas fa-microscope" aria-hidden="true"></i>
+    <p>El resultado aparecerá aquí. No se guardará ni enviará el documento.</p>
+  </section>
+
+  <ng-container *ngIf="analysis as result">
+    <!-- <section class="pdf-reader__amounts" aria-labelledby="amounts-title">
+      <div class="pdf-reader__section-title">
+        <p class="pdf-reader__eyebrow">Hallazgos contables</p>
+        <h2 id="amounts-title">Importes detectados</h2>
+      </div>
+      <article class="pdf-reader__amount" *ngFor="let kind of amountKinds">
+        <span>{{ kind === 'subtotal' ? 'Subtotal / neto' : kind === 'iva' ? 'IVA' : 'Total' }}</span>
+        <ng-container *ngIf="uniqueCandidate(kind) as candidate; else ambiguousAmount">
+          <strong>{{ candidate.value | number: '1.2-2' }}</strong>
+          <small>Original: {{ candidate.rawValue }}</small>
+        </ng-container>
+        <ng-template #ambiguousAmount>
+          <strong>{{ candidates(kind).length ? 'Revisión requerida' : 'No detectado' }}</strong>
+          <small *ngIf="candidates(kind).length">{{ candidates(kind).length }} candidatos encontrados</small>
+        </ng-template>
+      </article>
+    </section> -->
+
+    <section class="pdf-reader__grid">
+      <article class="pdf-reader__panel">
+        <div class="pdf-reader__panel-head"><h2>Log de análisis</h2><span>Página {{ result.totalPages }}</span></div>
+        <ol class="pdf-reader__log">
+          <li *ngFor="let log of result.logs; let index = index"><span>{{ index + 1 }}</span>{{ log }}</li>
+        </ol>
+      </article>
+      <article class="pdf-reader__panel">
+        <div class="pdf-reader__panel-head"><h2>Candidatos</h2><span>Sin autocompletar</span></div>
+        <div class="pdf-reader__candidate" *ngFor="let kind of amountKinds">
+          <strong>{{ kind }}</strong>
+          <p *ngFor="let candidate of candidates(kind)">{{ candidate.rawValue }} · {{ candidate.source }}</p>
+          <p *ngIf="!candidates(kind).length">Sin coincidencias.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="pdf-reader__panel pdf-reader__tables">
+      <div class="pdf-reader__panel-head"><h2>Tablas de la última página</h2><span>{{ result.tables.length }} detectadas</span></div>
+      <div class="pdf-reader__table-wrap" *ngFor="let table of result.tables; let tableIndex = index">
+        <p>Tabla {{ tableIndex + 1 }}</p>
+        <table>
+          <tbody>
+            <tr *ngFor="let row of table; trackBy: trackByIndex"><td *ngFor="let cell of row; trackBy: trackByIndex">{{ cell }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="pdf-reader__muted" *ngIf="!result.tables.length">pdf-parse no detectó una tabla estructurada en esta página. Revisá el texto extraído.</p>
+    </section>
+
+    <section class="pdf-reader__panel">
+      <div class="pdf-reader__panel-head"><h2>Texto de la última página</h2><span>{{ result.fileName }}</span></div>
+      <pre class="pdf-reader__text">{{ result.lastPageText || 'No se extrajo texto seleccionable.' }}</pre>
+    </section>
+  </ng-container>
+</main>

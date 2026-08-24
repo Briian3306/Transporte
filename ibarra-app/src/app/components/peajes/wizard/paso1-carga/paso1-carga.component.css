@@ -223,6 +223,29 @@
   gap: 0.55rem;
 }
 
+.paso1__attached-pdf {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px dashed #6d86a6;
+  border-radius: 10px;
+  background: #f7fafc;
+}
+
+.paso1__attached-pdf .paso1__file-name,
+.paso1__attached-pdf .paso1__file-meta {
+  text-align: left;
+}
+
+.paso1__hint {
+  margin: 0.55rem 0 0;
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 @media (max-width: 900px) {
   .paso1__layout {
     grid-template-columns: 1fr;

@@ -8,7 +8,7 @@ Peajes automatiza la carga de archivos Excel/CSV, reconocimiento, transformació
 
 `/peajes` → `/wizard` (9 pasos) → `/catalogos` → `/plantillas` → `/pasadas` → `/auditoria-tarifas` (F14).
 
-El wizard conserva estado, muestra preview de hasta 10 filas, recomienda columnas y transformaciones (incluye categoría del proveedor opcional → Patrón B), permite pipeline editable, resuelve estaciones (RN-26) y patentes, valida **Σ pasadas − bonificación de cabecera** vs subtotal con tolerancia del 1%, confirma por documento (`peajes_confirmar_carga`) y en masiva permite omitir documentos inválidos. Tras la carga, el motor de tarifas normaliza niveles; el analista confirma status en [auditoría de tarifas](../06-components/peajes/auditoria-tarifas.md).
+El wizard conserva estado, muestra preview de hasta 10 filas, recomienda columnas y transformaciones (incluye categoría del proveedor opcional → Patrón B), permite pipeline editable, resuelve estaciones (RN-26) y patentes, valida **Σ pasadas − bonificación de cabecera** vs subtotal con tolerancia del 1%, confirma por documento (`peajes_confirmar_carga`) y en masiva permite omitir documentos inválidos. En importación simple, un PDF opcional alimenta [sugerencias IA de factura](../06-components/peajes/ia-factura.md) (el operador aplica o ignora candidatos). Tras la carga, el motor de tarifas normaliza niveles; el analista confirma status en [auditoría de tarifas](../06-components/peajes/auditoria-tarifas.md).
 
 ## Permisos y vistas
 
@@ -56,6 +56,8 @@ Según `feature_list.json` (2026-08-12): F00–F05 y F13 en `passing`. F14-0…F
 - [Plan F14 auditoría patrones](../plan/auditoria-pasadas-patrones/INDEX.md)
 - [Backend RPCs](../backend/index.md)
 - [Componentes](../06-components/peajes/INDEX.md)
+- [IA de factura (F17)](../06-components/peajes/ia-factura.md)
+- [IA de factura (F17)](../06-components/peajes/ia-factura.md)
 - [Auditoría de tarifas](../06-components/peajes/auditoria-tarifas.md)
 - [Importación masiva ConsumosResumen](../06-components/peajes/importacion-masiva-consumos-resumen.md)
 - [AUSOL/AUSA fecha_hora −1 día (evidencia + SQL)](../plan/ausa-ausol-fecha-hora-minus-one-day.md)
@@ -68,4 +70,4 @@ Según `feature_list.json` (2026-08-12): F00–F05 y F13 en `passing`. F14-0…F
 
 ---
 
-> Última actualización: 2026-08-12
+> Última actualización: 2026-08-24

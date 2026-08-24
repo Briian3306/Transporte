@@ -78,13 +78,11 @@ src/
 
 1. **Iniciar servidor de desarrollo**
    ```bash
-   npm start
+   pnpm start
    ```
+   Eso corre Angular y las Netlify functions en local (`netlify dev --offline`), con variables de `.env.development`. No usa el sitio de Netlify en la nube. Abrí `http://localhost:4200` (no el puerto 4201 interno).
 
-2. **Abrir en el navegador**
-   ```
-   http://localhost:4200
-   ```
+   Solo Angular, sin functions: `pnpm start:app`.
 
 ## 📦 Build para Producción
 

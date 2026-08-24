@@ -5,9 +5,13 @@
 import { envValues } from './environment.values';
 
 export const environment = {
-  production: true,
-  supabaseUrl: envValues.supabaseUrl,
-  supabaseKey: envValues.supabaseKey,
-  apiUrl: envValues.apiUrl,
-  authToken: envValues.authToken,
+  production: true as boolean,
+  supabaseUrl: envValues.supabaseUrl as string,
+  supabaseKey: envValues.supabaseKey as string,
+  apiUrl: envValues.apiUrl as string,
+  authToken: envValues.authToken as string,
+  openRouterApiUrl: envValues.openRouterApiUrl as string,
+  openRouterModel: envValues.openRouterModel as string,
+  openRouterApiKey: envValues.openRouterApiKey as string,
+  openRouterApiKey2: envValues.openRouterApiKey2 as string,
 };

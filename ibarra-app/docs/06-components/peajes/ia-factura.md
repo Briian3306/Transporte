@@ -1,0 +1,121 @@
+# IA de factura (F17)
+
+## Resumen
+
+Asistente de lectura de PDF de factura en la **importación simple** del wizard de Peajes. Propone candidatos (número, fecha, IVA, percepciones, subtotal, total) para que el usuario los aplique de a uno. **No guarda la carga** y **no rellena el formulario solo**.
+
+Código: `src/app/components/peajes/services/ai/invoice/` + `openrouter/`. UI: Paso 1 (PDF) y Paso 7 (sugerencias). Features `F17-1`…`F17-5`.
+
+## Índice
+
+- [Rol](#rol)
+- [Objetivo](#objetivo)
+- [Fuera de alcance](#fuera-de-alcance)
+- [Funcionalidad](#funcionalidad)
+- [Contrato de datos](#contrato-de-datos)
+- [Dependencias](#dependencias)
+- [Referencias](#referencias)
+
+---
+
+## Rol
+
+Capa de **sugerencia operativa** entre el PDF de la factura y el documento del Paso 7.
+
+| Es | No es |
+|----|--------|
+| Lector de texto de factura vía OpenRouter | Persistencia (Supabase / RPC) |
+| Rankeador de candidatos contra el neto post-plantilla | Autocompletado masivo ni “aplicar todo” |
+| Feedback de espera en Paso 7 (`loading` / `error` / `ready`) | Reemplazo del operador |
+
+El humano confirma cada valor. Si la IA falla o no hay PDF, el documento se carga a mano.
+
+---
+
+## Objetivo
+
+1. Acortar el Paso 7 cuando hay PDF con texto seleccionable.
+2. Ofrecer varias hipótesis por campo (no un único “ganador” forzado).
+3. Priorizar importes coherentes con el neto de las pasadas (±1 % en subtotal).
+4. No bloquear el wizard: timeout largo (~120 s), formulario siempre editable, reintento o carga manual.
+
+---
+
+## Fuera de alcance
+
+- Importación **masiva**: sin selector PDF ni chips de IA.
+- Escritura a Supabase del PDF, del texto o de las sugerencias.
+- Recálculo de IVA/total a partir del subtotal (los cuatro importes son declarados).
+- Proxy Netlify `peajes-invoice-ai` (deprecado para este flujo; el browser llama OpenRouter).
+
+---
+
+## Funcionalidad
+
+```text
+PDF (Paso 1) → texto in-memory
+     → InvoiceAiService.analyze(texto, netoEsperado)
+     → OpenRouter (JSON estructurado)
+     → rankInvoiceCandidates
+     → estado invoiceAi en el wizard
+     → chips en Paso 7 (clic = un control)
+```
+
+| Pieza | Responsabilidad |
+|-------|-----------------|
+| `InvoicePdfTextService` | Extrae texto de **todas** las páginas del PDF |
+| `InvoiceAiService` | Orquesta analyze + ranking |
+| `OpenRouterEngineService` | POST chat completions, schema, timeout 120 s, key 2 si el fallo es recuperable |
+| `rankInvoiceCandidates` | Ordena y recorta candidatos (máx. 3 por campo) |
+| Paso 1 | Dropzone único: Excel/CSV + PDF opcional; dispara análisis post-plantilla |
+| Paso 7 | Muestra loader / error / chips; `aplicarSugerencia` parchea un control |
+
+Estados: `idle` | `loading` | `ready` | `error`.
+
+En `loading`, Paso 7 monta [`app-graph-loader`](../shared/graph-loader.md). En `error`, **Reintentar análisis** o carga manual.
+
+### Campos sugeridos
+
+| Campo IA | Control Paso 7 |
+|----------|----------------|
+| `invoiceNumber` | `factura` |
+| `invoiceDate` | `fecha_factura` |
+| `vat` | `iva` |
+| `perceptions` | `percepciones` |
+| `subtotal` | `importe_sin_iva` |
+| `total` | `importe_total` |
+
+Detalle de click-to-apply y fingerprint: [wizard.md — F17](./wizard.md#sugerencias-ia-de-factura-f17).
+
+---
+
+## Contrato de datos
+
+Entrada al modelo: texto de factura + `expectedNetAmount` (suma de `IMPORTE_NETO` post-plantilla).
+
+Salida OpenRouter (arrays `*_candidates` con `{ value, confidence }`). Tras el ranking: `InvoiceAiResult` con listas tipadas y `expectedNetAmount`.
+
+Errores de usuario (español, sin keys): saturado, proveedor, inválido, red, vacío. Completar a mano o reintentar.
+
+---
+
+## Dependencias
+
+- Env: `NG_APP_OPENROUTER_API_URL`, `NG_APP_OPENROUTER_MODEL`, `NG_APP_OPENROUTER_API_KEY`, opcional `NG_APP_OPENROUTER_API_KEY_2`.
+- No usa service role. Keys viajan en el bundle Angular.
+- No hay RPC de IA. La carga confirmada sigue `peajes_confirmar_carga` con los valores **ingresados** en Paso 7.
+
+---
+
+## Referencias
+
+- Código: `src/app/components/peajes/services/ai/invoice/`, `.../ai/openrouter/`
+- UI: `wizard/paso1-carga/`, `wizard/paso7-factura/`
+- Loader: [../shared/graph-loader.md](../shared/graph-loader.md)
+- Wizard (pasos y mapeo de controles): [wizard.md](./wizard.md)
+- Plan de implementación: [../../plan/invoice-ai/PLAN_invoice-ai.md](../../plan/invoice-ai/PLAN_invoice-ai.md)
+- Módulo: [../../modulos/peajes.md](../../modulos/peajes.md)
+
+---
+
+> Última actualización: 2026-08-24

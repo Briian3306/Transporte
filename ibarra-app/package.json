@@ -4,7 +4,8 @@
   "scripts": {
     "ng": "ng",
     "env:sync": "node scripts/sync-env.mjs",
-    "start": "node scripts/sync-env.mjs development && ng serve",
+    "start": "node scripts/sync-env.mjs development && node scripts/start-netlify-dev.mjs",
+    "start:app": "node scripts/sync-env.mjs development && ng serve",
     "dev": "npx supabase start && npm run dev:app",
     "dev:app": "node scripts/sync-env.mjs local && ng serve --configuration=local",
     "supabase:start": "npx supabase start",
@@ -30,6 +31,7 @@
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@supabase/supabase-js": "^2.74.0",
     "date-fns": "^4.1.0",
+    "pdf-parse": "^2.4.5",
     "pdfmake": "^0.2.20",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
@@ -48,6 +50,7 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "netlify-cli": "^27.1.2",
     "supabase": "^2.110.0",
     "typescript": "~5.7.2"
   }

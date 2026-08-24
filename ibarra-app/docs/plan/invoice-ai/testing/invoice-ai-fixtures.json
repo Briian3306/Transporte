@@ -1,0 +1,24 @@
+[
+  {
+    "fileName": "facturas_2026-07-22_1947769.pdf",
+    "expectedNetAmount": 173460,
+    "expected": {
+      "factura": "0041-01947769",
+      "fechaFactura": "2026-07-22",
+      "iva": 0,
+      "percepciones": 0,
+      "importeTotal": 173460
+    }
+  },
+  {
+    "fileName": "facturas_2026-07-22_1947768.pdf",
+    "expectedNetAmount": 684180,
+    "expected": {
+      "factura": "0041-01947768",
+      "fechaFactura": "2026-07-22",
+      "iva": 0,
+      "percepciones": 0,
+      "importeTotal": 684180
+    }
+  }
+]

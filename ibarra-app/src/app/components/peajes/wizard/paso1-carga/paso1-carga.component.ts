@@ -23,6 +23,9 @@ import {
   ModoImportacion,
   PeajesWizardStateService,
 } from '../services/peajes-wizard-state.service';
+import { InvoiceAiService } from '../../services/ai/invoice/invoice-ai.service';
+import { InvoiceAiError } from '../../services/ai/invoice/invoice-ai.models';
+import { InvoicePdfTextService } from '../../services/ai/invoice/invoice-pdf-text.service';
 
 @Component({
   selector: 'app-paso1-carga',
@@ -41,6 +44,8 @@ export class Paso1CargaComponent implements OnInit {
 
   private readonly excel = inject(PeajesExcelService);
   private readonly plantillaApply = inject(PeajesPlantillaApplyService);
+  private readonly invoiceAi = inject(InvoiceAiService);
+  private readonly pdfText = inject(InvoicePdfTextService);
   readonly state = inject(PeajesWizardStateService);
   plantillas: PlantillaConfiguracion[] = [];
   empresas: Empresa[] = [];
@@ -57,10 +62,12 @@ export class Paso1CargaComponent implements OnInit {
   nuevaEmpresaDescripcion = '';
 
   error: string | null = null;
+  pdfError: string | null = null;
   info: string | null = null;
   erroresPlantilla: string[] = [];
   cargando = false;
   aplicandoPlantilla = false;
+  analizandoFactura = false;
   dragOver = false;
 
   constructor(
@@ -81,6 +88,10 @@ export class Paso1CargaComponent implements OnInit {
     this.modoImportacion = modo;
     this.state.setModoImportacion(modo);
     this.error = null;
+    if (modo === 'masiva') {
+      this.pdfError = null;
+      this.state.setInvoicePdf(null, null);
+    }
     if (modo === 'masiva' && this.meta && !excelTieneColumnaFactura(this.meta.columnas)) {
       this.error =
         `La importación masiva requiere la columna exacta «${COLUMNA_FACTURA_MASIVA}» en el Excel. No se puede continuar sin ella.`;
@@ -153,21 +164,108 @@ export class Paso1CargaComponent implements OnInit {
     return !!this.meta && empresaOk && plantillaOk && !this.cargando && !this.aplicandoPlantilla;
   }
 
+  get invoicePdfName(): string | null {
+    return this.state.snapshot().invoicePdf?.fileName ?? null;
+  }
+
+  onPdfInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (files.length) {
+      void this.procesarSeleccion(files);
+    }
+  }
+
+  private esPdf(file: File): boolean {
+    return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  }
+
+  async procesarSeleccion(files: File[]): Promise<void> {
+    this.error = null;
+    this.pdfError = null;
+    const sheets = files.filter((file) => this.excel.esArchivoValido(file) && !this.esPdf(file));
+    const pdfs = files.filter((file) => this.esPdf(file));
+    const unknown = files.filter(
+      (file) => !this.excel.esArchivoValido(file) && !this.esPdf(file)
+    );
+
+    if (sheets.length > 1 || pdfs.length > 1) {
+      this.error = 'Elegí un Excel o CSV y, si querés, un solo PDF de factura.';
+      return;
+    }
+    if (unknown.length && !sheets.length && !pdfs.length) {
+      this.error = 'Solo se permiten archivos .xlsx o .csv';
+      return;
+    }
+
+    if (this.modoImportacion === 'masiva') {
+      if (pdfs.length) {
+        this.pdfError = 'El PDF de factura solo se usa en importación simple. Se ignoró el PDF.';
+        this.state.setInvoicePdf(null, null);
+      }
+      if (!sheets.length) {
+        this.error = 'Seleccioná un archivo .xlsx o .csv.';
+        return;
+      }
+      await this.procesar(sheets[0]);
+      return;
+    }
+
+    if (!sheets.length && !this.meta) {
+      this.error = 'Subí un .xlsx o .csv. El PDF de factura es opcional y va en la misma carga.';
+      return;
+    }
+
+    if (sheets.length) {
+      await this.procesar(sheets[0]);
+      if (this.error) return;
+    }
+    if (pdfs.length) {
+      await this.procesarPdf(pdfs[0]);
+    }
+  }
+
+  async procesarPdf(file: File): Promise<void> {
+    this.pdfError = null;
+    const isPdf =
+      file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!isPdf) {
+      this.pdfError = 'Solo se admite un PDF de factura.';
+      return;
+    }
+    try {
+      const text = await this.pdfText.extractText(file);
+      this.state.setInvoicePdf(file, text);
+    } catch (e) {
+      this.state.setInvoicePdf(null, null);
+      this.pdfError =
+        e instanceof Error
+          ? e.message
+          : 'No se pudo leer el PDF. Podés continuar y completar la factura a mano.';
+    }
+  }
+
+  quitarPdf(): void {
+    this.state.setInvoicePdf(null, null);
+    this.pdfError = null;
+  }
+
   onFileInput(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (file) {
-      void this.procesar(file);
-    }
+    const files = Array.from(input.files ?? []);
     input.value = '';
+    if (files.length) {
+      void this.procesarSeleccion(files);
+    }
   }
 
   onDrop(event: DragEvent): void {
     event.preventDefault();
     this.dragOver = false;
-    const file = event.dataTransfer?.files?.[0];
-    if (file) {
-      void this.procesar(file);
+    const files = Array.from(event.dataTransfer?.files ?? []);
+    if (files.length) {
+      void this.procesarSeleccion(files);
     }
   }
 
@@ -251,6 +349,7 @@ export class Paso1CargaComponent implements OnInit {
         return;
       }
       if (result.excepcion === null) {
+        await this.maybeAnalyzeInvoice();
         this.facturaDirecta.emit();
         return;
       }
@@ -259,6 +358,41 @@ export class Paso1CargaComponent implements OnInit {
       this.error = e instanceof Error ? e.message : 'No se pudo aplicar la plantilla.';
     } finally {
       this.aplicandoPlantilla = false;
+    }
+  }
+
+  private async maybeAnalyzeInvoice(): Promise<void> {
+    if (this.modoImportacion === 'masiva') {
+      return;
+    }
+    const snap = this.state.snapshot();
+    const text = snap.invoicePdf?.text;
+    const net = this.state.invoiceExpectedNetAmount();
+    if (!text || net == null || net <= 0) {
+      return;
+    }
+    const fingerprint = this.state.invoiceAiFingerprint(net);
+    if (
+      fingerprint &&
+      snap.invoiceAi.fingerprint === fingerprint &&
+      (snap.invoiceAi.status === 'ready' || snap.invoiceAi.status === 'loading')
+    ) {
+      return;
+    }
+
+    this.analizandoFactura = true;
+    this.state.setInvoiceAiAnalysis('loading', null, null);
+    try {
+      const result = await firstValueFrom(this.invoiceAi.analyze(text, net));
+      this.state.setInvoiceAiAnalysis('ready', result, null);
+    } catch (e) {
+      const message =
+        e instanceof InvoiceAiError
+          ? e.message
+          : 'No se pudo analizar la factura. Completá el documento a mano o reintentá.';
+      this.state.setInvoiceAiAnalysis('error', null, message);
+    } finally {
+      this.analizandoFactura = false;
     }
   }
 }

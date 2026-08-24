@@ -73,6 +73,7 @@ Mocks tipados quedan solo para unit tests (`PEAJES_CATALOGOS_MOCK_PROVIDERS`, sp
 - Handoff: [docs/session-handoff.md](../../session-handoff.md)
 - Tablas/RPC: [docs/06-tablas/peajes/](../../06-tablas/peajes/INDEX.md)
 - Auditoría tarifas UI: [auditoria-tarifas.md](./auditoria-tarifas.md)
+- IA de factura (F17): [ia-factura.md](./ia-factura.md)
 - Auditoría tarifas backend: [docs/backend/peajes/auditoria-tarifas.md](../../backend/peajes/auditoria-tarifas.md)
 
 ---

@@ -48,3 +48,4 @@ export { AccordionHeaderDirective } from './accordion/accordion-header.directive
 export { AccordionContentDirective } from './accordion/accordion-content.directive';
 export type { AccordionPanelStatus } from './accordion/accordion.types';
 export { LoadingSpinnerComponent } from './loading-spinner/loading-spinner.component';
+export { GraphLoaderComponent } from './graph-loader/graph-loader.component';

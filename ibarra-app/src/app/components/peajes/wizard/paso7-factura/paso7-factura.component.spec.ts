@@ -4,17 +4,44 @@ import { Paso7FacturaComponent } from './paso7-factura.component';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 import { PEAJES_CATALOGO_SERVICE, PEAJES_PLANTILLAS_SERVICE } from '../../models';
 import { AUSOL_FACTURA_557074 } from '../fixtures/ausol-factura-real.fixture';
+import { InvoiceAiService } from '../../services/ai/invoice/invoice-ai.service';
+import { InvoiceAiResult, InvoiceCandidate } from '../../services/ai/invoice/invoice-ai.models';
 
 describe('Paso7FacturaComponent', () => {
   let fixture: ComponentFixture<Paso7FacturaComponent>;
   let component: Paso7FacturaComponent;
   let state: PeajesWizardStateService;
+  let invoiceAi: jasmine.SpyObj<InvoiceAiService>;
+
+  function ivaCandidate(value: number): InvoiceCandidate<number> {
+    return { value, modelConfidence: 0.9, confidence: 0.92, level: 'alta' };
+  }
+
+  function dateCandidate(value: string): InvoiceCandidate<string> {
+    return { value, modelConfidence: 0.9, confidence: 0.92, level: 'alta' };
+  }
+
+  function invoiceResultWithIva(value: number): InvoiceAiResult {
+    return {
+      invoiceNumber: [],
+      invoiceDate: [],
+      vat: [ivaCandidate(value)],
+      perceptions: [],
+      total: [{ value: 121, modelConfidence: 0.8, confidence: 0.8, level: 'media' }],
+      subtotal: [],
+      expectedNetAmount: 100,
+    };
+  }
 
   beforeEach(async () => {
+    invoiceAi = jasmine.createSpyObj<InvoiceAiService>('InvoiceAiService', ['analyze']);
+    invoiceAi.analyze.and.returnValue(of(invoiceResultWithIva(21)));
+
     await TestBed.configureTestingModule({
       imports: [Paso7FacturaComponent],
       providers: [
         PeajesWizardStateService,
+        { provide: InvoiceAiService, useValue: invoiceAi },
         {
           provide: PEAJES_CATALOGO_SERVICE,
           useValue: {
@@ -206,5 +233,61 @@ describe('Paso7FacturaComponent', () => {
     expect(spy).toHaveBeenCalled();
     expect(state.snapshot().documentos[0].status).toBe('ok');
     expect(state.snapshot().documentos[1].omitido).toBeTrue();
+  });
+
+  it('applies only the clicked IVA and leaves total unchanged', () => {
+    state.setInvoiceAiAnalysis('ready', invoiceResultWithIva(21), null);
+    component.applyInvoiceSuggestion('vat', ivaCandidate(21));
+    expect(component.form.controls.iva.value).toBe(21);
+    expect(component.form.controls.importe_total.value).toBeNull();
+  });
+
+  it('applies only the clicked subtotal and leaves total unchanged', () => {
+    state.setInvoiceAiAnalysis('ready', {
+      ...invoiceResultWithIva(21),
+      subtotal: [ivaCandidate(176885.04)],
+    }, null);
+    component.applyInvoiceSuggestion('subtotal', ivaCandidate(176885.04));
+    expect(component.form.controls.importe_sin_iva.value).toBe(176885.04);
+    expect(component.form.controls.importe_total.value).toBeNull();
+  });
+
+  it('applies an ISO date and synchronizes the date picker', () => {
+    component.applyInvoiceSuggestion('invoiceDate', dateCandidate('2026-06-01'));
+    expect(component.form.controls.fecha_factura.value).toBe('2026-06-01');
+    expect(component.fechaRanges[0].from).toEqual(new Date(2026, 5, 1));
+  });
+
+  it('does not render invoice AI controls in mass import', async () => {
+    await setupMasiva(2);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Confianza alta');
+    expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-status"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-loader"]')).toBeNull();
+  });
+
+  it('shows the graph loader while invoice AI is loading and keeps factura editable', () => {
+    state.setInvoiceAiAnalysis('loading', null, null);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-loader"]')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Analizando texto....');
+    const factura = fixture.nativeElement.querySelector('#factura') as HTMLInputElement;
+    expect(factura).toBeTruthy();
+    expect(factura.disabled).toBeFalse();
+    expect(fixture.nativeElement.textContent).not.toContain('Analizando factura…');
+  });
+
+  it('hides the loader on error, shows retry, and keeps factura enabled', () => {
+    state.setInvoiceAiAnalysis('error', null, 'No se pudieron obtener sugerencias.');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-loader"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Reintentar análisis');
+    expect(fixture.nativeElement.querySelector('#factura').disabled).toBeFalse();
+  });
+
+  it('hides the loader when suggestions are ready', () => {
+    state.setInvoiceAiAnalysis('ready', invoiceResultWithIva(21), null);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-loader"]')).toBeNull();
   });
 });

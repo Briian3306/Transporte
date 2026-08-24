@@ -34,6 +34,8 @@ import {
   SearchMultiSelectOption,
   parseDateInputValue,
   toDateInputValue,
+  formatDateInputDisplay,
+  GraphLoaderComponent,
 } from '../../../shared';
 import {
   agregarIvaDocumento,
@@ -58,6 +60,12 @@ import {
   WizardFacturaForm,
   WizardPasoId,
 } from '../services/peajes-wizard-state.service';
+import { InvoiceAiService } from '../../services/ai/invoice/invoice-ai.service';
+import {
+  InvoiceAiError,
+  InvoiceCandidate,
+  InvoiceField,
+} from '../../services/ai/invoice/invoice-ai.models';
 
 type DocFormGroup = ReturnType<Paso7FacturaComponent['crearDocGroup']>;
 
@@ -74,6 +82,7 @@ type DocFormGroup = ReturnType<Paso7FacturaComponent['crearDocGroup']>;
     AccordionPanelComponent,
     AccordionHeaderDirective,
     AccordionContentDirective,
+    GraphLoaderComponent,
   ],
   templateUrl: './paso7-factura.component.html',
   styleUrl: './paso7-factura.component.css',
@@ -90,6 +99,7 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
 
   private readonly fb = inject(FormBuilder);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly invoiceAiApi = inject(InvoiceAiService);
   readonly state = inject(PeajesWizardStateService);
   readonly tiposDocumento = DOCUMENTO_TIPOS;
   readonly pageSize = 50;
@@ -205,6 +215,141 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
       snap.relacionesEstacion.length
     );
     this.cdr.markForCheck();
+    if (!this.esMasiva) {
+      void this.maybeAnalyzeDeferred();
+    }
+  }
+
+  get invoiceAi() {
+    return this.state.snapshot().invoiceAi;
+  }
+
+  get showInvoiceAi(): boolean {
+    return !this.esMasiva;
+  }
+
+  invoiceAiStatusText(): string {
+    if (!this.showInvoiceAi) return '';
+    const ai = this.invoiceAi;
+    if (ai.status === 'loading') return '';
+    if (ai.status === 'ready') {
+      return 'Sugerencias listas. Clic para aplicar un valor; podés seguir editando a mano.';
+    }
+    if (ai.status === 'error') {
+      return ai.error ?? 'No se pudieron obtener sugerencias. Podés completar el documento a mano.';
+    }
+    return '';
+  }
+
+  invoiceCandidates(field: InvoiceField): InvoiceCandidate<string | number>[] {
+    const result = this.invoiceAi.result;
+    if (!result) return [];
+    switch (field) {
+      case 'invoiceNumber':
+        return result.invoiceNumber;
+      case 'invoiceDate':
+        return result.invoiceDate;
+      case 'vat':
+        return result.vat;
+      case 'perceptions':
+        return result.perceptions;
+      case 'subtotal':
+        return result.subtotal;
+      case 'total':
+        return result.total;
+      default:
+        return [];
+    }
+  }
+
+  formatSuggestionValue(field: InvoiceField, value: string | number): string {
+    if (field === 'invoiceDate' && typeof value === 'string') {
+      const parsed = parseDateInputValue(value);
+      return parsed ? formatDateInputDisplay(parsed) : value;
+    }
+    if (typeof value === 'number') {
+      return value.toLocaleString('es-AR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+    return String(value);
+  }
+
+  confidenceLabel(level: InvoiceCandidate<unknown>['level']): string {
+    if (level === 'alta') return 'Confianza alta';
+    if (level === 'media') return 'Confianza media';
+    return 'Confianza baja';
+  }
+
+  confidencePercent(candidate: InvoiceCandidate<string | number>): string {
+    return `${Math.round(candidate.confidence * 100)}%`;
+  }
+
+  applyInvoiceSuggestion(
+    field: InvoiceField,
+    candidate: InvoiceCandidate<string | number>
+  ): void {
+    if (this.esMasiva) return;
+    const controlByField: Record<
+      InvoiceField,
+      'factura' | 'fecha_factura' | 'iva' | 'percepciones' | 'importe_sin_iva' | 'importe_total'
+    > = {
+      invoiceNumber: 'factura',
+      invoiceDate: 'fecha_factura',
+      vat: 'iva',
+      perceptions: 'percepciones',
+      subtotal: 'importe_sin_iva',
+      total: 'importe_total',
+    };
+    const control = controlByField[field];
+    if (field === 'invoiceDate') {
+      const iso = String(candidate.value);
+      this.form.patchValue({ fecha_factura: iso });
+      this.form.controls.fecha_factura.markAsDirty();
+      this.form.controls.fecha_factura.markAsTouched();
+      this.fechaRanges = {
+        ...this.fechaRanges,
+        0: { from: parseDateInputValue(iso), to: null },
+      };
+    } else {
+      this.form.patchValue({ [control]: candidate.value });
+      this.form.controls[control].markAsDirty();
+      this.form.controls[control].markAsTouched();
+    }
+    this.cdr.markForCheck();
+  }
+
+  async retryInvoiceAi(): Promise<void> {
+    await this.runInvoiceAnalysis();
+  }
+
+  private async maybeAnalyzeDeferred(): Promise<void> {
+    const ai = this.state.snapshot().invoiceAi;
+    if (ai.status !== 'idle') return;
+    await this.runInvoiceAnalysis();
+  }
+
+  private async runInvoiceAnalysis(): Promise<void> {
+    if (this.esMasiva) return;
+    const snap = this.state.snapshot();
+    const text = snap.invoicePdf?.text;
+    const net = this.state.invoiceExpectedNetAmount();
+    if (!text || net == null || net <= 0) return;
+    this.state.setInvoiceAiAnalysis('loading', null, null);
+    this.cdr.markForCheck();
+    try {
+      const result = await firstValueFrom(this.invoiceAiApi.analyze(text, net));
+      this.state.setInvoiceAiAnalysis('ready', result, null);
+    } catch (e) {
+      const message =
+        e instanceof InvoiceAiError
+          ? e.message
+          : 'No se pudo analizar la factura. Completá el documento a mano o reintentá.';
+      this.state.setInvoiceAiAnalysis('error', null, message);
+    } finally {
+      this.cdr.markForCheck();
+    }
   }
 
   ngAfterViewInit(): void {

@@ -2,6 +2,41 @@
 
 ## Fuente de verdad
 
+## Handoff invoice AI (PLAN Tasks 6–7) — 2026-08-24 catch-up
+
+QA/docs. **No commit.** Product code (Tasks 1–5) is on disk; this session documented it and re-ran deterministic checks.
+
+### Ownership / credentials
+
+- **Server** owns OpenRouter credentials (`OPENROUTER_API_URL`, `OPENROUTER_MODEL`, `OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2`). Never `NG_APP_OPENROUTER_*`.
+- **Frontend** owns UI and ephemeral wizard state (optional PDF, text in memory, suggestions, click-to-apply).
+- **This feature makes no Supabase write.**
+
+### Feature statuses (keep F17; do not reuse F16)
+
+| Plan label | Canonical | Status | Notes |
+|---|---|---|---|
+| F16-1 contracts/proxy | F17-1 | `passing` | Handler 10 pass + ng 47; proxy inspected |
+| F16-2 PDF/early analysis | F17-2 | `passing` | Paso 1 / state / PDF services in 47 SUCCESS |
+| F16-3 Paso 7 | F17-3 | `in_progress` | Specs green; **visual `/peajes/carga-express` not done** |
+| F16-4 real-PDF regression | F17-4 | `in_progress` | Manifest + skip-live OK; **live OpenRouter unauthorized** |
+| F16-5 QA/docs | F17-5 | `in_progress` | wizard.md updated; blocked on visual + live |
+
+### Remaining gaps
+
+1. Live OpenRouter (`RUN_OPENROUTER_LIVE_TESTS=1`) not authorized — two paid calls against the immutable PDFs.
+2. Manual visual QA on `/peajes/carga-express`: simple CSV/XLSX + optional PDF + template → Paso 7 candidates; without PDF; invalid PDF; retry on error; replacing PDF clears stale suggestions.
+3. No git commit.
+
+### Verify this session (verbatim)
+
+- `node --test netlify/functions/peajes-invoice-ai.test.js` → tests 10 pass 10 fail 0 EXIT 0
+- `node --test netlify/functions/peajes-invoice-ai.fixtures.test.js` → tests 1 pass EXIT 0
+- `node scripts/verify-invoice-ai-fixtures.mjs` → skipped live EXIT 0
+- `pnpm exec ng test --include services/ai + paso1 + paso7 + peajes-wizard-state --watch=false --browsers=ChromeHeadless` → TOTAL: 47 SUCCESS
+- `npx tsc --noEmit -p tsconfig.app.json` EXIT 0; `tsconfig.spec.json` EXIT 0
+- `npx ng build --configuration=development` EXIT 0 (pre-existing NG8107 paso9-revision)
+
 ## Handoff F16 — DONE local (2026-08-21)
 
 - F16-0..3 `passing` en `feature_list.json`. Ruta `/peajes/auditoria-estaciones`; tarjeta home distinta de **Auditoría de tarifas** (F14).

@@ -2,8 +2,8 @@
   "project": "peajes-module-automation-tool",
   "source_of_truth": "docs/plan/peaje-prd-es.md",
   "single_active_feature_per_agent": true,
-  "documentation_last_reviewed": "2026-08-21",
-  "documentation_status": "docs/backend RPCs + F14 docs; F13 passing; F14-0..F14-5 passing (CLI + wizard CATEGORIA + UI + docs); F14-7 plantillas CATEGORIA DESARROLLO 2026-08-13; DESARROLLO db push 2026-08-12 (F14 tarifas + FILTRAR_COLUMNA); F14-6 DESARROLLO recalc+reconcile 2026-08-13 (in_progress; falta E2E UI). Planificación: plan-orchestrator crea planes sin código en docs/plan/<epic>/ y registra tareas nuevas como not_started.",
+  "documentation_last_reviewed": "2026-08-24",
+  "documentation_status": "Invoice AI F17: wizard.md documents optional PDF / post-template / click-to-apply. F17-1 and F17-2 passing (handler 10 + ng 47 + tsc/build). F17-3/F17-5 in_progress (no visual /carga-express). F17-4 in_progress (live OpenRouter not authorized). F16-0..3 auditoría de estaciones remains passing.",
   "agents": [
     "00-orquestador-setup",
     "01-backend-supabase",
@@ -1670,6 +1670,119 @@
       "evidence": [
         "2026-08-14: migración 20260814204300_peajes_tarifas_categoria_calculated.sql. npx supabase db reset --local --no-seed OK. peajes_f14_test.sql 42/42 PASS. ng test auditoria-tarifas 45/45 SUCCESS. Campo opcional: confirmar sin clave no borra; 11 → CHECK 23514. DESARROLLO db push --linked kfffigvyvtzyczeiadxh aplicó la migración.",
         "2026-08-18: CAT typed/saved sobrevive ngOnChanges y viaja en Asignar status; sello filled vs Sin clase. ng test auditoria-tarifas 49/49 SUCCESS (ChromeHeadless)."
+      ]
+    },
+    {
+      "id": "F17-1",
+      "title": "Contratos, motor de confianza y proxy Netlify OpenRouter (invoice AI)",
+      "prd_refs": [
+        "docs/plan/invoice-ai/PLAN_invoice-ai.md",
+        "docs/plan/invoice-ai/plan_ai_invoice.md",
+        "PLAN Task 1–2 / planned label F16-1"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-9", "F11-1"],
+      "status": "passing",
+      "verification": [
+        "pnpm exec ng test --include=\"**/invoice-confidence.engine.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "node --test netlify/functions/peajes-invoice-ai.test.js",
+        "El proxy acepta solo POST/OPTIONS, body { invoiceText, expectedNetAmount }, y usa OPENROUTER_* solo en servidor",
+        "Ninguna clave OpenRouter en NG_APP_*, environment.values.ts, código Angular, logs ni respuestas HTTP"
+      ],
+      "evidence": [
+        "2026-08-24 QA: code sibling landed Task 1 files (models/schema/prompt/engine + spec). Combined ng test include services/ai + paso1 + paso7 → TOTAL: 20 SUCCESS (5 engine + 5 paso1 pre-AI + 10 paso7 pre-AI). node --test netlify/functions/peajes-invoice-ai.test.js → Could not find 'netlify/functions/peajes-invoice-ai.test.js' EXIT 1. F17-1 not passing: proxy Task 2 absent.",
+        "2026-08-24 catch-up: node --test netlify/functions/peajes-invoice-ai.test.js → tests 10 pass 10 fail 0 EXIT 0. pnpm exec ng test --include services/ai + paso1 + paso7 + peajes-wizard-state --watch=false --browsers=ChromeHeadless → TOTAL: 47 SUCCESS. Inspected peajes-invoice-ai.js: OPTIONS/POST only; body invoiceText + expectedNetAmount; OPENROUTER_* server-only; key 2 after recoverable key 1. .env.example names without NG_APP_OPENROUTER_*. Angular OpenRouterEngineService posts only those two fields."
+      ]
+    },
+    {
+      "id": "F17-2",
+      "title": "Extracción PDF y análisis post-plantilla (invoice AI)",
+      "prd_refs": [
+        "docs/plan/invoice-ai/PLAN_invoice-ai.md",
+        "docs/plan/invoice-ai/plan_ai_invoice.md",
+        "PLAN Task 3–4 / planned label F16-2"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F17-1"],
+      "status": "passing",
+      "verification": [
+        "pnpm exec ng test --include=\"**/invoice-pdf-text.service.spec.ts\" --include=\"**/invoice-ai.service.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "pnpm exec ng test --include=\"**/paso1-carga.component.spec.ts\" --include=\"**/peajes-wizard-state.service.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "PDF opcional en importación simple; análisis solo tras plantilla ok sin excepciones y neto positivo en centavos",
+        "No persiste PDF, texto ni sugerencias; no escribe en Supabase"
+      ],
+      "evidence": [
+        "2026-08-24 catch-up: combined ng test (services/ai + paso1 + paso7 + wizard-state) TOTAL: 47 SUCCESS. Inspected: Paso 1 PDF only if modoImportacion==='simple'; maybeAnalyzeInvoice after aplicarYEvaluar ok && excepcion===null; invoiceExpectedNetAmount sums IMPORTE_NETO via aCentavos then /100; fingerprint fileName|size|lastModified|plantillaId|netCents; setInvoicePdf stays in wizard state (no Supabase)."
+      ]
+    },
+    {
+      "id": "F17-3",
+      "title": "Candidatos clickeables en Paso 7 (invoice AI)",
+      "prd_refs": [
+        "docs/plan/invoice-ai/PLAN_invoice-ai.md",
+        "docs/plan/invoice-ai/plan_ai_invoice.md",
+        "PLAN Task 5 / planned label F16-3"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F17-2"],
+      "status": "in_progress",
+      "verification": [
+        "pnpm exec ng test --include=\"**/paso7-factura.component.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "Cada clic aplica un solo campo; edición manual permanece; sin auto-apply masivo",
+        "Retry solo en error; no renderiza controles IA en importación masiva",
+        "Smoke visual /peajes/carga-express (PDF opcional, candidatos, retry, sin PDF)"
+      ],
+      "evidence": [
+        "2026-08-24 catch-up: paso7 specs included in TOTAL: 47 SUCCESS. Inspected applyInvoiceSuggestion field map invoiceNumber→factura, invoiceDate→fecha_factura, vat→iva, perceptions→percepciones, total→importe_total; retry button only if status==='error'; showInvoiceAi=!esMasiva. Visual /peajes/carga-express NOT done — not passing."
+      ]
+    },
+    {
+      "id": "F17-4",
+      "title": "Regresión PDFs reales OpenRouter (invoice AI)",
+      "prd_refs": [
+        "docs/plan/invoice-ai/PLAN_invoice-ai.md",
+        "docs/plan/invoice-ai/plan_ai_invoice.md",
+        "PLAN Task 6 / planned label F16-4"
+      ],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F17-1", "F17-2"],
+      "status": "in_progress",
+      "verification": [
+        "node --test netlify/functions/peajes-invoice-ai.fixtures.test.js",
+        "node scripts/verify-invoice-ai-fixtures.mjs",
+        "$env:RUN_OPENROUTER_LIVE_TESTS='1'; node scripts/verify-invoice-ai-fixtures.mjs",
+        "PDFs inmutables: docs/plan/invoice-ai/testing/facturas_2026-07-22_1947769.pdf y facturas_2026-07-22_1947768.pdf",
+        "Live opt-in only; never in CI by default; amounts as integer cents; dates as ISO calendar strings"
+      ],
+      "evidence": [
+        "Target (seed CLI seed_peajes_pasadas_fks.sql, no write by this feature): documento c0b3cd76-205a-4d1a-ba51-10127870c8c8 factura 0041-01947769 fecha 2026-07-22 FC importe_sin_iva 173460 percepciones 0 iva 0 importe_total 173460; documento df8fbf3b-8725-4a6f-8d53-1310ddf3bae9 factura 0041-01947768 fecha 2026-07-22 FC 684180 / 0 / 0 / 684180; empresa d897928d-8a0c-42d6-b3e9-fffb66b9006c.",
+        "2026-08-24: created invoice-ai-fixtures.json exactly as PLAN Task 6; runner ibarra-app/scripts/verify-invoice-ai-fixtures.mjs refuses unless RUN_OPENROUTER_LIVE_TESTS=1 and exits 0 otherwise; fixtures Node test at netlify/functions/peajes-invoice-ai.fixtures.test.js. Live OpenRouter not authorized this session — skipped.",
+        "2026-08-24 catch-up: node --test peajes-invoice-ai.fixtures.test.js → tests 1 pass EXIT 0. node scripts/verify-invoice-ai-fixtures.mjs → skipped live EXIT 0. Live RUN_OPENROUTER_LIVE_TESTS=1 not run (unauthorized). F17-4 not passing."
+      ]
+    },
+    {
+      "id": "F17-5",
+      "title": "QA, docs wizard y evidencia invoice AI",
+      "prd_refs": [
+        "docs/plan/invoice-ai/PLAN_invoice-ai.md",
+        "docs/06-components/peajes/wizard.md",
+        "PLAN Task 7 / planned label F16-5"
+      ],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F17-1", "F17-2", "F17-3", "F17-4"],
+      "status": "in_progress",
+      "verification": [
+        "node --test netlify/functions/peajes-invoice-ai.test.js",
+        "node scripts/verify-invoice-ai-fixtures.mjs",
+        "pnpm exec ng test --include=\"**/services/ai/**/*.spec.ts\" --include=\"**/paso1-carga.component.spec.ts\" --include=\"**/paso7-factura.component.spec.ts\" --include=\"**/peajes-wizard-state.service.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "npx tsc --noEmit -p tsconfig.app.json",
+        "npx tsc --noEmit -p tsconfig.spec.json",
+        "npx ng build --configuration=development",
+        "wizard.md documents optional PDF, post-template trigger, computed net, retry, privacy and click-to-apply only after behavior exists",
+        "Handoff: server owns credentials; frontend owns UI/state; feature makes no Supabase write"
+      ],
+      "evidence": [
+        "2026-08-24 catch-up: wizard.md + INDEX updated from real Paso 1/7/state/handler. node --test peajes-invoice-ai.test.js → 10 pass EXIT 0. fixtures.test.js 1 pass EXIT 0. verify-invoice-ai-fixtures.mjs skip EXIT 0. ng test ai+paso1+paso7+wizard-state TOTAL: 47 SUCCESS. tsc app EXIT 0; tsc spec EXIT 0; ng build development EXIT 0 (NG8107 paso9 preexistente). Visual /peajes/carga-express NOT done. Live OpenRouter NOT run. F17-5 not passing."
       ]
     }
   ]

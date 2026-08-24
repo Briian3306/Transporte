@@ -10,6 +10,7 @@
 - [Ubicación y rutas](#ubicación-y-rutas)
 - [Pasos](#pasos)
 - [Estado (RF-25)](#estado-rf-25)
+- [Sugerencias IA de factura (F17)](#sugerencias-ia-de-factura-f17) — guía canónica: [ia-factura.md](./ia-factura.md)
 - [Excel](#excel)
 - [Providers actuales](#providers-actuales)
 - [Dependencias](#dependencias)
@@ -50,13 +51,13 @@ pasos y el acceso al ejemplo MVP.
 
 | # | Label | Componente | Notas |
 |---|-------|------------|-------|
-| 1 | Carga | `paso1-carga` | Upload `.xlsx`/`.csv` + empresa + plantilla. Con plantilla compatible → `facturaDirecta` Paso 7; excepciones → Paso 5/6; sin plantilla → Paso 2 |
+| 1 | Carga | `paso1-carga` | Upload `.xlsx`/`.csv` + empresa + plantilla. En importación **simple**, PDF de factura opcional (F17). Con plantilla compatible → `facturaDirecta` Paso 7; excepciones → Paso 5/6; sin plantilla → Paso 2 |
 | 2 | Preview | `paso2-preview` | Máx. 10 filas (RNF-03). Rail de recomendaciones semánticas (F02-11). Por defecto solo columnas reconocidas quedan incluidas (F02-12): ver [reconocimiento-columnas.md](./reconocimiento-columnas.md) |
 | 3 | Transformaciones | `paso3-transformaciones` | Motor 03 |
 | 4 | Plantilla | `paso4-plantilla` | Aplica pipeline + `mapeos` + estaciones (F09). Sin excepciones → `facturaDirecta` Paso 7; si no, `irAExcepcion` 5 o 6 |
 | 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal. Destinos opcionales: **`CATEGORIA`** (F14-3 / RN-15) y **`PASE_ID`** (F02-18: último `pases.created_at` de la patente). Sin `PRECIO` y con `IMPORTE_NETO`, se toma el neto. Tira «Para avanzar» nombra destinos cubiertos / de catálogo / faltantes; Continuar no se deshabilita en silencio. Detecta `Concesion`→Peaje (RN-26). Patentes: [patentes-sin-resolver.md](./patentes-sin-resolver.md) (F02-14) |
 | 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación filtrada por peaje de `Concesion`/empresa (RN-26); alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13). Código `0001` Zarate vs DOCK SUD: la empresa del Paso 1 acota `reconocerEstacion` (F02-17) |
-| 7 | Factura | `paso7-factura` | Cuenta opcional; subtotal, percepciones, IVA y total declarados; empresa SMS single (Paso 1); fecha DRP single. Recomienda crear plantilla completa (pipeline+mapeos+estaciones) |
+| 7 | Factura | `paso7-factura` | Cuenta opcional; subtotal, percepciones, IVA y total declarados; empresa SMS single (Paso 1); fecha DRP single. En simple, candidatos IA clickeables (F17). Recomienda crear plantilla completa (pipeline+mapeos+estaciones) |
 | 8 | Validación | `paso8-validacion` | Errores fila/columna/valor/motivo y diferencia neto de factura vs. pasadas |
 | 9 | Revisión | `paso9-revision` | Confirmación de carga |
 
@@ -118,6 +119,53 @@ Tras `setPreview`, el estado calcula `recomendaciones` a partir de aliases semá
 Detalle canónico: [reconocimiento-columnas.md](./reconocimiento-columnas.md).
 
 **F02-12:** tras detectar recomendaciones, `setPreview` deja **incluidas** solo las columnas de `incluirColumnas` y el resto en **excluidas** (el usuario puede volver a marcarlas). Si no hay reconocimiento, se mantiene include-all. La heurística MVP full-headers puede sobrescribir la selección.
+
+---
+
+## Sugerencias IA de factura (F17)
+
+Rol, objetivo y límites: **[ia-factura.md](./ia-factura.md)**. Abajo, el encaje en los pasos del wizard.
+
+En importación **simple** (wizard y `/peajes/carga-express`) el usuario puede adjuntar un PDF de factura opcional. La IA **no guarda** la carga: solo propone candidatos. Sin PDF, con PDF inválido, sin candidatos o si OpenRouter falla, el usuario completa el documento a mano.
+
+**Fuera de alcance del MVP:** importación masiva. El selector de PDF no se muestra en modo masiva; Paso 7 no renderiza estado ni botones IA.
+
+### PDF opcional (Paso 1)
+
+En importación simple el dropzone y el file picker aceptan **el Excel/CSV y el PDF juntos** (`multiple`). El PDF es opcional: se puede cargar con las pasadas o agregarlo después (solo PDF, si ya hay Excel). Extrae texto de **todas** las páginas (`InvoicePdfTextService` + `pdf-parse`) y lo deja en memoria (`setInvoicePdf`). Quitar el PDF invalida sugerencias. Un error de lectura es inline y no bloquea Continuar. En masiva el PDF se ignora.
+
+### Disparo post-plantilla
+
+Tras `aplicarYEvaluar` con `ok === true` y `excepcion === null`, Paso 1 llama `maybeAnalyzeInvoice` **antes** de emitir `facturaDirecta`. Requisitos: modo simple, texto PDF y neto de referencia positivo. Si el flujo pasa por Pasos 5/6, Paso 7 relanza el análisis cuando el estado IA sigue en `idle`.
+
+No analiza filas de preview solas. Si el fingerprint no cambió y el estado ya es `ready` o `loading`, no vuelve a consultar.
+
+### Neto de referencia (centavos)
+
+`invoiceExpectedNetAmount()` suma `IMPORTE_NETO` de las pasadas post-plantilla en **centavos enteros** (`Math.round(valor * 100)`) y devuelve pesos (`cents / 100`) para el POST. Solo en modo simple, con plantilla/pipeline aplicado y suma > 0. El fingerprint es `fileName|size|lastModified|plantillaId|netCents`.
+
+### OpenRouter desde el browser
+
+`OpenRouterEngineService` hace POST a `environment.openRouterApiUrl` (OpenRouter chat completions) con prompt, schema y modelo. Claves: `NG_APP_OPENROUTER_API_KEY` y, si hace falta, `NG_APP_OPENROUTER_API_KEY_2` (solo ante 429, 408, 404, 5xx, timeout, error de red, `provider returned error` o `no endpoints found`). Timeout HTTP 120s. Las keys viajan en el bundle; no se loguean. El PDF, el texto y las sugerencias no se persisten ni se escriben en Supabase. No se usa `/.netlify/functions/peajes-invoice-ai` para este flujo.
+
+Estados: `idle` | `loading` | `ready` | `error`. En Paso 7, `loading` muestra el graph loader (`app-graph-loader`) con frases rotativas y el formulario permanece editable. **Reintentar análisis** aparece solo si `status === 'error'`. Detalle del loader: [../shared/graph-loader.md](../shared/graph-loader.md). Contrato de la IA: [ia-factura.md](./ia-factura.md).
+
+### Click para aplicar (Paso 7)
+
+Bajo cada campo elegible hay botones (valor localizado, porcentaje y `Confianza alta/media/baja`). Un clic parchea **solo** ese control y lo marca dirty. Mapeo:
+
+| Campo IA | Control |
+|----------|---------|
+| `invoiceNumber` | `factura` |
+| `invoiceDate` | `fecha_factura` (+ `fechaRanges[0]`) |
+| `vat` | `iva` |
+| `perceptions` | `percepciones` |
+| `subtotal` | `importe_sin_iva` |
+| `total` | `importe_total` |
+
+No hay auto-apply masivo. El ranking de `subtotal_candidates` prioriza el valor más cercano al neto esperado post-plantilla (±1%).
+
+Plan: `docs/plan/invoice-ai/PLAN_invoice-ai.md`. Features `F17-1`…`F17-5`.
 
 ---
 
@@ -192,4 +240,4 @@ Guía operativa: [importacion-masiva-consumos-resumen.md](./importacion-masiva-c
 
 ---
 
-> Última actualización: 2026-08-19
+> Última actualización: 2026-08-24

@@ -5,6 +5,8 @@
   # Comando para construir la aplicación
   # Set NG_APP_SUPABASE_URL, NG_APP_SUPABASE_KEY, NG_APP_API_URL, NG_APP_AUTH_TOKEN
   # in Netlify Site settings → Environment variables (they override .env.production).
+  # Server-only (never NG_APP_*): OPENROUTER_API_URL, OPENROUTER_MODEL,
+  # OPENROUTER_API_KEY, OPENROUTER_API_KEY_2 — used by peajes-invoice-ai.
   command = "npm install --legacy-peer-deps && npm run build:prod"
   # Directorio donde se publicará la aplicación construida (relativo a base)
   # Angular 19 genera los archivos en dist/ibarra-app/browser
@@ -14,6 +16,12 @@
 [functions]
 directory = "../netlify/functions"
 node_bundler = "nft"
+
+# Local functions: from ibarra-app run `pnpm start` (see scripts/start-netlify-dev.mjs).
+# Do not point [dev].command at `pnpm start` (infinite loop with netlify dev).
+[dev]
+  framework = "#static"
+  autoLaunch = false
 
 # Configuración de Headers HTTP para seguridad y optimización
 [[headers]]

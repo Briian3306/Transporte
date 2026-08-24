@@ -22,6 +22,13 @@ const REQUIRED_KEYS = [
   'NG_APP_AUTH_TOKEN',
 ];
 
+const OPTIONAL_OPENROUTER_KEYS = [
+  'NG_APP_OPENROUTER_API_URL',
+  'NG_APP_OPENROUTER_MODEL',
+  'NG_APP_OPENROUTER_API_KEY',
+  'NG_APP_OPENROUTER_API_KEY_2',
+];
+
 function parseEnvFile(filePath) {
   if (!existsSync(filePath)) {
     return {};
@@ -71,7 +78,7 @@ function loadEnv(modeName) {
   }
 
   // Existing process env wins (CI / Netlify / local overrides).
-  for (const key of REQUIRED_KEYS) {
+  for (const key of [...REQUIRED_KEYS, ...OPTIONAL_OPENROUTER_KEYS]) {
     if (process.env[key] !== undefined && process.env[key] !== '') {
       merged[key] = process.env[key];
     }
@@ -101,6 +108,10 @@ export const envValues = {
   supabaseKey: ${JSON.stringify(env.NG_APP_SUPABASE_KEY)},
   apiUrl: ${JSON.stringify(env.NG_APP_API_URL)},
   authToken: ${JSON.stringify(env.NG_APP_AUTH_TOKEN)},
+  openRouterApiUrl: ${JSON.stringify(env.NG_APP_OPENROUTER_API_URL || '')},
+  openRouterModel: ${JSON.stringify(env.NG_APP_OPENROUTER_MODEL || '')},
+  openRouterApiKey: ${JSON.stringify(env.NG_APP_OPENROUTER_API_KEY || '')},
+  openRouterApiKey2: ${JSON.stringify(env.NG_APP_OPENROUTER_API_KEY_2 || '')},
 } as const;
 `;
 

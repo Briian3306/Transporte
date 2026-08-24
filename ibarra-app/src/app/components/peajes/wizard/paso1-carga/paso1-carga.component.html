@@ -2,10 +2,10 @@
   <div class="pw__head">
     <div>
       <div class="pw__eyebrow">{{ expressMode ? 'Paso 1 · cargar archivo' : 'Paso 01 · origen y configuración' }}</div>
-      <h2>Cargar archivo de pasadas</h2>
+      <h2>Cargar pasadas y factura</h2>
       <p>
-        Subí el archivo, elegí empresa y plantilla. Si la plantilla es compatible, el asistente
-        aplica mapeos y estaciones y salta a Factura.
+        Subí el Excel o CSV de pasadas y, en importación simple, el PDF de factura opcional
+        en la misma carga. Elegí empresa y plantilla.
       </p>
     </div>
     <div class="head-actions">
@@ -56,15 +56,25 @@
       >
         <div>
           <div class="pw__drop-icon"><i class="fas fa-cloud-upload-alt" aria-hidden="true"></i></div>
-          <h3>Arrastrá tu archivo aquí</h3>
+          <h3>Arrastrá los archivos aquí</h3>
           <p>
-            o seleccioná un archivo <strong>.xlsx</strong> desde tu equipo<br />
+            <ng-container *ngIf="modoImportacion === 'simple'; else dropMasiva">
+              Excel o CSV de pasadas y, si querés, el PDF de factura (mismo gesto).<br />
+            </ng-container>
+            <ng-template #dropMasiva>
+              Seleccioná un archivo <strong>.xlsx</strong> o <strong>.csv</strong>.<br />
+            </ng-template>
             {{ expressMode ? 'La plantilla se aplicará automáticamente.' : 'El MVP limita la vista previa a 10 registros.' }}
           </p>
-          <span class="pw__btn pw__btn--ghost">Seleccionar archivo</span>
+          <span class="pw__btn pw__btn--ghost">Seleccionar archivos</span>
           <input
             type="file"
-            accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+            multiple
+            [accept]="
+              modoImportacion === 'simple'
+                ? '.xlsx,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/pdf'
+                : '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'
+            "
             (change)="onFileInput($event)"
           />
         </div>
@@ -134,15 +144,28 @@
             ></app-search-select>
           </div>
           <button type="button" class="pw__btn pw__btn--small" (click)="fileInput.click()">
-            Reemplazar archivo
+            Reemplazar archivos
           </button>
+          <div class="paso1__attached-pdf" *ngIf="modoImportacion === 'simple' && invoicePdfName">
+            <div class="paso1__file-icon">PDF</div>
+            <div>
+              <div class="paso1__file-name">{{ invoicePdfName }}</div>
+              <div class="paso1__file-meta">Factura opcional · solo en memoria</div>
+            </div>
+            <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="quitarPdf()">
+              Quitar PDF
+            </button>
+          </div>
+          <p class="paso1__hint" *ngIf="modoImportacion === 'simple' && meta && !invoicePdfName">
+            Podés arrastrar o seleccionar el PDF junto al Excel, o agregarlo después.
+          </p>
         </ng-container>
         <ng-template #emptyFile>
           <div class="paso1__file-row">
             <div class="paso1__file-icon paso1__file-icon--empty">—</div>
             <div>
               <div class="paso1__file-name">Sin archivo</div>
-              <div class="paso1__file-meta">{{ expressMode ? 'Cargá un .xlsx o .csv' : 'Cargá un .xlsx o el ejemplo MVP' }}</div>
+              <div class="paso1__file-meta">{{ expressMode ? 'Cargá .xlsx/.csv y, si querés, el PDF' : 'Cargá un .xlsx o el ejemplo MVP' }}</div>
             </div>
           </div>
           <div class="paso1__template-box" *ngIf="!expressMode">
@@ -183,14 +206,19 @@
     <div class="pw__alert pw__alert--info" *ngIf="info && !erroresPlantilla.length">{{ info }}</div>
     <div class="pw__alert pw__alert--info" *ngIf="cargando">Procesando archivo…</div>
     <div class="pw__alert pw__alert--info" *ngIf="aplicandoPlantilla">Aplicando plantilla…</div>
+    <div class="pw__alert pw__alert--info" *ngIf="analizandoFactura">Analizando factura…</div>
+
+    <div class="pw__alert pw__alert--error" *ngIf="pdfError" role="status">{{ pdfError }}</div>
   </div>
 
   <div class="pw__footer">
     <div class="pw__footer-hint">
       {{
         plantillaId
-          ? 'Con plantilla seleccionada se omite el detalle del wizard si no hay excepciones.'
-          : 'Solo se aceptan .xlsx/.csv. Sin plantilla: continuar a previsualización.'
+          ? 'Con plantilla se omite el detalle del wizard si no hay excepciones.'
+          : modoImportacion === 'simple'
+            ? 'Excel/CSV obligatorio. PDF de factura opcional en la misma carga.'
+            : 'Solo se aceptan .xlsx/.csv. Sin plantilla: continuar a previsualización.'
       }}
     </div>
     <div class="pw__footer-actions">
@@ -243,7 +271,12 @@
     #fileInput
     type="file"
     hidden
-    accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+    multiple
+    [accept]="
+      modoImportacion === 'simple'
+        ? '.xlsx,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/pdf'
+        : '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'
+    "
     (change)="onFileInput($event)"
   />
 </div>

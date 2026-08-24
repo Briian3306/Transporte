@@ -33,6 +33,7 @@ export const PEAJES_ROUTE_PERMISSIONS: Record<string, PermissionRequirement> = {
   '/peajes/pasadas-pendientes': peajesOperational,
   '/peajes/auditoria-tarifas': peajesOperational,
   '/peajes/auditoria-estaciones': peajesOperational,
+  '/peajes/pdf-reader': peajesRead,
   '/peajes/carga-express': all(peajesManage),
   '/peajes/catalogos': all(peajesManage),
   '/peajes/catalogos/empresas': all(peajesManage),

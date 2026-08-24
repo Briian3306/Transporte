@@ -1,0 +1,36 @@
+:host {
+  display: block;
+}
+
+.graph-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0 0.75rem;
+  color: var(--pw-ink, #17283e);
+  text-align: center;
+}
+
+.graph-loader__canvas {
+  display: block;
+  width: 240px;
+  max-width: 100%;
+  height: auto;
+  background: transparent;
+}
+
+.graph-loader__message {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.graph-loader__detail {
+  margin: 0;
+  max-width: 22rem;
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}

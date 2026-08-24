@@ -27,6 +27,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "pdf.worker.mjs",
+                "input": "node_modules/pdf-parse/dist/pdf-parse/web",
+                "output": "assets/pdf-parse"
               }
             ],
             "styles": [
@@ -117,6 +122,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "pdf.worker.mjs",
+                "input": "node_modules/pdf-parse/dist/pdf-parse/web",
+                "output": "assets/pdf-parse"
               }
             ],
             "styles": [

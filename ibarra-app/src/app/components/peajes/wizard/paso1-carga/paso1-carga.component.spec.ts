@@ -11,6 +11,8 @@ import { Paso1CargaComponent } from './paso1-carga.component';
 import { PeajesExcelService } from '../services/peajes-excel.service';
 import { PeajesPlantillaApplyService } from '../services/peajes-plantilla-apply.service';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+import { InvoiceAiService } from '../../services/ai/invoice/invoice-ai.service';
+import { InvoicePdfTextService } from '../../services/ai/invoice/invoice-pdf-text.service';
 
 describe('Paso1CargaComponent', () => {
   let fixture: ComponentFixture<Paso1CargaComponent>;
@@ -19,6 +21,8 @@ describe('Paso1CargaComponent', () => {
   let state: PeajesWizardStateService;
   let plantillasMock: jasmine.SpyObj<PeajesPlantillasService>;
   let catalogoMock: jasmine.SpyObj<PeajesCatalogoService>;
+  let ai: jasmine.SpyObj<InvoiceAiService>;
+  let pdfText: jasmine.SpyObj<InvoicePdfTextService>;
 
   const estacionId = 'est-campana';
   const patenteId = 'pat-ae751pa';
@@ -166,6 +170,21 @@ describe('Paso1CargaComponent', () => {
       of([{ id: patenteId, patente: 'AE751PA', categoria: 'FLOTA CAMIONES', activa: true }])
     );
 
+    ai = jasmine.createSpyObj<InvoiceAiService>('InvoiceAiService', ['analyze']);
+    ai.analyze.and.returnValue(
+      of({
+        invoiceNumber: [],
+        invoiceDate: [],
+        vat: [],
+        perceptions: [],
+        subtotal: [],
+        total: [],
+        expectedNetAmount: 560832.27,
+      })
+    );
+    pdfText = jasmine.createSpyObj<InvoicePdfTextService>('InvoicePdfTextService', ['extractText']);
+    pdfText.extractText.and.resolveTo('invoice text');
+
     await TestBed.configureTestingModule({
       imports: [Paso1CargaComponent],
       providers: [
@@ -174,6 +193,8 @@ describe('Paso1CargaComponent', () => {
         { provide: PeajesExcelService, useValue: excel },
         { provide: PEAJES_PLANTILLAS_SERVICE, useValue: plantillasMock },
         { provide: PEAJES_CATALOGO_SERVICE, useValue: catalogoMock },
+        { provide: InvoiceAiService, useValue: ai },
+        { provide: InvoicePdfTextService, useValue: pdfText },
       ],
     }).compileComponents();
 
@@ -308,5 +329,133 @@ describe('Paso1CargaComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('La empresa cierra el peaje');
     expect(text).toContain('0001');
+  });
+
+  it('analyzes only after the template applies without exceptions', async () => {
+    const apply = TestBed.inject(PeajesPlantillaApplyService);
+    spyOn(apply, 'aplicarYEvaluar').and.callFake(async () => {
+      state.setPlantillaId('template-1');
+      state.setPasadasEstandarizadas([{ IMPORTE_NETO: 560832.27 }] as never);
+      return { ok: true, excepcion: null, errores: [], mensaje: 'ok', plantillaNombre: 'T1' };
+    });
+    state.setPreview({
+      nombreArchivo: 'pasadas.csv',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['FECHA'],
+      filasPreview: [{ FECHA: '1' }],
+      filasOrigen: [{ FECHA: '1' }],
+      tiposInferidos: {},
+    });
+    state.setInvoicePdf(new File(['pdf'], 'factura.pdf', { type: 'application/pdf' }), 'invoice text');
+    component.empresaId = 'emp-1';
+    component.onPlantillaChange('template-1');
+    await component.continuar();
+    expect(ai.analyze).toHaveBeenCalledWith('invoice text', 560832.27);
+  });
+
+  it('does not call AI for mass import or absent PDF', async () => {
+    const apply = TestBed.inject(PeajesPlantillaApplyService);
+    spyOn(apply, 'aplicarYEvaluar').and.callFake(async () => {
+      state.setPlantillaId('template-1');
+      state.setPasadasEstandarizadas([{ IMPORTE_NETO: 560832.27 }] as never);
+      return { ok: true, excepcion: null, errores: [], mensaje: 'ok' };
+    });
+    state.setPreview({
+      nombreArchivo: 'masiva.csv',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['FACTURA', 'FECHA'],
+      filasPreview: [{ FACTURA: 'F-1', FECHA: '1' }],
+      filasOrigen: [{ FACTURA: 'F-1', FECHA: '1' }],
+      tiposInferidos: {},
+    });
+    state.setInvoicePdf(new File(['pdf'], 'factura.pdf', { type: 'application/pdf' }), 'invoice text');
+    component.empresaId = 'emp-1';
+    component.onPlantillaChange('template-1');
+    state.setModoImportacion('masiva');
+    component.modoImportacion = 'masiva';
+    await component.continuar();
+    expect(ai.analyze).not.toHaveBeenCalled();
+
+    ai.analyze.calls.reset();
+    state.setModoImportacion('simple');
+    component.modoImportacion = 'simple';
+    state.setInvoicePdf(null, null);
+    await component.continuar();
+    expect(ai.analyze).not.toHaveBeenCalled();
+  });
+
+  it('carga Excel y PDF juntos en una sola selección (importación simple)', async () => {
+    excel.esArchivoValido.and.callFake((file: File) =>
+      file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.csv')
+    );
+    excel.parsearArchivo.and.resolveTo({
+      nombreArchivo: 'pasadas.xlsx',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['FECHA'],
+      filasPreview: [{ FECHA: '1' }],
+      filasOrigen: [{ FECHA: '1' }],
+      tiposInferidos: {},
+    });
+    const xlsx = new File(['x'], 'pasadas.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const pdf = new File(['p'], 'factura.pdf', { type: 'application/pdf' });
+    await component.procesarSeleccion([xlsx, pdf]);
+    fixture.detectChanges();
+    expect(excel.parsearArchivo).toHaveBeenCalledWith(xlsx);
+    expect(pdfText.extractText).toHaveBeenCalledWith(pdf);
+    expect(state.snapshot().preview?.nombreArchivo).toBe('pasadas.xlsx');
+    expect(state.snapshot().invoicePdf?.fileName).toBe('factura.pdf');
+    expect(fixture.nativeElement.querySelector('.paso1__pdf')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('factura.pdf');
+  });
+
+  it('acepta solo el PDF si el Excel ya está cargado', async () => {
+    excel.esArchivoValido.and.returnValue(true);
+    excel.parsearArchivo.and.resolveTo({
+      nombreArchivo: 'pasadas.csv',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['FECHA'],
+      filasPreview: [{ FECHA: '1' }],
+      filasOrigen: [{ FECHA: '1' }],
+      tiposInferidos: {},
+    });
+    await component.procesar(new File(['x'], 'pasadas.csv', { type: 'text/csv' }));
+    excel.parsearArchivo.calls.reset();
+    const pdf = new File(['p'], 'factura.pdf', { type: 'application/pdf' });
+    await component.procesarSeleccion([pdf]);
+    expect(excel.parsearArchivo).not.toHaveBeenCalled();
+    expect(state.snapshot().invoicePdf?.fileName).toBe('factura.pdf');
+  });
+
+  it('exige Excel/CSV si se sube solo un PDF sin pasadas', async () => {
+    const pdf = new File(['p'], 'factura.pdf', { type: 'application/pdf' });
+    await component.procesarSeleccion([pdf]);
+    expect(component.error).toMatch(/xlsx|\.csv/i);
+    expect(pdfText.extractText).not.toHaveBeenCalled();
+  });
+
+  it('ignora el PDF en importación masiva', async () => {
+    component.modoImportacion = 'masiva';
+    state.setModoImportacion('masiva');
+    excel.esArchivoValido.and.callFake((file: File) => file.name.toLowerCase().endsWith('.csv'));
+    excel.parsearArchivo.and.resolveTo({
+      nombreArchivo: 'masiva.csv',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['FACTURA'],
+      filasPreview: [{ FACTURA: 'F-1' }],
+      filasOrigen: [{ FACTURA: 'F-1' }],
+      tiposInferidos: {},
+    });
+    const csv = new File(['x'], 'masiva.csv', { type: 'text/csv' });
+    const pdf = new File(['p'], 'factura.pdf', { type: 'application/pdf' });
+    await component.procesarSeleccion([csv, pdf]);
+    expect(pdfText.extractText).not.toHaveBeenCalled();
+    expect(state.snapshot().invoicePdf).toBeFalsy();
   });
 });

@@ -1,3 +1,11 @@
+:host {
+  display: block;
+}
+
+.paso7 {
+  position: relative;
+}
+
 .paso7__masiva {
   border: 1px solid var(--pw-line, #dce5ee);
   border-radius: 14px;
@@ -234,6 +242,74 @@
   margin: 0.35rem 0 0;
   font-size: 0.72rem;
   color: var(--pw-muted, #6f8197);
+}
+
+.paso7__ai-status {
+  margin: 0.65rem 0 0;
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.paso7__ai-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: color-mix(in srgb, #f7fafc 72%, transparent);
+}
+
+.paso7__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+}
+
+.paso7__suggest {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--pw-teal, #148a83) 28%, #fff);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--pw-teal, #148a83) 8%, #fff);
+  color: var(--pw-ink, #17283e);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.paso7__suggest span {
+  font-family: var(--pw-mono, monospace);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.paso7__suggest small {
+  color: var(--pw-muted, #6f8197);
+  font-size: 0.68rem;
+}
+
+.paso7__suggest:hover,
+.paso7__suggest:focus-visible {
+  border-color: var(--pw-teal, #148a83);
+  outline: 2px solid color-mix(in srgb, var(--pw-teal, #148a83) 45%, transparent);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paso7__suggest {
+    transition: none;
+  }
 }
 
 .paso7__kbd-line {

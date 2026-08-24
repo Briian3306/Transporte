@@ -7,6 +7,7 @@ import { PEAJES_PASADAS_ROUTES } from './pasadas/pasadas.routes';
 import { PEAJES_PASADAS_PENDIENTES_ROUTES } from './pasadas-pendientes/pasadas-pendientes.routes';
 import { PEAJES_AUDITORIA_TARIFAS_ROUTES } from './auditoria-tarifas/auditoria-tarifas.routes';
 import { PEAJES_AUDITORIA_ESTACIONES_ROUTES } from './auditoria-estaciones/auditoria-estaciones.routes';
+import { PEAJES_PDF_READER_ROUTES } from './pdf-reader/pdf-reader.routes';
 import { PEAJES_SUPABASE_PROVIDERS } from './peajes.providers';
 
 /**
@@ -29,6 +30,7 @@ export const PEAJES_ROUTES: Routes = [
       ...PEAJES_PASADAS_PENDIENTES_ROUTES,
       ...PEAJES_AUDITORIA_TARIFAS_ROUTES,
       ...PEAJES_AUDITORIA_ESTACIONES_ROUTES,
+      ...PEAJES_PDF_READER_ROUTES,
     ],
   },
 ];
