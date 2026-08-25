@@ -17,6 +17,7 @@ import { Paso7FacturaPage } from './pages/paso7-factura.page.mjs';
 import { Paso8ValidacionPage } from './pages/paso8-validacion.page.mjs';
 import { Paso9RevisionPage } from './pages/paso9-revision.page.mjs';
 import { ProviderFailureTracker, selectProviderRecord } from './utils/provider-failover.mjs';
+import { describeValidationFailure } from './utils/validation-failure.mjs';
 
 const MAX_AI_RETRIES = 3;
 const MAX_RESTARTS = 3;
@@ -242,6 +243,12 @@ export class CargaExpressBot {
       if (state.skipped) {
         current = await this.pages.base.detectStep();
       } else if (!state.enabled) {
+        const validationFailure = describeValidationFailure(state);
+        this.failRecord(
+          record,
+          `${validationFailure.message} Diferencia de factura o errores de filas detectados; se continúa con la siguiente fila.`,
+        );
+        return 'failed';
         return this.park(
           record,
           handle,

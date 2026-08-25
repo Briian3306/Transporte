@@ -24,6 +24,10 @@ If Paso 7 is invalid or does not advance, the bot restarts that row once from
 Paso 1. A second failure writes `uploadFileStatus=FAILED` and processing
 continues with the next row.
 
+If Paso 8 validation is blocked because of an invoice/pass difference or row
+errors, the bot writes `FAILED` with the validation status and continues with
+the next row; it does not leave the row parked as `USER_INPUT`.
+
 Statuses written to `uploadFileStatus`: `IN_PROGRESS`, `COMPLETE`, `FAILED`, `USER_INPUT`.
 `messageStatus` describes the exact field, station decision, or login error.
 

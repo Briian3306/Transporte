@@ -99,6 +99,8 @@ node download-batch.mjs                    # relleno autenticado
 - Removed the two parked-tab limit; each `USER_INPUT` row keeps its own tab.
 - Added in-memory consecutive provider failure tracking: after five failures, a provider is skipped when another provider is eligible, with fallback when it is the only provider left.
 - Added provider and Paso 7 form-state tests; `npm test` passes 24 tests.
+- Paso 8 validation blocks caused by invoice/pass differences now write `FAILED` and continue with the next row instead of creating `USER_INPUT`.
+- Added validation-failure regression tests; `npm test` passes 26 tests.
 
 ## Bloqueos / riesgos
 
