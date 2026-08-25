@@ -8,9 +8,9 @@ Este trabajo es **independiente de Angular / ibarra-app**. No modifica el módul
 
 | Artefacto | Ruta |
 |---|---|
-| Documentación de uso | [`telepase-downloader.md`](./telepase-downloader.md) |
+| Documentación de uso | [`telepase-downloader.md`](./telepase-downloader.md), [`carga-express-bot.md`](./carga-express-bot.md) |
 | Estado de features | [`../feature-list-script.json`](../feature-list-script.json) |
-| Código | `scripts/telepase/` |
+| Código | `scripts/telepase/`, `scripts/carga-express-bot/` |
 | HTML fuente | `scripts/html/facturas` |
 | Salida | `scripts/downloads/{CONCESIONARIO}/` |
 | Skill de agentes | `scripts/.agents/skills/telepase-scraper/SKILL.md` |
@@ -62,6 +62,13 @@ node download-batch.mjs                    # relleno autenticado
 
 ## Historial de sesiones
 
+### 2026-08-25 - Download path metadata
+
+- Added `fileFacturaPath` and `filePasadasPath` to `rows.json`.
+- Paths are repository-relative and matched by concessionaire, period, and invoice number.
+- Existing downloads are discovered by filename prefix, preserving the payload-derived extension.
+- Focused verification: `node --test scripts/telepase/download-paths.test.mjs` passed (3 tests).
+
 ### 2026-08-05 — MVP scraper + full download
 
 - Scaffold `scripts/telepase` (parse, login, download-batch, paths).
@@ -69,6 +76,29 @@ node download-batch.mjs                    # relleno autenticado
 - Full `--no-auth`: 297 saved / 12 skipped / 5 failed (AUSA facturas → redirect dashboard).
 - Auth retry: 5 PDF AUSA recuperados; total **314** archivos.
 - Docs + feature list + skill creados bajo `scripts/`.
+
+### 2026-08-25 — AUMESA invoice template enrichment
+
+- Added `telepase/enrich-status-templates.mjs` using `pdf-parse` text extraction.
+- Dry-run inspected 128 AUMESA rows and matched all 128 invoice PDFs.
+- Applied `status.csv`: 31 ZARATE, 33 COLONIA, 32 YERAU, and 32 PIEDRITAS.
+- `YERUA-CAT` is recognized as `MERCA-SUR-003-YERAU` and takes priority over locality ZARATE.
+- Report: `scripts/downloads/status-template-report.json`.
+
+### 2026-08-25 — Carga-express Selenium upload bot
+
+- Added `scripts/carga-express-bot` (Node + selenium-webdriver, POM pages).
+- Reads `scripts/downloads/status.csv`, uploads CSV+PDF to `/peajes/carga-express`.
+- Writes `uploadFileStatus` / `messageStatus`; parks USER_INPUT tabs with Windows MessageBox.
+- Docs: `scripts/docs/carga-express-bot.md`. Feature `TS04-1`.
+
+### 2026-08-25 — Carga-express retry and provider failover
+
+- Paso 7 now reports visible validation errors, Angular invalid controls, missing required fields, and a disabled Continuar button.
+- Invalid Paso 7 rows receive one full restart from Paso 1; a second failure is marked `FAILED` and processing continues.
+- Removed the two parked-tab limit; each `USER_INPUT` row keeps its own tab.
+- Added in-memory consecutive provider failure tracking: after five failures, a provider is skipped when another provider is eligible, with fallback when it is the only provider left.
+- Added provider and Paso 7 form-state tests; `npm test` passes 24 tests.
 
 ## Bloqueos / riesgos
 

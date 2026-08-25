@@ -17,7 +17,9 @@
       "scripts/telepase/**",
       "scripts/html/**",
       "scripts/downloads/**",
+      "scripts/carga-express-bot/**",
       "scripts/docs/telepase-downloader.md",
+      "scripts/docs/carga-express-bot.md",
       "scripts/docs/claude-progress-script.md",
       "scripts/feature-list-script.json",
       "scripts/.agents/**"
@@ -183,6 +185,24 @@
       "evidence": []
     },
     {
+      "id": "TS03-3",
+      "title": "Completar templates AUMESA desde texto de facturas PDF",
+      "agent_owner": "script-scraper",
+      "depends_on": ["TS01-2"],
+      "status": "passing",
+      "verification": [
+        "enrich-status-templates.mjs extrae texto PDF con pdf-parse",
+        "Reconoce YEAU/YERAU/YERUA, ZARATE, COLONIA y PIEDRITAS",
+        "Completa solo Template vacío para AUMESA/AUTOVIA DEL MERCOSUR",
+        "Genera reporte de matches y errores y soporta --dry-run"
+      ],
+      "evidence": [
+        "2026-08-25: dry-run inspeccionó 128 filas AUMESA y clasificó 128 PDFs",
+        "2026-08-25: status.csv actualizado; 31 ZARATE, 33 COLONIA, 32 YERAU y 32 PIEDRITAS",
+        "2026-08-25: invoice 25163 con descripción YERUA-CAT -> MERCA-SUR-003-YERAU"
+      ]
+    },
+    {
       "id": "TS-XREF-F13-2",
       "title": "XREF Peajes: importación masiva multi-empresa (ConsumosResumen / FACTURA)",
       "agent_owner": "script-docs",
@@ -196,6 +216,29 @@
       ],
       "evidence": [
         "2026-08-07: XREF scripts↔wizard; F13-3 mapeos ConsumosResumen + IVA por documento + estaciones cross-empresa."
+      ]
+    },
+    {
+      "id": "TS04-1",
+      "title": "Selenium bot: carga-express upload from status.csv",
+      "agent_owner": "script-scraper",
+      "depends_on": ["TS03-3"],
+      "status": "passing",
+      "verification": [
+        "Package scripts/carga-express-bot with POM pages and headed Chrome",
+        "Reads scripts/downloads/status.csv and writes uploadFileStatus COMPLETE|FAILED|USER_INPUT",
+        "Logs in with IBARRA_EMAIL/IBARRA_PASSWORD, uploads CSV+PDF, selects Empresa then Plantilla",
+        "Parks estaciones/patentes for user input with Windows notify and continues next row",
+        "Waits invoice AI, retries 3x, prefers hyphenated invoice number and highest-confidence chips",
+        "Invalid Paso 7 form or no transition triggers one full-row retry; second failure writes FAILED",
+        "No artificial parked-tab limit; manual tabs remain open while other rows continue",
+        "Five consecutive provider failures temporarily skip that provider when an alternative is eligible; single-provider fallback continues",
+        "node --test utils/amounts.test.mjs utils/invoice-number.test.mjs utils/provider-failover.test.mjs utils/invoice-form-state.test.mjs"
+      ],
+      "evidence": [
+        "2026-08-25: scripts/carga-express-bot created (run.mjs + pages + utils)",
+        "2026-08-25: npm test — 24 passed, including Paso 7 form-state and provider failover tests",
+        "2026-08-25: npm test — 6 passed (amounts + invoice-number)"
       ]
     }
   ]

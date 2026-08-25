@@ -7,6 +7,7 @@
  * Usage:
  *   node download-batch.mjs --limit 3 --diverse
  *   node download-batch.mjs --prefer SANTAFE,AUSA,AUMESA --limit 3
+ *   node download-batch.mjs --tryfailed
  *   node download-batch.mjs
  */
 import fs from 'node:fs';
@@ -16,6 +17,12 @@ import dotenv from 'dotenv';
 import { chromium } from 'playwright';
 import { ensureAuth } from './login.mjs';
 import { loadRowsFromDisk } from './parse-facturas.mjs';
+import {
+  buildDownloadPath,
+  loadRowsJson,
+  updateRowsWithDownloadPath,
+  writeRowsJson,
+} from './download-paths.mjs';
 import {
   AUTH_JSON_PATH,
   DOWNLOADS_DIR,
@@ -32,6 +39,7 @@ function parseArgs(argv) {
     prefer: [],
     headless: process.env.HEADLESS !== '0',
     noAuth: false,
+    tryFailed: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -58,6 +66,9 @@ function parseArgs(argv) {
     } else if (a === '--no-auth') {
       // Public download URLs (no Telepase login)
       args.noAuth = true;
+    } else if (a === '--tryfailed' || a === '--try-failed') {
+      // Retry only unique URLs from errors.csv
+      args.tryFailed = true;
     }
   }
   if (args.limit === 0) args.limit = null;
@@ -173,6 +184,140 @@ function logError(rowId, url, statusCode) {
   fs.appendFileSync(ERRORS_CSV_PATH, safe, 'utf8');
 }
 
+/** Parse a simple CSV line with optional double-quoted fields. */
+function parseCsvLine(line) {
+  const out = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      out.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+/**
+ * Read unique failed URLs from errors.csv (latest status kept per url).
+ * @returns {{ rowId: string, url: string, statusCode: string }[]}
+ */
+function loadFailedEntries() {
+  if (!fs.existsSync(ERRORS_CSV_PATH)) {
+    return [];
+  }
+  const text = fs.readFileSync(ERRORS_CSV_PATH, 'utf8').trim();
+  if (!text) return [];
+
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  const byUrl = new Map();
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    if (i === 0 && /^row_id\s*,\s*url\s*,\s*status_code$/i.test(line)) continue;
+
+    const cols = parseCsvLine(line);
+    if (cols.length < 2) continue;
+    const rowId = (cols[0] || '').trim();
+    const url = (cols[1] || '').trim();
+    const statusCode = (cols[2] || '').trim();
+    if (!url || !url.startsWith('http')) continue;
+    byUrl.set(url, { rowId, url, statusCode });
+  }
+
+  return [...byUrl.values()];
+}
+
+function rewriteErrorsCsv(remaining) {
+  ensureErrorsCsv();
+  const header = 'row_id,url,status_code\n';
+  const body = remaining
+    .map(
+      (e) =>
+        `"${String(e.rowId).replace(/"/g, '""')}","${String(e.url).replace(/"/g, '""')}",${e.statusCode ?? ''}`
+    )
+    .join('\n');
+  fs.writeFileSync(ERRORS_CSV_PATH, body ? `${header}${body}\n` : header, 'utf8');
+}
+
+/**
+ * Map a failed URL to a download job using parsed table rows.
+ */
+function resolveFailedJobs(failedEntries, allRows) {
+  const byFactura = new Map();
+  const byPasada = new Map();
+  for (const r of allRows) {
+    if (r.facturaUrl) byFactura.set(r.facturaUrl, r);
+    if (r.pasadaUrl) byPasada.set(r.pasadaUrl, r);
+  }
+
+  const jobs = [];
+  for (const entry of failedEntries) {
+    const row =
+      byFactura.get(entry.url) ||
+      byPasada.get(entry.url) ||
+      null;
+
+    let kind = 'facturas';
+    if (entry.url.includes('descargar-pasadas')) kind = 'pasadas';
+    else if (entry.url.includes('descargar-factura')) kind = 'facturas';
+    else if (row?.pasadaUrl === entry.url) kind = 'pasadas';
+
+    if (row) {
+      jobs.push({
+        rowId: entry.rowId || `${row.rowId}|${row.numero}`,
+        url: entry.url,
+        kind,
+        concesionario: row.concesionario,
+        periodo: row.periodo,
+        numero: row.numero,
+        previousStatus: entry.statusCode,
+      });
+      continue;
+    }
+
+    // Fallback when HTML no longer contains the URL
+    const parts = String(entry.rowId || '').split('|');
+    const periodo = parts[0] || 'unknown';
+    const numero = parts[1] || 'unknown';
+    let concesionario = 'UNKNOWN';
+    const slug = entry.url.match(/descargar-(?:factura|pasadas)-([a-z0-9]+)/i);
+    if (slug?.[1]) concesionario = slug[1].toUpperCase() === 'VSFE' ? 'SANTAFE' : slug[1].toUpperCase();
+    else if (/\/DR\/AUSA-/i.test(entry.url) || /descargar-factura\/[^/]+\/DR\//i.test(entry.url)) {
+      concesionario = 'AUSA';
+    }
+
+    jobs.push({
+      rowId: entry.rowId || `${periodo}|${numero}`,
+      url: entry.url,
+      kind,
+      concesionario,
+      periodo,
+      numero,
+      previousStatus: entry.statusCode,
+    });
+  }
+  return jobs;
+}
+
 function selectRows(rows, { limit, diverse, prefer }) {
   const withBoth = rows.filter((r) => r.facturaUrl && r.pasadaUrl);
   if (!limit) return withBoth;
@@ -284,7 +429,7 @@ async function downloadOne(page, request, meta, stats, { noAuth = false } = {}) 
   if (existing) {
     stats.skipped++;
     console.log(`  SKIP existing ${existing}`);
-    return { status: 'skipped', path: existing };
+    return { status: 'skipped', path: buildDownloadPath(concesionario, kind, periodo, numero, path.extname(existing)) };
   }
 
   let lastStatus = 0;
@@ -329,7 +474,11 @@ async function downloadOne(page, request, meta, stats, { noAuth = false } = {}) 
       console.log(
         `  SAVED ${dest} (${result.body.length} bytes, ${result.headers['content-type'] || ext})`
       );
-      return { status: 'saved', path: dest, contentType: result.headers['content-type'] };
+      return {
+        status: 'saved',
+        path: buildDownloadPath(concesionario, kind, periodo, numero, ext),
+        contentType: result.headers['content-type'],
+      };
     } catch (err) {
       console.warn(`  Attempt ${attempt}/3 error: ${err.message}`);
       if (attempt < 3) await sleep(1000 * 2 ** (attempt - 1));
@@ -345,15 +494,56 @@ async function downloadOne(page, request, meta, stats, { noAuth = false } = {}) 
 export async function runDownloadBatch(options = {}) {
   const args = { ...parseArgs([]), ...options };
   const allRows = loadRowsFromDisk();
-  const rows = selectRows(allRows, args);
+  let rowsForStatus = loadRowsJson();
+  if (!rowsForStatus.length) rowsForStatus = allRows;
 
-  console.log(`Total rows parsed: ${allRows.length}`);
-  console.log(
-    `Selected for download: ${rows.length}` +
-      (args.limit
-        ? ` (limit=${args.limit}${args.diverse ? ', diverse' : ''}${args.prefer?.length ? `, prefer=${args.prefer.join(',')}` : ''})`
-        : ' (full)')
-  );
+  let jobs = [];
+  let failedEntries = [];
+
+  if (args.tryFailed) {
+    failedEntries = loadFailedEntries();
+    if (!failedEntries.length) {
+      console.log(`No failed URLs in ${ERRORS_CSV_PATH}`);
+      return {
+        totalRows: allRows.length,
+        selectedRows: 0,
+        saved: 0,
+        skipped: 0,
+        failed: 0,
+        missingUrls: 0,
+      };
+    }
+    jobs = resolveFailedJobs(failedEntries, allRows);
+    if (args.limit) jobs = jobs.slice(0, args.limit);
+    console.log(`Total rows parsed: ${allRows.length}`);
+    console.log(
+      `Retrying failed downloads: ${jobs.length} unique URL(s) from ${ERRORS_CSV_PATH}` +
+        (args.limit ? ` (limit=${args.limit})` : '')
+    );
+  } else {
+    const rows = selectRows(allRows, args);
+    console.log(`Total rows parsed: ${allRows.length}`);
+    console.log(
+      `Selected for download: ${rows.length}` +
+        (args.limit
+          ? ` (limit=${args.limit}${args.diverse ? ', diverse' : ''}${args.prefer?.length ? `, prefer=${args.prefer.join(',')}` : ''})`
+          : ' (full)')
+    );
+    for (const row of rows) {
+      const base = {
+        rowId: `${row.rowId}|${row.numero}`,
+        concesionario: row.concesionario,
+        periodo: row.periodo,
+        numero: row.numero,
+      };
+      if (row.facturaUrl) {
+        jobs.push({ ...base, url: row.facturaUrl, kind: 'facturas' });
+      }
+      if (row.pasadaUrl) {
+        jobs.push({ ...base, url: row.pasadaUrl, kind: 'pasadas' });
+      }
+    }
+  }
 
   let browser = null;
   let page = null;
@@ -374,57 +564,84 @@ export async function runDownloadBatch(options = {}) {
 
   const stats = {
     totalRows: allRows.length,
-    selectedRows: rows.length,
+    selectedRows: args.tryFailed
+      ? jobs.length
+      : new Set(jobs.map((j) => `${j.periodo}|${j.numero}`)).size,
     saved: 0,
     skipped: 0,
     failed: 0,
     missingUrls: allRows.filter((r) => !r.facturaUrl && !r.pasadaUrl).length,
   };
 
-  ensureErrorsCsv();
+  // For --tryfailed, start a fresh errors file; still-failing URLs are re-appended
+  if (args.tryFailed) {
+    fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
+    fs.writeFileSync(ERRORS_CSV_PATH, 'row_id,url,status_code\n', 'utf8');
+  } else {
+    ensureErrorsCsv();
+  }
 
-  for (const row of rows) {
+  const stillFailed = [];
+
+  for (const job of jobs) {
     console.log(
-      `\n[${row.concesionario}] ${row.numero} periodo=${row.periodo} estado=${row.estado}`
+      `\n[${job.concesionario}] ${job.numero} periodo=${job.periodo} kind=${job.kind}` +
+        (job.previousStatus ? ` (prev status=${job.previousStatus})` : '')
     );
-    const base = {
-      rowId: `${row.rowId}|${row.numero}`,
-      concesionario: row.concesionario,
-      periodo: row.periodo,
-      numero: row.numero,
-    };
-
-    if (row.facturaUrl) {
-      await downloadOne(
-        page,
-        request,
-        { ...base, url: row.facturaUrl, kind: 'facturas' },
-        stats,
-        { noAuth: args.noAuth }
-      );
-      await sleep(randomDelay());
+    const result = await downloadOne(
+      page,
+      request,
+      {
+        rowId: job.rowId,
+        url: job.url,
+        concesionario: job.concesionario,
+        kind: job.kind,
+        periodo: job.periodo,
+        numero: job.numero,
+      },
+      stats,
+      { noAuth: args.noAuth }
+    );
+    if (result.path) {
+      rowsForStatus = updateRowsWithDownloadPath(rowsForStatus, {
+        rowId: job.rowId,
+        kind: job.kind,
+        path: result.path,
+        periodo: job.periodo,
+        numero: job.numero,
+      });
+      writeRowsJson(rowsForStatus);
     }
-    if (row.pasadaUrl) {
-      await downloadOne(
-        page,
-        request,
-        { ...base, url: row.pasadaUrl, kind: 'pasadas' },
-        stats,
-        { noAuth: args.noAuth }
-      );
-      await sleep(randomDelay());
+    if (args.tryFailed && result.status === 'failed') {
+      stillFailed.push({
+        rowId: job.rowId,
+        url: job.url,
+        statusCode: result.statusCode ?? '',
+      });
     }
+    await sleep(randomDelay());
   }
 
   if (browser) await browser.close();
 
+  if (args.tryFailed) {
+    rewriteErrorsCsv(stillFailed);
+    console.log(
+      stillFailed.length
+        ? `Updated ${ERRORS_CSV_PATH} with ${stillFailed.length} still-failing URL(s)`
+        : `Cleared failures in ${ERRORS_CSV_PATH}`
+    );
+  }
+
   console.log('\n========== SUMMARY ==========');
   console.log(`Total rows:          ${stats.totalRows}`);
-  console.log(`Selected rows:       ${stats.selectedRows}`);
+  console.log(`Selected ${args.tryFailed ? 'URLs' : 'rows'}:     ${stats.selectedRows}`);
   console.log(`Files saved:         ${stats.saved}`);
   console.log(`Files skipped:       ${stats.skipped}`);
   console.log(`Files failed:        ${stats.failed}`);
-  console.log(`Rows missing URLs:   ${stats.missingUrls}`);
+  if (!args.tryFailed) {
+    console.log(`Rows missing URLs:   ${stats.missingUrls}`);
+  }
   console.log('=============================');
 
   return stats;

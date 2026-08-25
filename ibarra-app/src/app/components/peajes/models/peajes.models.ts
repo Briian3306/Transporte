@@ -262,6 +262,12 @@ export interface ErrorValidacionPasada {
   columna: string;
   valor: unknown;
   motivo: string;
+  /** Valores de ambos lados cuando el error proviene de un duplicado contra BD. */
+  pasada?: unknown;
+  patente?: unknown;
+  fecha_hora?: unknown;
+  fecha_hora_repetida?: unknown;
+  valor_repetido?: unknown;
 }
 
 /** Snapshot de auditoría de una carga confirmada (RF-26 / F01-9). */

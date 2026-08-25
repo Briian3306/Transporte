@@ -43,7 +43,7 @@ const SCALE_Y = 220 / 600;
 export class GraphLoaderComponent implements AfterViewInit, OnDestroy {
   @Input() messages: string[] = DEFAULT_MESSAGES;
   @Input() messageIntervalMs = 2200;
-  @Input() detail = 'Podés completar el documento a mano.';
+  @Input() detail = 'Te ayudamos a completar el documento..';
 
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
 

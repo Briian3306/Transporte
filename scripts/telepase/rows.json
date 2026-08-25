@@ -1,129 +1,1043 @@
 [
   {
-    "rowId": "2026-07-29",
-    "periodo": "2026-07-29",
-    "fechaEmision": "2026-07-29",
-    "fechaVencimiento": "2026-08-12",
+    "rowId": "2026-06-23",
+    "periodo": "2026-06-23",
+    "fechaEmision": "2026-06-23",
+    "fechaVencimiento": "2026-07-06",
     "concesionario": "AUSA",
     "concesionarioVisible": "AUTOPISTAS URBANAS",
-    "numero": "5009A02060191",
-    "monto": "$2.236.730,47",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A02060191/DR/AUSA-20260729-5009A02060191",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A02060191",
+    "numero": "5009A02010049",
+    "monto": "$4.386.978,42",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A02010049/DR/AUSA-20260623-5009A02010049",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A02010049",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-06-23_5009A02010049.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-06-23_5009A02010049.csv"
   },
   {
-    "rowId": "2026-07-23",
-    "periodo": "2026-07-23",
-    "fechaEmision": "2026-07-23",
-    "fechaVencimiento": "2026-08-06",
+    "rowId": "2026-06-16",
+    "periodo": "2026-06-16",
+    "fechaEmision": "2026-06-16",
+    "fechaVencimiento": "2026-06-30",
     "concesionario": "AUSA",
     "concesionarioVisible": "AUTOPISTAS URBANAS",
-    "numero": "5009A02044703",
-    "monto": "$3.143.335,74",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A02044703/DR/AUSA-20260723-5009A02044703",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A02044703",
+    "numero": "5009A02000520",
+    "monto": "$3.642.741,73",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A02000520/DR/AUSA-20260616-5009A02000520",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A02000520",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-06-16_5009A02000520.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-06-16_5009A02000520.csv"
   },
   {
-    "rowId": "2026-07-15",
-    "periodo": "2026-07-15",
-    "fechaEmision": "2026-07-15",
-    "fechaVencimiento": "2026-07-29",
+    "rowId": "2026-06-08",
+    "periodo": "2026-06-08",
+    "fechaEmision": "2026-06-08",
+    "fechaVencimiento": "2026-06-22",
     "concesionario": "AUSA",
     "concesionarioVisible": "AUTOPISTAS URBANAS",
-    "numero": "5009A02037803",
-    "monto": "$1.697.074,19",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A02037803/DR/AUSA-20260715-5009A02037803",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A02037803",
+    "numero": "5009A01992512",
+    "monto": "$4.266.014,16",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01992512/DR/AUSA-20260608-5009A01992512",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01992512",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-06-08_5009A01992512.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-06-08_5009A01992512.csv"
   },
   {
-    "rowId": "2026-07-08",
-    "periodo": "2026-07-08",
-    "fechaEmision": "2026-07-08",
-    "fechaVencimiento": "2026-07-22",
+    "rowId": "2026-05-31",
+    "periodo": "2026-05-31",
+    "fechaEmision": "2026-05-31",
+    "fechaVencimiento": "2026-06-16",
     "concesionario": "AUSA",
     "concesionarioVisible": "AUTOPISTAS URBANAS",
-    "numero": "5009A02027769",
-    "monto": "$3.293.520,01",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A02027769/DR/AUSA-20260708-5009A02027769",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A02027769",
+    "numero": "5009A01990434",
+    "monto": "$6.558.669,65",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01990434/DR/AUSA-20260531-5009A01990434",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01990434",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-05-31_5009A01990434.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-05-31_5009A01990434.csv"
   },
   {
-    "rowId": "2026-07-16",
-    "periodo": "2026-07-16",
-    "fechaEmision": "2026-07-16",
-    "fechaVencimiento": "2026-08-05",
+    "rowId": "2026-05-21",
+    "periodo": "2026-05-21",
+    "fechaEmision": "2026-05-21",
+    "fechaVencimiento": "2026-06-04",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01973815",
+    "monto": "$2.646.319,01",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01973815/DR/AUSA-20260521-5009A01973815",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01973815",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-05-21_5009A01973815.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-05-21_5009A01973815.csv"
+  },
+  {
+    "rowId": "2026-05-15",
+    "periodo": "2026-05-15",
+    "fechaEmision": "2026-05-15",
+    "fechaVencimiento": "2026-05-29",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01963901",
+    "monto": "$5.133.351,36",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01963901/DR/AUSA-20260515-5009A01963901",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01963901",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-05-15_5009A01963901.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-05-15_5009A01963901.csv"
+  },
+  {
+    "rowId": "2026-05-07",
+    "periodo": "2026-05-07",
+    "fechaEmision": "2026-05-07",
+    "fechaVencimiento": "2026-05-21",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01955959",
+    "monto": "$2.250.572,60",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01955959/DR/AUSA-20260507-5009A01955959",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01955959",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-05-07_5009A01955959.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-05-07_5009A01955959.csv"
+  },
+  {
+    "rowId": "2026-04-30",
+    "periodo": "2026-04-30",
+    "fechaEmision": "2026-04-30",
+    "fechaVencimiento": "2026-05-13",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01953843",
+    "monto": "$5.424.549,02",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01953843/DR/AUSA-20260430-5009A01953843",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01953843",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-04-30_5009A01953843.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-04-30_5009A01953843.csv"
+  },
+  {
+    "rowId": "2026-04-23",
+    "periodo": "2026-04-23",
+    "fechaEmision": "2026-04-23",
+    "fechaVencimiento": "2026-05-06",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01936821",
+    "monto": "$6.162.498,67",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01936821/DR/AUSA-20260423-5009A01936821",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01936821",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-04-23_5009A01936821.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-04-23_5009A01936821.csv"
+  },
+  {
+    "rowId": "2026-04-15",
+    "periodo": "2026-04-15",
+    "fechaEmision": "2026-04-15",
+    "fechaVencimiento": "2026-04-29",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01928073",
+    "monto": "$4.482.590,10",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01928073/DR/AUSA-20260415-5009A01928073",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01928073",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-04-15_5009A01928073.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-04-15_5009A01928073.csv"
+  },
+  {
+    "rowId": "2026-04-08",
+    "periodo": "2026-04-08",
+    "fechaEmision": "2026-04-08",
+    "fechaVencimiento": "2026-04-22",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01918394",
+    "monto": "$2.030.802,41",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01918394/DR/AUSA-20260408-5009A01918394",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01918394",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-04-08_5009A01918394.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-04-08_5009A01918394.csv"
+  },
+  {
+    "rowId": "2026-03-31",
+    "periodo": "2026-03-31",
+    "fechaEmision": "2026-03-31",
+    "fechaVencimiento": "2026-04-14",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01913979",
+    "monto": "$5.430.231,92",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01913979/DR/AUSA-20260331-5009A01913979",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01913979",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-03-31_5009A01913979.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-03-31_5009A01913979.csv"
+  },
+  {
+    "rowId": "2026-03-23",
+    "periodo": "2026-03-23",
+    "fechaEmision": "2026-03-23",
+    "fechaVencimiento": "2026-04-06",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01897396",
+    "monto": "$3.777.864,15",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01897396/DR/AUSA-20260323-5009A01897396",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01897396",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-03-23_5009A01897396.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-03-23_5009A01897396.csv"
+  },
+  {
+    "rowId": "2026-03-16",
+    "periodo": "2026-03-16",
+    "fechaEmision": "2026-03-16",
+    "fechaVencimiento": "2026-03-30",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01885119",
+    "monto": "$4.530.543,86",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01885119/DR/AUSA-20260316-5009A01885119",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01885119",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-03-16_5009A01885119.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-03-16_5009A01885119.csv"
+  },
+  {
+    "rowId": "2026-03-08",
+    "periodo": "2026-03-08",
+    "fechaEmision": "2026-03-08",
+    "fechaVencimiento": "2026-03-25",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01876271",
+    "monto": "$5.153.115,19",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01876271/DR/AUSA-20260308-5009A01876271",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01876271",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-03-08_5009A01876271.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-03-08_5009A01876271.csv"
+  },
+  {
+    "rowId": "2026-02-28",
+    "periodo": "2026-02-28",
+    "fechaEmision": "2026-02-28",
+    "fechaVencimiento": "2026-03-11",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01868359",
+    "monto": "$3.002.117,13",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01868359/DR/AUSA-20260228-5009A01868359",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01868359",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-02-28_5009A01868359.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-02-28_5009A01868359.csv"
+  },
+  {
+    "rowId": "2026-02-23",
+    "periodo": "2026-02-23",
+    "fechaEmision": "2026-02-23",
+    "fechaVencimiento": "2026-03-06",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01856115",
+    "monto": "$1.213.879,19",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01856115/DR/AUSA-20260223-5009A01856115",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01856115",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-02-23_5009A01856115.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-02-23_5009A01856115.csv"
+  },
+  {
+    "rowId": "2026-02-16",
+    "periodo": "2026-02-16",
+    "fechaEmision": "2026-02-16",
+    "fechaVencimiento": "2026-03-02",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01851809",
+    "monto": "$3.595.308,04",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01851809/DR/AUSA-20260216-5009A01851809",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01851809",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-02-16_5009A01851809.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-02-16_5009A01851809.csv"
+  },
+  {
+    "rowId": "2026-02-08",
+    "periodo": "2026-02-08",
+    "fechaEmision": "2026-02-08",
+    "fechaVencimiento": "2026-02-23",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01835581",
+    "monto": "$4.387.630,84",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01835581/DR/AUSA-20260208-5009A01835581",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01835581",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-02-08_5009A01835581.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-02-08_5009A01835581.csv"
+  },
+  {
+    "rowId": "2026-01-31",
+    "periodo": "2026-01-31",
+    "fechaEmision": "2026-01-31",
+    "fechaVencimiento": "2026-02-18",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01831147",
+    "monto": "$6.286.346,41",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01831147/DR/AUSA-20260131-5009A01831147",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01831147",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-01-31_5009A01831147.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-01-31_5009A01831147.csv"
+  },
+  {
+    "rowId": "2026-01-22",
+    "periodo": "2026-01-22",
+    "fechaEmision": "2026-01-22",
+    "fechaVencimiento": "2026-02-05",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01813985",
+    "monto": "$3.149.556,34",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01813985/DR/AUSA-20260122-5009A01813985",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01813985",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-01-22_5009A01813985.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-01-22_5009A01813985.csv"
+  },
+  {
+    "rowId": "2026-01-14",
+    "periodo": "2026-01-14",
+    "fechaEmision": "2026-01-14",
+    "fechaVencimiento": "2026-01-28",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01804448",
+    "monto": "$2.464.054,48",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01804448/DR/AUSA-20260114-5009A01804448",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01804448",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-01-14_5009A01804448.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-01-14_5009A01804448.csv"
+  },
+  {
+    "rowId": "2026-01-08",
+    "periodo": "2026-01-08",
+    "fechaEmision": "2026-01-08",
+    "fechaVencimiento": "2026-01-22",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01795043",
+    "monto": "$1.982.702,86",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01795043/DR/AUSA-20260108-5009A01795043",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0000438233/5009A01795043",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-01-08_5009A01795043.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-01-08_5009A01795043.csv"
+  },
+  {
+    "rowId": "2026-01-16",
+    "periodo": "2026-01-16",
+    "fechaEmision": "2026-01-16",
+    "fechaVencimiento": "2026-02-05",
     "concesionario": "GCO",
     "concesionarioVisible": "ACCESO OESTE",
-    "numero": "343555",
-    "monto": "$1.708.002,93",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/343555",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/343555",
+    "numero": "6841332",
+    "monto": "$764.114,06",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/6841332",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/6841332",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-01-16_6841332.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-01-16_6841332.csv"
   },
   {
-    "rowId": "2026-07-16",
-    "periodo": "2026-07-16",
-    "fechaEmision": "2026-07-16",
-    "fechaVencimiento": "2026-08-05",
+    "rowId": "2026-02-01",
+    "periodo": "2026-02-01",
+    "fechaEmision": "2026-02-01",
+    "fechaVencimiento": "2026-03-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "6884598",
+    "monto": "$1.480.533,07",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/6884598",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/6884598",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-02-01_6884598.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-02-01_6884598.csv"
+  },
+  {
+    "rowId": "2026-02-16",
+    "periodo": "2026-02-16",
+    "fechaEmision": "2026-02-16",
+    "fechaVencimiento": "2026-03-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "6925481",
+    "monto": "$1.236.867,30",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/6925481",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/6925481",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-02-16_6925481.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-02-16_6925481.csv"
+  },
+  {
+    "rowId": "2026-03-01",
+    "periodo": "2026-03-01",
+    "fechaEmision": "2026-03-01",
+    "fechaVencimiento": "2026-04-06",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "6966906",
+    "monto": "$883.774,14",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/6966906",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/6966906",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-03-01_6966906.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-03-01_6966906.csv"
+  },
+  {
+    "rowId": "2026-03-16",
+    "periodo": "2026-03-16",
+    "fechaEmision": "2026-03-16",
+    "fechaVencimiento": "2026-04-06",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "7009765",
+    "monto": "$1.766.141,58",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/7009765",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/7009765",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-03-16_7009765.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-03-16_7009765.csv"
+  },
+  {
+    "rowId": "2026-04-01",
+    "periodo": "2026-04-01",
+    "fechaEmision": "2026-04-01",
+    "fechaVencimiento": "2026-05-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "42349",
+    "monto": "$1.929.843,11",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/42349",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/42349",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-04-01_42349.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-04-01_42349.csv"
+  },
+  {
+    "rowId": "2026-04-16",
+    "periodo": "2026-04-16",
+    "fechaEmision": "2026-04-16",
+    "fechaVencimiento": "2026-05-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "84450",
+    "monto": "$1.364.495,58",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/84450",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/84450",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-04-16_84450.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-04-16_84450.csv"
+  },
+  {
+    "rowId": "2026-05-01",
+    "periodo": "2026-05-01",
+    "fechaEmision": "2026-05-01",
+    "fechaVencimiento": "2026-06-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "129681",
+    "monto": "$2.306.276,00",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/129681",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/129681",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-05-01_129681.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-05-01_129681.csv"
+  },
+  {
+    "rowId": "2026-05-16",
+    "periodo": "2026-05-16",
+    "fechaEmision": "2026-05-16",
+    "fechaVencimiento": "2026-06-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "172275",
+    "monto": "$1.991.797,63",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/172275",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/172275",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-05-16_172275.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-05-16_172275.csv"
+  },
+  {
+    "rowId": "2026-06-01",
+    "periodo": "2026-06-01",
+    "fechaEmision": "2026-06-01",
+    "fechaVencimiento": "2026-07-06",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "217404",
+    "monto": "$1.973.292,79",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/217404",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/217404",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-06-01_217404.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-06-01_217404.csv"
+  },
+  {
+    "rowId": "2026-06-16",
+    "periodo": "2026-06-16",
+    "fechaEmision": "2026-06-16",
+    "fechaVencimiento": "2026-07-06",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "259165",
+    "monto": "$2.180.257,53",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/1/259165",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/1/259165",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-06-16_259165.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-06-16_259165.csv"
+  },
+  {
+    "rowId": "2026-01-06",
+    "periodo": "2026-01-06",
+    "fechaEmision": "2026-01-06",
+    "fechaVencimiento": "2026-02-05",
     "concesionario": "AUSOL",
     "concesionarioVisible": "ACCESO NORTE",
-    "numero": "493556",
-    "monto": "$609.938,55",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/493556",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/493556",
+    "numero": "8097320",
+    "monto": "$856.738,48",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/8097320",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/8097320",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-01-06_8097320.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-01-06_8097320.csv"
   },
   {
-    "rowId": "2026-07-03",
-    "periodo": "2026-07-03",
-    "fechaEmision": "2026-07-03",
-    "fechaVencimiento": "2026-07-27",
+    "rowId": "2026-01-16",
+    "periodo": "2026-01-16",
+    "fechaEmision": "2026-01-16",
+    "fechaVencimiento": "2026-02-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "8155478",
+    "monto": "$822.240,22",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/8155478",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/8155478",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-01-16_8155478.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-01-16_8155478.csv"
+  },
+  {
+    "rowId": "2026-02-01",
+    "periodo": "2026-02-01",
+    "fechaEmision": "2026-02-01",
+    "fechaVencimiento": "2026-03-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "8217418",
+    "monto": "$1.037.575,09",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/8217418",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/8217418",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-02-01_8217418.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-02-01_8217418.csv"
+  },
+  {
+    "rowId": "2026-02-16",
+    "periodo": "2026-02-16",
+    "fechaEmision": "2026-02-16",
+    "fechaVencimiento": "2026-03-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "8277534",
+    "monto": "$842.365,33",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/8277534",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/8277534",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-02-16_8277534.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-02-16_8277534.csv"
+  },
+  {
+    "rowId": "2026-03-02",
+    "periodo": "2026-03-02",
+    "fechaEmision": "2026-03-02",
+    "fechaVencimiento": "2026-04-06",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "8338270",
+    "monto": "$472.643,96",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/8338270",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/8338270",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-03-02_8338270.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-03-02_8338270.csv"
+  },
+  {
+    "rowId": "2026-03-16",
+    "periodo": "2026-03-16",
+    "fechaEmision": "2026-03-16",
+    "fechaVencimiento": "2026-04-06",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "8400957",
+    "monto": "$1.133.552,74",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/8400957",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/8400957",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-03-16_8400957.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-03-16_8400957.csv"
+  },
+  {
+    "rowId": "2026-04-01",
+    "periodo": "2026-04-01",
+    "fechaEmision": "2026-04-01",
+    "fechaVencimiento": "2026-05-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "58462",
+    "monto": "$1.424.379,32",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/58462",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/58462",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-04-01_58462.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-04-01_58462.csv"
+  },
+  {
+    "rowId": "2026-04-16",
+    "periodo": "2026-04-16",
+    "fechaEmision": "2026-04-16",
+    "fechaVencimiento": "2026-05-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "120396",
+    "monto": "$1.006.755,01",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/120396",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/120396",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-04-16_120396.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-04-16_120396.csv"
+  },
+  {
+    "rowId": "2026-05-01",
+    "periodo": "2026-05-01",
+    "fechaEmision": "2026-05-01",
+    "fechaVencimiento": "2026-06-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "184689",
+    "monto": "$1.359.783,57",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/184689",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/184689",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-05-01_184689.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-05-01_184689.csv"
+  },
+  {
+    "rowId": "2026-05-16",
+    "periodo": "2026-05-16",
+    "fechaEmision": "2026-05-16",
+    "fechaVencimiento": "2026-06-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "246147",
+    "monto": "$1.159.295,79",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/246147",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/246147",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-05-16_246147.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-05-16_246147.csv"
+  },
+  {
+    "rowId": "2026-06-01",
+    "periodo": "2026-06-01",
+    "fechaEmision": "2026-06-01",
+    "fechaVencimiento": "2026-07-06",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "310849",
+    "monto": "$1.301.889,41",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/310849",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/310849",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-06-01_310849.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-06-01_310849.csv"
+  },
+  {
+    "rowId": "2026-06-16",
+    "periodo": "2026-06-16",
+    "fechaEmision": "2026-06-16",
+    "fechaVencimiento": "2026-07-06",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "371677",
+    "monto": "$1.223.997,62",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/1/371677",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/1/371677",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-06-16_371677.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-06-16_371677.csv"
+  },
+  {
+    "rowId": "2026-01-29",
+    "periodo": "2026-01-29",
+    "fechaEmision": "2026-01-29",
+    "fechaVencimiento": "2026-02-09",
     "concesionario": "CVSA",
     "concesionarioVisible": "ACCESO RICCHERI",
-    "numero": "3313955",
-    "monto": "$337.358,68",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/1/3313955",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/1/3313955",
+    "numero": "3007780",
+    "monto": "$1.405.061,54",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/1/3007780",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/1/3007780",
     "estado": "",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-01-29_3007780.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-01-29_3007780.csv"
   },
   {
-    "rowId": "2026-07-15",
-    "periodo": "2026-07-15",
-    "fechaEmision": "2026-07-15",
-    "fechaVencimiento": "2026-08-10",
+    "rowId": "2026-02-28",
+    "periodo": "2026-02-28",
+    "fechaEmision": "2026-02-28",
+    "fechaVencimiento": "2026-03-10",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3053791",
+    "monto": "$2.153.536,78",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/1/3053791",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/1/3053791",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-02-28_3053791.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-02-28_3053791.csv"
+  },
+  {
+    "rowId": "2026-02-28",
+    "periodo": "2026-02-28",
+    "fechaEmision": "2026-02-28",
+    "fechaVencimiento": "2026-03-10",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3101440",
+    "monto": "$2.004.358,07",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/1/3101440",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/1/3101440",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-02-28_3101440.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-02-28_3101440.csv"
+  },
+  {
+    "rowId": "2026-03-03",
+    "periodo": "2026-03-03",
+    "fechaEmision": "2026-03-03",
+    "fechaVencimiento": "2026-03-03",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "10379",
+    "monto": "$2.153.536,78",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/1/10379",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/1/10379",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-03-03_10379.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-03-03_10379.csv"
+  },
+  {
+    "rowId": "2026-03-30",
+    "periodo": "2026-03-30",
+    "fechaEmision": "2026-03-30",
+    "fechaVencimiento": "2026-04-10",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3146955",
+    "monto": "$2.301.833,86",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/1/3146955",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/1/3146955",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-03-30_3146955.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-03-30_3146955.csv"
+  },
+  {
+    "rowId": "2026-04-28",
+    "periodo": "2026-04-28",
+    "fechaEmision": "2026-04-28",
+    "fechaVencimiento": "2026-05-11",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3192250",
+    "monto": "$2.201.075,71",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/1/3192250",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/1/3192250",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-04-28_3192250.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-04-28_3192250.csv"
+  },
+  {
+    "rowId": "2026-05-28",
+    "periodo": "2026-05-28",
+    "fechaEmision": "2026-05-28",
+    "fechaVencimiento": "2026-06-09",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3237498",
+    "monto": "$2.042.967,27",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/1/3237498",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/1/3237498",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-05-28_3237498.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-05-28_3237498.csv"
+  },
+  {
+    "rowId": "2026-06-27",
+    "periodo": "2026-06-27",
+    "fechaEmision": "2026-06-27",
+    "fechaVencimiento": "2026-07-08",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3282979",
+    "monto": "$2.425.138,51",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/1/3282979",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/1/3282979",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-06-27_3282979.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-06-27_3282979.csv"
+  },
+  {
+    "rowId": "2026-01-15",
+    "periodo": "2026-01-15",
+    "fechaEmision": "2026-01-15",
+    "fechaVencimiento": "2026-02-10",
     "concesionario": "AUBASA",
     "concesionarioVisible": "AU. BS AS - LA PLATA",
-    "numero": "5364164",
-    "monto": "$3.440.114,57",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/5364164",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/5364164",
+    "numero": "4923392",
+    "monto": "$3.744.481,90",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/4923392",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/4923392",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-01-15_4923392.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-01-15_4923392.csv"
   },
   {
-    "rowId": "2025-08-22",
-    "periodo": "2025-08-22",
-    "fechaEmision": "2025-08-22",
-    "fechaVencimiento": "2025-09-05",
-    "concesionario": "SANTAFE",
-    "concesionarioVisible": "AU. ROSARIO - SANTA FE",
-    "numero": "915667",
-    "monto": "$155.050,00",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/915667",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/915667",
+    "rowId": "2026-01-31",
+    "periodo": "2026-01-31",
+    "fechaEmision": "2026-01-31",
+    "fechaVencimiento": "2026-02-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "4966557",
+    "monto": "$5.134.228,10",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/4966557",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/4966557",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-01-31_4966557.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-01-31_4966557.csv"
+  },
+  {
+    "rowId": "2026-02-15",
+    "periodo": "2026-02-15",
+    "fechaEmision": "2026-02-15",
+    "fechaVencimiento": "2026-03-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5007597",
+    "monto": "$4.539.652,69",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/5007597",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/5007597",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-02-15_5007597.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-02-15_5007597.csv"
+  },
+  {
+    "rowId": "2026-02-28",
+    "periodo": "2026-02-28",
+    "fechaEmision": "2026-02-28",
+    "fechaVencimiento": "2026-03-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5047346",
+    "monto": "$2.562.717,18",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/5047346",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/5047346",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-02-28_5047346.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-02-28_5047346.csv"
+  },
+  {
+    "rowId": "2026-03-15",
+    "periodo": "2026-03-15",
+    "fechaEmision": "2026-03-15",
+    "fechaVencimiento": "2026-04-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5082901",
+    "monto": "$5.490.672,91",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/5082901",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/5082901",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-03-15_5082901.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-03-15_5082901.csv"
+  },
+  {
+    "rowId": "2026-03-31",
+    "periodo": "2026-03-31",
+    "fechaEmision": "2026-03-31",
+    "fechaVencimiento": "2026-04-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5120947",
+    "monto": "$4.557.865,83",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/5120947",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/5120947",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-03-31_5120947.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-03-31_5120947.csv"
+  },
+  {
+    "rowId": "2026-04-15",
+    "periodo": "2026-04-15",
+    "fechaEmision": "2026-04-15",
+    "fechaVencimiento": "2026-05-11",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5155735",
+    "monto": "$3.147.712,40",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/5155735",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/5155735",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-04-15_5155735.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-04-15_5155735.csv"
+  },
+  {
+    "rowId": "2026-04-30",
+    "periodo": "2026-04-30",
+    "fechaEmision": "2026-04-30",
+    "fechaVencimiento": "2026-05-11",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5192317",
+    "monto": "$6.236.210,02",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/5192317",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/5192317",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-04-30_5192317.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-04-30_5192317.csv"
+  },
+  {
+    "rowId": "2026-05-15",
+    "periodo": "2026-05-15",
+    "fechaEmision": "2026-05-15",
+    "fechaVencimiento": "2026-06-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5226229",
+    "monto": "$5.180.278,34",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/5226229",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/5226229",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-05-15_5226229.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-05-15_5226229.csv"
+  },
+  {
+    "rowId": "2026-05-31",
+    "periodo": "2026-05-31",
+    "fechaEmision": "2026-05-31",
+    "fechaVencimiento": "2026-06-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5262925",
+    "monto": "$6.412.803,91",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/5262925",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/5262925",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-05-31_5262925.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-05-31_5262925.csv"
+  },
+  {
+    "rowId": "2026-06-15",
+    "periodo": "2026-06-15",
+    "fechaEmision": "2026-06-15",
+    "fechaVencimiento": "2026-07-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5296244",
+    "monto": "$5.402.826,65",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/1/5296244",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/1/5296244",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-06-15_5296244.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-06-15_5296244.csv"
   },
   {
     "rowId": "2025-09-24",
@@ -137,7 +1051,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/993799",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/993799",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2025-09-24_993799.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2025-09-24_993799.csv"
   },
   {
     "rowId": "2025-10-23",
@@ -151,7 +1067,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/1065609",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/1065609",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2025-10-23_1065609.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2025-10-23_1065609.csv"
   },
   {
     "rowId": "2025-11-28",
@@ -165,7 +1083,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/1131612",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/1131612",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2025-11-28_1131612.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2025-11-28_1131612.csv"
   },
   {
     "rowId": "2025-12-24",
@@ -179,7 +1099,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/1217293",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/1217293",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2025-12-24_1217293.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2025-12-24_1217293.csv"
   },
   {
     "rowId": "2026-01-22",
@@ -193,7 +1115,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/1307409",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/1307409",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-01-22_1307409.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-01-22_1307409.csv"
   },
   {
     "rowId": "2026-02-26",
@@ -207,7 +1131,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/1412480",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/1412480",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-02-26_1412480.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-02-26_1412480.csv"
   },
   {
     "rowId": "2026-03-30",
@@ -221,7 +1147,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/1513005",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/1513005",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-03-30_1513005.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-03-30_1513005.csv"
   },
   {
     "rowId": "2026-04-23",
@@ -235,7 +1163,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/1616082",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/1616082",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-04-23_1616082.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-04-23_1616082.csv"
   },
   {
     "rowId": "2026-05-22",
@@ -249,7 +1179,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/1723512",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/1723512",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-05-22_1723512.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-05-22_1723512.csv"
   },
   {
     "rowId": "2026-06-24",
@@ -263,7 +1195,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/1834929",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/1834929",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-06-24_1834929.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-06-24_1834929.csv"
   },
   {
     "rowId": "2026-07-22",
@@ -277,7 +1211,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/1/1947768",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/1/1947768",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-07-22_1947768.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-07-22_1947768.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -291,7 +1227,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/127392",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/127392",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_127392.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_127392.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -305,7 +1243,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/212490",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/212490",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_212490.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_212490.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -319,7 +1259,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/68907",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/68907",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_68907.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_68907.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -333,7 +1275,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/110886",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/110886",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_110886.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_110886.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -347,7 +1291,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/25163",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/25163",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_25163.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_25163.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -361,7 +1307,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/45498",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/45498",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_45498.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_45498.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -375,7 +1323,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/23655",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/23655",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_23655.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_23655.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -389,7 +1339,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/40149",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/40149",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_40149.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_40149.csv"
   },
   {
     "rowId": "2026-03-31",
@@ -403,7 +1355,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/9338",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/9338",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-03-31_9338.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-03-31_9338.csv"
   },
   {
     "rowId": "2026-03-31",
@@ -417,7 +1371,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/6432",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/6432",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-03-31_6432.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-03-31_6432.csv"
   },
   {
     "rowId": "2026-03-31",
@@ -431,7 +1387,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/4666",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/4666",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-03-31_4666.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-03-31_4666.csv"
   },
   {
     "rowId": "2026-03-31",
@@ -445,7 +1403,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/3274",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/3274",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-03-31_3274.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-03-31_3274.csv"
   },
   {
     "rowId": "2026-04-20",
@@ -459,7 +1419,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/18228",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/18228",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-20_18228.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-20_18228.csv"
   },
   {
     "rowId": "2026-04-20",
@@ -473,7 +1435,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/12305",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/12305",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-20_12305.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-20_12305.csv"
   },
   {
     "rowId": "2026-04-20",
@@ -487,7 +1451,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/9786",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/9786",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-20_9786.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-20_9786.csv"
   },
   {
     "rowId": "2026-04-20",
@@ -501,7 +1467,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/6649",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/6649",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-20_6649.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-20_6649.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -515,7 +1483,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/25439",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/25439",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_25439.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_25439.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -529,7 +1499,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/25440",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/25440",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_25440.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_25440.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -543,7 +1515,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/13264",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/13264",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_13264.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_13264.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -557,7 +1531,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/23227",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/23227",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_23227.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_23227.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -571,7 +1547,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/7373",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/7373",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_7373.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_7373.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -585,7 +1563,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/11377",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/11377",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_11377.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_11377.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -599,7 +1579,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/6010",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/6010",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_6010.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_6010.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -613,7 +1595,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/8624",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/8624",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_8624.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_8624.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -627,7 +1611,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/4961",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/4961",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_4961.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_4961.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -641,7 +1627,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/5219",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/5219",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_5219.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_5219.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -655,7 +1643,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/16522",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/16522",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_16522.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_16522.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -669,7 +1659,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/16523",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/16523",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_16523.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_16523.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -683,7 +1675,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/12816",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/12816",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_12816.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_12816.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -697,7 +1691,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/12817",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/12817",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_12817.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_12817.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -711,7 +1707,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/8863",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/8863",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_8863.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_8863.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -725,7 +1723,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/8864",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/8864",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_8864.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_8864.csv"
   },
   {
     "rowId": "2026-04-30",
@@ -739,7 +1739,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/48081",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/48081",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-30_48081.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-30_48081.csv"
   },
   {
     "rowId": "2026-04-30",
@@ -753,7 +1755,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/29380",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/29380",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-30_29380.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-30_29380.csv"
   },
   {
     "rowId": "2026-04-30",
@@ -767,7 +1771,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/21499",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/21499",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-30_21499.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-30_21499.csv"
   },
   {
     "rowId": "2026-04-30",
@@ -781,7 +1787,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/15118",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/15118",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-30_15118.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-30_15118.csv"
   },
   {
     "rowId": "2026-05-16",
@@ -795,7 +1803,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/56369",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/56369",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-16_56369.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-16_56369.csv"
   },
   {
     "rowId": "2026-05-16",
@@ -809,7 +1819,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/34684",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/34684",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-16_34684.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-16_34684.csv"
   },
   {
     "rowId": "2026-05-16",
@@ -823,7 +1835,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/26273",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/26273",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-16_26273.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-16_26273.csv"
   },
   {
     "rowId": "2026-05-16",
@@ -837,7 +1851,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/18196",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/18196",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-16_18196.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-16_18196.csv"
   },
   {
     "rowId": "2026-05-31",
@@ -851,7 +1867,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/64508",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/64508",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-31_64508.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-31_64508.csv"
   },
   {
     "rowId": "2026-05-31",
@@ -865,7 +1883,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/39956",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/39956",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-31_39956.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-31_39956.csv"
   },
   {
     "rowId": "2026-05-31",
@@ -879,7 +1899,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/31099",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/31099",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-31_31099.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-31_31099.csv"
   },
   {
     "rowId": "2026-05-31",
@@ -893,7 +1915,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/21297",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/21297",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-31_21297.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-31_21297.csv"
   },
   {
     "rowId": "2026-06-16",
@@ -907,7 +1931,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/71970",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/71970",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-16_71970.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-16_71970.csv"
   },
   {
     "rowId": "2026-06-16",
@@ -921,7 +1947,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/44954",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/44954",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-16_44954.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-16_44954.csv"
   },
   {
     "rowId": "2026-06-16",
@@ -935,7 +1963,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/35717",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/35717",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-16_35717.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-16_35717.csv"
   },
   {
     "rowId": "2026-06-16",
@@ -949,7 +1979,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/24222",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/24222",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-16_24222.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-16_24222.csv"
   },
   {
     "rowId": "2026-06-30",
@@ -963,7 +1995,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/49794",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/49794",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-30_49794.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-30_49794.csv"
   },
   {
     "rowId": "2026-06-30",
@@ -977,7 +2011,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/40253",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/40253",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-30_40253.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-30_40253.csv"
   },
   {
     "rowId": "2026-06-30",
@@ -991,7 +2027,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/27205",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/27205",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-30_27205.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-30_27205.csv"
   },
   {
     "rowId": "2026-07-01",
@@ -1005,7 +2043,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/79157",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/79157",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-01_79157.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-01_79157.csv"
   },
   {
     "rowId": "2026-07-16",
@@ -1019,7 +2059,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/86802",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/86802",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-16_86802.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-16_86802.csv"
   },
   {
     "rowId": "2026-07-16",
@@ -1033,7 +2075,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/54922",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/54922",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-16_54922.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-16_54922.csv"
   },
   {
     "rowId": "2026-07-16",
@@ -1047,7 +2091,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/45107",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/45107",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-16_45107.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-16_45107.csv"
   },
   {
     "rowId": "2026-07-16",
@@ -1061,7 +2107,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/30415",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/30415",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-16_30415.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-16_30415.csv"
   },
   {
     "rowId": "2026-07-31",
@@ -1075,7 +2123,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/95285",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/95285",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-31_95285.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-31_95285.csv"
   },
   {
     "rowId": "2026-07-31",
@@ -1089,7 +2139,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/60783",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/60783",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-31_60783.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-31_60783.csv"
   },
   {
     "rowId": "2026-07-31",
@@ -1103,7 +2155,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/50432",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/50432",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-31_50432.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-31_50432.csv"
   },
   {
     "rowId": "2026-07-31",
@@ -1117,105 +2171,1033 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/34065",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/34065",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-31_34065.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-31_34065.csv"
   },
   {
-    "rowId": "2026-07-29",
-    "periodo": "2026-07-29",
-    "fechaEmision": "2026-07-29",
-    "fechaVencimiento": "2026-08-12",
+    "rowId": "2026-08-16",
+    "periodo": "2026-08-16",
+    "fechaEmision": "2026-08-16",
+    "fechaVencimiento": "2026-08-24",
+    "concesionario": "AUMESA",
+    "concesionarioVisible": "AU. DEL MERCOSUR",
+    "numero": "103358",
+    "monto": "$3.944.736,92",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/103358",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/103358",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-08-16_103358.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-08-16_103358.csv"
+  },
+  {
+    "rowId": "2026-08-16",
+    "periodo": "2026-08-16",
+    "fechaEmision": "2026-08-16",
+    "fechaVencimiento": "2026-08-24",
+    "concesionario": "AUMESA",
+    "concesionarioVisible": "AU. DEL MERCOSUR",
+    "numero": "66321",
+    "monto": "$928.819,84",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/66321",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/66321",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-08-16_66321.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-08-16_66321.csv"
+  },
+  {
+    "rowId": "2026-08-16",
+    "periodo": "2026-08-16",
+    "fechaEmision": "2026-08-16",
+    "fechaVencimiento": "2026-08-24",
+    "concesionario": "AUMESA",
+    "concesionarioVisible": "AU. DEL MERCOSUR",
+    "numero": "55542",
+    "monto": "$893.096,00",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/55542",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/55542",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-08-16_55542.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-08-16_55542.csv"
+  },
+  {
+    "rowId": "2026-08-16",
+    "periodo": "2026-08-16",
+    "fechaEmision": "2026-08-16",
+    "fechaVencimiento": "2026-08-24",
+    "concesionario": "AUMESA",
+    "concesionarioVisible": "AU. DEL MERCOSUR",
+    "numero": "37460",
+    "monto": "$866.303,12",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/1/37460",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/1/37460",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-08-16_37460.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-08-16_37460.csv"
+  },
+  {
+    "rowId": "2026-06-16",
+    "periodo": "2026-06-16",
+    "fechaEmision": "2026-06-16",
+    "fechaVencimiento": "2026-06-30",
     "concesionario": "AUSA",
     "concesionarioVisible": "AUTOPISTAS URBANAS",
-    "numero": "5009A02052902",
-    "monto": "$704.336,58",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A02052902/DR/AUSA-20260729-5009A02052902",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A02052902",
+    "numero": "5009A02003800",
+    "monto": "$610.558,51",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A02003800/DR/AUSA-20260616-5009A02003800",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A02003800",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-06-16_5009A02003800.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-06-16_5009A02003800.csv"
   },
   {
-    "rowId": "2026-07-15",
-    "periodo": "2026-07-15",
-    "fechaEmision": "2026-07-15",
-    "fechaVencimiento": "2026-07-29",
+    "rowId": "2026-05-31",
+    "periodo": "2026-05-31",
+    "fechaEmision": "2026-05-31",
+    "fechaVencimiento": "2026-06-16",
     "concesionario": "AUSA",
     "concesionarioVisible": "AUTOPISTAS URBANAS",
-    "numero": "5009A02037760",
-    "monto": "$495.130,01",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A02037760/DR/AUSA-20260715-5009A02037760",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A02037760",
+    "numero": "5009A01981932",
+    "monto": "$575.497,91",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01981932/DR/AUSA-20260531-5009A01981932",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01981932",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-05-31_5009A01981932.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-05-31_5009A01981932.csv"
   },
   {
-    "rowId": "2026-07-16",
-    "periodo": "2026-07-16",
-    "fechaEmision": "2026-07-16",
-    "fechaVencimiento": "2026-08-05",
+    "rowId": "2026-05-15",
+    "periodo": "2026-05-15",
+    "fechaEmision": "2026-05-15",
+    "fechaVencimiento": "2026-05-29",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01963319",
+    "monto": "$306.141,70",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01963319/DR/AUSA-20260515-5009A01963319",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01963319",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-05-15_5009A01963319.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-05-15_5009A01963319.csv"
+  },
+  {
+    "rowId": "2026-04-30",
+    "periodo": "2026-04-30",
+    "fechaEmision": "2026-04-30",
+    "fechaVencimiento": "2026-05-13",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01945618",
+    "monto": "$279.930,76",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01945618/DR/AUSA-20260430-5009A01945618",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01945618",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-04-30_5009A01945618.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-04-30_5009A01945618.csv"
+  },
+  {
+    "rowId": "2026-04-15",
+    "periodo": "2026-04-15",
+    "fechaEmision": "2026-04-15",
+    "fechaVencimiento": "2026-04-29",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01929741",
+    "monto": "$63.499,00",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01929741/DR/AUSA-20260415-5009A01929741",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01929741",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-04-15_5009A01929741.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-04-15_5009A01929741.csv"
+  },
+  {
+    "rowId": "2026-04-08",
+    "periodo": "2026-04-08",
+    "fechaEmision": "2026-04-08",
+    "fechaVencimiento": "2026-04-22",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01916344",
+    "monto": "$115.358,98",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01916344/DR/AUSA-20260408-5009A01916344",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01916344",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-04-08_5009A01916344.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-04-08_5009A01916344.csv"
+  },
+  {
+    "rowId": "2026-03-31",
+    "periodo": "2026-03-31",
+    "fechaEmision": "2026-03-31",
+    "fechaVencimiento": "2026-04-14",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01905374",
+    "monto": "$198.724,16",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01905374/DR/AUSA-20260331-5009A01905374",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01905374",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-03-31_5009A01905374.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-03-31_5009A01905374.csv"
+  },
+  {
+    "rowId": "2026-03-23",
+    "periodo": "2026-03-23",
+    "fechaEmision": "2026-03-23",
+    "fechaVencimiento": "2026-04-06",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01895432",
+    "monto": "$62.585,10",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01895432/DR/AUSA-20260323-5009A01895432",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01895432",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-03-23_5009A01895432.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-03-23_5009A01895432.csv"
+  },
+  {
+    "rowId": "2026-03-16",
+    "periodo": "2026-03-16",
+    "fechaEmision": "2026-03-16",
+    "fechaVencimiento": "2026-03-30",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01887229",
+    "monto": "$150.503,87",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01887229/DR/AUSA-20260316-5009A01887229",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01887229",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-03-16_5009A01887229.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-03-16_5009A01887229.csv"
+  },
+  {
+    "rowId": "2026-03-08",
+    "periodo": "2026-03-08",
+    "fechaEmision": "2026-03-08",
+    "fechaVencimiento": "2026-03-25",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01874499",
+    "monto": "$168.125,06",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01874499/DR/AUSA-20260308-5009A01874499",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01874499",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-03-08_5009A01874499.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-03-08_5009A01874499.csv"
+  },
+  {
+    "rowId": "2026-02-28",
+    "periodo": "2026-02-28",
+    "fechaEmision": "2026-02-28",
+    "fechaVencimiento": "2026-03-11",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01859746",
+    "monto": "$76.301,16",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01859746/DR/AUSA-20260228-5009A01859746",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01859746",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-02-28_5009A01859746.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-02-28_5009A01859746.csv"
+  },
+  {
+    "rowId": "2026-02-23",
+    "periodo": "2026-02-23",
+    "fechaEmision": "2026-02-23",
+    "fechaVencimiento": "2026-03-06",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01854215",
+    "monto": "$191.420,82",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01854215/DR/AUSA-20260223-5009A01854215",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01854215",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-02-23_5009A01854215.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-02-23_5009A01854215.csv"
+  },
+  {
+    "rowId": "2026-02-16",
+    "periodo": "2026-02-16",
+    "fechaEmision": "2026-02-16",
+    "fechaVencimiento": "2026-03-02",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01841649",
+    "monto": "$142.035,32",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01841649/DR/AUSA-20260216-5009A01841649",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01841649",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-02-16_5009A01841649.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-02-16_5009A01841649.csv"
+  },
+  {
+    "rowId": "2026-02-08",
+    "periodo": "2026-02-08",
+    "fechaEmision": "2026-02-08",
+    "fechaVencimiento": "2026-02-23",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01833404",
+    "monto": "$150.455,99",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01833404/DR/AUSA-20260208-5009A01833404",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01833404",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-02-08_5009A01833404.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-02-08_5009A01833404.csv"
+  },
+  {
+    "rowId": "2026-01-31",
+    "periodo": "2026-01-31",
+    "fechaEmision": "2026-01-31",
+    "fechaVencimiento": "2026-02-18",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01821858",
+    "monto": "$113.581,98",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01821858/DR/AUSA-20260131-5009A01821858",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01821858",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-01-31_5009A01821858.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-01-31_5009A01821858.csv"
+  },
+  {
+    "rowId": "2026-01-22",
+    "periodo": "2026-01-22",
+    "fechaEmision": "2026-01-22",
+    "fechaVencimiento": "2026-02-05",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01811746",
+    "monto": "$252.016,38",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01811746/DR/AUSA-20260122-5009A01811746",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01811746",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-01-22_5009A01811746.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-01-22_5009A01811746.csv"
+  },
+  {
+    "rowId": "2026-01-14",
+    "periodo": "2026-01-14",
+    "fechaEmision": "2026-01-14",
+    "fechaVencimiento": "2026-01-28",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01805166",
+    "monto": "$289.704,14",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01805166/DR/AUSA-20260114-5009A01805166",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01805166",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-01-14_5009A01805166.pdf",
+    "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-01-14_5009A01805166.csv"
+  },
+  {
+    "rowId": "2026-01-08",
+    "periodo": "2026-01-08",
+    "fechaEmision": "2026-01-08",
+    "fechaVencimiento": "2026-01-22",
+    "concesionario": "AUSA",
+    "concesionarioVisible": "AUTOPISTAS URBANAS",
+    "numero": "5009A01793150",
+    "monto": "$36.708,17",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura/5009A01793150/DR/AUSA-20260108-5009A01793150",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas/0001424135/5009A01793150",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-01-08_5009A01793150.pdf",
+    "filePasadasPath": null
+  },
+  {
+    "rowId": "2026-01-16",
+    "periodo": "2026-01-16",
+    "fechaEmision": "2026-01-16",
+    "fechaVencimiento": "2026-02-05",
     "concesionario": "GCO",
     "concesionarioVisible": "ACCESO OESTE",
-    "numero": "329454",
-    "monto": "$96.140,40",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/329454",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/329454",
+    "numero": "6827627",
+    "monto": "$6.312,61",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/6827627",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/6827627",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-01-16_6827627.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-01-16_6827627.csv"
   },
   {
-    "rowId": "2026-07-16",
-    "periodo": "2026-07-16",
-    "fechaEmision": "2026-07-16",
-    "fechaVencimiento": "2026-08-05",
+    "rowId": "2026-02-01",
+    "periodo": "2026-02-01",
+    "fechaEmision": "2026-02-01",
+    "fechaVencimiento": "2026-03-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "6869964",
+    "monto": "$35.070,27",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/6869964",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/6869964",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-02-01_6869964.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-02-01_6869964.csv"
+  },
+  {
+    "rowId": "2026-02-16",
+    "periodo": "2026-02-16",
+    "fechaEmision": "2026-02-16",
+    "fechaVencimiento": "2026-03-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "6911197",
+    "monto": "$3.495,45",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/6911197",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/6911197",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-02-16_6911197.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-02-16_6911197.csv"
+  },
+  {
+    "rowId": "2026-03-01",
+    "periodo": "2026-03-01",
+    "fechaEmision": "2026-03-01",
+    "fechaVencimiento": "2026-04-06",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "6953309",
+    "monto": "$22.725,66",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/6953309",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/6953309",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-03-01_6953309.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-03-01_6953309.csv"
+  },
+  {
+    "rowId": "2026-03-16",
+    "periodo": "2026-03-16",
+    "fechaEmision": "2026-03-16",
+    "fechaVencimiento": "2026-04-06",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "6994656",
+    "monto": "$13.046,24",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/6994656",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/6994656",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-03-16_6994656.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-03-16_6994656.csv"
+  },
+  {
+    "rowId": "2026-04-01",
+    "periodo": "2026-04-01",
+    "fechaEmision": "2026-04-01",
+    "fechaVencimiento": "2026-05-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "26989",
+    "monto": "$35.508,79",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/26989",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/26989",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-04-01_26989.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-04-01_26989.csv"
+  },
+  {
+    "rowId": "2026-04-16",
+    "periodo": "2026-04-16",
+    "fechaEmision": "2026-04-16",
+    "fechaVencimiento": "2026-05-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "69842",
+    "monto": "$59.846,31",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/69842",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/69842",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-04-16_69842.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-04-16_69842.csv"
+  },
+  {
+    "rowId": "2026-05-01",
+    "periodo": "2026-05-01",
+    "fechaEmision": "2026-05-01",
+    "fechaVencimiento": "2026-06-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "114475",
+    "monto": "$42.690,30",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/114475",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/114475",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-05-01_114475.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-05-01_114475.csv"
+  },
+  {
+    "rowId": "2026-05-16",
+    "periodo": "2026-05-16",
+    "fechaEmision": "2026-05-16",
+    "fechaVencimiento": "2026-06-05",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "157446",
+    "monto": "$23.934,52",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/157446",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/157446",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-05-16_157446.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-05-16_157446.csv"
+  },
+  {
+    "rowId": "2026-06-01",
+    "periodo": "2026-06-01",
+    "fechaEmision": "2026-06-01",
+    "fechaVencimiento": "2026-07-06",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "202360",
+    "monto": "$27.756,09",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/202360",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/202360",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-06-01_202360.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-06-01_202360.csv"
+  },
+  {
+    "rowId": "2026-06-16",
+    "periodo": "2026-06-16",
+    "fechaEmision": "2026-06-16",
+    "fechaVencimiento": "2026-07-06",
+    "concesionario": "GCO",
+    "concesionarioVisible": "ACCESO OESTE",
+    "numero": "244637",
+    "monto": "$41.030,65",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-gco/908030708488891/15/244637",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-gco/908030708488891/15/244637",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/GCO/facturas_2026-06-16_244637.pdf",
+    "filePasadasPath": "scripts/downloads/GCO/pasadas_2026-06-16_244637.csv"
+  },
+  {
+    "rowId": "2026-01-06",
+    "periodo": "2026-01-06",
+    "fechaEmision": "2026-01-06",
+    "fechaVencimiento": "2026-02-05",
     "concesionario": "AUSOL",
     "concesionarioVisible": "ACCESO NORTE",
-    "numero": "493557",
-    "monto": "$61.405,92",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/493557",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/493557",
+    "numero": "8097317",
+    "monto": "$21.562,24",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/8097317",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/8097317",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-01-06_8097317.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-01-06_8097317.csv"
   },
   {
-    "rowId": "2026-07-03",
-    "periodo": "2026-07-03",
-    "fechaEmision": "2026-07-03",
-    "fechaVencimiento": "2026-07-27",
+    "rowId": "2026-01-16",
+    "periodo": "2026-01-16",
+    "fechaEmision": "2026-01-16",
+    "fechaVencimiento": "2026-02-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "8155475",
+    "monto": "$38.667,97",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/8155475",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/8155475",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-01-16_8155475.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-01-16_8155475.csv"
+  },
+  {
+    "rowId": "2026-02-01",
+    "periodo": "2026-02-01",
+    "fechaEmision": "2026-02-01",
+    "fechaVencimiento": "2026-03-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "8217415",
+    "monto": "$70.436,25",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/8217415",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/8217415",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-02-01_8217415.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-02-01_8217415.csv"
+  },
+  {
+    "rowId": "2026-02-16",
+    "periodo": "2026-02-16",
+    "fechaEmision": "2026-02-16",
+    "fechaVencimiento": "2026-03-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "8277531",
+    "monto": "$66.842,93",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/8277531",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/8277531",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-02-16_8277531.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-02-16_8277531.csv"
+  },
+  {
+    "rowId": "2026-03-02",
+    "periodo": "2026-03-02",
+    "fechaEmision": "2026-03-02",
+    "fechaVencimiento": "2026-04-06",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "8338267",
+    "monto": "$29.468,31",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/8338267",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/8338267",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-03-02_8338267.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-03-02_8338267.csv"
+  },
+  {
+    "rowId": "2026-03-16",
+    "periodo": "2026-03-16",
+    "fechaEmision": "2026-03-16",
+    "fechaVencimiento": "2026-04-06",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "8400954",
+    "monto": "$39.926,91",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/8400954",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/8400954",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-03-16_8400954.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-03-16_8400954.csv"
+  },
+  {
+    "rowId": "2026-04-01",
+    "periodo": "2026-04-01",
+    "fechaEmision": "2026-04-01",
+    "fechaVencimiento": "2026-05-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "58459",
+    "monto": "$52.535,30",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/58459",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/58459",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-04-01_58459.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-04-01_58459.csv"
+  },
+  {
+    "rowId": "2026-04-16",
+    "periodo": "2026-04-16",
+    "fechaEmision": "2026-04-16",
+    "fechaVencimiento": "2026-05-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "120393",
+    "monto": "$70.319,57",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/120393",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/120393",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-04-16_120393.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-04-16_120393.csv"
+  },
+  {
+    "rowId": "2026-05-01",
+    "periodo": "2026-05-01",
+    "fechaEmision": "2026-05-01",
+    "fechaVencimiento": "2026-06-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "184686",
+    "monto": "$56.010,30",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/184686",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/184686",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-05-01_184686.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-05-01_184686.csv"
+  },
+  {
+    "rowId": "2026-05-16",
+    "periodo": "2026-05-16",
+    "fechaEmision": "2026-05-16",
+    "fechaVencimiento": "2026-06-05",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "246148",
+    "monto": "$67.999,91",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/246148",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/246148",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-05-16_246148.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-05-16_246148.csv"
+  },
+  {
+    "rowId": "2026-06-01",
+    "periodo": "2026-06-01",
+    "fechaEmision": "2026-06-01",
+    "fechaVencimiento": "2026-07-06",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "310850",
+    "monto": "$62.230,14",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/310850",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/310850",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-06-01_310850.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-06-01_310850.csv"
+  },
+  {
+    "rowId": "2026-06-16",
+    "periodo": "2026-06-16",
+    "fechaEmision": "2026-06-16",
+    "fechaVencimiento": "2026-07-06",
+    "concesionario": "AUSOL",
+    "concesionarioVisible": "ACCESO NORTE",
+    "numero": "371678",
+    "monto": "$89.945,48",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-ausol/908030708488891/15/371678",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-ausol/908030708488891/15/371678",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUSOL/facturas_2026-06-16_371678.pdf",
+    "filePasadasPath": "scripts/downloads/AUSOL/pasadas_2026-06-16_371678.csv"
+  },
+  {
+    "rowId": "2026-01-29",
+    "periodo": "2026-01-29",
+    "fechaEmision": "2026-01-29",
+    "fechaVencimiento": "2026-02-09",
     "concesionario": "CVSA",
     "concesionarioVisible": "ACCESO RICCHERI",
-    "numero": "3305880",
-    "monto": "$46.734,55",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/15/3305880",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/15/3305880",
+    "numero": "2988298",
+    "monto": "$91.396,44",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/15/2988298",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/15/2988298",
     "estado": "",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-01-29_2988298.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-01-29_2988298.csv"
   },
   {
-    "rowId": "2026-07-15",
-    "periodo": "2026-07-15",
-    "fechaEmision": "2026-07-15",
-    "fechaVencimiento": "2026-08-10",
+    "rowId": "2026-02-28",
+    "periodo": "2026-02-28",
+    "fechaEmision": "2026-02-28",
+    "fechaVencimiento": "2026-03-10",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3034853",
+    "monto": "$102.478,69",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/15/3034853",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/15/3034853",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-02-28_3034853.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-02-28_3034853.csv"
+  },
+  {
+    "rowId": "2026-02-28",
+    "periodo": "2026-02-28",
+    "fechaEmision": "2026-02-28",
+    "fechaVencimiento": "2026-03-10",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3082521",
+    "monto": "$96.742,77",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/15/3082521",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/15/3082521",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-02-28_3082521.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-02-28_3082521.csv"
+  },
+  {
+    "rowId": "2026-03-03",
+    "periodo": "2026-03-03",
+    "fechaEmision": "2026-03-03",
+    "fechaVencimiento": "2026-03-03",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "10380",
+    "monto": "$102.478,69",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/15/10380",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/15/10380",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-03-03_10380.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-03-03_10380.csv"
+  },
+  {
+    "rowId": "2026-03-30",
+    "periodo": "2026-03-30",
+    "fechaEmision": "2026-03-30",
+    "fechaVencimiento": "2026-04-10",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3129094",
+    "monto": "$78.902,48",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/15/3129094",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/15/3129094",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-03-30_3129094.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-03-30_3129094.csv"
+  },
+  {
+    "rowId": "2026-04-28",
+    "periodo": "2026-04-28",
+    "fechaEmision": "2026-04-28",
+    "fechaVencimiento": "2026-05-11",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3174768",
+    "monto": "$72.124,96",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/15/3174768",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/15/3174768",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-04-28_3174768.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-04-28_3174768.csv"
+  },
+  {
+    "rowId": "2026-05-28",
+    "periodo": "2026-05-28",
+    "fechaEmision": "2026-05-28",
+    "fechaVencimiento": "2026-06-09",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3220628",
+    "monto": "$64.234,71",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/15/3220628",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/15/3220628",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-05-28_3220628.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-05-28_3220628.csv"
+  },
+  {
+    "rowId": "2026-06-27",
+    "periodo": "2026-06-27",
+    "fechaEmision": "2026-06-27",
+    "fechaVencimiento": "2026-07-08",
+    "concesionario": "CVSA",
+    "concesionarioVisible": "ACCESO RICCHERI",
+    "numero": "3266504",
+    "monto": "$210.001,98",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-cvsa/908030708488891/15/3266504",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-cvsa/908030708488891/15/3266504",
+    "estado": "",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/CVSA/facturas_2026-06-27_3266504.pdf",
+    "filePasadasPath": "scripts/downloads/CVSA/pasadas_2026-06-27_3266504.csv"
+  },
+  {
+    "rowId": "2026-01-15",
+    "periodo": "2026-01-15",
+    "fechaEmision": "2026-01-15",
+    "fechaVencimiento": "2026-02-10",
     "concesionario": "AUBASA",
     "concesionarioVisible": "AU. BS AS - LA PLATA",
-    "numero": "5364165",
-    "monto": "$338.741,86",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/5364165",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/5364165",
+    "numero": "4923389",
+    "monto": "$128.786,97",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/4923389",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/4923389",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-01-15_4923389.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-01-15_4923389.csv"
   },
   {
-    "rowId": "2025-08-22",
-    "periodo": "2025-08-22",
-    "fechaEmision": "2025-08-22",
-    "fechaVencimiento": "2025-09-05",
-    "concesionario": "SANTAFE",
-    "concesionarioVisible": "AU. ROSARIO - SANTA FE",
-    "numero": "915663",
-    "monto": "$35.700,00",
-    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/15/915663",
-    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/15/915663",
+    "rowId": "2026-01-31",
+    "periodo": "2026-01-31",
+    "fechaEmision": "2026-01-31",
+    "fechaVencimiento": "2026-02-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "4966554",
+    "monto": "$321.944,24",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/4966554",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/4966554",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-01-31_4966554.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-01-31_4966554.csv"
+  },
+  {
+    "rowId": "2026-02-15",
+    "periodo": "2026-02-15",
+    "fechaEmision": "2026-02-15",
+    "fechaVencimiento": "2026-03-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5007598",
+    "monto": "$228.827,25",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/5007598",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/5007598",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-02-15_5007598.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-02-15_5007598.csv"
+  },
+  {
+    "rowId": "2026-02-28",
+    "periodo": "2026-02-28",
+    "fechaEmision": "2026-02-28",
+    "fechaVencimiento": "2026-03-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5047347",
+    "monto": "$106.170,97",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/5047347",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/5047347",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-02-28_5047347.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-02-28_5047347.csv"
+  },
+  {
+    "rowId": "2026-03-15",
+    "periodo": "2026-03-15",
+    "fechaEmision": "2026-03-15",
+    "fechaVencimiento": "2026-04-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5082902",
+    "monto": "$160.623,83",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/5082902",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/5082902",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-03-15_5082902.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-03-15_5082902.csv"
+  },
+  {
+    "rowId": "2026-03-31",
+    "periodo": "2026-03-31",
+    "fechaEmision": "2026-03-31",
+    "fechaVencimiento": "2026-04-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5120948",
+    "monto": "$53.902,78",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/5120948",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/5120948",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-03-31_5120948.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-03-31_5120948.csv"
+  },
+  {
+    "rowId": "2026-04-15",
+    "periodo": "2026-04-15",
+    "fechaEmision": "2026-04-15",
+    "fechaVencimiento": "2026-05-11",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5155736",
+    "monto": "$208.914,85",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/5155736",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/5155736",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-04-15_5155736.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-04-15_5155736.csv"
+  },
+  {
+    "rowId": "2026-04-30",
+    "periodo": "2026-04-30",
+    "fechaEmision": "2026-04-30",
+    "fechaVencimiento": "2026-05-11",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5192318",
+    "monto": "$296.004,24",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/5192318",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/5192318",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-04-30_5192318.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-04-30_5192318.csv"
+  },
+  {
+    "rowId": "2026-05-15",
+    "periodo": "2026-05-15",
+    "fechaEmision": "2026-05-15",
+    "fechaVencimiento": "2026-06-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5226230",
+    "monto": "$323.335,19",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/5226230",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/5226230",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-05-15_5226230.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-05-15_5226230.csv"
+  },
+  {
+    "rowId": "2026-05-31",
+    "periodo": "2026-05-31",
+    "fechaEmision": "2026-05-31",
+    "fechaVencimiento": "2026-06-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5262926",
+    "monto": "$357.062,77",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/5262926",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/5262926",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-05-31_5262926.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-05-31_5262926.csv"
+  },
+  {
+    "rowId": "2026-06-15",
+    "periodo": "2026-06-15",
+    "fechaEmision": "2026-06-15",
+    "fechaVencimiento": "2026-07-10",
+    "concesionario": "AUBASA",
+    "concesionarioVisible": "AU. BS AS - LA PLATA",
+    "numero": "5296245",
+    "monto": "$293.096,67",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aubasa/908030708488891/15/5296245",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aubasa/908030708488891/15/5296245",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUBASA/facturas_2026-06-15_5296245.pdf",
+    "filePasadasPath": "scripts/downloads/AUBASA/pasadas_2026-06-15_5296245.csv"
   },
   {
     "rowId": "2025-09-24",
@@ -1229,7 +3211,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/15/993795",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/15/993795",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2025-09-24_993795.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2025-09-24_993795.csv"
   },
   {
     "rowId": "2025-10-23",
@@ -1243,7 +3227,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/15/1065605",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/15/1065605",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2025-10-23_1065605.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2025-10-23_1065605.csv"
   },
   {
     "rowId": "2025-11-28",
@@ -1257,7 +3243,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/15/1131609",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/15/1131609",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2025-11-28_1131609.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2025-11-28_1131609.csv"
   },
   {
     "rowId": "2026-01-22",
@@ -1271,7 +3259,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/15/1307406",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/15/1307406",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-01-22_1307406.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-01-22_1307406.csv"
   },
   {
     "rowId": "2026-02-26",
@@ -1285,7 +3275,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/15/1412477",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/15/1412477",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-02-26_1412477.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-02-26_1412477.csv"
   },
   {
     "rowId": "2026-03-30",
@@ -1299,7 +3291,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/15/1513001",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/15/1513001",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-03-30_1513001.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-03-30_1513001.csv"
   },
   {
     "rowId": "2026-04-23",
@@ -1313,7 +3307,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/15/1616079",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/15/1616079",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-04-23_1616079.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-04-23_1616079.csv"
   },
   {
     "rowId": "2026-05-22",
@@ -1327,7 +3323,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/15/1723513",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/15/1723513",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-05-22_1723513.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-05-22_1723513.csv"
   },
   {
     "rowId": "2026-06-24",
@@ -1341,7 +3339,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/15/1834930",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/15/1834930",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-06-24_1834930.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-06-24_1834930.csv"
   },
   {
     "rowId": "2026-07-22",
@@ -1355,7 +3355,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-vsfe/908030708488891/15/1947769",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-vsfe/908030708488891/15/1947769",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/SANTAFE/facturas_2026-07-22_1947769.pdf",
+    "filePasadasPath": "scripts/downloads/SANTAFE/pasadas_2026-07-22_1947769.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -1369,7 +3371,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/127393",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/127393",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_127393.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_127393.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -1383,7 +3387,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/212491",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/212491",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_212491.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_212491.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -1397,7 +3403,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/68908",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/68908",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_68908.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_68908.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -1411,7 +3419,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/110887",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/110887",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_110887.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_110887.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -1425,7 +3435,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/25164",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/25164",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_25164.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_25164.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -1439,7 +3451,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/45499",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/45499",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_45499.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_45499.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -1453,7 +3467,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/23656",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/23656",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_23656.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_23656.csv"
   },
   {
     "rowId": "2026-02-28",
@@ -1467,7 +3483,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/40150",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/40150",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-02-28_40150.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-02-28_40150.csv"
   },
   {
     "rowId": "2026-03-31",
@@ -1481,7 +3499,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/9339",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/9339",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-03-31_9339.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-03-31_9339.csv"
   },
   {
     "rowId": "2026-03-31",
@@ -1495,7 +3515,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/6433",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/6433",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-03-31_6433.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-03-31_6433.csv"
   },
   {
     "rowId": "2026-03-31",
@@ -1509,7 +3531,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/4667",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/4667",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-03-31_4667.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-03-31_4667.csv"
   },
   {
     "rowId": "2026-03-31",
@@ -1523,7 +3547,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/3275",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/3275",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-03-31_3275.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-03-31_3275.csv"
   },
   {
     "rowId": "2026-04-20",
@@ -1537,7 +3563,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/18229",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/18229",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-20_18229.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-20_18229.csv"
   },
   {
     "rowId": "2026-04-20",
@@ -1551,7 +3579,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/12306",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/12306",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-20_12306.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-20_12306.csv"
   },
   {
     "rowId": "2026-04-20",
@@ -1565,7 +3595,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/9787",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/9787",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-20_9787.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-20_9787.csv"
   },
   {
     "rowId": "2026-04-20",
@@ -1579,7 +3611,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/6650",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/6650",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-20_6650.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-20_6650.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1593,7 +3627,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/25441",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/25441",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_25441.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_25441.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1607,7 +3643,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/25442",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/25442",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_25442.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_25442.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1621,7 +3659,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/21996",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/21996",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_21996.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_21996.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1635,7 +3675,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/28840",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/28840",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_28840.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_28840.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1649,7 +3691,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/13861",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/13861",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_13861.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_13861.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1663,7 +3707,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/13951",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/13951",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_13951.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_13951.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1677,7 +3723,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/3110",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/3110",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_3110.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_3110.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1691,7 +3739,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/8708",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/8708",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_8708.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_8708.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1705,7 +3755,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/2398",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/2398",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_2398.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_2398.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1719,7 +3771,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/3815",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/3815",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_3815.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_3815.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1733,7 +3787,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/16610",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/16610",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_16610.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_16610.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1747,7 +3803,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/16611",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/16611",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_16611.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_16611.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1761,7 +3819,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/12879",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/12879",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_12879.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_12879.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1775,7 +3835,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/12880",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/12880",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_12880.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_12880.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1789,7 +3851,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/8914",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/8914",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_8914.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_8914.csv"
   },
   {
     "rowId": "2026-04-29",
@@ -1803,7 +3867,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/8915",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/8915",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-29_8915.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-29_8915.csv"
   },
   {
     "rowId": "2026-04-30",
@@ -1817,7 +3883,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/48082",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/48082",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-30_48082.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-30_48082.csv"
   },
   {
     "rowId": "2026-04-30",
@@ -1831,7 +3899,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/29381",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/29381",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-30_29381.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-30_29381.csv"
   },
   {
     "rowId": "2026-04-30",
@@ -1845,7 +3915,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/21500",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/21500",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-30_21500.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-30_21500.csv"
   },
   {
     "rowId": "2026-04-30",
@@ -1859,7 +3931,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/15119",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/15119",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-04-30_15119.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-04-30_15119.csv"
   },
   {
     "rowId": "2026-05-16",
@@ -1873,7 +3947,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/56370",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/56370",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-16_56370.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-16_56370.csv"
   },
   {
     "rowId": "2026-05-16",
@@ -1887,7 +3963,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/34685",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/34685",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-16_34685.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-16_34685.csv"
   },
   {
     "rowId": "2026-05-16",
@@ -1901,7 +3979,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/26274",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/26274",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-16_26274.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-16_26274.csv"
   },
   {
     "rowId": "2026-05-16",
@@ -1915,7 +3995,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/18197",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/18197",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-16_18197.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-16_18197.csv"
   },
   {
     "rowId": "2026-05-31",
@@ -1929,7 +4011,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/64509",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/64509",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-31_64509.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-31_64509.csv"
   },
   {
     "rowId": "2026-05-31",
@@ -1943,7 +4027,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/39957",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/39957",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-31_39957.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-31_39957.csv"
   },
   {
     "rowId": "2026-05-31",
@@ -1957,7 +4043,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/31100",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/31100",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-31_31100.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-31_31100.csv"
   },
   {
     "rowId": "2026-05-31",
@@ -1971,7 +4059,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/21298",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/21298",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-05-31_21298.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-05-31_21298.csv"
   },
   {
     "rowId": "2026-06-16",
@@ -1985,7 +4075,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/71971",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/71971",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-16_71971.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-16_71971.csv"
   },
   {
     "rowId": "2026-06-16",
@@ -1999,7 +4091,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/44955",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/44955",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-16_44955.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-16_44955.csv"
   },
   {
     "rowId": "2026-06-16",
@@ -2013,7 +4107,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/35718",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/35718",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-16_35718.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-16_35718.csv"
   },
   {
     "rowId": "2026-06-16",
@@ -2027,7 +4123,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/24223",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/24223",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-16_24223.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-16_24223.csv"
   },
   {
     "rowId": "2026-06-30",
@@ -2041,7 +4139,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/49795",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/49795",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-30_49795.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-30_49795.csv"
   },
   {
     "rowId": "2026-06-30",
@@ -2055,7 +4155,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/40254",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/40254",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-30_40254.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-30_40254.csv"
   },
   {
     "rowId": "2026-06-30",
@@ -2069,7 +4171,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/27206",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/27206",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-06-30_27206.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-06-30_27206.csv"
   },
   {
     "rowId": "2026-07-01",
@@ -2083,7 +4187,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/79158",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/79158",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-01_79158.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-01_79158.csv"
   },
   {
     "rowId": "2026-07-16",
@@ -2097,7 +4203,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/86803",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/86803",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-16_86803.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-16_86803.csv"
   },
   {
     "rowId": "2026-07-16",
@@ -2111,7 +4219,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/54923",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/54923",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-16_54923.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-16_54923.csv"
   },
   {
     "rowId": "2026-07-16",
@@ -2125,7 +4235,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/45108",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/45108",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-16_45108.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-16_45108.csv"
   },
   {
     "rowId": "2026-07-16",
@@ -2139,7 +4251,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/30416",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/30416",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-16_30416.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-16_30416.csv"
   },
   {
     "rowId": "2026-07-31",
@@ -2153,7 +4267,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/95286",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/95286",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-31_95286.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-31_95286.csv"
   },
   {
     "rowId": "2026-07-31",
@@ -2167,7 +4283,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/60784",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/60784",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-31_60784.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-31_60784.csv"
   },
   {
     "rowId": "2026-07-31",
@@ -2181,7 +4299,9 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/50433",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/50433",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-31_50433.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-31_50433.csv"
   },
   {
     "rowId": "2026-07-31",
@@ -2195,6 +4315,72 @@
     "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/34066",
     "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/34066",
     "estado": "PAGADO",
-    "hasDownloads": true
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-07-31_34066.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-07-31_34066.csv"
+  },
+  {
+    "rowId": "2026-08-16",
+    "periodo": "2026-08-16",
+    "fechaEmision": "2026-08-16",
+    "fechaVencimiento": "2026-08-24",
+    "concesionario": "AUMESA",
+    "concesionarioVisible": "AU. DEL MERCOSUR",
+    "numero": "103359",
+    "monto": "$1.478.099,54",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/103359",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/103359",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-08-16_103359.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-08-16_103359.csv"
+  },
+  {
+    "rowId": "2026-08-16",
+    "periodo": "2026-08-16",
+    "fechaEmision": "2026-08-16",
+    "fechaVencimiento": "2026-08-24",
+    "concesionario": "AUMESA",
+    "concesionarioVisible": "AU. DEL MERCOSUR",
+    "numero": "66322",
+    "monto": "$185.317,42",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/66322",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/66322",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-08-16_66322.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-08-16_66322.csv"
+  },
+  {
+    "rowId": "2026-08-16",
+    "periodo": "2026-08-16",
+    "fechaEmision": "2026-08-16",
+    "fechaVencimiento": "2026-08-24",
+    "concesionario": "AUMESA",
+    "concesionarioVisible": "AU. DEL MERCOSUR",
+    "numero": "55543",
+    "monto": "$185.317,42",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/55543",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/55543",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-08-16_55543.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-08-16_55543.csv"
+  },
+  {
+    "rowId": "2026-08-16",
+    "periodo": "2026-08-16",
+    "fechaEmision": "2026-08-16",
+    "fechaVencimiento": "2026-08-24",
+    "concesionario": "AUMESA",
+    "concesionarioVisible": "AU. DEL MERCOSUR",
+    "numero": "37461",
+    "monto": "$185.317,42",
+    "facturaUrl": "https://telepase.com.ar/admin/descargar-factura-aumesa/908030708488891/15/37461",
+    "pasadaUrl": "https://telepase.com.ar/admin/descargar-pasadas-aumesa/908030708488891/15/37461",
+    "estado": "PAGADO",
+    "hasDownloads": true,
+    "fileFacturaPath": "scripts/downloads/AUMESA/facturas_2026-08-16_37461.pdf",
+    "filePasadasPath": "scripts/downloads/AUMESA/pasadas_2026-08-16_37461.csv"
   }
 ]

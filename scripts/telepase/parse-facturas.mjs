@@ -125,6 +125,8 @@ export function parseFacturasHtml(html) {
       monto,
       facturaUrl,
       pasadaUrl,
+      fileFacturaPath: null,
+      filePasadasPath: null,
       estado,
       hasDownloads: Boolean(facturaUrl || pasadaUrl),
     });

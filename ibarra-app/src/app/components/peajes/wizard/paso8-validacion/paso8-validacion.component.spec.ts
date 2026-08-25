@@ -279,6 +279,31 @@ describe('Paso8ValidacionComponent last pase from patente', () => {
     expect(duplicados?.estado).toBe('ok');
   });
 
+  it('shows the imported and persisted values for a duplicate', async () => {
+    detectarSpy.and.returnValue(
+      of([{
+        fila: 1,
+        columna: 'CLAVE_DUPLICADO',
+        valor: 'duplicate-key',
+        motivo: 'Ya existe una pasada',
+        pasada: newPaseId,
+        patente: patenteId,
+        fecha_hora: pasadaBase.FECHA_HORA,
+        fecha_hora_repetida: '2026-07-01T10:00:00.000Z',
+        valor_repetido: 1700,
+      }])
+    );
+
+    await component.validar();
+    fixture.detectChanges();
+
+    expect(component.duplicadosComparacion[0].valor).toBe(1840);
+    expect(component.duplicadosComparacion[0].valor_repetido).toBe(1700);
+    expect(fixture.nativeElement.textContent).toContain('Fecha_Hora repetida');
+    expect(fixture.nativeElement.textContent).toContain('Valor repetido');
+    expect(fixture.nativeElement.textContent).toContain('1700');
+  });
+
   it('reuses one latest pase for every row of the same patente', async () => {
     state.setPasadasEstandarizadas([
       { ...pasadaBase },

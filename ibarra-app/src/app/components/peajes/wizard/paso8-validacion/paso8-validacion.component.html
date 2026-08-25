@@ -49,6 +49,26 @@
             <pre *ngIf="d.tecnico.stack">{{ d.tecnico.stack }}</pre>
           </details>
         </div>
+        <div class="paso8__duplicate-comparison" *ngIf="d.id === 'duplicados' && d.estado === 'error' && duplicadosComparacion.length">
+          <div class="paso8__duplicate-heading">
+            <div>
+              <span class="paso8__duplicate-kicker">Contraste de la clave detectada</span>
+              <h4>Valor importado frente a valor existente</h4>
+            </div>
+            <span class="paso8__duplicate-count">{{ duplicadosComparacion.length }} coincidencia(s)</span>
+          </div>
+          <p class="paso8__duplicate-note">Revisá la fila del CSV y el registro que ya está guardado antes de asumir el error.</p>
+          <app-data-table
+            [columns]="duplicadosColumns"
+            [rows]="duplicadosComparacion"
+            [total]="duplicadosComparacion.length"
+            [pageSize]="25"
+            [pageSizeOptions]="[25]"
+            [filterableColumnsInputs]="false"
+            [clientFilter]="false"
+            emptyMessage="No se encontraron coincidencias para comparar."
+          />
+        </div>
       </article>
     </section>
 

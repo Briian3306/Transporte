@@ -109,6 +109,7 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
           patente_id: p.PATENTE_ID,
           estacion_id: p.ESTACION_ID,
           fecha_hora: toPostgresFechaHora(p.FECHA_HORA) ?? p.FECHA_HORA,
+          importe_neto: p.IMPORTE_NETO,
         }));
         const { data, error } = await client.rpc('peajes_detectar_duplicados', {
           p_pasadas: payload,

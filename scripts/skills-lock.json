@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "selenium-automation": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "selenium-automation/SKILL.md",
+      "computedHash": "d5a8774fb2183b5d1823da6c291c0c0d6f19b80c9ef5f6022fca5ecd34eb0c0f"
+    }
+  }
+}

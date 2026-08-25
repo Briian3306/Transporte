@@ -13,6 +13,7 @@
       <button
         type="button"
         class="pw__btn pw__btn--success"
+        data-testid="confirmar-carga"
         *ngIf="!resultado"
         [disabled]="guardando"
         (click)="confirmar()"

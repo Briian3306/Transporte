@@ -458,4 +458,32 @@ describe('Paso1CargaComponent', () => {
     expect(pdfText.extractText).not.toHaveBeenCalled();
     expect(state.snapshot().invoicePdf).toBeFalsy();
   });
+
+  it('reconstruye documentos desde FACTURA al cargar en modo masivo', async () => {
+    component.modoImportacion = 'masiva';
+    excel.esArchivoValido.and.returnValue(true);
+    excel.parsearArchivo.and.resolveTo({
+      nombreArchivo: 'masiva.xlsx',
+      tamanioBytes: 10,
+      totalFilas: 3,
+      columnas: ['FACTURA', 'FECHA'],
+      filasPreview: [
+        { FACTURA: 'F-001', FECHA: '2026-08-01' },
+        { FACTURA: 'F-001', FECHA: '2026-08-01' },
+        { FACTURA: 'F-002', FECHA: '2026-08-02' },
+      ],
+      filasOrigen: [
+        { FACTURA: 'F-001', FECHA: '2026-08-01' },
+        { FACTURA: 'F-001', FECHA: '2026-08-01' },
+        { FACTURA: 'F-002', FECHA: '2026-08-02' },
+      ],
+      tiposInferidos: {},
+    });
+
+    await component.procesar(new File(['xlsx'], 'masiva.xlsx'));
+
+    expect(state.snapshot().modoImportacion).toBe('masiva');
+    expect(state.snapshot().documentos.map((doc) => doc.factura)).toEqual(['F-001', 'F-002']);
+    expect(state.snapshot().documentos.map((doc) => doc.rowIndexes)).toEqual([[0, 1], [2]]);
+  });
 });

@@ -28,6 +28,17 @@ Filename pattern: `{facturas|pasadas}_{periodo}_{numero}.{ext}`
 
 Extension is taken from `Content-Type` / `Content-Disposition` (not hard-coded). Pasadas that return `text/plain` are saved as `.csv`.
 
+`rows.json` also contains the local file metadata fields:
+
+```json
+{
+  "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-06-23_5009A02010049.pdf",
+  "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-06-23_5009A02010049.csv"
+}
+```
+
+Paths are repository-relative and are matched using `concesionario`, `periodo`, and `numero`. Missing files are represented by `null`. The downloader updates these fields after saving a file or when it skips an existing file.
+
 ## Requirements
 
 | Requirement | Notes |
@@ -72,9 +83,11 @@ copy .env.example .env
 |---|---|
 | `parse-facturas.mjs` | Parse HTML → `rows.json` |
 | `download-batch.mjs` | Download files (main CLI) |
+| `enrich-status-templates.mjs` | Extract station names from AUMESA invoice PDFs and fill `status.csv` |
 | `login.mjs` | UI login + `auth.json` (storageState) |
 | `login-via-cli.mjs` | Same via playwright-cli when available |
 | `paths.mjs` | Shared paths |
+| Carga-express bot | Upload CSV/PDF into Ibarra: [`carga-express-bot.md`](./carga-express-bot.md) |
 
 ## How to execute
 
@@ -85,6 +98,8 @@ cd scripts/telepase
 npm run parse
 # or: node parse-facturas.mjs
 ```
+
+Parsing initializes both path fields to `null`; running the downloader populates paths for files already present on disk as well as newly downloaded files.
 
 ### 2) Pilot (3 rows, diverse concesionarios)
 
@@ -114,6 +129,12 @@ node download-batch.mjs
 
 Existing files are always skipped, so re-runs are safe.
 
+To verify path matching without network access:
+
+```powershell
+node --test download-paths.test.mjs
+```
+
 Equivalent npm:
 
 ```powershell
@@ -122,7 +143,29 @@ npm run login
 npm run download
 ```
 
-### 4) Auth-only run
+### 4) Fill AUMESA templates from invoice PDFs
+
+From `scripts/telepase`, install dependencies with `npm install`, then preview
+classification without changing the CSV:
+
+```powershell
+node enrich-status-templates.mjs --dry-run
+```
+
+Apply templates to blank AUMESA rows in `scripts/downloads/status.csv`:
+
+```powershell
+node enrich-status-templates.mjs
+```
+
+The report is written to `scripts/downloads/status-template-report.json`. It records
+matched, preserved, unknown, ambiguous, missing-PDF, and extraction-error rows.
+The matcher recognizes `YEAU`, `YERAU`, and `YERUA` as
+`MERCA-SUR-003-YERAU`, plus ZARATE, COLONIA, and PIEDRITAS. Description matches
+have priority over locality matches, so an invoice with locality ZARATE and
+description `YERUA-CAT` receives the YERAU template.
+
+### 5) Auth-only run
 
 ```powershell
 cd scripts/telepase
@@ -139,13 +182,28 @@ npx @playwright/cli open https://telepase.com.ar/login
 npx @playwright/cli state-save scripts/telepase/auth.json
 ```
 
+### 5) Retry only previous failures
+
+Reads unique URLs from `scripts/downloads/errors.csv` and retries just those:
+
+```powershell
+cd scripts/telepase
+node login.mjs --force   # if AUSA / gated URLs
+node download-batch.mjs --tryfailed
+# or:
+npm run retry-failed
+```
+
+On success, those URLs are removed from `errors.csv`. Still-failing URLs stay listed.
+
 ## CLI flags (`download-batch.mjs`)
 
 | Flag | Description |
 |---|---|
-| `--limit N` | Only first N selected rows (`0` or omit = all) |
+| `--limit N` | Only first N selected rows/URLs (`0` or omit = all) |
 | `--diverse` | Prefer one row per concesionario when limiting |
 | `--prefer A,B,C` | Prefer these concesionario codes first |
+| `--tryfailed` | Retry only unique failed URLs from `errors.csv` |
 | `--no-auth` | Skip login; use public download URLs |
 | `--headed` | Run browser headed (`HEADLESS=0` also works) |
 
@@ -180,6 +238,7 @@ Some AUMESA rows omit `ga-descargar-*` classes; the parser also matches any `a[h
 Do **not** commit:
 
 - `scripts/telepase/.env`
+- `scripts/carga-express-bot/.env`
 - `scripts/telepase/auth.json`
 - `scripts/downloads/**` (already gitignored except `.gitignore`)
 

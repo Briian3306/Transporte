@@ -7,6 +7,12 @@
       "skillPath": "skills/frontend-design/SKILL.md",
       "computedHash": "93f53fd1c0352d3d7ec17b8f73d7351bf76f4821e55d123c9d2abc2c53ba48e4"
     },
+    "selenium-automation": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "selenium-automation/SKILL.md",
+      "computedHash": "d5a8774fb2183b5d1823da6c291c0c0d6f19b80c9ef5f6022fca5ecd34eb0c0f"
+    },
     "test-driven-development": {
       "source": "obra/superpowers",
       "sourceType": "github",

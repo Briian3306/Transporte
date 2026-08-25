@@ -297,6 +297,10 @@ export class Paso1CargaComponent implements OnInit {
     this.cargando = true;
     try {
       const preview = await this.excel.parsearArchivo(file);
+      // Keep the shared wizard mode in sync before setPreview builds the
+      // document model. Mass import must group rows by FACTURA immediately
+      // so Paso 7 receives the prefilled documents.
+      this.state.setModoImportacion(this.modoImportacion);
       this.state.setPreview(preview);
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'No se pudo procesar el archivo';

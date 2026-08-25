@@ -33,11 +33,20 @@ scripts/
 
 ```text
 --no-auth              public URLs via fetch
---limit N              subset of rows
+--limit N              subset of rows / failed URLs
 --diverse              one row per concesionario when limiting
 --prefer A,B,C         prefer those codes first
+--tryfailed            retry only unique URLs from errors.csv
 --headed               headed browser (auth path)
 login.mjs --force      refresh auth.json
+```
+
+Retry failures only:
+
+```powershell
+cd scripts/telepase
+node download-batch.mjs --tryfailed
+# npm run retry-failed
 ```
 
 ## Known URL families

@@ -1,5 +1,7 @@
 import { Component, EventEmitter, Inject, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DataTableComponent } from '../../../shared/data-table/data-table.component';
+import { DataTableColumn } from '../../../shared/data-table/data-table.types';
 import { firstValueFrom } from 'rxjs';
 import {
   ErrorValidacionPasada,
@@ -16,7 +18,7 @@ import { resolvePatenteReferences } from '../services/patente-reference.helper';
 @Component({
   selector: 'app-paso8-validacion',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DataTableComponent],
   templateUrl: './paso8-validacion.component.html',
   styleUrl: './paso8-validacion.component.css',
 })
@@ -29,6 +31,15 @@ export class Paso8ValidacionComponent implements OnInit {
 
   resultado: ResultadoValidacionCarga | null = null;
   duplicados: ErrorValidacionPasada[] = [];
+  duplicadosComparacion: DuplicateComparisonRow[] = [];
+  readonly duplicadosColumns: DataTableColumn[] = [
+    { key: 'pasada', label: 'Pasada', width: '18%' },
+    { key: 'patente', label: 'Patente', width: '18%' },
+    { key: 'fecha_hora', label: 'Fecha_Hora', width: '18%' },
+    { key: 'fecha_hora_repetida', label: 'Fecha_Hora repetida', width: '18%' },
+    { key: 'valor', label: 'Valor', align: 'right', width: '14%' },
+    { key: 'valor_repetido', label: 'Valor repetido', align: 'right', width: '14%' },
+  ];
   cargando = false;
   error: string | null = null;
   diagnosticos: DiagnosticoValidacion[] = [];
@@ -46,6 +57,7 @@ export class Paso8ValidacionComponent implements OnInit {
   async validar(): Promise<void> {
     this.cargando = true;
     this.error = null;
+    this.duplicadosComparacion = [];
     try {
       const s = this.state.snapshot();
       let pasadas =
@@ -81,6 +93,7 @@ export class Paso8ValidacionComponent implements OnInit {
       const estaciones = this.validarReferencias(pasadasValidacion, 'ESTACION_ID', 'Estaciones', 6);
       const patentes = this.validarReferencias(pasadasValidacion, 'PATENTE_ID', 'Patentes', 5);
       const duplicados = await this.ejecutarDeteccionDuplicados(pasadasValidacion);
+      this.duplicadosComparacion = this.construirComparacionesDuplicados(duplicados.errores, pasadasValidacion);
 
       const importesPorDoc = [];
       const erroresImporte = [];
@@ -299,6 +312,25 @@ export class Paso8ValidacionComponent implements OnInit {
     }
   }
 
+  private construirComparacionesDuplicados(
+    errores: ErrorValidacionPasada[],
+    pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>
+  ): DuplicateComparisonRow[] {
+    return errores
+      .filter((error) => error.columna === 'CLAVE_DUPLICADO' && error.fila > 0)
+      .map((error) => {
+        const importada = pasadas[error.fila - 1];
+        return {
+          pasada: error.pasada ?? importada?.PASE_ID ?? error.valor,
+          patente: error.patente ?? importada?.PATENTE_ID ?? '—',
+          fecha_hora: error.fecha_hora ?? importada?.FECHA_HORA ?? '—',
+          fecha_hora_repetida: error.fecha_hora_repetida ?? '—',
+          valor: importada?.IMPORTE_NETO ?? '—',
+          valor_repetido: error.valor_repetido ?? '—',
+        };
+      });
+  }
+
   private validarCamposObligatorios(pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>): DiagnosticoValidacion {
     const columnas = ['FECHA_HORA', 'PASE_ID', 'PATENTE_ID', 'ESTACION_ID', 'PRECIO', 'BONIFICACION', 'QUANTITY', 'IMPORTE_NETO'] as const;
     const errores = pasadas.flatMap((p, index) => columnas.filter((columna) => p[columna] === null || p[columna] === undefined || p[columna] === '').map((columna) => ({ fila: index + 1, columna, valor: p[columna], motivo: 'Campo obligatorio vacío.' })));
@@ -391,3 +423,11 @@ interface DiagnosticoTecnico { rpc: string; request: unknown; response: unknown;
 interface DiagnosticoValidacion { id: string; titulo: string; estado: EstadoDiagnostico; paso: 5 | 6 | 7; detalle: string; accion: string; errores?: ErrorValidacionPasada[]; tecnico?: DiagnosticoTecnico; }
 interface ResultadoDiagnosticoImporte extends ResultadoValidacionCarga { diagnostico: DiagnosticoValidacion; }
 interface ResultadoDiagnosticoDuplicados { errores: ErrorValidacionPasada[]; diagnostico: DiagnosticoValidacion; }
+interface DuplicateComparisonRow extends Record<string, unknown> {
+  pasada: unknown;
+  patente: unknown;
+  fecha_hora: unknown;
+  fecha_hora_repetida: unknown;
+  valor: unknown;
+  valor_repetido: unknown;
+}
