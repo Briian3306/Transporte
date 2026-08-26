@@ -17,6 +17,10 @@ export class Paso8ValidacionPage extends BasePage {
     return this.byCss('app-paso8-validacion .pw__status');
   }
 
+  get details() {
+    return this.byCss('app-paso8-validacion .paso8__checklist');
+  }
+
   async waitReady() {
     const deadline = Date.now() + 90000;
     while (Date.now() < deadline) {
@@ -47,7 +51,8 @@ export class Paso8ValidacionPage extends BasePage {
     const button = await this.find(this.continuar);
     const disabled = await button.getAttribute('disabled');
     const status = (await this.textOf(this.status)).trim();
-    return { enabled: !disabled, status, skipped: false };
+    const details = (await this.textOf(this.details)).trim();
+    return { enabled: !disabled, status, details, skipped: false };
   }
 
   async continue() {

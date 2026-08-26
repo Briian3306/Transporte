@@ -9,6 +9,7 @@ export const DEFAULT_STATUS_CSV = path.resolve(REPO_ROOT, 'scripts/downloads/sta
 const STATUS = {
   COMPLETE: 'COMPLETE',
   FAILED: 'FAILED',
+  DUPLICATED: 'DUPLICATED',
   USER_INPUT: 'USER_INPUT',
 };
 
@@ -143,16 +144,43 @@ export function saveStatusCsv(store) {
   const rows = [store.headers, ...store.records.map((record) => store.headers.map((header) => record[header] ?? ''))];
   const written = writeAtomically(store.filePath, stringifyCsv(rows));
   store.lastWrittenPath = written;
-  console.log(`[csv] escrito: ${written}`);
   return written;
 }
 
 export function updateRecordStatus(store, record, status, message = '') {
+  const compactMessage = compactStatusMessage(message, status);
   record.uploadFileStatus = status;
-  record.messageStatus = message;
-  const written = saveStatusCsv(store);
-  console.log(`[csv] ${record.numero || record._index}: ${status}${message ? ` — ${message}` : ''}`);
-  return written;
+  record.messageStatus = compactMessage;
+  return saveStatusCsv(store);
+}
+
+export function compactStatusMessage(message, status = '') {
+  const normalizedStatus = String(status ?? '').trim().toUpperCase();
+  if (normalizedStatus === STATUS.COMPLETE || normalizedStatus === 'IN_PROGRESS') return '';
+  if (normalizedStatus === STATUS.USER_INPUT) return 'Requiere revisión';
+  if (normalizedStatus === STATUS.FAILED) return 'Error';
+  const text = String(message ?? '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const duplicate = text.match(/Se detectaron\s+(\d+)\s+pasada\(s\)\s+duplicada\(s\)/i);
+  if (duplicate) return `Duplicado: ${duplicate[1]} pasada(s)`;
+  if (/No existe filePasadasPath/i.test(text)) return 'Falta archivo: pasadas';
+  if (/No existe fileFacturaPath/i.test(text)) return 'Falta archivo: factura';
+  if (/Paso ValidaciÃ³n|Paso Validación/i.test(text)) return 'Validación: requiere revisión';
+  if (/Paso Factura/i.test(text)) return 'Factura: formulario inválido';
+  if (/Procesando carga-express/i.test(text)) return 'Procesando';
+  return text.slice(0, 180);
+}
+
+export function normalizeStatusMessages(store) {
+  let changed = false;
+  for (const record of store.records) {
+    const normalized = compactStatusMessage(record.messageStatus, record.uploadFileStatus);
+    if (normalized !== String(record.messageStatus ?? '')) {
+      record.messageStatus = normalized;
+      changed = true;
+    }
+  }
+  return changed;
 }
 
 export function firstPendingRecord(store) {
@@ -174,7 +202,8 @@ export function isComplete(record) {
 
 export function isRetryableStatus(record) {
   const status = String(record.uploadFileStatus ?? '').trim().toUpperCase();
-  return status === STATUS.FAILED || status === STATUS.USER_INPUT;
+  if (status === STATUS.USER_INPUT) return true;
+  return status === STATUS.FAILED;
 }
 
 export function rowKey(record) {

@@ -6,6 +6,7 @@ import {
   resolveRepoPath,
   rowKey,
   STATUS,
+  compactStatusMessage,
   updateRecordStatus,
 } from './utils/status-csv.mjs';
 import { BasePage } from './pages/base.page.mjs';
@@ -18,6 +19,7 @@ import { Paso8ValidacionPage } from './pages/paso8-validacion.page.mjs';
 import { Paso9RevisionPage } from './pages/paso9-revision.page.mjs';
 import { ProviderFailureTracker, selectProviderRecord } from './utils/provider-failover.mjs';
 import { describeValidationFailure } from './utils/validation-failure.mjs';
+import { createSessionReport } from './utils/session-report.mjs';
 
 const MAX_AI_RETRIES = 3;
 const MAX_RESTARTS = 3;
@@ -35,6 +37,9 @@ export class CargaExpressBot {
     this.rowFilter = rowFilter ?? null;
     this.parked = [];
     this.processed = 0;
+    this.sessionStartedAt = new Date().toISOString();
+    this.sessionEntries = [];
+    this.statusEvents = 0;
     this.providerFailures = new ProviderFailureTracker(5);
     this.pages = {
       base: new BasePage(driver),
@@ -106,11 +111,11 @@ export class CargaExpressBot {
       try {
         const outcome = await this.processRecord(record, { handle, restarts: 0 });
         if (outcome === 'parked') continue;
-        if (outcome === 'complete' || outcome === 'failed') this.processed += 1;
+        if (outcome === 'complete' || outcome === 'failed' || outcome === 'duplicated') this.processed += 1;
         await closeHandle(this.driver, handle);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        this.failRecord(record, message);
+      this.failRecord(record, message);
         this.processed += 1;
         await closeHandle(this.driver, handle).catch(() => {});
       }
@@ -140,17 +145,17 @@ export class CargaExpressBot {
 
   async processRecord(record, { handle, restarts, formRetries = 0 }) {
     await switchToHandle(this.driver, handle);
-    console.log(`\n→ ${record.numero} (${record.Empresa} / ${record.Template})`);
+    console.log(`[RUNNING] ${record.numero || rowKey(record)}`);
     updateRecordStatus(this.store, record, 'IN_PROGRESS', 'Procesando carga-express…');
 
     const pasadas = resolveRepoPath(record.filePasadasPath);
     const factura = resolveRepoPath(record.fileFacturaPath);
     if (!pasadas || !fs.existsSync(pasadas)) {
-      this.failRecord(record, `No existe filePasadasPath: ${record.filePasadasPath}`);
+      this.failRecord(record, `No existe filePasadasPath: ${record.filePasadasPath}`, { category: 'missing', missing: ['filePasadasPath'] });
       return 'failed';
     }
     if (!factura || !fs.existsSync(factura)) {
-      this.failRecord(record, `No existe fileFacturaPath: ${record.fileFacturaPath}`);
+      this.failRecord(record, `No existe fileFacturaPath: ${record.fileFacturaPath}`, { category: 'missing', missing: ['fileFacturaPath'] });
       return 'failed';
     }
 
@@ -244,6 +249,10 @@ export class CargaExpressBot {
         current = await this.pages.base.detectStep();
       } else if (!state.enabled) {
         const validationFailure = describeValidationFailure(state);
+        if (validationFailure.duplicate) {
+          this.duplicateRecord(record, validationFailure.message || state.details || 'Se detectaron pasadas duplicadas.');
+          return 'duplicated';
+        }
         this.failRecord(
           record,
           `${validationFailure.message} Diferencia de factura o errores de filas detectados; se continúa con la siguiente fila.`,
@@ -263,8 +272,9 @@ export class CargaExpressBot {
     if (current === 'revision') {
       await this.pages.revision.confirm();
       updateRecordStatus(this.store, record, STATUS.COMPLETE, '');
+      this.reportStatus(record, STATUS.COMPLETE);
       this.providerFailures.recordSuccess(record);
-      console.log(`COMPLETE ${record.numero}`);
+      this.addSessionEntry(record, 'complete', '');
       return 'complete';
     }
 
@@ -280,6 +290,8 @@ export class CargaExpressBot {
     let retries = 0;
     while (retries <= MAX_AI_RETRIES) {
       const state = await this.pages.factura.waitAiSettled();
+      const chipCount = await this.pages.factura.suggestionChipCount();
+      console.log(`[AI] ${record.numero} state=${state} chips=${chipCount}`);
       if (state === 'error') {
         retries += 1;
         if (retries > MAX_AI_RETRIES) return 'restart';
@@ -318,24 +330,80 @@ export class CargaExpressBot {
     return 'ok';
   }
 
-  failRecord(record, message) {
+  failRecord(record, message, { category = 'error', missing = [] } = {}) {
     const count = this.providerFailures.recordFailure(record);
     updateRecordStatus(this.store, record, STATUS.FAILED, message);
-    console.error(`FAILED ${record.numero} [${record.Empresa || '(sin proveedor)'}: ${count} consecutivo(s)]: ${message}`);
+    this.reportStatus(record, STATUS.FAILED, message);
+    this.addSessionEntry(record, 'failed', message, { category, missing });
     if (count >= this.providerFailures.blockAfter) {
-      console.log(`Proveedor ${record.Empresa || '(sin proveedor)'} queda temporalmente bloqueado tras ${count} fallos consecutivos.`);
     }
+  }
+
+  duplicateRecord(record, message) {
+    updateRecordStatus(this.store, record, STATUS.DUPLICATED, message);
+    this.reportStatus(record, STATUS.DUPLICATED, message);
+    this.addSessionEntry(record, 'duplicated', message, { category: 'duplicate', duplicate: true });
+  }
+
+  reportStatus(record, status, message = '') {
+    const compactMessage = compactStatusMessage(message, status);
+    console.log(`[${status}] ${record.numero || rowKey(record)}${compactMessage ? ` — ${compactMessage}` : ''}`);
+    this.statusEvents += 1;
+    if (this.statusEvents % 5 === 0) {
+      console.log(this.formatStatusSummary());
+    }
+  }
+
+  formatStatusSummary() {
+    const counts = { USER_INPUT: 0, COMPLETE: 0, FAILED: 0, DUPLICATED: 0, PENDING: 0 };
+    for (const record of this.store.records) {
+      const status = String(record.uploadFileStatus ?? '').trim().toUpperCase();
+      if (status === STATUS.USER_INPUT) counts.USER_INPUT += 1;
+      else if (status === STATUS.COMPLETE) counts.COMPLETE += 1;
+      else if (status === STATUS.FAILED) counts.FAILED += 1;
+      else if (status === STATUS.DUPLICATED) counts.DUPLICATED += 1;
+      else counts.PENDING += 1;
+    }
+    return [
+      '--- Estado (cada 5 registros)',
+      `USERINPUT: ${counts.USER_INPUT} (Por ver)`,
+      `COMPLETED: ${counts.COMPLETE}`,
+      `FAILED: ${counts.FAILED}`,
+      `DUPLICATED: ${counts.DUPLICATED}`,
+      `PENDING: ${counts.PENDING}`,
+      '--',
+    ].join('\n');
+  }
+
+  addSessionEntry(record, outcome, message, extra = {}) {
+    this.sessionEntries.push({
+      numero: record.numero,
+      provider: record.Empresa || '(sin proveedor)',
+      outcome,
+      message,
+      timestamp: new Date().toISOString(),
+      ...extra,
+    });
+  }
+
+  getSessionReport() {
+    return createSessionReport({
+      startedAt: this.sessionStartedAt,
+      finishedAt: new Date().toISOString(),
+      entries: this.sessionEntries,
+    });
   }
 
   park(record, handle, stage, message) {
     updateRecordStatus(this.store, record, STATUS.USER_INPUT, message);
+    this.reportStatus(record, STATUS.USER_INPUT, message);
+    this.addSessionEntry(record, 'user_input', message, { category: stage });
     const key = rowKey(record);
     const entry = { key, record, handle, stage, restarts: 0 };
     const index = this.parked.findIndex((item) => item.key === key);
     if (index >= 0) this.parked[index] = entry;
     else this.parked.push(entry);
     notifyUser(`Carga express — ayuda ${record.numero}`, message);
-    console.log(`USER_INPUT ${record.numero}: ${message}`);
     return 'parked';
   }
 
@@ -344,7 +412,7 @@ export class CargaExpressBot {
       keep.push(this.parked.find((entry) => entry.key === item.key) ?? item);
       return;
     }
-    if (outcome === 'complete' || outcome === 'failed') {
+    if (outcome === 'complete' || outcome === 'failed' || outcome === 'duplicated') {
       this.processed += 1;
       await closeHandle(this.driver, item.handle).catch(() => {});
     }

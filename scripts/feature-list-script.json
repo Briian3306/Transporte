@@ -229,15 +229,20 @@
         "Reads scripts/downloads/status.csv and writes uploadFileStatus COMPLETE|FAILED|USER_INPUT",
         "Logs in with IBARRA_EMAIL/IBARRA_PASSWORD, uploads CSV+PDF, selects Empresa then Plantilla",
         "Parks estaciones/patentes for user input with Windows notify and continues next row",
-        "Waits invoice AI, retries 3x, prefers hyphenated invoice number and highest-confidence chips",
+        "Waits invoice AI on app-ai-cat-loader (not graph-loader), retries 3x, prefers hyphenated invoice number and highest-confidence chips",
         "Invalid Paso 7 form or no transition triggers one full-row retry; second failure writes FAILED",
         "Paso 8 validation differences and blocked row checks write FAILED and continue with the next row",
         "Only FAILED and USER_INPUT rows are eligible; COMPLETE, blank, and IN_PROGRESS rows are skipped",
+        "Duplicate validation writes DUPLICATED, skips retries, and is excluded from future runs",
+        "Every execution prints a compact status summary with missing files and session errors",
         "No artificial parked-tab limit; manual tabs remain open while other rows continue",
         "Five consecutive provider failures temporarily skip that provider when an alternative is eligible; single-provider fallback continues",
-        "node --test utils/amounts.test.mjs utils/invoice-number.test.mjs utils/provider-failover.test.mjs utils/invoice-form-state.test.mjs"
+        "--local always uses http://localhost:4200 even if .env BASE_URL is production; ng serve must be up",
+        "node --test utils/amounts.test.mjs utils/invoice-number.test.mjs utils/urls.test.mjs utils/invoice-ai-wait.test.mjs utils/provider-failover.test.mjs utils/invoice-form-state.test.mjs"
       ],
       "evidence": [
+        "2026-08-26: --local wins over BASE_URL; Paso 7 wait uses app-ai-cat-loader; npm test 36 passed",
+        "2026-08-26: node run.mjs --local --limit 1 --row 5009A02010049 — URL localhost:4200, Login OK, [AI] state=error chips=0 after retries (OpenRouter)",
         "2026-08-25: scripts/carga-express-bot created (run.mjs + pages + utils)",
         "2026-08-25: npm test — 24 passed, including Paso 7 form-state and provider failover tests",
         "2026-08-25: npm test — 6 passed (amounts + invoice-number)"

@@ -17,8 +17,8 @@
 directory = "../netlify/functions"
 node_bundler = "nft"
 
-# Local functions: from ibarra-app run `pnpm start` (see scripts/start-netlify-dev.mjs).
-# Do not point [dev].command at `pnpm start` (infinite loop with netlify dev).
+# Local functions: from ibarra-app run `pnpm start:netlify` (see scripts/start-netlify-dev.mjs).
+# Do not point [dev].command at `pnpm start` or `pnpm start:netlify` (infinite loop with netlify dev).
 [dev]
   framework = "#static"
   autoLaunch = false

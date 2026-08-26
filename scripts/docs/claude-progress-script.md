@@ -103,6 +103,15 @@ node download-batch.mjs                    # relleno autenticado
 - Added validation-failure regression tests; `npm test` passes 26 tests.
 - Restricted automatic row selection to `FAILED` and `USER_INPUT`; `COMPLETE`, blank, and `IN_PROGRESS` rows are skipped.
 - Added status-filter regression coverage; `npm test` passes 27 tests.
+- Added terminal `DUPLICATED` status for repeated passes; duplicate rows are not retried in later runs.
+- Added a compact per-run console summary with missing files, errors, duplicates, manual rows, and outcomes.
+
+### 2026-08-26 — `--local` precedence + cat-loader wait
+
+- `--local` now always uses `http://localhost:4200` even if `.env` has `BASE_URL` pointing at production. The bot logs `URL: …` before Chrome starts and fails fast if ng serve is down.
+- Paso 7 wait targets `app-ai-cat-loader` (not `app-graph-loader`). Logs `[AI] <numero> state=… chips=…`.
+- `npm test` — 36 passed (`resolveBaseUrl` + cat-loader selector + recognition helper).
+- Localhost smoke `--local --limit 1 --row 5009A02010049`: logged `URL: http://localhost:4200/peajes/carga-express` and `Login OK` on localhost. Invoice AI settled as `state=error chips=0` after 3 retries × 3 reloads (OpenRouter did not return suggestions). Loader wait did not time out.
 
 ## Bloqueos / riesgos
 

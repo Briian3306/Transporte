@@ -65,14 +65,14 @@ PDF (Paso 1) → texto in-memory
 |-------|-----------------|
 | `InvoicePdfTextService` | Extrae texto de **todas** las páginas del PDF |
 | `InvoiceAiService` | Orquesta analyze + ranking |
-| `OpenRouterEngineService` | POST chat completions, schema, timeout 120 s, key 2 si el fallo es recuperable |
+| `OpenRouterEngineService` | POST chat completions, schema, timeout 120 s. Fallback: modelo 1 + key 1 → modelo 1 + key 2 → modelo 2 + key 1 |
 | `rankInvoiceCandidates` | Ordena y recorta candidatos (máx. 3 por campo) |
 | Paso 1 | Dropzone único: Excel/CSV + PDF opcional; dispara análisis post-plantilla |
 | Paso 7 | Muestra loader / error / chips; `aplicarSugerencia` parchea un control |
 
 Estados: `idle` | `loading` | `ready` | `error`.
 
-En `loading`, Paso 7 monta [`app-graph-loader`](../shared/graph-loader.md). En `error`, **Reintentar análisis** o carga manual.
+En importación simple, Paso 1 muestra `app-ai-cat-loader` con “Soy tu Asistente de IA”. En `loading`, Paso 7 monta el mismo componente (burbuja inferior izquierda; al pasar el mouse se desplaza un poco hacia arriba para no tapar el pie de página). El formulario sigue editable. En `error`, **Reintentar análisis** o carga manual.
 
 ### Campos sugeridos
 
@@ -101,7 +101,7 @@ Errores de usuario (español, sin keys): saturado, proveedor, inválido, red, va
 
 ## Dependencias
 
-- Env: `NG_APP_OPENROUTER_API_URL`, `NG_APP_OPENROUTER_MODEL`, `NG_APP_OPENROUTER_API_KEY`, opcional `NG_APP_OPENROUTER_API_KEY_2`.
+- Env: `NG_APP_OPENROUTER_API_URL`, `NG_APP_OPENROUTER_MODEL`, opcional `NG_APP_OPENROUTER_MODEL_2`, `NG_APP_OPENROUTER_API_KEY`, opcional `NG_APP_OPENROUTER_API_KEY_2`.
 - No usa service role. Keys viajan en el bundle Angular.
 - No hay RPC de IA. La carga confirmada sigue `peajes_confirmar_carga` con los valores **ingresados** en Paso 7.
 
@@ -111,7 +111,7 @@ Errores de usuario (español, sin keys): saturado, proveedor, inválido, red, va
 
 - Código: `src/app/components/peajes/services/ai/invoice/`, `.../ai/openrouter/`
 - UI: `wizard/paso1-carga/`, `wizard/paso7-factura/`
-- Loader: [../shared/graph-loader.md](../shared/graph-loader.md)
+- Loader: `app-ai-cat-loader` (`src/app/components/shared/ai-cat-loader/`)
 - Wizard (pasos y mapeo de controles): [wizard.md](./wizard.md)
 - Plan de implementación: [../../plan/invoice-ai/PLAN_invoice-ai.md](../../plan/invoice-ai/PLAN_invoice-ai.md)
 - Módulo: [../../modulos/peajes.md](../../modulos/peajes.md)

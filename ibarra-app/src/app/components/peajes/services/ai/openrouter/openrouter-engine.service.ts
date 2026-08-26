@@ -18,6 +18,11 @@ export const OPENROUTER_CHAT_COMPLETIONS_URL =
 const MAX_INVOICE_TEXT_CHARS = 200_000;
 const REQUEST_TIMEOUT_MS = 120_000;
 
+interface OpenRouterAttempt {
+  model: string;
+  key: string;
+}
+
 const ERRORS = {
   invalid: 'Pedido inválido.',
   config: 'El servicio de IA no está configurado.',
@@ -42,27 +47,46 @@ export class OpenRouterEngineService {
     }
 
     const apiUrl = environment.openRouterApiUrl || OPENROUTER_CHAT_COMPLETIONS_URL;
-    const model = environment.openRouterModel;
+    const model1 = environment.openRouterModel;
+    const model2 = environment.openRouterModel2;
     const key1 = environment.openRouterApiKey;
     const key2 = environment.openRouterApiKey2;
-    if (!model || !key1) {
+    if (!model1 || !key1) {
       return throwError(() => new InvoiceAiError(ERRORS.config, 'provider'));
     }
 
-    const body = this.buildPayload(text, expectedNetAmount, model);
-    const keys: string[] = [key1];
-    if (key2 && key2 !== key1) {
-      keys.push(key2);
-    }
+    const attempts = this.buildAttempts(model1, model2, key1, key2);
+    const run = (index: number): Observable<OpenRouterInvoiceResponse> => {
+      const attempt = attempts[index];
+      const body = this.buildPayload(text, expectedNetAmount, attempt.model);
+      return this.postOnce(apiUrl, attempt.key, body).pipe(
+        catchError((error) => {
+          const next = attempts[index + 1];
+          if (next && this.isRecoverable(error)) {
+            return run(index + 1);
+          }
+          return throwError(() => this.toInvoiceAiError(error));
+        })
+      );
+    };
 
-    return this.postOnce(apiUrl, keys[0], body).pipe(
-      catchError((error) => {
-        if (keys.length > 1 && this.isRecoverable(error)) {
-          return this.postOnce(apiUrl, keys[1], body);
-        }
-        return throwError(() => this.toInvoiceAiError(error));
-      })
-    );
+    return run(0);
+  }
+
+  private buildAttempts(
+    model1: string,
+    model2: string,
+    key1: string,
+    key2: string
+  ): OpenRouterAttempt[] {
+    const attempts: OpenRouterAttempt[] = [{ model: model1, key: key1 }];
+    if (key2 && key2 !== key1) {
+      attempts.push({ model: model1, key: key2 });
+    }
+    if (model2 && model2 !== model1) {
+      attempts.push({ model: model2, key: key1 });
+    }
+    return attempts;
   }
 
   private postOnce(
@@ -85,7 +109,7 @@ export class OpenRouterEngineService {
           const providerMessage = this.extractProviderMessage(data);
           if (providerMessage) {
             throw Object.assign(new Error(providerMessage), {
-              status: this.statusFromProviderMessage(providerMessage),
+              status: this.providerStatus(data, providerMessage),
               providerMessage,
             });
           }
@@ -170,6 +194,26 @@ export class OpenRouterEngineService {
     return choiceError?.['message'] ? String(choiceError['message']) : '';
   }
 
+  private providerStatus(data: unknown, message: string): number {
+    const record = asRecord(data);
+    const topCode = asRecord(record?.['error'])?.['code'];
+    if (topCode === 429 || topCode === '429') {
+      return 429;
+    }
+    const choices = record?.['choices'];
+    if (Array.isArray(choices)) {
+      const choice = choices.find(
+        (item) =>
+          asRecord(item)?.['error'] || asRecord(item)?.['finish_reason'] === 'error'
+      );
+      const choiceCode = asRecord(asRecord(choice)?.['error'])?.['code'];
+      if (choiceCode === 429 || choiceCode === '429') {
+        return 429;
+      }
+    }
+    return this.statusFromProviderMessage(message);
+  }
+
   private statusFromProviderMessage(message: string): number {
     const lower = message.toLowerCase();
     if (lower.includes('rate') || lower.includes('429')) {
@@ -185,22 +229,26 @@ export class OpenRouterEngineService {
     if (error instanceof InvoiceAiError) {
       return error.code === 'network' || error.code === 'rate_limited';
     }
-    const httpError = error as HttpErrorResponse;
-    const status = httpError?.status;
-    if (status === 0 || status === 429 || status === 408 || status === 404) {
+    const shape = errorShape(error);
+    const status = shape.status;
+    const bodyCode = shape.bodyCode;
+    if (status === 400) {
+      return false;
+    }
+    if (status === 0 || status === 429 || status === 408 || status === 404 || bodyCode === 429 || bodyCode === '429') {
       return true;
     }
-    if (Number.isFinite(status) && status >= 500 && status <= 599) {
+    if (typeof status === 'number' && Number.isFinite(status) && status >= 500 && status <= 599) {
       return true;
     }
     const message = String(
-      (error as { providerMessage?: string; message?: string })?.providerMessage ||
-        httpError?.message ||
-        ''
+      (error as { providerMessage?: string })?.providerMessage || shape.bodyMessage || ''
     ).toLowerCase();
     return (
       message.includes('provider returned error') ||
-      message.includes('no endpoints found')
+      message.includes('no endpoints found') ||
+      message.includes('rate') ||
+      message.includes('429')
     );
   }
 
@@ -211,9 +259,10 @@ export class OpenRouterEngineService {
     if (error instanceof TimeoutError) {
       return new InvoiceAiError(ERRORS.provider, 'provider');
     }
-    const httpError = error as HttpErrorResponse;
-    const status = httpError?.status;
-    if (status === 429) {
+    const shape = errorShape(error);
+    const status = shape.status;
+    const bodyCode = shape.bodyCode;
+    if (status === 429 || bodyCode === 429 || bodyCode === '429') {
       return new InvoiceAiError(ERRORS.rateLimited, 'rate_limited');
     }
     if (status === 400) {
@@ -231,6 +280,30 @@ export class OpenRouterEngineService {
     }
     return 'https://ibarra-app.local';
   }
+}
+
+function errorShape(error: unknown): {
+  status: number | null;
+  bodyCode: unknown;
+  bodyMessage: string;
+} {
+  const httpError = error as HttpErrorResponse;
+  const body = httpError?.error as Record<string, unknown> | string | undefined;
+  const nested =
+    body && typeof body === 'object' && !Array.isArray(body)
+      ? ((body['error'] as Record<string, unknown> | undefined) ?? body)
+      : null;
+  const bodyMessage =
+    typeof nested?.['message'] === 'string'
+      ? nested['message']
+      : typeof body === 'string'
+        ? body
+        : String((error as { message?: string })?.message || '');
+  return {
+    status: httpError?.status ?? null,
+    bodyCode: nested?.['code'] ?? nested?.['status'] ?? null,
+    bodyMessage,
+  };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

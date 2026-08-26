@@ -13,6 +13,7 @@ export const environment = {
   authToken: envValues.authToken as string,
   openRouterApiUrl: envValues.openRouterApiUrl as string,
   openRouterModel: envValues.openRouterModel as string,
+  openRouterModel2: envValues.openRouterModel2 as string,
   openRouterApiKey: envValues.openRouterApiKey as string,
   openRouterApiKey2: envValues.openRouterApiKey2 as string,
 };

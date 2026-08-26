@@ -279,4 +279,10 @@
     "
     (change)="onFileInput($event)"
   />
+
+  <app-ai-cat-loader
+    *ngIf="modoImportacion === 'simple'"
+    data-testid="invoice-ai-assistant"
+    [messages]="['Soy tu Asistente de IA']"
+  ></app-ai-cat-loader>
 </div>

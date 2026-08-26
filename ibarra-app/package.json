@@ -4,8 +4,9 @@
   "scripts": {
     "ng": "ng",
     "env:sync": "node scripts/sync-env.mjs",
-    "start": "node scripts/sync-env.mjs development && node scripts/start-netlify-dev.mjs",
+    "start": "node scripts/sync-env.mjs development && ng serve",
     "start:app": "node scripts/sync-env.mjs development && ng serve",
+    "start:netlify": "node scripts/sync-env.mjs development && node scripts/start-netlify-dev.mjs",
     "dev": "npx supabase start && npm run dev:app",
     "dev:app": "node scripts/sync-env.mjs local && ng serve --configuration=local",
     "supabase:start": "npx supabase start",

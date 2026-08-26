@@ -266,15 +266,17 @@ describe('Paso7FacturaComponent', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-loader"]')).toBeNull();
   });
 
-  it('shows the graph loader while invoice AI is loading and keeps factura editable', () => {
+  it('shows the cat loader while invoice AI is loading and keeps factura editable', () => {
     state.setInvoiceAiAnalysis('loading', null, null);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-loader"]')).toBeTruthy();
-    expect(fixture.nativeElement.textContent).toContain('Analizando texto....');
+    expect(fixture.nativeElement.querySelector('app-ai-cat-loader')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Analizando factura…');
     const factura = fixture.nativeElement.querySelector('#factura') as HTMLInputElement;
     expect(factura).toBeTruthy();
     expect(factura.disabled).toBeFalse();
-    expect(fixture.nativeElement.textContent).not.toContain('Analizando factura…');
+    expect(fixture.nativeElement.textContent).not.toContain('Con IA');
+    expect(fixture.nativeElement.textContent).not.toContain('Analizando texto....');
   });
 
   it('hides the loader on error, shows retry, and keeps factura enabled', () => {

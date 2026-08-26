@@ -30,6 +30,7 @@ describe('InvoiceAiService', () => {
   let service: InvoiceAiService;
   let http: HttpTestingController;
   let previousModel: string;
+  let previousModel2: string;
   let previousKey: string;
   let previousKey2: string;
   let previousUrl: string;
@@ -37,10 +38,12 @@ describe('InvoiceAiService', () => {
   beforeEach(() => {
     previousUrl = environment.openRouterApiUrl;
     previousModel = environment.openRouterModel;
+    previousModel2 = environment.openRouterModel2;
     previousKey = environment.openRouterApiKey;
     previousKey2 = environment.openRouterApiKey2;
     environment.openRouterApiUrl = OPENROUTER_CHAT_COMPLETIONS_URL;
     environment.openRouterModel = 'test/model';
+    environment.openRouterModel2 = '';
     environment.openRouterApiKey = 'key-one';
     environment.openRouterApiKey2 = '';
 
@@ -60,6 +63,7 @@ describe('InvoiceAiService', () => {
     http.verify();
     environment.openRouterApiUrl = previousUrl;
     environment.openRouterModel = previousModel;
+    environment.openRouterModel2 = previousModel2;
     environment.openRouterApiKey = previousKey;
     environment.openRouterApiKey2 = previousKey2;
   });

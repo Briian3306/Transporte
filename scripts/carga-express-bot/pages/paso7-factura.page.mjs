@@ -2,7 +2,7 @@ import { By, Key } from 'selenium-webdriver';
 import { amountsClose, datesMatch, formatDateInput, parseAmount } from '../utils/amounts.mjs';
 import { setAngularInput } from '../utils/angular-input.mjs';
 import { pickInvoiceNumber, stripInvoiceTypeLetters } from '../utils/invoice-number.mjs';
-import { invoiceAiCanProceed } from '../utils/invoice-ai-wait.mjs';
+import { invoiceAiCanProceed, INVOICE_AI_LOADER_SELECTOR } from '../utils/invoice-ai-wait.mjs';
 import { describeInvoiceFormFailure } from '../utils/invoice-form-state.mjs';
 import { BasePage } from './base.page.mjs';
 
@@ -12,9 +12,7 @@ export class Paso7FacturaPage extends BasePage {
   }
 
   get loader() {
-    return this.byCss(
-      '[data-testid="invoice-ai-loader"], app-paso7-factura .paso7__ai-loader, app-paso7-factura app-graph-loader',
-    );
+    return this.byCss(INVOICE_AI_LOADER_SELECTOR);
   }
 
   get retry() {
@@ -51,6 +49,10 @@ export class Paso7FacturaPage extends BasePage {
       await this.sleep(400);
     }
     return this.aiState();
+  }
+
+  async suggestionChipCount() {
+    return (await this.finds(this.byCss('app-paso7-factura .paso7__suggest'))).length;
   }
 
   async aiState() {

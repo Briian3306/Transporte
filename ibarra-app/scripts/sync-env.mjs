@@ -25,6 +25,7 @@ const REQUIRED_KEYS = [
 const OPTIONAL_OPENROUTER_KEYS = [
   'NG_APP_OPENROUTER_API_URL',
   'NG_APP_OPENROUTER_MODEL',
+  'NG_APP_OPENROUTER_MODEL_2',
   'NG_APP_OPENROUTER_API_KEY',
   'NG_APP_OPENROUTER_API_KEY_2',
 ];
@@ -110,6 +111,7 @@ export const envValues = {
   authToken: ${JSON.stringify(env.NG_APP_AUTH_TOKEN)},
   openRouterApiUrl: ${JSON.stringify(env.NG_APP_OPENROUTER_API_URL || '')},
   openRouterModel: ${JSON.stringify(env.NG_APP_OPENROUTER_MODEL || '')},
+  openRouterModel2: ${JSON.stringify(env.NG_APP_OPENROUTER_MODEL_2 || '')},
   openRouterApiKey: ${JSON.stringify(env.NG_APP_OPENROUTER_API_KEY || '')},
   openRouterApiKey2: ${JSON.stringify(env.NG_APP_OPENROUTER_API_KEY_2 || '')},
 } as const;

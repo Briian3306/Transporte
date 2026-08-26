@@ -35,7 +35,7 @@ import {
   parseDateInputValue,
   toDateInputValue,
   formatDateInputDisplay,
-  GraphLoaderComponent,
+  AiCatLoaderComponent,
 } from '../../../shared';
 import {
   agregarIvaDocumento,
@@ -82,7 +82,7 @@ type DocFormGroup = ReturnType<Paso7FacturaComponent['crearDocGroup']>;
     AccordionPanelComponent,
     AccordionHeaderDirective,
     AccordionContentDirective,
-    GraphLoaderComponent,
+    AiCatLoaderComponent,
   ],
   templateUrl: './paso7-factura.component.html',
   styleUrl: './paso7-factura.component.css',

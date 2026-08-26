@@ -15,8 +15,9 @@ For each pending row in `status.csv`:
 4. Continues. Estaciones may be skipped by the app when all codes match.
 5. If estaciones or patentes need a human decision, parks that tab, fires a
    Windows MessageBox, writes `USER_INPUT`, and continues with the next row.
-6. Waits for invoice AI (25–45s typical), retries up to 3 times, then reloads
-   the same row up to 3 times.
+6. Waits for invoice AI on `data-testid="invoice-ai-loader"` / `app-ai-cat-loader`
+   (25–45s typical), retries up to 3 times, then reloads the same row up to 3 times.
+   Logs `[AI] <numero> state=… chips=…` when suggestions settle.
 7. Fills factura fields from AI chips + CSV (`numero`, `fechaEmision`, `monto`).
 8. Confirms the load and writes `uploadFileStatus=COMPLETE`.
 
@@ -28,8 +29,13 @@ If Paso 8 validation is blocked because of an invoice/pass difference or row
 errors, the bot writes `FAILED` with the validation status and continues with
 the next row; it does not leave the row parked as `USER_INPUT`.
 
-Statuses written to `uploadFileStatus`: `IN_PROGRESS`, `COMPLETE`, `FAILED`, `USER_INPUT`.
+Statuses written to `uploadFileStatus`: `IN_PROGRESS`, `COMPLETE`, `FAILED`, `DUPLICATED`, `USER_INPUT`.
 `messageStatus` describes the exact field, station decision, or login error.
+
+Duplicate detections are terminal: the bot writes `DUPLICATED`, does not retry
+the row, and skips it in future executions. Each execution prints one compact
+summary with completed rows, failures, duplicates, pending rows, missing files,
+and session errors; it does not dump all records to the console.
 
 If login fails, the first pending row is marked `FAILED` with the login error so the CSV updates even before a file is uploaded. If Excel has `status.csv` open and Windows locks it, the bot writes `status.bot.csv` next to it.
 
@@ -55,14 +61,15 @@ node run.mjs --limit 1 --row 5009A02010049
 
 | Flag | Meaning |
 |---|---|
-| `--local` | `http://localhost:4200/peajes/carga-express` |
+| `--local` | Always `http://localhost:4200` (wins over `BASE_URL` in `.env`). Requires `ng serve` up; fails fast if `:4200` is down. Use this when local OpenRouter keys differ from production. |
 | `--limit n` | At most n pending rows |
 | `--row numero` | Only this invoice `numero` |
 | `--csv path` | Alternate status CSV |
 
 Default URL: `https://portal.tpteibarra.ar/peajes/carga-express`.
+`BASE_URL` in `.env` only applies when `--local` is **not** set.
 
-Chrome runs **headed**. Skip rows already marked `COMPLETE`.
+Chrome runs **headed**. Do not close the window the bot opens.
 
 The automatic selector only executes rows whose `uploadFileStatus` is
 `FAILED` or `USER_INPUT`. Rows with `COMPLETE`, `IN_PROGRESS`, blank, or any

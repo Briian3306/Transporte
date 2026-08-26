@@ -11,7 +11,7 @@ import {
   PlantillaConfiguracion,
   PeajesPlantillasService,
 } from '../../models';
-import { DialogComponent, SearchSelectComponent, SearchSelectOption } from '../../../shared';
+import { DialogComponent, SearchSelectComponent, SearchSelectOption, AiCatLoaderComponent } from '../../../shared';
 import { COLUMNA_FACTURA_MASIVA, excelTieneColumnaFactura } from '../../models';
 import { MVP_EJEMPLO_NOMBRE_ARCHIVO } from '../fixtures/mvp-ejemplo.fixture';
 import { PeajesExcelService } from '../services/peajes-excel.service';
@@ -30,7 +30,7 @@ import { InvoicePdfTextService } from '../../services/ai/invoice/invoice-pdf-tex
 @Component({
   selector: 'app-paso1-carga',
   standalone: true,
-  imports: [CommonModule, FormsModule, DialogComponent, SearchSelectComponent],
+  imports: [CommonModule, FormsModule, DialogComponent, SearchSelectComponent, AiCatLoaderComponent],
   templateUrl: './paso1-carga.component.html',
   styleUrl: './paso1-carga.component.css',
 })

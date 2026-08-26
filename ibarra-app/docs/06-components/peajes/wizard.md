@@ -146,9 +146,9 @@ No analiza filas de preview solas. Si el fingerprint no cambió y el estado ya e
 
 ### OpenRouter desde el browser
 
-`OpenRouterEngineService` hace POST a `environment.openRouterApiUrl` (OpenRouter chat completions) con prompt, schema y modelo. Claves: `NG_APP_OPENROUTER_API_KEY` y, si hace falta, `NG_APP_OPENROUTER_API_KEY_2` (solo ante 429, 408, 404, 5xx, timeout, error de red, `provider returned error` o `no endpoints found`). Timeout HTTP 120s. Las keys viajan en el bundle; no se loguean. El PDF, el texto y las sugerencias no se persisten ni se escriben en Supabase. No se usa `/.netlify/functions/peajes-invoice-ai` para este flujo.
+`OpenRouterEngineService` hace POST a `environment.openRouterApiUrl` (OpenRouter chat completions) con prompt, schema y modelo. Ante 429, 408, 404, 5xx, timeout, error de red, `provider returned error` o `no endpoints found` reintenta en este orden: `NG_APP_OPENROUTER_MODEL` + `NG_APP_OPENROUTER_API_KEY` → mismo modelo + `NG_APP_OPENROUTER_API_KEY_2` → `NG_APP_OPENROUTER_MODEL_2` + key 1. Timeout HTTP 120s. Las keys viajan en el bundle; no se loguean. El PDF, el texto y las sugerencias no se persisten ni se escriben en Supabase. No se usa `/.netlify/functions/peajes-invoice-ai` para este flujo.
 
-Estados: `idle` | `loading` | `ready` | `error`. En Paso 7, `loading` muestra el graph loader (`app-graph-loader`) con frases rotativas y el formulario permanece editable. **Reintentar análisis** aparece solo si `status === 'error'`. Detalle del loader: [../shared/graph-loader.md](../shared/graph-loader.md). Contrato de la IA: [ia-factura.md](./ia-factura.md).
+Estados: `idle` | `loading` | `ready` | `error`. En Paso 1 (importación simple) se muestra `app-ai-cat-loader` con “Soy tu Asistente de IA”. En Paso 7, `loading` muestra el mismo componente (burbuja inferior izquierda, frases rotativas; hover la sube un poco) y el formulario permanece editable. **Reintentar análisis** aparece solo si `status === 'error'`. Contrato de la IA: [ia-factura.md](./ia-factura.md).
 
 ### Click para aplicar (Paso 7)
 

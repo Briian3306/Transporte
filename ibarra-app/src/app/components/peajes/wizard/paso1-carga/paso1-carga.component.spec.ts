@@ -486,4 +486,15 @@ describe('Paso1CargaComponent', () => {
     expect(state.snapshot().documentos.map((doc) => doc.factura)).toEqual(['F-001', 'F-002']);
     expect(state.snapshot().documentos.map((doc) => doc.rowIndexes)).toEqual([[0, 1], [2]]);
   });
+
+  it('muestra el asistente de IA en importación simple', () => {
+    expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-assistant"]')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Soy tu Asistente de IA');
+  });
+
+  it('oculta el asistente de IA en importación masiva', () => {
+    component.onModoImportacionChange('masiva');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-assistant"]')).toBeNull();
+  });
 });

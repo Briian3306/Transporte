@@ -255,16 +255,6 @@
   gap: 0.5rem 0.75rem;
 }
 
-.paso7__ai-loader {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  background: color-mix(in srgb, #f7fafc 72%, transparent);
-}
-
 .paso7__suggestions {
   display: flex;
   flex-wrap: wrap;
