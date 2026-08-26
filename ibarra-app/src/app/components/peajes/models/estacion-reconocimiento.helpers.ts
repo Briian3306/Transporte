@@ -48,6 +48,56 @@ export function estacionCoincideCodigoProveedor(
   return (estacion.codigos_proveedor ?? []).some((c) => codigoEstacionEquivalente(c, valor));
 }
 
+/** Match without collapsing leading zeros (`0001` ≠ `1`). */
+export function estacionCoincideCodigoProveedorLiteral(
+  estacion: Pick<Estacion, 'nombre' | 'codigos_proveedor'>,
+  valor: unknown
+): boolean {
+  const n = normalizarCodigoEstacion(valor);
+  if (!n) return false;
+  if (normalizarCodigoEstacion(estacion.nombre) === n) return true;
+  return (estacion.codigos_proveedor ?? []).some((c) => normalizarCodigoEstacion(c) === n);
+}
+
+function estacionesUnicasPorId(estaciones: readonly Estacion[]): Estacion[] {
+  const resultado = new Map<string, Estacion>();
+  for (const e of estaciones) {
+    if (e?.id) resultado.set(e.id, e);
+  }
+  return [...resultado.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+}
+
+/**
+ * Alias rows may match both `0001` and canonical `1`. Prefer the literal
+ * `valor_normalizado` so AUBASA `0001` (DOCK SUD) is not mixed with `1` (MADARIAGA).
+ */
+export function estacionesDesdeAliasFilas(
+  rows: ReadonlyArray<{
+    valor_normalizado?: string | null;
+    estacion?: Estacion | Estacion[] | null;
+  }>,
+  valorProveedor: string,
+  empresaId?: string | null,
+  peajes: readonly Peaje[] = []
+): Estacion[] {
+  const n = normalizarCodigoEstacion(valorProveedor);
+  const unpacked: { valor_normalizado: string; estacion: Estacion }[] = [];
+  for (const row of rows) {
+    const estacion = Array.isArray(row.estacion) ? row.estacion[0] : row.estacion;
+    if (!estacion?.id) continue;
+    if (!estacionPerteneceAEmpresa(estacion, empresaId, peajes)) continue;
+    unpacked.push({
+      valor_normalizado: normalizarCodigoEstacion(row.valor_normalizado),
+      estacion,
+    });
+  }
+  const literales = estacionesUnicasPorId(
+    unpacked.filter((r) => r.valor_normalizado === n).map((r) => r.estacion)
+  );
+  if (literales.length) return literales;
+  return estacionesUnicasPorId(unpacked.map((r) => r.estacion));
+}
+
 export function empresaIdDeEstacion(
   estacion: Estacion,
   peajes: readonly Peaje[] = []
@@ -98,7 +148,27 @@ export function reconocerEstacionEnCatalogo(
   if (!normalizarCodigoEstacion(valor)) return vacio;
 
   const scoped = filtrarEstacionesPorEmpresa(estaciones, empresaId, peajes);
+  const literales = scoped.filter((e) => estacionCoincideCodigoProveedorLiteral(e, valor));
   const exactas = scoped.filter((e) => estacionCoincideCodigoProveedor(e, valor));
+  // #region agent log
+  fetch('http://127.0.0.1:7497/ingest/f71cda72-2158-4367-a185-2d7eebc6703d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55cdc2'},body:JSON.stringify({sessionId:'55cdc2',runId:'pre-fix',hypothesisId:'B',location:'estacion-reconocimiento.helpers.ts:reconocerEstacionEnCatalogo',message:'catalog exact/partial match',data:{valor,empresaId:empresaId??null,scopedN:scoped.length,exactasNombres:exactas.map((e)=>e.nombre),exactasCodes:exactas.map((e)=>({nombre:e.nombre,codigos:e.codigos_proveedor??[]}))},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+  if (literales.length === 1) {
+    return {
+      valorProveedor: valor,
+      tipo: 'exacta',
+      estacion: literales[0],
+      sugerencias: [],
+    };
+  }
+  if (literales.length > 1) {
+    return {
+      valorProveedor: valor,
+      tipo: 'sugerencias',
+      estacion: null,
+      sugerencias: literales,
+    };
+  }
   if (exactas.length === 1) {
     return {
       valorProveedor: valor,

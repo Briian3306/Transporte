@@ -26,6 +26,7 @@ import {
   estacionCoincideCodigoProveedor,
   estacionPerteneceAEmpresa,
   claveRelacionEstacion,
+  reconocerEstacionEnCatalogo,
 } from '../../models';
 import {
   DialogComponent,
@@ -321,7 +322,19 @@ export class Paso6EstacionesComponent implements OnInit {
       }
       const match = existenteEnEmpresa ? existente : null;
       const autoMatches = pool.filter((e) => estacionCoincideCodigoProveedor(e, valorProveedor));
-      const auto = autoMatches.length === 1 ? autoMatches[0] : null;
+      let auto = autoMatches.length === 1 ? autoMatches[0] : null;
+      // #region agent log
+      if (String(valorProveedor).includes('0001') || String(valorProveedor) === '1') {
+        fetch('http://127.0.0.1:7497/ingest/f71cda72-2158-4367-a185-2d7eebc6703d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55cdc2'},body:JSON.stringify({sessionId:'55cdc2',runId:'pre-fix',hypothesisId:'E',location:'paso6-estaciones.component.ts:ngOnInit:autoMatches',message:'local pool auto-match for 0001/1',data:{valorProveedor,peajeAlcance,poolN:pool.length,autoMatchNames:autoMatches.map((e)=>e.nombre),existenteEnEmpresa,empresaId:empresaId??null},timestamp:Date.now()})}).catch(()=>{});
+      }
+      // #endregion
+      const recLocal = reconocerEstacionEnCatalogo(
+        pool,
+        valorProveedor,
+        empresaId,
+        this.todosPeajes
+      );
+      auto = recLocal.tipo === 'exacta' ? recLocal.estacion ?? null : null;
 
       return {
         valorProveedor,
@@ -410,9 +423,17 @@ export class Paso6EstacionesComponent implements OnInit {
       const enAlcance = this.estacionOptionsFor(valorProveedor).some(
         (o) => o.id === reconocimiento.estacion!.id
       );
-      if (enAlcance) {
+      // #region agent log
+      fetch('http://127.0.0.1:7497/ingest/f71cda72-2158-4367-a185-2d7eebc6703d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55cdc2'},body:JSON.stringify({sessionId:'55cdc2',runId:'pre-fix',hypothesisId:'D',location:'paso6-estaciones.component.ts:reconocerFila',message:'reconocerFila result',data:{valorProveedor,empresaId:empresaId??null,peajeId:peajeId??null,tipo:reconocimiento.tipo,estacion:reconocimiento.estacion?.nombre??null,sugerencias:(reconocimiento.sugerencias??[]).map((s)=>s.nombre),enAlcance,optionCount:this.estacionOptionsFor(valorProveedor).length},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      const yaElegida = this.relaciones.find((r) => r.valorProveedor === valorProveedor)?.estacionId;
+      if (enAlcance && !yaElegida) {
         await this.seleccionar(valorProveedor, reconocimiento.estacion.id, false);
       }
+    } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7497/ingest/f71cda72-2158-4367-a185-2d7eebc6703d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55cdc2'},body:JSON.stringify({sessionId:'55cdc2',runId:'pre-fix',hypothesisId:'C',location:'paso6-estaciones.component.ts:reconocerFila:nonExacta',message:'reconocerFila non-exacta',data:{valorProveedor,empresaId:empresaId??null,peajeId:peajeId??null,tipo:reconocimiento.tipo,sugerencias:(reconocimiento.sugerencias??[]).map((s)=>s.nombre),chipNames:(this.sugerencias[valorProveedor]??[]).map((s)=>s.nombre)},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
     }
     this.refreshNecesitaCrear(valorProveedor);
   }
