@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { closeHandle, openNewTab, switchToHandle } from './utils/driver.mjs';
 import { notifyUser } from './utils/notify.mjs';
 import {
-  isComplete,
+  isRetryableStatus,
   resolveRepoPath,
   rowKey,
   STATUS,
@@ -50,7 +50,7 @@ export class CargaExpressBot {
 
   pendingRecords() {
     const records = this.store.records.filter((record) => {
-      if (isComplete(record)) return false;
+      if (!isRetryableStatus(record)) return false;
       if (this.rowFilter && String(record.numero) !== String(this.rowFilter)) return false;
       if (this.parked.some((item) => item.key === rowKey(record))) return false;
       return true;

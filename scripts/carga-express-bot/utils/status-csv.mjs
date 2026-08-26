@@ -172,6 +172,11 @@ export function isComplete(record) {
   return String(record.uploadFileStatus ?? '').trim().toUpperCase() === STATUS.COMPLETE;
 }
 
+export function isRetryableStatus(record) {
+  const status = String(record.uploadFileStatus ?? '').trim().toUpperCase();
+  return status === STATUS.FAILED || status === STATUS.USER_INPUT;
+}
+
 export function rowKey(record) {
   return [record.numero, record.periodo, record.concesionario].filter(Boolean).join('|');
 }

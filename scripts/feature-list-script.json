@@ -232,6 +232,7 @@
         "Waits invoice AI, retries 3x, prefers hyphenated invoice number and highest-confidence chips",
         "Invalid Paso 7 form or no transition triggers one full-row retry; second failure writes FAILED",
         "Paso 8 validation differences and blocked row checks write FAILED and continue with the next row",
+        "Only FAILED and USER_INPUT rows are eligible; COMPLETE, blank, and IN_PROGRESS rows are skipped",
         "No artificial parked-tab limit; manual tabs remain open while other rows continue",
         "Five consecutive provider failures temporarily skip that provider when an alternative is eligible; single-provider fallback continues",
         "node --test utils/amounts.test.mjs utils/invoice-number.test.mjs utils/provider-failover.test.mjs utils/invoice-form-state.test.mjs"

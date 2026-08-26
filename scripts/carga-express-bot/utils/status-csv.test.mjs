@@ -3,7 +3,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { loadStatusCsv, STATUS, updateRecordStatus } from './status-csv.mjs';
+import { isRetryableStatus, loadStatusCsv, STATUS, updateRecordStatus } from './status-csv.mjs';
+
+test('only FAILED and USER_INPUT rows are retryable', () => {
+  assert.equal(isRetryableStatus({ uploadFileStatus: STATUS.FAILED }), true);
+  assert.equal(isRetryableStatus({ uploadFileStatus: STATUS.USER_INPUT }), true);
+  assert.equal(isRetryableStatus({ uploadFileStatus: STATUS.COMPLETE }), false);
+  assert.equal(isRetryableStatus({ uploadFileStatus: 'IN_PROGRESS' }), false);
+  assert.equal(isRetryableStatus({ uploadFileStatus: '' }), false);
+});
 
 test('writes uploadFileStatus and messageStatus back to the csv', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'carga-express-bot-'));

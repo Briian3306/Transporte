@@ -101,6 +101,8 @@ node download-batch.mjs                    # relleno autenticado
 - Added provider and Paso 7 form-state tests; `npm test` passes 24 tests.
 - Paso 8 validation blocks caused by invoice/pass differences now write `FAILED` and continue with the next row instead of creating `USER_INPUT`.
 - Added validation-failure regression tests; `npm test` passes 26 tests.
+- Restricted automatic row selection to `FAILED` and `USER_INPUT`; `COMPLETE`, blank, and `IN_PROGRESS` rows are skipped.
+- Added status-filter regression coverage; `npm test` passes 27 tests.
 
 ## Bloqueos / riesgos
 

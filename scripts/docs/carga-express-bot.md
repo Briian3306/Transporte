@@ -64,6 +64,10 @@ Default URL: `https://portal.tpteibarra.ar/peajes/carga-express`.
 
 Chrome runs **headed**. Skip rows already marked `COMPLETE`.
 
+The automatic selector only executes rows whose `uploadFileStatus` is
+`FAILED` or `USER_INPUT`. Rows with `COMPLETE`, `IN_PROGRESS`, blank, or any
+other status are skipped.
+
 There is no bot-imposed parked-tab limit. Each manual `USER_INPUT` row keeps
 its own tab while other eligible rows continue processing. Chrome/Windows
 resource limits still apply.
