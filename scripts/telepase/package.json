@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "parse": "node parse-facturas.mjs",
-    "test": "node --test download-paths.test.mjs",
+    "test": "node --test download-paths.test.mjs enrich-status-templates.test.mjs",
     "templates": "node enrich-status-templates.mjs",
     "download": "node download-batch.mjs",
     "pilot": "node download-batch.mjs --limit 3 --diverse",

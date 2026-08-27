@@ -161,9 +161,16 @@ node enrich-status-templates.mjs
 The report is written to `scripts/downloads/status-template-report.json`. It records
 matched, preserved, unknown, ambiguous, missing-PDF, and extraction-error rows.
 The matcher recognizes `YEAU`, `YERAU`, and `YERUA` as
-`MERCA-SUR-003-YERAU`, plus ZARATE, COLONIA, and PIEDRITAS. Description matches
+`MERCA-SUR-003-YERAU`, plus ZARATE, COLONIA, PIEDRITAS, and
+`CAMINOS DE LAS SIERRAS` as `SOY-CORDOBES`. Description matches
 have priority over locality matches, so an invoice with locality ZARATE and
 description `YERUA-CAT` receives the YERAU template.
+
+The monthly Caminos rows in `scripts/downloads/status.csv` use the invoice
+month-end date as `fechaEmision` and point to the matching workbook in
+`scripts/downloads/CAMINO DE LAS SIERRAS`. Add a row only when both its PDF and
+the corresponding `.xlsx` are present; the June workbook and July invoice PDF
+are currently missing from that folder.
 
 ### 5) Auth-only run
 

@@ -1,0 +1,31 @@
+{
+    "generado_en": "2026-08-26T18:04:31.284Z",
+    "periodo": "202606/2",
+    "id_resumen": "339425544",
+    "resumen": {
+        "fecha_emision": "30/06/2026",
+        "fecha_cierre": "27/06/2026",
+        "fecha_vencimiento": "06/07/2026",
+        "pagos_realizados": {
+            "periodo": "12/06/2026 - 27/06/2026",
+            "importe": 5679250.99,
+            "importe_texto": "$ 5.679.250,99"
+        },
+        "total_facturado": 5043809.82,
+        "total_facturado_texto": "$ 5.043.809,82",
+        "saldo_pendiente": 0,
+        "saldo_pendiente_texto": "$ 0,00",
+        "importe_total": 5043809.82,
+        "importe_total_texto": "$ 5.043.809,82"
+    },
+    "archivos": {
+        "resumen": {
+            "archivo": "Resumen.pdf",
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=339425544&idContrato=1717776&nombre=Resumen.pdf"
+        },
+        "consumos": {
+            "archivo": "Consumos.xlsx",
+            "url": "https://www.telepeajeplus.com/Reportes/ReporteExcel/ObtenerReporteTlpp/bXVXcTlxMHdmWXlSYlN2RFVMQU5TUnJVR2ZRaGtscmxSWENjYTlEdWNQZVp0QlFucjdjOE13PT0="
+        }
+    }
+}

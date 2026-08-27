@@ -21,8 +21,8 @@ For each pending row in `status.csv`:
 7. Fills factura fields from AI chips + CSV (`numero`, `fechaEmision`, `monto`).
 8. Confirms the load and writes `uploadFileStatus=COMPLETE`.
 
-If Paso 7 is invalid or does not advance, the bot restarts that row once from
-Paso 1. A second failure writes `uploadFileStatus=FAILED` and processing
+If Paso 7 is invalid or does not advance, the bot restarts that row from Paso 1
+up to twice. The third failure writes `uploadFileStatus=FAILED` and processing
 continues with the next row.
 
 If Paso 8 validation is blocked because of an invoice/pass difference or row

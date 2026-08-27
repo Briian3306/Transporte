@@ -202,8 +202,9 @@ export function isComplete(record) {
 
 export function isRetryableStatus(record) {
   const status = String(record.uploadFileStatus ?? '').trim().toUpperCase();
-  if (status === STATUS.USER_INPUT) return true;
-  return status === STATUS.FAILED;
+  // A blank status is the normal pending state for rows not processed yet.
+  // IN_PROGRESS is also recoverable when a previous run was interrupted.
+  return status !== STATUS.COMPLETE && status !== STATUS.DUPLICATED;
 }
 
 export function rowKey(record) {

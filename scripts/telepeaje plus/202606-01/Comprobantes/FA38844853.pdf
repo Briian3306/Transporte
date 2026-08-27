@@ -1,0 +1,308 @@
+
+<script src="/Login/bundles/jquery?v=iDqcwg1pkzK1enRJYGae9RDhjeqY4RCSbFJnHcxhctM1"></script>
+
+<script src="/Login/bundles/jqueryDep?v=dLRtL5Xf5RAzSTjeLiJlIfVt7hw7BJfLn6lwTXuPQUA1"></script>
+
+<script src="/Login/bundles/jqueryDataTable?v=5AReK66nl-428NHpV69EN5YrIgZNHIWztwuvWq_A5Vo1"></script>
+
+<script src="/Login/bundles/Modulos?v=dEEYlJ4bYVG4cJ_pCchFi1zoDdOuz6m7dk8c_kzHkNQ1"></script>
+
+
+<link href="/Login/content/css?v=Qja3jBQdbdnpBvDhhMI5SBoRC5HXGHMZVgQG6JlPsJI1" rel="stylesheet"/>
+
+<link href="/Login/Content/themes/base/css?v=-PFqHi-pviE_6Fgsfx7R-Df-OGPG1nlyTDmnyfs7xCM1" rel="stylesheet"/>
+
+
+<script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+
+<link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,400i,500,500i,700,700i,900" rel="stylesheet">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Telepeaje Plus</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="author" content="" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <meta name="Resource-type" content="" />
+
+    <link rel="stylesheet" type="text/css" href="/Login/Content/videopopup.css" />
+    <link rel="stylesheet" type="text/css" href="/Login/Content/anchors.css" />
+    <link rel="stylesheet" type="text/css" href="/Login/Content/animations.css" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700,900" rel="stylesheet">
+    <link rel="stylesheet" href="/Login/assets/css/main.css" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+</head>
+<body class="loading">
+    <div id="wrapper">
+        <div id="bg"></div>
+        <div id="overlay"></div>
+        <div id="main">
+            <header id="header">
+                <div class="loger-wrap">
+                    <div class="loger-logo">
+                        <a href="/Login/"><img src="/Login/Images/a4.png" alt=""></a>
+                    </div>
+
+                    
+
+<form action="/Login/" method="post"><input name="__RequestVerificationToken" type="hidden" value="CQtSy760-G2jq6cx0KqG_Q2LR6DjGgTmlxbhvrAbTb33GUlGjocnhbKnPEDH4r1j4_-B0pAqvMVgqSwYG8kNyhcMOQ2mY14CCtkRpHyqaj81" />                <div class="form-horizontal">
+                    <div class="form-group">
+                        
+                        <span class="field-validation-valid text-danger" data-valmsg-for="USW_NOM" data-valmsg-replace="true"></span>
+                        <input Value="" class="form-control text-box single-line" data-val="true" data-val-maxlength="El largo maximo de cáracteres es: 30" data-val-maxlength-max="30" data-val-minlength="El largo minimo de cáracteres es: 4" data-val-minlength-min="4" data-val-required="El usuario es requerido" id="USW_NOM" maxlength="30" name="USW_NOM" placeholder="Usuario" type="text" value="" />
+                    </div>
+                    <div class="form-group">
+                        <span class="field-validation-valid text-danger" data-valmsg-for="USW_PSWSTR" data-valmsg-replace="true"></span>
+                        <div class="input-group">
+                            <input class="form-control" data-val="true" data-val-maxlength="El largo maximo de cáracteres es: 20" data-val-maxlength-max="20" data-val-minlength="El largo minimo de cáracteres es: 4" data-val-minlength-min="4" data-val-required="La Contraseña es requerida" id="pbPassword" maxlength="20" name="USW_PSWSTR" placeholder="Contraseña" type="password" />
+                            <span class="input-group-btn">
+                                <button class="btn btn-gray" type="button" id="btnMostrarPassword"><i class="fa fa-eye" id="eyeIcon"></i></button>
+                            </span>
+                        </div>
+                    </div>
+
+                    <a class="registro" href="https://www.telepeajeplus.com/Adhierase" target="_blank" rel="noopener noreferrer">
+                        No tengo usuario ¡Quiero registrarme!
+                    </a>
+
+                    <input Value="0" data-val="true" data-val-number="The field USW_INTENTOS must be a number." id="USW_INTENTOS" name="USW_INTENTOS" type="hidden" value="0" />
+
+
+                    <button id="LOG_ENVIAR" type="submit" value="Ingresar">Iniciar Sesión</button>
+
+                    <div class="form-group">
+                        <a href="/Login/Recuperar/Usuario">olvidé mi usuario</a>
+                        <a href="/Login/Recuperar/Clave">olvidé mi contraseña</a>
+                    </div>
+                </div>
+</form>                </div>
+            </header>
+        </div>
+    </div>
+    <script>
+        window.onload = function () { document.body.className = ''; }
+        window.ontouchmove = function () { return false; }
+        window.onorientationchange = function () { document.body.scrollTop = 0; }
+    </script>
+
+    <style>
+        /*Botón del icono eye*/
+        .btn-gray {
+            color: #000 !important;
+            background-color: #F0F0F0 !important;
+            border-color: #CCCCCC !important;
+        }
+            .btn-gray:hover,
+            .btn-gray:focus,
+            .btn-gray:active {
+                color: #000 !important;
+                background-color: #E0E0E0 !important;
+                border-color: #858796 !important;
+            }
+            .btn-gray:focus,
+            .btn-gray:active:focus {
+                outline: none !important;
+                box-shadow: none !important;
+            }
+
+        .loger-wrap .input-group {
+            width: 90%;
+            height: 50px;
+            margin: 0 auto;
+            margin-bottom: 10px;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+        }
+    </style>
+
+    <script>
+        $(document).ready(function () {
+            $('#btnMostrarPassword').on('click', function () {
+                var passwordInput = document.getElementById("pbPassword");
+                if (passwordInput.type == "password") {
+                    // Muestra la contraseña
+                    passwordInput.type = "text";
+                    $('#eyeIcon').removeClass('fa fa-eye').addClass('fa fa-eye-slash');
+                } else {
+                    // Oculta la contraseña
+                    passwordInput.type = "password";
+                    $('#eyeIcon').removeClass('fa fa-eye-slash').addClass('fa fa-eye');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+
+<!-- Modal Bootstrap 3.3.7 -->
+<div class="modal fade" id="sessionWarningModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog" style="max-width:500px;">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color:#036350; color:white;">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Sesión por expirar</h4>
+            </div>
+            <div class="modal-body">
+                <p>Tu sesión está por expirar. ¿Deseás continuar?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="continueSessionBtn">Continuar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+  // ---- Config inyectada ----
+  const EFFECTIVE_TIMEOUT_MIN = 10;
+  const WARNING_LEAD_MIN      = 2;
+  const LOGIN_URL             = '/Login/';
+  const KEEP_ALIVE_URL        = '/Login/Home/KeepSessionAlive';
+
+  let warningTimer = 0, logoutTimer = 0, heartbeatId = 0;
+  let lastPing = 0, loggedOut = false;
+
+  // Detectar si estoy EXACTAMENTE en la acción de login (no por "includes")
+  function isOnLoginPage() {
+    const loginPath = new URL(LOGIN_URL, window.location.origin).pathname.toLowerCase();
+    return window.location.pathname.toLowerCase() === loginPath;
+  }
+
+  // --- KeepAlive AJAX ---
+  function pingKeepAlive(cb){
+    $.ajax({
+      url: KEEP_ALIVE_URL + (KEEP_ALIVE_URL.indexOf('?')>=0?'&':'?') + '_=' + Date.now(),
+      type: 'POST',
+      cache: false,
+      success: function(data){
+        if (cb) cb(!!(data && data.success), data);
+      },
+      error: function(){ if (cb) cb(false); }
+    });
+  }
+
+  function clearTimers(){
+    if (warningTimer) { clearTimeout(warningTimer); warningTimer = 0; }
+    if (logoutTimer)  { clearTimeout(logoutTimer);  logoutTimer  = 0; }
+  }
+
+  function startSessionTimers(){
+    clearTimers();
+    const warnMs   = Math.max(0, (EFFECTIVE_TIMEOUT_MIN - WARNING_LEAD_MIN) * 60000);
+    const logoutMs = Math.max(0, EFFECTIVE_TIMEOUT_MIN * 60000);
+
+    warningTimer = setTimeout(showWarningModal, warnMs);
+    logoutTimer  = setTimeout(() => {
+      loggedOut = true;
+      if (!isOnLoginPage()) window.location.href = LOGIN_URL;
+    }, logoutMs);
+  }
+
+  function resetSessionTimers(){ startSessionTimers(); }
+
+  function showWarningModal(){
+    if (loggedOut || isOnLoginPage()) return;
+    if (typeof $('#sessionWarningModal').modal === 'function') {
+      $('#sessionWarningModal').modal('show');
+    } else {
+      $('#sessionWarningModal').show(); // fallback si no está Bootstrap JS
+    }
+    // Si no confirma, lo echamos en WARNING_LEAD_MIN minutos
+    setTimeout(() => {
+      if (!loggedOut) window.location.href = LOGIN_URL;
+    }, WARNING_LEAD_MIN * 60000);
+  }
+
+// Botón "Continuar" (event delegation por si el modal se re-renderiza)
+$(document).on('click', '#continueSessionBtn', function (e) {
+  e.preventDefault();
+
+  $.ajax({
+    url: '/Login/Home/KeepSessionAlive' + '?_=' + Date.now(), // anti-cache
+    type: 'POST',
+    cache: false,
+    dataType: 'json' // <- importante para que "data" sea objeto, no string
+  })
+  .done(function (data) {
+    if (data && data.success) {
+      // Sesión renovada
+      if (typeof $('#sessionWarningModal').modal === 'function') {
+        $('#sessionWarningModal').modal('hide');
+      } else {
+        $('#sessionWarningModal').hide();
+      }
+      resetSessionTimers();
+    } else if (data && data.expired) {
+      // Ya estaba vencida
+      window.location.href = (data.redirect || '/Login/');
+    } else {
+      // Respuesta inesperada
+      console.warn('[KeepAlive] Respuesta sin success/expired', data);
+      window.location.href = '/Login/';
+    }
+  })
+  .fail(function (xhr) {
+    // Si por algún motivo falló, mejor redirigir a login
+    console.error('[KeepAlive] AJAX fail', xhr.status, xhr.statusText);
+    window.location.href = '/Login/';
+  });
+});
+
+  // Throttle (máx. 1 ping/min)
+  function pingThrottle(){
+    const now = Date.now();
+    if (now - lastPing > 60000){
+      lastPing = now;
+      pingKeepAlive();
+    }
+  }
+
+  // 🔑 Si hay actividad con el modal abierto: PING INMEDIATO
+  function onActivity(){
+    const visible = $('#sessionWarningModal').is(':visible');
+    if (visible){
+      pingKeepAlive(function(){
+        if (typeof $('#sessionWarningModal').modal === 'function') {
+          $('#sessionWarningModal').modal('hide');
+        } else {
+          $('#sessionWarningModal').hide();
+        }
+        resetSessionTimers();
+      });
+    } else {
+      pingThrottle();
+      resetSessionTimers();
+    }
+  }
+
+  // Heartbeat cada 60s mientras la pestaña está visible
+  function startHeartbeat(){
+    if (heartbeatId) clearInterval(heartbeatId);
+    heartbeatId = setInterval(function(){
+      if (!document.hidden) pingThrottle();
+    }, 60000);
+  }
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden) pingThrottle();
+  }, false);
+
+  // Inicio
+  $(function(){
+    if (!isOnLoginPage()){
+      startSessionTimers();
+      startHeartbeat();
+    }
+  });
+
+  // Actividad
+  $(document).on('mousemove keydown click', onActivity);
+</script>

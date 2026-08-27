@@ -23,7 +23,7 @@ import { createSessionReport } from './utils/session-report.mjs';
 
 const MAX_AI_RETRIES = 3;
 const MAX_RESTARTS = 3;
-const MAX_FORM_RETRIES = 1;
+const MAX_FORM_RETRIES = 2;
 
 export class CargaExpressBot {
   constructor({ driver, store, baseUrl, email, password, limit, rowFilter }) {
@@ -223,7 +223,7 @@ export class CargaExpressBot {
           await this.driver.sleep(1500);
           return this.processRecord(record, { handle, restarts, formRetries: formRetries + 1 });
         }
-        this.failRecord(record, `${message} Falló también el reintento automático.`);
+        this.failRecord(record, `${message} Fallaron también los ${MAX_FORM_RETRIES} reintentos automáticos.`);
         return 'failed';
       }
       if (facturaResult === 'restart') {

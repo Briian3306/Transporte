@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { isRetryableStatus, loadStatusCsv, normalizeStatusMessages, STATUS, updateRecordStatus } from './status-csv.mjs';
 
-test('only FAILED and USER_INPUT rows are retryable', () => {
+test('pending, FAILED, and USER_INPUT rows are retryable, but terminal rows are not', () => {
   assert.equal(isRetryableStatus({ uploadFileStatus: STATUS.FAILED }), true);
   assert.equal(
     isRetryableStatus({ uploadFileStatus: STATUS.DUPLICATED, messageStatus: 'Se detectaron 1 pasada(s) duplicada(s).' }),
@@ -13,8 +13,10 @@ test('only FAILED and USER_INPUT rows are retryable', () => {
   );
   assert.equal(isRetryableStatus({ uploadFileStatus: STATUS.USER_INPUT }), true);
   assert.equal(isRetryableStatus({ uploadFileStatus: STATUS.COMPLETE }), false);
-  assert.equal(isRetryableStatus({ uploadFileStatus: 'IN_PROGRESS' }), false);
-  assert.equal(isRetryableStatus({ uploadFileStatus: '' }), false);
+  assert.equal(isRetryableStatus({ uploadFileStatus: 'IN_PROGRESS' }), true);
+  assert.equal(isRetryableStatus({ uploadFileStatus: 'PENDING' }), true);
+  assert.equal(isRetryableStatus({ uploadFileStatus: '' }), true);
+  assert.equal(isRetryableStatus({}), true);
 });
 
 test('writes uploadFileStatus and messageStatus back to the csv', () => {

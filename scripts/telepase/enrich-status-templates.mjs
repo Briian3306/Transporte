@@ -9,6 +9,11 @@ const DEFAULT_INPUT = path.resolve(REPO_ROOT, 'scripts/downloads/status.csv');
 const DEFAULT_REPORT = path.resolve(REPO_ROOT, 'scripts/downloads/status-template-report.json');
 
 const TEMPLATE_RULES = [
+  {
+    template: 'SOY-CORDOBES',
+    priority: 3,
+    aliases: ['CAMINOS DE LAS SIERRAS', 'CAMINO DE LAS SIERRAS'],
+  },
   { template: 'MERCA-SUR-003-YERAU', priority: 2, aliases: ['YERAU', 'YERUA', 'YEAU'] },
   { template: 'MERCA-SUR-004-PIEDRITAS', priority: 2, aliases: ['PIEDRITAS'] },
   { template: 'MERCA-SUR-002-COLONIA', priority: 2, aliases: ['COLONIA'] },
@@ -144,7 +149,13 @@ async function extractPdfText(pdfPath) {
 }
 
 function isTargetRow(row) {
-  return normalizeText(row.concesionario) === 'AUMESA' || normalizeText(row.Empresa) === 'AUTOVIA DEL MERCOSUR';
+  const concesionario = normalizeText(row.concesionario);
+  const empresa = normalizeText(row.Empresa);
+  return (
+    concesionario === 'AUMESA' ||
+    empresa === 'AUTOVIA DEL MERCOSUR' ||
+    empresa === 'CAMINOS DE LAS SIERRAS'
+  );
 }
 
 function writeAtomically(filePath, content) {
