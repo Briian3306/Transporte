@@ -80,6 +80,8 @@ export interface ConfirmacionCargaInput {
   parametrosEfectivos?: Record<string, unknown>;
   /** Nombre del archivo Excel/CSV cargado (auditoría). */
   nombreArchivo?: string | null;
+  /** Consentimiento para insertar filas con clave RN-16 duplicada. */
+  permitirDuplicados?: boolean;
 }
 
 /** Filtros server-side para peajes_listar_pasadas. */

@@ -54,6 +54,35 @@
   border: 1px solid #f0d48a;
 }
 
+.paso7__acc-badge--pdf {
+  color: #16324f;
+  background: #e8eef5;
+  border-color: #6d86a6;
+}
+
+.paso7__acc-badge--ready {
+  color: #0f5132;
+  background: #d1e7dd;
+  border-color: #75b798;
+}
+
+.paso7__acc-badge--error {
+  color: #842029;
+  background: #f8d7da;
+  border-color: #f1aeb5;
+}
+
+.paso7__acc-badge--loading {
+  color: #084298;
+  background: #cfe2ff;
+  border-color: #9ec5fe;
+}
+
+.paso7__acc-badge i {
+  margin-right: 0.2rem;
+  font-size: 0.65rem;
+}
+
 .paso7__omitido-banner {
   display: flex;
   flex-wrap: wrap;

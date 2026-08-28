@@ -1,6 +1,6 @@
 <div class="paso7" tabindex="-1">
   <div
-    *ngIf="showInvoiceAi && invoiceAi.status === 'loading'"
+    *ngIf="invoiceAiLoading"
     class="paso7__ai-loader"
     data-testid="invoice-ai-loader"
   >
@@ -15,7 +15,7 @@
         Asociá el lote con un documento (factura o nota de crédito). Tab entre campos; escribí la fecha como 13/6/2020.
       </p>
       <p
-        *ngIf="showInvoiceAi && invoiceAiStatusText()"
+        *ngIf="invoiceAiStatusText()"
         class="paso7__ai-status"
         data-testid="invoice-ai-status"
         aria-live="polite"
@@ -24,7 +24,7 @@
         <button
           type="button"
           class="pw__btn pw__btn--ghost pw__btn--small"
-          *ngIf="invoiceAi.status === 'error'"
+          *ngIf="(!esMasiva && invoiceAi.status === 'error') || showMasivaRetry"
           (click)="retryInvoiceAi()"
         >
           Reintentar análisis
@@ -32,7 +32,7 @@
       </p>
       <p *ngIf="esMasiva">
         Cada valor de FACTURA del Excel es un documento (FC o NC). El número se autocompleta;
-        la Concesión sugiere la empresa. Podés quitar o agregar IVA por panel.
+        la Concesión sugiere la empresa. Si hay PDF, la IA propone valores por documento.
       </p>
     </div>
     <span class="pw__status pw__status--warn">Pendiente de confirmación</span>
@@ -93,6 +93,17 @@
             Documento {{ item.doc.factura || '(sin número)' }}
             <span class="paso7__acc-meta">· {{ countPasadas(item.doc) }} pasadas</span>
             <span class="paso7__acc-badge" *ngIf="item.doc.omitido">Omitido</span>
+            <span
+              class="paso7__acc-badge"
+              [class.paso7__acc-badge--pdf]="pdfBadgeFor(item.index).kind === 'pdf'"
+              [class.paso7__acc-badge--ready]="pdfBadgeFor(item.index).kind === 'ready'"
+              [class.paso7__acc-badge--error]="pdfBadgeFor(item.index).kind === 'error'"
+              [class.paso7__acc-badge--loading]="pdfBadgeFor(item.index).kind === 'loading'"
+              *ngIf="!item.doc.omitido"
+            >
+              <i class="fas fa-map-pin" *ngIf="pdfBadgeFor(item.index).kind !== 'none'" aria-hidden="true"></i>
+              {{ pdfBadgeFor(item.index).label }}
+            </span>
           </span>
           <div appAccordionContent>
             <ng-container *ngIf="isExpanded(item.doc, item.index)">
@@ -113,6 +124,7 @@
                       <input [id]="'factura_' + item.index" formControlName="factura" autocomplete="off" />
                       <p class="paso7__hint">Autocompletado desde columna FACTURA del Excel.</p>
                       <div class="pw__field-error" *ngIf="invalid('factura', item.index)">Obligatorio</div>
+                      <ng-container *ngTemplateOutlet="aiSuggest; context: { field: 'invoiceNumber', index: item.index }"></ng-container>
                     </div>
 
                     <div class="pw__field">
@@ -175,6 +187,7 @@
                         (valueChange)="onFechaChange($event, item.index)"
                       ></app-date-range-picker>
                       <div class="pw__field-error" *ngIf="invalid('fecha_factura', item.index)">Obligatorio</div>
+                      <ng-container *ngTemplateOutlet="aiSuggest; context: { field: 'invoiceDate', index: item.index }"></ng-container>
                     </div>
 
                     <div class="pw__field">
@@ -188,22 +201,26 @@
                       <label [attr.for]="'importe_sin_iva_' + item.index">Subtotal *</label>
                       <input [id]="'importe_sin_iva_' + item.index" type="number" step="0.01" formControlName="importe_sin_iva" />
                       <div class="pw__field-error" *ngIf="invalid('importe_sin_iva', item.index)">Obligatorio</div>
+                      <ng-container *ngTemplateOutlet="aiSuggest; context: { field: 'subtotal', index: item.index }"></ng-container>
                     </div>
 
                     <div class="pw__field">
                       <label [attr.for]="'percepciones_' + item.index">Percepciones *</label>
                       <input [id]="'percepciones_' + item.index" type="number" step="0.01" formControlName="percepciones" />
+                      <ng-container *ngTemplateOutlet="aiSuggest; context: { field: 'perceptions', index: item.index }"></ng-container>
                     </div>
 
                     <div class="pw__field">
                       <label [attr.for]="'iva_' + item.index">IVA *</label>
                       <input [id]="'iva_' + item.index" type="number" step="0.01" formControlName="iva" />
+                      <ng-container *ngTemplateOutlet="aiSuggest; context: { field: 'vat', index: item.index }"></ng-container>
                     </div>
 
                     <div class="pw__field">
                       <label [attr.for]="'importe_total_' + item.index">Total *</label>
                       <input [id]="'importe_total_' + item.index" type="number" step="0.01" formControlName="importe_total" />
                       <div class="pw__field-error" *ngIf="invalid('importe_total', item.index)">Obligatorio</div>
+                      <ng-container *ngTemplateOutlet="aiSuggest; context: { field: 'total', index: item.index }"></ng-container>
                     </div>
 
                     <div class="pw__field paso7__field--full">
@@ -367,12 +384,12 @@
       </div>
     </ng-template>
 
-    <ng-template #aiSuggest let-field="field">
-      <div class="paso7__suggestions" *ngIf="showInvoiceAi && invoiceCandidates(field).length">
+    <ng-template #aiSuggest let-field="field" let-index="index">
+      <div class="paso7__suggestions" *ngIf="invoiceCandidates(field, index).length">
         <button
           type="button"
           class="paso7__suggest"
-          *ngFor="let c of invoiceCandidates(field)"
+          *ngFor="let c of invoiceCandidates(field, index)"
           [attr.aria-label]="
             formatSuggestionValue(field, c.value) +
             ' · ' +
@@ -380,7 +397,7 @@
             ' · ' +
             confidenceLabel(c.level)
           "
-          (click)="applyInvoiceSuggestion(field, c)"
+          (click)="applyInvoiceSuggestion(field, c, index)"
         >
           <span>{{ formatSuggestionValue(field, c.value) }}</span>
           <small>{{ confidencePercent(c) }} · {{ confidenceLabel(c.level) }}</small>

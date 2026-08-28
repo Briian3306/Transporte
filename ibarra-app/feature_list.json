@@ -2,8 +2,8 @@
   "project": "peajes-module-automation-tool",
   "source_of_truth": "docs/plan/peaje-prd-es.md",
   "single_active_feature_per_agent": true,
-  "documentation_last_reviewed": "2026-08-24",
-  "documentation_status": "Invoice AI F17: wizard.md documents optional PDF / post-template / click-to-apply. F17-1 and F17-2 passing (handler 10 + ng 47 + tsc/build). F17-3/F17-5 in_progress (no visual /carga-express). F17-4 in_progress (live OpenRouter not authorized). F16-0..3 auditoría de estaciones remains passing.",
+  "documentation_last_reviewed": "2026-08-28",
+  "documentation_status": "F18: AI masiva 1→n PDFs + duplicados permitidos con consentimiento. Invoice AI F17: wizard.md documents optional PDF / post-template / click-to-apply. F17-1 and F17-2 passing. F17-3/F17-5 in_progress. F16-0..3 auditoría de estaciones remains passing.",
   "agents": [
     "00-orquestador-setup",
     "01-backend-supabase",
@@ -1783,6 +1783,43 @@
       ],
       "evidence": [
         "2026-08-24 catch-up: wizard.md + INDEX updated from real Paso 1/7/state/handler. node --test peajes-invoice-ai.test.js → 10 pass EXIT 0. fixtures.test.js 1 pass EXIT 0. verify-invoice-ai-fixtures.mjs skip EXIT 0. ng test ai+paso1+paso7+wizard-state TOTAL: 47 SUCCESS. tsc app EXIT 0; tsc spec EXIT 0; ng build development EXIT 0 (NG8107 paso9 preexistente). Visual /peajes/carga-express NOT done. Live OpenRouter NOT run. F17-5 not passing."
+      ]
+    },
+    {
+      "id": "F18-1",
+      "title": "AI factura en importación masiva (1→n PDFs)",
+      "prd_refs": ["RF-25", "RN-12", "docs/06-components/peajes/ia-factura.md"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F13-1", "F17-2", "F02-6"],
+      "status": "passing",
+      "verification": [
+        "Paso 1 masiva acepta N PDF opcionales y relaciona nombre.pdf con columna FACTURA",
+        "Paso 7 analiza en cola cada documento con PDF; badges por panel; Reintentar solo idle/error",
+        "Modo simple no cambia",
+        "ng test paso1 + paso7 + wizard-state + documento.helpers + invoice-masiva-queue",
+        "npx tsc --noEmit -p tsconfig.app.json"
+      ],
+      "evidence": [
+        "2026-08-28: match FACTURA↔PDF (123.pdf), cola 1→n, badges, retry idle/error. ng test documento.helpers+wizard-state+invoice-masiva-queue+paso1+paso7+paso8+peajes-carga TOTAL: 75 SUCCESS. tsc app+spec EXIT 0. Visual /peajes/wizard NOT done (auth). Sin db push --linked."
+      ]
+    },
+    {
+      "id": "F18-2",
+      "title": "Duplicados permitidos con confirmación (DUPLICADO + Subir igualmente)",
+      "prd_refs": ["RN-16", "RNF-10", "RF-26"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F01-6", "F02-7", "F01-9"],
+      "status": "passing",
+      "verification": [
+        "npx supabase db reset --local --no-seed",
+        "npx supabase test db (incluye peajes_duplicados_permitidos_test.sql)",
+        "peajes_detectar_duplicados sigue detectando la clave RN-16 y expone patente_nombre, pase_nombre, file_upload_name, duplicado",
+        "peajes_confirmar_carga sin p_permitir_duplicados bloquea; con true inserta duplicado=true",
+        "Paso 8 muestra nombres (no UUID), columna Archivo y botón Subir igualmente",
+        "ng test paso8 + peajes-carga"
+      ],
+      "evidence": [
+        "2026-08-28: migración 20260828120000_peajes_duplicados_permitidos.sql. db reset --local --no-seed OK; supabase test db 220 PASS. Índice único parcial WHERE duplicado=false. RPC p_permitir_duplicados default false. Paso 8 nombres+Archivo+DUPLICADO+Subir igualmente. ng test paso8+peajes-carga (suite F18 75 SUCCESS). tsc EXIT 0. Sin db push --linked."
       ]
     }
   ]

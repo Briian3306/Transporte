@@ -1,6 +1,7 @@
 import {
   agruparFilasPorFactura,
   excelTieneColumnaFactura,
+  matchPdfsConFacturas,
   normalizarImportesDocumento,
   normalizarImportesPasada,
 } from './documento.helpers';
@@ -109,6 +110,18 @@ describe('documento.helpers', () => {
           importe_total: 100,
         }).bonificacion
       ).toBe(0);
+    });
+  });
+
+  describe('matchPdfsConFacturas', () => {
+    it('relaciona 123.pdf con FACTURA 123 ignorando mayúsculas', () => {
+      const result = matchPdfsConFacturas(
+        [{ name: '123.pdf' }, { name: '234.PDF' }, { name: '999.pdf' }],
+        (item) => item.name,
+        ['123', '234']
+      );
+      expect(result.matched.map((m) => m.factura)).toEqual(['123', '234']);
+      expect(result.unmatched.map((u) => u.name)).toEqual(['999.pdf']);
     });
   });
 });

@@ -9,9 +9,11 @@
 .paso8__check { display: grid; grid-template-columns: 2.4rem 1fr; gap: .8rem; padding: 1rem; border: 1px solid var(--pw-line, #dce5ee); border-left: 4px solid #a7b5c3; border-radius: 12px; background: #fff; }
 .paso8__check--ok { border-left-color: var(--pw-green, #238657); background: #f8fcfa; }
 .paso8__check--error { border-left-color: var(--pw-red, #bd4b4b); background: #fffafa; }
+.paso8__check--warning { border-left-color: #c9a227; background: #fff9eb; }
 .paso8__check-icon { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; color: #fff; background: #8a9bad; font-size: 1.2rem; font-weight: 700; }
 .paso8__check--ok .paso8__check-icon { background: var(--pw-green, #238657); }
 .paso8__check--error .paso8__check-icon { background: var(--pw-red, #bd4b4b); }
+.paso8__check--warning .paso8__check-icon { background: #c9a227; }
 .paso8__check-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
 .paso8__check h3 { margin: 0; font-size: .96rem; }
 .paso8__check p { margin: .4rem 0; font-size: .86rem; line-height: 1.45; }
@@ -31,6 +33,7 @@
 .paso8__duplicate-count { flex: 0 0 auto; padding: .3rem .5rem; border-radius: 999px; color: #8e3636; background: #fff0f0; font: 700 .72rem var(--pw-mono, monospace); }
 .paso8__duplicate-note { margin: .55rem 0 .8rem !important; color: var(--pw-muted, #62758a); font-size: .8rem !important; }
 .paso8__duplicate-comparison .dt { border: 1px solid var(--pw-line, #dce5ee); border-radius: 8px; overflow: hidden; }
+.paso8__duplicate-consent { margin-top: .85rem; display: flex; justify-content: flex-end; }
 @media (max-width: 720px) {
   .paso8__duplicate-comparison { grid-column: 1 / -1; margin-left: -.25rem; margin-right: -.25rem; padding: .75rem; }
   .paso8__duplicate-heading { flex-direction: column; }

@@ -354,7 +354,7 @@ describe('Paso1CargaComponent', () => {
     expect(ai.analyze).toHaveBeenCalledWith('invoice text', 560832.27);
   });
 
-  it('does not call AI for mass import or absent PDF', async () => {
+  it('does not call AI for mass import without PDF or absent PDF', async () => {
     const apply = TestBed.inject(PeajesPlantillaApplyService);
     spyOn(apply, 'aplicarYEvaluar').and.callFake(async () => {
       state.setPlantillaId('template-1');
@@ -439,24 +439,28 @@ describe('Paso1CargaComponent', () => {
     expect(pdfText.extractText).not.toHaveBeenCalled();
   });
 
-  it('ignora el PDF en importación masiva', async () => {
+  it('relaciona PDF con FACTURA en importación masiva', async () => {
     component.modoImportacion = 'masiva';
     state.setModoImportacion('masiva');
     excel.esArchivoValido.and.callFake((file: File) => file.name.toLowerCase().endsWith('.csv'));
     excel.parsearArchivo.and.resolveTo({
       nombreArchivo: 'masiva.csv',
       tamanioBytes: 10,
-      totalFilas: 1,
+      totalFilas: 2,
       columnas: ['FACTURA'],
-      filasPreview: [{ FACTURA: 'F-1' }],
-      filasOrigen: [{ FACTURA: 'F-1' }],
+      filasPreview: [{ FACTURA: '123' }, { FACTURA: '234' }],
+      filasOrigen: [{ FACTURA: '123' }, { FACTURA: '234' }],
       tiposInferidos: {},
     });
     const csv = new File(['x'], 'masiva.csv', { type: 'text/csv' });
-    const pdf = new File(['p'], 'factura.pdf', { type: 'application/pdf' });
-    await component.procesarSeleccion([csv, pdf]);
-    expect(pdfText.extractText).not.toHaveBeenCalled();
-    expect(state.snapshot().invoicePdf).toBeFalsy();
+    const pdfOk = new File(['p'], '123.pdf', { type: 'application/pdf' });
+    const pdfOrphan = new File(['p'], '999.pdf', { type: 'application/pdf' });
+    await component.procesarSeleccion([csv, pdfOk, pdfOrphan]);
+    expect(pdfText.extractText).toHaveBeenCalled();
+    expect(state.invoicePdfMasivaFor('123')?.fileName).toBe('123.pdf');
+    expect(state.snapshot().invoicePdfsMasivaSinMatch.some((p) => p.fileName === '999.pdf')).toBeTrue();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('123.pdf');
   });
 
   it('reconstruye documentos desde FACTURA al cargar en modo masivo', async () => {
@@ -489,7 +493,7 @@ describe('Paso1CargaComponent', () => {
 
   it('muestra el asistente de IA en importación simple', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-assistant"]')).toBeTruthy();
-    expect(fixture.nativeElement.textContent).toContain('Soy tu Asistente de IA');
+    expect(fixture.nativeElement.textContent).toContain('Asistente de IA');
   });
 
   it('oculta el asistente de IA en importación masiva', () => {

@@ -51,7 +51,7 @@ pasos y el acceso al ejemplo MVP.
 
 | # | Label | Componente | Notas |
 |---|-------|------------|-------|
-| 1 | Carga | `paso1-carga` | Upload `.xlsx`/`.csv` + empresa + plantilla. En importación **simple**, PDF de factura opcional (F17). Con plantilla compatible → `facturaDirecta` Paso 7; excepciones → Paso 5/6; sin plantilla → Paso 2 |
+| 1 | Carga | `paso1-carga` | Upload `.xlsx`/`.csv` + empresa + plantilla. PDF de factura opcional: uno en simple, N en masiva (nombre = columna `FACTURA`). Con plantilla compatible → `facturaDirecta` Paso 7; excepciones → Paso 5/6; sin plantilla → Paso 2 |
 | 2 | Preview | `paso2-preview` | Máx. 10 filas (RNF-03). Rail de recomendaciones semánticas (F02-11). Por defecto solo columnas reconocidas quedan incluidas (F02-12): ver [reconocimiento-columnas.md](./reconocimiento-columnas.md) |
 | 3 | Transformaciones | `paso3-transformaciones` | Motor 03 |
 | 4 | Plantilla | `paso4-plantilla` | Aplica pipeline + `mapeos` + estaciones (F09). Sin excepciones → `facturaDirecta` Paso 7; si no, `irAExcepcion` 5 o 6 |
@@ -126,13 +126,13 @@ Detalle canónico: [reconocimiento-columnas.md](./reconocimiento-columnas.md).
 
 Rol, objetivo y límites: **[ia-factura.md](./ia-factura.md)**. Abajo, el encaje en los pasos del wizard.
 
-En importación **simple** (wizard y `/peajes/carga-express`) el usuario puede adjuntar un PDF de factura opcional. La IA **no guarda** la carga: solo propone candidatos. Sin PDF, con PDF inválido, sin candidatos o si OpenRouter falla, el usuario completa el documento a mano.
+En importación **simple** y **masiva** (wizard y `/peajes/carga-express`) el usuario puede adjuntar PDF de factura opcionales. La IA **no guarda** la carga: solo propone candidatos. Sin PDF, con PDF inválido, sin candidatos o si OpenRouter falla, el usuario completa el documento a mano.
 
-**Fuera de alcance del MVP:** importación masiva. El selector de PDF no se muestra en modo masiva; Paso 7 no renderiza estado ni botones IA.
+En **masiva** el nombre del PDF (sin extensión) debe coincidir con el valor de la columna `FACTURA` (`123` → `123.pdf`). Los PDF sin match se listan como aviso y no bloquean.
 
 ### PDF opcional (Paso 1)
 
-En importación simple el dropzone y el file picker aceptan **el Excel/CSV y el PDF juntos** (`multiple`). El PDF es opcional: se puede cargar con las pasadas o agregarlo después (solo PDF, si ya hay Excel). Extrae texto de **todas** las páginas (`InvoicePdfTextService` + `pdf-parse`) y lo deja en memoria (`setInvoicePdf`). Quitar el PDF invalida sugerencias. Un error de lectura es inline y no bloquea Continuar. En masiva el PDF se ignora.
+El dropzone y el file picker aceptan **el Excel/CSV y PDF juntos** (`multiple`). En simple: un PDF. En masiva: N PDF. Extrae texto de **todas** las páginas (`InvoicePdfTextService` + `pdf-parse`) y lo deja en memoria. Quitar el PDF invalida sugerencias. Un error de lectura es inline y no bloquea Continuar.
 
 ### Disparo post-plantilla
 

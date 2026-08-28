@@ -62,10 +62,12 @@ import {
 } from '../services/peajes-wizard-state.service';
 import { InvoiceAiService } from '../../services/ai/invoice/invoice-ai.service';
 import {
+  InvoiceAiAnalysisState,
   InvoiceAiError,
   InvoiceCandidate,
   InvoiceField,
 } from '../../services/ai/invoice/invoice-ai.models';
+import { analizarFacturasMasivaPendientes } from '../services/invoice-masiva-queue';
 
 type DocFormGroup = ReturnType<Paso7FacturaComponent['crearDocGroup']>;
 
@@ -215,21 +217,43 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
       snap.relacionesEstacion.length
     );
     this.cdr.markForCheck();
-    if (!this.esMasiva) {
-      void this.maybeAnalyzeDeferred();
-    }
+    void this.maybeAnalyzeDeferred();
   }
 
   get invoiceAi() {
     return this.state.snapshot().invoiceAi;
   }
 
+  get invoiceAiLoading(): boolean {
+    if (!this.esMasiva) {
+      return this.invoiceAi.status === 'loading';
+    }
+    return Object.values(this.state.snapshot().invoiceAiPorDocumento).some(
+      (ai) => ai.status === 'loading'
+    );
+  }
+
   get showInvoiceAi(): boolean {
     return !this.esMasiva;
   }
 
+  get showMasivaRetry(): boolean {
+    if (!this.esMasiva) return false;
+    return this.documentos.some((doc) => {
+      if (doc.omitido || !this.state.invoicePdfMasivaFor(doc.factura)) return false;
+      const status = this.state.invoiceAiForDocumento(doc.factura).status;
+      return status === 'idle' || status === 'error';
+    });
+  }
+
   invoiceAiStatusText(): string {
-    if (!this.showInvoiceAi) return '';
+    if (this.esMasiva) {
+      if (this.invoiceAiLoading) return '';
+      if (this.showMasivaRetry) {
+        return 'Hay facturas con PDF pendientes de sugerencias. Reintentá solo esas.';
+      }
+      return '';
+    }
     const ai = this.invoiceAi;
     if (ai.status === 'loading') return '';
     if (ai.status === 'ready') {
@@ -241,8 +265,30 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
     return '';
   }
 
-  invoiceCandidates(field: InvoiceField): InvoiceCandidate<string | number>[] {
-    const result = this.invoiceAi.result;
+  invoiceAiFor(index: number): InvoiceAiAnalysisState {
+    const doc = this.documentos[index];
+    return doc
+      ? this.state.invoiceAiForDocumento(doc.factura)
+      : { status: 'idle', result: null, error: null, fingerprint: null };
+  }
+
+  pdfBadgeFor(index: number): { label: string; kind: 'pdf' | 'ready' | 'error' | 'loading' | 'none' } {
+    const doc = this.documentos[index];
+    if (!doc) return { label: 'Sin PDF', kind: 'none' };
+    const pdf = this.state.invoicePdfMasivaFor(doc.factura);
+    if (!pdf) return { label: 'Sin PDF', kind: 'none' };
+    const status = this.state.invoiceAiForDocumento(doc.factura).status;
+    if (status === 'loading') return { label: 'Analizando', kind: 'loading' };
+    if (status === 'ready') return { label: 'Sugerencias listas', kind: 'ready' };
+    if (status === 'error') return { label: 'Error IA', kind: 'error' };
+    return { label: 'Con PDF', kind: 'pdf' };
+  }
+
+  invoiceCandidates(field: InvoiceField, index?: number): InvoiceCandidate<string | number>[] {
+    const result =
+      this.esMasiva && index != null
+        ? this.invoiceAiFor(index).result
+        : this.invoiceAi.result;
     if (!result) return [];
     switch (field) {
       case 'invoiceNumber':
@@ -288,9 +334,9 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
 
   applyInvoiceSuggestion(
     field: InvoiceField,
-    candidate: InvoiceCandidate<string | number>
+    candidate: InvoiceCandidate<string | number>,
+    index?: number
   ): void {
-    if (this.esMasiva) return;
     const controlByField: Record<
       InvoiceField,
       'factura' | 'fecha_factura' | 'iva' | 'percepciones' | 'importe_sin_iva' | 'importe_total'
@@ -303,19 +349,24 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
       total: 'importe_total',
     };
     const control = controlByField[field];
+    const form = this.esMasiva && index != null ? this.ensureDocForm(index) : this.form;
     if (field === 'invoiceDate') {
       const iso = String(candidate.value);
-      this.form.patchValue({ fecha_factura: iso });
-      this.form.controls.fecha_factura.markAsDirty();
-      this.form.controls.fecha_factura.markAsTouched();
+      form.patchValue({ fecha_factura: iso });
+      form.controls.fecha_factura.markAsDirty();
+      form.controls.fecha_factura.markAsTouched();
+      const rangeIndex = this.esMasiva && index != null ? index : 0;
       this.fechaRanges = {
         ...this.fechaRanges,
-        0: { from: parseDateInputValue(iso), to: null },
+        [rangeIndex]: { from: parseDateInputValue(iso), to: null },
       };
     } else {
-      this.form.patchValue({ [control]: candidate.value });
-      this.form.controls[control].markAsDirty();
-      this.form.controls[control].markAsTouched();
+      form.patchValue({ [control]: candidate.value });
+      form.controls[control].markAsDirty();
+      form.controls[control].markAsTouched();
+    }
+    if (this.esMasiva && index != null) {
+      this.syncDocFormToState(index);
     }
     this.cdr.markForCheck();
   }
@@ -325,13 +376,22 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
   }
 
   private async maybeAnalyzeDeferred(): Promise<void> {
+    if (this.esMasiva) {
+      await this.runInvoiceAnalysis();
+      return;
+    }
     const ai = this.state.snapshot().invoiceAi;
     if (ai.status !== 'idle') return;
     await this.runInvoiceAnalysis();
   }
 
   private async runInvoiceAnalysis(): Promise<void> {
-    if (this.esMasiva) return;
+    if (this.esMasiva) {
+      this.cdr.markForCheck();
+      await analizarFacturasMasivaPendientes(this.state, this.invoiceAiApi);
+      this.cdr.markForCheck();
+      return;
+    }
     const snap = this.state.snapshot();
     const text = snap.invoicePdf?.text;
     const net = this.state.invoiceExpectedNetAmount();

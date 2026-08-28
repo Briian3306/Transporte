@@ -4,8 +4,8 @@
       <div class="pw__eyebrow">{{ expressMode ? 'Paso 1 · cargar archivo' : 'Paso 01 · origen y configuración' }}</div>
       <h2>Cargar pasadas y factura</h2>
       <p>
-        Subí el Excel o CSV de pasadas y, en importación simple, el PDF de factura opcional
-        en la misma carga. Elegí empresa y plantilla.
+        Subí el Excel o CSV de pasadas. En simple, un PDF de factura opcional.
+        En masiva, varios PDF opcionales cuyo nombre coincida con la columna FACTURA.
       </p>
     </div>
     <div class="head-actions">
@@ -39,8 +39,9 @@
         <span>
           <strong>Importación masiva</strong>
           <small>
-            Varios documentos por columna FACTURA. Puede incluir múltiples empresas;
-            la empresa se elige por documento en el paso Documento.
+            Varios documentos por columna FACTURA. Podés adjuntar PDF opcionales
+            (el nombre del archivo debe coincidir con FACTURA, p. ej. 123.pdf).
+            Puede incluir múltiples empresas; la empresa se elige por documento.
           </small>
         </span>
       </label>
@@ -62,7 +63,8 @@
               Excel o CSV de pasadas y, si querés, el PDF de factura (mismo gesto).<br />
             </ng-container>
             <ng-template #dropMasiva>
-              Seleccioná un archivo <strong>.xlsx</strong> o <strong>.csv</strong>.<br />
+              Excel o CSV de pasadas y, si querés, varios PDF de factura
+              (nombre = valor de FACTURA, p. ej. <strong>123.pdf</strong>).<br />
             </ng-template>
             {{ expressMode ? 'La plantilla se aplicará automáticamente.' : 'El MVP limita la vista previa a 10 registros.' }}
           </p>
@@ -70,11 +72,7 @@
           <input
             type="file"
             multiple
-            [accept]="
-              modoImportacion === 'simple'
-                ? '.xlsx,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/pdf'
-                : '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'
-            "
+            [accept]="'.xlsx,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/pdf'"
             (change)="onFileInput($event)"
           />
         </div>
@@ -156,8 +154,27 @@
               Quitar PDF
             </button>
           </div>
+          <ul class="paso1__pdf-list" *ngIf="modoImportacion === 'masiva' && pdfsMasiva.length">
+            <li *ngFor="let pdf of pdfsMasiva" class="paso1__pdf-item" [class.paso1__pdf-item--orphan]="!pdf.factura">
+              <div class="paso1__file-icon">PDF</div>
+              <div>
+                <div class="paso1__file-name">{{ pdf.fileName }}</div>
+                <div class="paso1__file-meta" *ngIf="pdf.factura">Relacionado con FACTURA {{ pdf.factura }}</div>
+                <div class="paso1__file-meta" *ngIf="!pdf.factura">Sin factura correspondiente</div>
+              </div>
+              <span class="paso1__pdf-pin" *ngIf="pdf.factura" aria-hidden="true">
+                <i class="fas fa-map-pin"></i>
+              </span>
+              <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="quitarPdfMasiva(pdf.fileName)">
+                Quitar
+              </button>
+            </li>
+          </ul>
           <p class="paso1__hint" *ngIf="modoImportacion === 'simple' && meta && !invoicePdfName">
             Podés arrastrar o seleccionar el PDF junto al Excel, o agregarlo después.
+          </p>
+          <p class="paso1__hint" *ngIf="modoImportacion === 'masiva' && meta && !pdfsMasiva.length">
+            Los PDF son opcionales. El nombre (sin .pdf) debe coincidir con la columna FACTURA.
           </p>
         </ng-container>
         <ng-template #emptyFile>
@@ -218,7 +235,7 @@
           ? 'Con plantilla se omite el detalle del wizard si no hay excepciones.'
           : modoImportacion === 'simple'
             ? 'Excel/CSV obligatorio. PDF de factura opcional en la misma carga.'
-            : 'Solo se aceptan .xlsx/.csv. Sin plantilla: continuar a previsualización.'
+            : 'Excel/CSV obligatorio. PDF opcionales cuyo nombre coincida con FACTURA.'
       }}
     </div>
     <div class="pw__footer-actions">
@@ -272,11 +289,7 @@
     type="file"
     hidden
     multiple
-    [accept]="
-      modoImportacion === 'simple'
-        ? '.xlsx,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/pdf'
-        : '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'
-    "
+    [accept]="'.xlsx,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/pdf'"
     (change)="onFileInput($event)"
   />
 

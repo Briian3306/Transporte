@@ -1,10 +1,10 @@
-# IA de factura (F17)
+# IA de factura (F17 / F18-1)
 
 ## Resumen
 
-Asistente de lectura de PDF de factura en la **importación simple** del wizard de Peajes. Propone candidatos (número, fecha, IVA, percepciones, subtotal, total) para que el usuario los aplique de a uno. **No guarda la carga** y **no rellena el formulario solo**.
+Asistente de lectura de PDF de factura en el wizard de Peajes (importación **simple** y **masiva**). Propone candidatos (número, fecha, IVA, percepciones, subtotal, total) para que el usuario los aplique de a uno. **No guarda la carga** y **no rellena el formulario solo**.
 
-Código: `src/app/components/peajes/services/ai/invoice/` + `openrouter/`. UI: Paso 1 (PDF) y Paso 7 (sugerencias). Features `F17-1`…`F17-5`.
+Código: `src/app/components/peajes/services/ai/invoice/` + `openrouter/`. UI: Paso 1 (PDF) y Paso 7 (sugerencias). Features `F17-1`…`F17-5` y `F18-1` (masiva 1→n).
 
 ## Índice
 
@@ -43,7 +43,6 @@ El humano confirma cada valor. Si la IA falla o no hay PDF, el documento se carg
 
 ## Fuera de alcance
 
-- Importación **masiva**: sin selector PDF ni chips de IA.
 - Escritura a Supabase del PDF, del texto o de las sugerencias.
 - Recálculo de IVA/total a partir del subtotal (los cuatro importes son declarados).
 - Proxy Netlify `peajes-invoice-ai` (deprecado para este flujo; el browser llama OpenRouter).
@@ -67,12 +66,13 @@ PDF (Paso 1) → texto in-memory
 | `InvoiceAiService` | Orquesta analyze + ranking |
 | `OpenRouterEngineService` | POST chat completions, schema, timeout 120 s. Fallback: modelo 1 + key 1 → modelo 1 + key 2 → modelo 2 + key 1 |
 | `rankInvoiceCandidates` | Ordena y recorta candidatos (máx. 3 por campo) |
-| Paso 1 | Dropzone único: Excel/CSV + PDF opcional; dispara análisis post-plantilla |
-| Paso 7 | Muestra loader / error / chips; `aplicarSugerencia` parchea un control |
+| Paso 1 | Dropzone: Excel/CSV + PDF opcional (simple: 1; masiva: N, nombre = `FACTURA`) |
+| Paso 7 | Simple: un análisis. Masiva: cola 1→n (`analizarFacturasMasivaPendientes`); badges por documento |
+| Paso 7 retry | Re-analiza `idle`/`error`; no toca `ready` |
 
-Estados: `idle` | `loading` | `ready` | `error`.
+Estados: `idle` | `loading` | `ready` | `error`. En masiva viven en `invoiceAiPorDocumento`.
 
-En importación simple, Paso 1 muestra `app-ai-cat-loader` con “Soy tu Asistente de IA”. En `loading`, Paso 7 monta el mismo componente (burbuja inferior izquierda; al pasar el mouse se desplaza un poco hacia arriba para no tapar el pie de página). El formulario sigue editable. En `error`, **Reintentar análisis** o carga manual.
+En importación simple, Paso 1 muestra `app-ai-cat-loader` con “Soy Olivia!, tu Asistente de IA”. En `loading`, Paso 7 monta el mismo componente (burbuja inferior izquierda). El formulario sigue editable. En `error`, **Reintentar análisis** o carga manual. En masiva el retry solo cubre documentos pendientes.
 
 ### Campos sugeridos
 

@@ -258,13 +258,28 @@ describe('Paso7FacturaComponent', () => {
     expect(component.fechaRanges[0].from).toEqual(new Date(2026, 5, 1));
   });
 
-  it('does not render invoice AI controls in mass import', async () => {
+  it('masiva: badges and retry analyze only pending PDFs', async () => {
     await setupMasiva(2);
+    state.setPlantillaId('P-1');
+    state.setInvoicePdfsMasiva({
+      'f-1': { fileName: 'F-1.pdf', size: 8, lastModified: 1, text: 'pdf-f1' },
+    });
+    invoiceAi.analyze.calls.reset();
+    invoiceAi.analyze.and.returnValue(of(invoiceResultWithIva(21)));
+    await component.retryInvoiceAi();
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).not.toContain('Confianza alta');
-    expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-status"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-loader"]')).toBeNull();
+
+    expect(invoiceAi.analyze).toHaveBeenCalledTimes(1);
+    expect(component.pdfBadgeFor(0).label).toBe('Sugerencias listas');
+    expect(component.pdfBadgeFor(1).label).toBe('Sin PDF');
+    expect(fixture.nativeElement.textContent).toContain('Sugerencias listas');
+    expect(fixture.nativeElement.textContent).toContain('Sin PDF');
+
+    invoiceAi.analyze.calls.reset();
+    await component.retryInvoiceAi();
+    expect(invoiceAi.analyze).not.toHaveBeenCalled();
   });
+
 
   it('shows the cat loader while invoice AI is loading and keeps factura editable', () => {
     state.setInvoiceAiAnalysis('loading', null, null);

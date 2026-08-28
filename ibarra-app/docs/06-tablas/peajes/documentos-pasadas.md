@@ -56,11 +56,12 @@ Conciliación: `Σ pasadas.importe_neto − documentos.bonificacion ≈ importe_
 | `created_at` | timestamptz | No | Default `now()` |
 | `user_id` | uuid FK → auth.users | Sí | Creador |
 | `file_upload_name` | text | Sí | Nombre archivo de carga |
+| `duplicado` | boolean | No | Default `false`. `true` si se insertó con consentimiento (F18-2) |
 | `categoria` | text | Sí | Texto crudo del proveedor (F14 / RN-15). **No** es `patentes.categoria`. Vacío → `NULL` = Patrón A |
 | `tarifa_normalizada_id` | uuid FK → tarifas_normalizadas | Sí | Familia tarifaria asignada por el motor |
 | `tarifa_status` | text | No | Copiado desde `tarifas_normalizadas.status` (default `PENDIENTE`) |
 
-UK anti-duplicados: `(pase_id, fecha_hora, estacion_id, patente_id)` — **sin** `categoria` (RN-16).
+UK anti-duplicados: índice único parcial `(pase_id, fecha_hora, estacion_id, patente_id) WHERE duplicado = false` — **sin** `categoria` (RN-16 / F18-2).
 
 Tablas de auditoría tarifaria (`tarifas_normalizadas`, `tarifas_parametros_peaje`, `tarifas_status_catalogo`): ver [auditoria-tarifas.md](../../backend/peajes/auditoria-tarifas.md) y [tarifas-normalizadas.md](./tarifas-normalizadas.md).
 

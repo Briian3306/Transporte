@@ -126,6 +126,8 @@ export interface Pasada {
   user_id?: string | null;
   /** Nombre del archivo de carga (auditoría). */
   file_upload_name?: string | null;
+  /** TRUE si se insertó con consentimiento de duplicado (F18-2). */
+  duplicado?: boolean;
   estacion?: Estacion;
   documento?: Documento;
 }
@@ -268,6 +270,10 @@ export interface ErrorValidacionPasada {
   fecha_hora?: unknown;
   fecha_hora_repetida?: unknown;
   valor_repetido?: unknown;
+  pase_nombre?: unknown;
+  patente_nombre?: unknown;
+  file_upload_name?: unknown;
+  duplicado?: boolean;
 }
 
 /** Snapshot de auditoría de una carga confirmada (RF-26 / F01-9). */

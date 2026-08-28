@@ -8,7 +8,7 @@ Peajes automatiza la carga de archivos Excel/CSV, reconocimiento, transformació
 
 `/peajes` → `/wizard` (9 pasos) → `/catalogos` → `/plantillas` → `/pasadas` → `/auditoria-tarifas` (F14).
 
-El wizard conserva estado, muestra preview de hasta 10 filas, recomienda columnas y transformaciones (incluye categoría del proveedor opcional → Patrón B), permite pipeline editable, resuelve estaciones (RN-26) y patentes, valida **Σ pasadas − bonificación de cabecera** vs subtotal con tolerancia del 1%, confirma por documento (`peajes_confirmar_carga`) y en masiva permite omitir documentos inválidos. En importación simple, un PDF opcional alimenta [sugerencias IA de factura](../06-components/peajes/ia-factura.md) (el operador aplica o ignora candidatos). Tras la carga, el motor de tarifas normaliza niveles; el analista confirma status en [auditoría de tarifas](../06-components/peajes/auditoria-tarifas.md).
+El wizard conserva estado, muestra preview de hasta 10 filas, recomienda columnas y transformaciones (incluye categoría del proveedor opcional → Patrón B), permite pipeline editable, resuelve estaciones (RN-26) y patentes, valida **Σ pasadas − bonificación de cabecera** vs subtotal con tolerancia del 1%, confirma por documento (`peajes_confirmar_carga`) y en masiva permite omitir documentos inválidos. PDF opcionales alimentan [sugerencias IA de factura](../06-components/peajes/ia-factura.md) (simple: 1 PDF; masiva: N PDF relacionados por `FACTURA`). En validación, los duplicados RN-16 se pueden confirmar con «Subir igualmente» (`pasadas.duplicado`). Tras la carga, el motor de tarifas normaliza niveles; el analista confirma status en [auditoría de tarifas](../06-components/peajes/auditoria-tarifas.md).
 
 ## Permisos y vistas
 

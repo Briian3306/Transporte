@@ -12,7 +12,7 @@ import {
   PeajesPlantillasService,
 } from '../../models';
 import { DialogComponent, SearchSelectComponent, SearchSelectOption, AiCatLoaderComponent } from '../../../shared';
-import { COLUMNA_FACTURA_MASIVA, excelTieneColumnaFactura } from '../../models';
+import { COLUMNA_FACTURA_MASIVA, excelTieneColumnaFactura, matchPdfsConFacturas } from '../../models';
 import { MVP_EJEMPLO_NOMBRE_ARCHIVO } from '../fixtures/mvp-ejemplo.fixture';
 import { PeajesExcelService } from '../services/peajes-excel.service';
 import {
@@ -22,10 +22,12 @@ import {
 import {
   ModoImportacion,
   PeajesWizardStateService,
+  WizardInvoicePdf,
 } from '../services/peajes-wizard-state.service';
 import { InvoiceAiService } from '../../services/ai/invoice/invoice-ai.service';
 import { InvoiceAiError } from '../../services/ai/invoice/invoice-ai.models';
 import { InvoicePdfTextService } from '../../services/ai/invoice/invoice-pdf-text.service';
+import { analizarFacturasMasivaPendientes } from '../services/invoice-masiva-queue';
 
 @Component({
   selector: 'app-paso1-carga',
@@ -91,6 +93,8 @@ export class Paso1CargaComponent implements OnInit {
     if (modo === 'masiva') {
       this.pdfError = null;
       this.state.setInvoicePdf(null, null);
+    } else {
+      this.state.clearInvoicePdfsMasiva();
     }
     if (modo === 'masiva' && this.meta && !excelTieneColumnaFactura(this.meta.columnas)) {
       this.error =
@@ -168,6 +172,19 @@ export class Paso1CargaComponent implements OnInit {
     return this.state.snapshot().invoicePdf?.fileName ?? null;
   }
 
+  get pdfsMasiva(): { fileName: string; factura: string | null }[] {
+    const snap = this.state.snapshot();
+    const matched = Object.entries(snap.invoicePdfsMasiva).map(([clave, pdf]) => ({
+      fileName: pdf.fileName,
+      factura: clave,
+    }));
+    const unmatched = snap.invoicePdfsMasivaSinMatch.map((pdf) => ({
+      fileName: pdf.fileName,
+      factura: null as string | null,
+    }));
+    return [...matched, ...unmatched];
+  }
+
   onPdfInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
@@ -190,25 +207,32 @@ export class Paso1CargaComponent implements OnInit {
       (file) => !this.excel.esArchivoValido(file) && !this.esPdf(file)
     );
 
-    if (sheets.length > 1 || pdfs.length > 1) {
-      this.error = 'Elegí un Excel o CSV y, si querés, un solo PDF de factura.';
-      return;
-    }
     if (unknown.length && !sheets.length && !pdfs.length) {
-      this.error = 'Solo se permiten archivos .xlsx o .csv';
+      this.error = 'Solo se permiten archivos .xlsx, .csv o PDF de factura.';
       return;
     }
 
     if (this.modoImportacion === 'masiva') {
-      if (pdfs.length) {
-        this.pdfError = 'El PDF de factura solo se usa en importación simple. Se ignoró el PDF.';
-        this.state.setInvoicePdf(null, null);
-      }
-      if (!sheets.length) {
-        this.error = 'Seleccioná un archivo .xlsx o .csv.';
+      if (sheets.length > 1) {
+        this.error = 'Elegí un solo Excel o CSV. Podés adjuntar varios PDF de factura.';
         return;
       }
-      await this.procesar(sheets[0]);
+      if (!sheets.length && !this.meta) {
+        this.error = 'Subí un .xlsx o .csv. Los PDF de factura son opcionales y se relacionan por la columna FACTURA.';
+        return;
+      }
+      if (sheets.length) {
+        await this.procesar(sheets[0]);
+        if (this.error) return;
+      }
+      if (pdfs.length) {
+        await this.procesarPdfsMasiva(pdfs);
+      }
+      return;
+    }
+
+    if (sheets.length > 1 || pdfs.length > 1) {
+      this.error = 'Elegí un Excel o CSV y, si querés, un solo PDF de factura.';
       return;
     }
 
@@ -244,6 +268,57 @@ export class Paso1CargaComponent implements OnInit {
           ? e.message
           : 'No se pudo leer el PDF. Podés continuar y completar la factura a mano.';
     }
+  }
+
+  async procesarPdfsMasiva(files: File[]): Promise<void> {
+    this.pdfError = null;
+    const facturas = this.state.clavesFacturaMasiva();
+    if (!facturas.length) {
+      this.pdfError =
+        'No hay valores en la columna FACTURA para relacionar los PDF. Cargá primero el Excel o CSV.';
+      return;
+    }
+    const extracted: WizardInvoicePdf[] = [];
+    const errors: string[] = [];
+    for (const file of files) {
+      try {
+        const text = await this.pdfText.extractText(file);
+        extracted.push({
+          fileName: file.name,
+          size: file.size,
+          lastModified: file.lastModified,
+          text,
+        });
+      } catch (e) {
+        errors.push(
+          `${file.name}: ${e instanceof Error ? e.message : 'no se pudo leer'}`
+        );
+      }
+    }
+    const snap = this.state.snapshot();
+    const previousMatched = Object.values(snap.invoicePdfsMasiva);
+    const previousUnmatched = snap.invoicePdfsMasivaSinMatch;
+    const combined = [...previousMatched, ...previousUnmatched, ...extracted];
+    const byName = new Map<string, WizardInvoicePdf>();
+    for (const pdf of combined) {
+      byName.set(pdf.fileName, pdf);
+    }
+    const result = matchPdfsConFacturas([...byName.values()], (pdf) => pdf.fileName, facturas);
+    const matched: Record<string, WizardInvoicePdf> = {};
+    for (const item of result.matched) {
+      matched[item.clave] = item.item;
+    }
+    this.state.setInvoicePdfsMasiva(matched, result.unmatched);
+    if (errors.length) {
+      this.pdfError = errors.join(' · ');
+    } else if (result.unmatched.length) {
+      this.pdfError = `${result.unmatched.length} PDF sin factura correspondiente (el nombre debe coincidir con la columna FACTURA). Podés continuar igual.`;
+    }
+  }
+
+  quitarPdfMasiva(fileName: string): void {
+    this.state.removeInvoicePdfMasiva(fileName);
+    this.pdfError = null;
   }
 
   quitarPdf(): void {
@@ -367,6 +442,12 @@ export class Paso1CargaComponent implements OnInit {
 
   private async maybeAnalyzeInvoice(): Promise<void> {
     if (this.modoImportacion === 'masiva') {
+      this.analizandoFactura = true;
+      try {
+        await analizarFacturasMasivaPendientes(this.state, this.invoiceAi);
+      } finally {
+        this.analizandoFactura = false;
+      }
       return;
     }
     const snap = this.state.snapshot();

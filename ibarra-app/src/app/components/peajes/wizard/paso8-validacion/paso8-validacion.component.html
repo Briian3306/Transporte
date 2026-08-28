@@ -25,10 +25,10 @@
     </section>
 
     <section class="paso8__checklist" *ngIf="diagnosticos.length" aria-label="Resultados de validación">
-      <article class="paso8__check" *ngFor="let d of diagnosticos" [class.paso8__check--error]="d.estado === 'error'" [class.paso8__check--ok]="d.estado === 'ok'">
+      <article class="paso8__check" *ngFor="let d of diagnosticos" [class.paso8__check--error]="d.estado === 'error'" [class.paso8__check--ok]="d.estado === 'ok'" [class.paso8__check--warning]="d.estado === 'warning'">
         <div class="paso8__check-icon" aria-hidden="true">{{ d.estado === 'ok' ? '✓' : d.estado === 'warning' ? '!' : '×' }}</div>
         <div class="paso8__check-main">
-          <div class="paso8__check-heading"><h3>{{ d.titulo }}</h3><span class="pw__status" [class.pw__status--valid]="d.estado === 'ok'" [class.pw__status--error]="d.estado === 'error'">{{ estadoTexto(d.estado) }}</span></div>
+          <div class="paso8__check-heading"><h3>{{ d.titulo }}</h3><span class="pw__status" [class.pw__status--valid]="d.estado === 'ok'" [class.pw__status--error]="d.estado === 'error'" [class.pw__status--warn]="d.estado === 'warning'">{{ estadoTexto(d.estado) }}</span></div>
           <p>{{ d.detalle }}</p>
           <div class="paso8__recommendation"><strong>Qué hacer:</strong> {{ d.accion }}</div>
           <div class="paso8__actions" *ngIf="d.estado !== 'ok'">
@@ -49,7 +49,7 @@
             <pre *ngIf="d.tecnico.stack">{{ d.tecnico.stack }}</pre>
           </details>
         </div>
-        <div class="paso8__duplicate-comparison" *ngIf="d.id === 'duplicados' && d.estado === 'error' && duplicadosComparacion.length">
+        <div class="paso8__duplicate-comparison" *ngIf="d.id === 'duplicados' && duplicadosComparacion.length">
           <div class="paso8__duplicate-heading">
             <div>
               <span class="paso8__duplicate-kicker">Contraste de la clave detectada</span>
@@ -57,7 +57,12 @@
             </div>
             <span class="paso8__duplicate-count">{{ duplicadosComparacion.length }} coincidencia(s)</span>
           </div>
-          <p class="paso8__duplicate-note">Revisá la fila del CSV y el registro que ya está guardado antes de asumir el error.</p>
+          <p class="paso8__duplicate-note">
+            La detección de la clave RN-16 sigue activa. Revisá patente, pase y el archivo de origen antes de continuar.
+          </p>
+          <div class="pw__alert pw__alert--info" *ngIf="duplicadosConfirmados">
+            Confirmaste subir estas filas. Se guardarán con DUPLICADO = sí.
+          </div>
           <app-data-table
             [columns]="duplicadosColumns"
             [rows]="duplicadosComparacion"
@@ -68,6 +73,11 @@
             [clientFilter]="false"
             emptyMessage="No se encontraron coincidencias para comparar."
           />
+          <div class="paso8__duplicate-consent" *ngIf="d.estado === 'error'">
+            <button type="button" class="pw__btn pw__btn--primary" (click)="subirIgualmente()">
+              Subir igualmente
+            </button>
+          </div>
         </div>
       </article>
     </section>

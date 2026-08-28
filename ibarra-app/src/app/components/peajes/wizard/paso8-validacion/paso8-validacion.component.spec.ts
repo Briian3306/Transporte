@@ -180,6 +180,7 @@ describe('Paso8ValidacionComponent last pase from patente', () => {
   let state: PeajesWizardStateService;
   let crearPaseSpy: jasmine.Spy;
   let detectarSpy: jasmine.Spy;
+  let duplicadosRespuesta: ErrorValidacionPasada[];
 
   const pasadaBase = {
     PASADA_ID: null as string | null,
@@ -196,8 +197,9 @@ describe('Paso8ValidacionComponent last pase from patente', () => {
 
   beforeEach(async () => {
     crearPaseSpy = jasmine.createSpy('crearPase');
-    detectarSpy = jasmine.createSpy('detectarDuplicados').and.returnValue(
-      of([] as ErrorValidacionPasada[])
+    duplicadosRespuesta = [];
+    detectarSpy = jasmine.createSpy('detectarDuplicados').and.callFake(() =>
+      of(duplicadosRespuesta)
     );
 
     await TestBed.configureTestingModule({
@@ -280,28 +282,47 @@ describe('Paso8ValidacionComponent last pase from patente', () => {
   });
 
   it('shows the imported and persisted values for a duplicate', async () => {
-    detectarSpy.and.returnValue(
-      of([{
-        fila: 1,
-        columna: 'CLAVE_DUPLICADO',
-        valor: 'duplicate-key',
-        motivo: 'Ya existe una pasada',
-        pasada: newPaseId,
-        patente: patenteId,
-        fecha_hora: pasadaBase.FECHA_HORA,
-        fecha_hora_repetida: '2026-07-01T10:00:00.000Z',
-        valor_repetido: 1700,
-      }])
-    );
+    duplicadosRespuesta = [{
+      fila: 1,
+      columna: 'CLAVE_DUPLICADO',
+      valor: 'duplicate-key',
+      motivo: 'Ya existe una pasada',
+      pasada: newPaseId,
+      patente: patenteId,
+      pase_nombre: 'TAG-NEW',
+      patente_nombre: 'AD625QB',
+      fecha_hora: pasadaBase.FECHA_HORA,
+      fecha_hora_repetida: '2026-07-01T10:00:00.000Z',
+      valor_repetido: 1700,
+      file_upload_name: 'carga-original.csv',
+      duplicado: true,
+    }];
 
     await component.validar();
     fixture.detectChanges();
 
+    expect(component.error).toBeNull();
+    expect(component.duplicados.length).toBe(1);
+    expect(component.duplicadosComparacion.length).toBe(1);
+
     expect(component.duplicadosComparacion[0].valor).toBe(1840);
     expect(component.duplicadosComparacion[0].valor_repetido).toBe(1700);
+    expect(component.duplicadosComparacion[0].patente).toBe('AD625QB');
+    expect(component.duplicadosComparacion[0].pasada).toBe('TAG-NEW');
+    expect(component.duplicadosComparacion[0].file_upload_name).toBe('carga-original.csv');
+    await component.validar();
+    expect(component.duplicadosComparacion.length).toBe(1);
     expect(fixture.nativeElement.textContent).toContain('Fecha_Hora repetida');
     expect(fixture.nativeElement.textContent).toContain('Valor repetido');
     expect(fixture.nativeElement.textContent).toContain('1700');
+    expect(fixture.nativeElement.textContent).toContain('Subir igualmente');
+    expect(component.puedeContinuar).toBeFalse();
+
+    component.subirIgualmente();
+    fixture.detectChanges();
+    expect(state.snapshot().permitirDuplicados).toBeTrue();
+    expect(component.puedeContinuar).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('DUPLICADO = sí');
   });
 
   it('reuses one latest pase for every row of the same patente', async () => {

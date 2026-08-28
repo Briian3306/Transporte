@@ -33,12 +33,14 @@ export class Paso8ValidacionComponent implements OnInit {
   duplicados: ErrorValidacionPasada[] = [];
   duplicadosComparacion: DuplicateComparisonRow[] = [];
   readonly duplicadosColumns: DataTableColumn[] = [
-    { key: 'pasada', label: 'Pasada', width: '18%' },
-    { key: 'patente', label: 'Patente', width: '18%' },
-    { key: 'fecha_hora', label: 'Fecha_Hora', width: '18%' },
-    { key: 'fecha_hora_repetida', label: 'Fecha_Hora repetida', width: '18%' },
-    { key: 'valor', label: 'Valor', align: 'right', width: '14%' },
-    { key: 'valor_repetido', label: 'Valor repetido', align: 'right', width: '14%' },
+    { key: 'pasada', label: 'Pase', width: '14%' },
+    { key: 'patente', label: 'Patente', width: '12%' },
+    { key: 'fecha_hora', label: 'Fecha_Hora', width: '14%' },
+    { key: 'fecha_hora_repetida', label: 'Fecha_Hora repetida', width: '14%' },
+    { key: 'valor', label: 'Valor', align: 'right', width: '10%' },
+    { key: 'valor_repetido', label: 'Valor repetido', align: 'right', width: '10%' },
+    { key: 'file_upload_name', label: 'Archivo', width: '16%' },
+    { key: 'duplicado', label: 'DUPLICADO', width: '10%' },
   ];
   cargando = false;
   error: string | null = null;
@@ -51,6 +53,9 @@ export class Paso8ValidacionComponent implements OnInit {
   ) {}
 
   async ngOnInit(): Promise<void> {
+    if (this.resultado || this.cargando) {
+      return;
+    }
     await this.validar();
   }
 
@@ -93,7 +98,11 @@ export class Paso8ValidacionComponent implements OnInit {
       const estaciones = this.validarReferencias(pasadasValidacion, 'ESTACION_ID', 'Estaciones', 6);
       const patentes = this.validarReferencias(pasadasValidacion, 'PATENTE_ID', 'Patentes', 5);
       const duplicados = await this.ejecutarDeteccionDuplicados(pasadasValidacion);
-      this.duplicadosComparacion = this.construirComparacionesDuplicados(duplicados.errores, pasadasValidacion);
+      this.duplicadosComparacion = this.construirComparacionesDuplicados(
+        duplicados.errores,
+        pasadasValidacion,
+        s.preview?.nombreArchivo
+      );
 
       const importesPorDoc = [];
       const erroresImporte = [];
@@ -139,9 +148,12 @@ export class Paso8ValidacionComponent implements OnInit {
         patentes,
       ];
       this.duplicados = duplicados.errores;
+      const erroresDup = this.state.permitirDuplicados
+        ? []
+        : duplicados.errores;
       const errores = [
         ...erroresImporte,
-        ...duplicados.errores,
+        ...erroresDup,
         ...(campos.errores ?? []),
         ...(estaciones.errores ?? []),
         ...(patentes.errores ?? []),
@@ -171,7 +183,19 @@ export class Paso8ValidacionComponent implements OnInit {
     if (!this.resultado) {
       return false;
     }
-    return this.resultado.errores.length === 0 && this.resultado.dentroTolerancia;
+    return this.erroresBloqueantes.length === 0 && this.resultado.dentroTolerancia;
+  }
+
+  get erroresBloqueantes(): ErrorValidacionPasada[] {
+    const errores = this.resultado?.errores ?? [];
+    if (!this.state.permitirDuplicados) {
+      return errores;
+    }
+    return errores.filter((e) => e.columna !== 'CLAVE_DUPLICADO');
+  }
+
+  get duplicadosConfirmados(): boolean {
+    return this.state.permitirDuplicados && this.duplicadosComparacion.length > 0;
   }
 
   get sumaNetos(): number {
@@ -298,12 +322,24 @@ export class Paso8ValidacionComponent implements OnInit {
     }
     try {
       const errores = await firstValueFrom(this.carga.detectarDuplicados(pasadas));
+      const consentidos = this.state.permitirDuplicados && errores.length > 0;
       return {
         errores,
         diagnostico: {
-          id: 'duplicados', titulo: 'Detección de duplicados', estado: errores.length ? 'error' : 'ok', paso: 5,
-          detalle: errores.length ? `Se detectaron ${errores.length} pasada(s) duplicada(s).` : 'No se detectaron pasadas duplicadas.',
-          accion: errores.length ? 'Volvé a Mapeo y quitá o corregí las filas duplicadas.' : 'No requiere acción.',
+          id: 'duplicados',
+          titulo: 'Detección de duplicados',
+          estado: errores.length ? (consentidos ? 'warning' : 'error') : 'ok',
+          paso: 5,
+          detalle: errores.length
+            ? consentidos
+              ? `Se detectaron ${errores.length} pasada(s) duplicada(s). Quedarán marcadas con DUPLICADO = sí.`
+              : `Se detectaron ${errores.length} pasada(s) duplicada(s).`
+            : 'No se detectaron pasadas duplicadas.',
+          accion: errores.length
+            ? consentidos
+              ? 'Al confirmar se insertarán con duplicado = true. La detección de la clave RN-16 no se desactiva.'
+              : 'Corregí las filas o pulsá «Subir igualmente» para cargarlas marcadas como duplicadas.'
+            : 'No requiere acción.',
           tecnico: { rpc: 'peajes_detectar_duplicados', request: { registros: pasadas.length }, response: errores },
         },
       };
@@ -314,21 +350,57 @@ export class Paso8ValidacionComponent implements OnInit {
 
   private construirComparacionesDuplicados(
     errores: ErrorValidacionPasada[],
-    pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>
+    pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>,
+    archivoActual?: string | null
   ): DuplicateComparisonRow[] {
+    const archivo = archivoActual?.trim() || '—';
     return errores
-      .filter((error) => error.columna === 'CLAVE_DUPLICADO' && error.fila > 0)
+      .filter((error) => {
+        const fila = Number(error.fila);
+        return Number.isFinite(fila) && fila > 0 && (error.columna === 'CLAVE_DUPLICADO' || error.duplicado === true);
+      })
       .map((error) => {
         const importada = pasadas[error.fila - 1];
+        const patenteId = String(importada?.PATENTE_ID ?? error.patente ?? '');
         return {
-          pasada: error.pasada ?? importada?.PASE_ID ?? error.valor,
-          patente: error.patente ?? importada?.PATENTE_ID ?? '—',
+          pasada: error.pase_nombre ?? importada?.PASE_ID ?? error.pasada ?? error.valor,
+          patente:
+            error.patente_nombre ??
+            this.patenteTextoPorId.get(patenteId) ??
+            importada?.PATENTE_ID ??
+            '—',
           fecha_hora: error.fecha_hora ?? importada?.FECHA_HORA ?? '—',
           fecha_hora_repetida: error.fecha_hora_repetida ?? '—',
           valor: importada?.IMPORTE_NETO ?? '—',
           valor_repetido: error.valor_repetido ?? '—',
+          file_upload_name: error.file_upload_name ?? archivo,
+          duplicado: error.duplicado === false ? 'No' : 'Sí',
         };
       });
+  }
+
+  subirIgualmente(): void {
+    if (!this.duplicadosComparacion.length) {
+      return;
+    }
+    this.state.setPermitirDuplicados(true);
+    this.diagnosticos = this.diagnosticos.map((d) =>
+      d.id === 'duplicados'
+        ? {
+            ...d,
+            estado: 'warning',
+            detalle: `Se detectaron ${this.duplicadosComparacion.length} pasada(s) duplicada(s). Quedarán marcadas con DUPLICADO = sí.`,
+            accion: 'Al confirmar se insertarán con duplicado = true. La detección de la clave RN-16 no se desactiva.',
+          }
+        : d
+    );
+    if (this.resultado) {
+      this.resultado = {
+        ...this.resultado,
+        errores: this.resultado.errores.filter((e) => e.columna !== 'CLAVE_DUPLICADO'),
+      };
+      this.state.setValidacion(this.resultado);
+    }
   }
 
   private validarCamposObligatorios(pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>): DiagnosticoValidacion {
@@ -430,4 +502,6 @@ interface DuplicateComparisonRow extends Record<string, unknown> {
   fecha_hora_repetida: unknown;
   valor: unknown;
   valor_repetido: unknown;
+  file_upload_name: unknown;
+  duplicado: unknown;
 }

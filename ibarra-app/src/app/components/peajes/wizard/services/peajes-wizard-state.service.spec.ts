@@ -445,4 +445,37 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
     expect(state.snapshot().invoiceAi.result).toBeNull();
     expect(state.snapshot().invoicePdf?.text).toBe('other text');
   });
+
+  it('stores mass-import PDFs by FACTURA key and resets consent on new preview', () => {
+    state.setModoImportacion('masiva');
+    state.setPreview({
+      nombreArchivo: 'masiva.csv',
+      tamanioBytes: 1,
+      totalFilas: 2,
+      columnas: ['FACTURA'],
+      filasPreview: [{ FACTURA: '123' }, { FACTURA: '234' }],
+      filasOrigen: [{ FACTURA: '123' }, { FACTURA: '234' }],
+      tiposInferidos: {},
+    });
+    state.setPermitirDuplicados(true);
+    state.setInvoicePdfsMasiva(
+      {
+        '123': { fileName: '123.pdf', size: 10, lastModified: 1, text: 'pdf-123' },
+      },
+      [{ fileName: '999.pdf', size: 2, lastModified: 2, text: 'orphan' }]
+    );
+    expect(state.invoicePdfMasivaFor('123')?.fileName).toBe('123.pdf');
+    expect(state.snapshot().invoicePdfsMasivaSinMatch[0].fileName).toBe('999.pdf');
+    expect(state.clavesFacturaMasiva()).toEqual(['123', '234']);
+    state.setPreview({
+      nombreArchivo: 'masiva-2.csv',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['FACTURA'],
+      filasPreview: [{ FACTURA: '123' }],
+      filasOrigen: [{ FACTURA: '123' }],
+      tiposInferidos: {},
+    });
+    expect(state.snapshot().permitirDuplicados).toBeFalse();
+  });
 });

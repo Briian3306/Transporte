@@ -24,11 +24,14 @@ Confirmar de forma atómica una carga válida (RN-12, RN-13/17, RN-16) sin estad
 
 1. Valida payload de documento (`p_factura` jsonb; nombre histórico del parámetro) y arreglo `p_pasadas`.
 2. Normaliza `tipo` a `FC`|`NC`; para NC fuerza signos negativos en cabecera y líneas.
-3. Detecta duplicados (`peajes_detectar_duplicados`).
+3. Detecta duplicados (`peajes_detectar_duplicados`) **siempre**.
+   - Clave incompleta → excepción.
+   - Coincidencias RN-16 y `p_permitir_duplicados = false` (default) → excepción (igual que antes).
+   - Coincidencias RN-16 y `p_permitir_duplicados = true` → inserta esas filas con `pasadas.duplicado = true` y registra `duplicados_permitidos` en `parametros_efectivos`.
 4. Calcula/valida `importe_neto` por fila (`peajes_calcular_importe_neto`).
 5. Valida suma vs (subtotal + bonificación de cabecera) (`peajes_validar_factura_pasadas`, tolerancia default 1%).
 6. Inserta fila en `documentos` (incluye `bonificacion`), pasadas con `documento_id` y `categoria` cruda opcional (F14 / RN-15), y `registros_carga_peajes`.
-7. Hook F14-2: llama `peajes_normalizar_tarifas(v_documento_id)` (NC → `(0,0)`). Un fallo del clasificador se registra (`WARNING`) y **no** revierte la carga validada. Firma pública intacta.
+7. Hook F14-2: llama `peajes_normalizar_tarifas(v_documento_id)` (NC → `(0,0)`). Un fallo del clasificador se registra (`WARNING`) y **no** revierte la carga validada. `p_permitir_duplicados` es opcional (default false).
 8. Devuelve jsonb con ids y métricas de filas. El frontend puede repetir `peajes_normalizar_tarifas` (idempotente, B-10) si el remoto aún no tiene el hook.
 
 En masiva, el frontend orquesta **una invocación por documento**; errores se aíslan por llamada.
@@ -54,15 +57,15 @@ En masiva, el frontend orquesta **una invocación por documento**; errores se a�
 
 | Función | Tipo | Parámetros principales | Retorno |
 |---------|------|------------------------|---------|
-| `peajes_confirmar_carga` | RPC | `p_factura jsonb`, `p_pasadas jsonb`, plantilla/params/errores/archivo/tolerancia opcionales | `jsonb` |
+| `peajes_confirmar_carga` | RPC | `p_factura jsonb`, `p_pasadas jsonb`, plantilla/params/errores/archivo/tolerancia opcionales, `p_permitir_duplicados boolean` default false | `jsonb` |
 
-**Ubicación canónica (F13 + bonificación cabecera):** `supabase/migrations/20260807140000_peajes_documentos_tipo_nc.sql` y `20260810191639_peajes_documentos_bonificacion.sql`. Hook F14-2: `20260821141019_peajes_confirmar_carga_hook_normalizar.sql`.
+**Ubicación canónica (F13 + bonificación cabecera):** `supabase/migrations/20260807140000_peajes_documentos_tipo_nc.sql` y `20260810191639_peajes_documentos_bonificacion.sql`. Hook F14-2: `20260821141019_peajes_confirmar_carga_hook_normalizar.sql`. Duplicados consentidos (F18-2): `20260828120000_peajes_duplicados_permitidos.sql`.
 
 ## Validations
 
 - Documento obligatorio (RN-12).
 - `tipo` ∈ {FC, NC}.
-- Duplicados RN-16 rechazan la carga.
+- Duplicados RN-16: la detección corre siempre. Default: rechazan la carga. Con `p_permitir_duplicados=true` se insertan marcadas `duplicado=true`.
 - Conciliación: Σ neto − `documentos.bonificacion` ≈ `importe_sin_iva` (RN-13/17).
 
 ## Testing

@@ -22,6 +22,7 @@ import {
   concesionDominanteDeFilas,
   esColumnaMetadataMasiva,
   excelTieneColumnaFactura,
+  normalizarClaveFacturaPdf,
   normalizarImportesDocumento,
 } from '../../models';
 import {
@@ -131,6 +132,12 @@ export interface PeajesWizardState {
   /** PDF de factura opcional (solo memoria, importación simple). */
   invoicePdf: WizardInvoicePdf | null;
   invoiceAi: InvoiceAiAnalysisState;
+  /** PDFs de factura en masiva, clave = FACTURA normalizada. */
+  invoicePdfsMasiva: Record<string, WizardInvoicePdf>;
+  invoicePdfsMasivaSinMatch: WizardInvoicePdf[];
+  invoiceAiPorDocumento: Record<string, InvoiceAiAnalysisState>;
+  /** Consentimiento Paso 8 para persistir duplicados RN-16. */
+  permitirDuplicados: boolean;
 }
 
 export interface WizardInvoicePdf {
@@ -191,6 +198,10 @@ function estadoInicial(): PeajesWizardState {
     recomendacionesPeajeConcesion: [],
     invoicePdf: null,
     invoiceAi: { status: 'idle', result: null, error: null, fingerprint: null },
+    invoicePdfsMasiva: {},
+    invoicePdfsMasivaSinMatch: [],
+    invoiceAiPorDocumento: {},
+    permitirDuplicados: false,
   };
 }
 
@@ -252,6 +263,7 @@ export class PeajesWizardStateService {
     this.state.patentesExcluidas = [];
     this.state.recomendacionesPeajeConcesion = [];
     this.state.recomendaciones = detectColumnRecommendations(preview);
+    this.state.permitirDuplicados = false;
     this.aplicarSeleccionPorReconocimiento(preview, this.state.recomendaciones);
     this.aplicarSugerenciasSiPareceMvp(preview);
     // FACTURA / Concesión son metadata de documento/empresa, no Structure Goal.
@@ -381,6 +393,10 @@ export class PeajesWizardStateService {
     }
     if (changed && modo === 'masiva') {
       this.invalidateInvoiceAi();
+      this.state.invoicePdf = null;
+    }
+    if (changed && modo === 'simple') {
+      this.clearInvoicePdfsMasiva();
     }
   }
 
@@ -1358,6 +1374,164 @@ export class PeajesWizardStateService {
       lastModified: file.lastModified,
       text,
     };
+  }
+
+  setPermitirDuplicados(value: boolean): void {
+    this.state.permitirDuplicados = value;
+  }
+
+  get permitirDuplicados(): boolean {
+    return this.state.permitirDuplicados;
+  }
+
+  clavesFacturaMasiva(): string[] {
+    if (this.state.modoImportacion !== 'masiva') {
+      return [];
+    }
+    const fromDocs = this.state.documentos.map((d) => d.factura).filter((f) => !!f.trim());
+    if (fromDocs.length) {
+      return fromDocs;
+    }
+    const preview = this.state.preview;
+    if (!preview) {
+      return [];
+    }
+    return agruparFilasPorFactura(preview.filasOrigen, COLUMNA_FACTURA_MASIVA).map(
+      (g) => g.numeroFactura
+    );
+  }
+
+  setInvoicePdfsMasiva(
+    matched: Record<string, WizardInvoicePdf>,
+    unmatched: WizardInvoicePdf[] = []
+  ): void {
+    const prev = this.state.invoicePdfsMasiva;
+    this.state.invoicePdfsMasiva = { ...matched };
+    this.state.invoicePdfsMasivaSinMatch = [...unmatched];
+    const keys = new Set([...Object.keys(prev), ...Object.keys(matched)]);
+    for (const key of keys) {
+      const previous = prev[key];
+      const next = matched[key];
+      const changed =
+        !next ||
+        !previous ||
+        previous.fileName !== next.fileName ||
+        previous.size !== next.size ||
+        previous.lastModified !== next.lastModified;
+      if (changed) {
+        this.state.invoiceAiPorDocumento[key] = {
+          status: 'idle',
+          result: null,
+          error: null,
+          fingerprint: null,
+        };
+      }
+    }
+  }
+
+  removeInvoicePdfMasiva(fileName: string): void {
+    const next = { ...this.state.invoicePdfsMasiva };
+    for (const [key, pdf] of Object.entries(next)) {
+      if (pdf.fileName === fileName) {
+        delete next[key];
+        this.state.invoiceAiPorDocumento[key] = {
+          status: 'idle',
+          result: null,
+          error: null,
+          fingerprint: null,
+        };
+      }
+    }
+    this.state.invoicePdfsMasiva = next;
+    this.state.invoicePdfsMasivaSinMatch = this.state.invoicePdfsMasivaSinMatch.filter(
+      (pdf) => pdf.fileName !== fileName
+    );
+  }
+
+  clearInvoicePdfsMasiva(): void {
+    this.state.invoicePdfsMasiva = {};
+    this.state.invoicePdfsMasivaSinMatch = [];
+    this.state.invoiceAiPorDocumento = {};
+  }
+
+  invoicePdfMasivaFor(factura: string): WizardInvoicePdf | null {
+    return this.state.invoicePdfsMasiva[normalizarClaveFacturaPdf(factura)] ?? null;
+  }
+
+  invoiceAiForDocumento(factura: string): InvoiceAiAnalysisState {
+    return (
+      this.state.invoiceAiPorDocumento[normalizarClaveFacturaPdf(factura)] ?? {
+        status: 'idle',
+        result: null,
+        error: null,
+        fingerprint: null,
+      }
+    );
+  }
+
+  setInvoiceAiPorDocumento(
+    factura: string,
+    status: InvoiceAiStatus,
+    result: InvoiceAiResult | null,
+    error: string | null
+  ): void {
+    const key = normalizarClaveFacturaPdf(factura);
+    const net = this.invoiceExpectedNetAmountForFactura(factura);
+    this.state.invoiceAiPorDocumento = {
+      ...this.state.invoiceAiPorDocumento,
+      [key]: {
+        status,
+        result,
+        error,
+        fingerprint:
+          status === 'idle' ? null : this.invoiceAiFingerprintMasiva(key, net) ?? this.state.invoiceAiPorDocumento[key]?.fingerprint ?? null,
+      },
+    };
+  }
+
+  invoiceExpectedNetAmountForDocumento(doc: WizardDocumentoGrupo): number | null {
+    return this.invoiceExpectedNetAmountForFactura(doc.factura, doc);
+  }
+
+  invoiceExpectedNetAmountForFactura(
+    factura: string,
+    doc?: WizardDocumentoGrupo
+  ): number | null {
+    const postTemplate =
+      this.state.pasadasEstandarizadas.length > 0 &&
+      (!!this.state.plantillaId || this.state.configuracionesDraft.length > 0);
+    if (!postTemplate) {
+      return null;
+    }
+    const grupo =
+      doc ??
+      this.state.documentos.find(
+        (d) => normalizarClaveFacturaPdf(d.factura) === normalizarClaveFacturaPdf(factura)
+      );
+    if (!grupo) {
+      return null;
+    }
+    const pasadas = this.state.preview
+      ? this.construirPasadasDesdeMapeo()
+      : this.state.pasadasEstandarizadas;
+    const subset = this.pasadasDeDocumento(grupo, pasadas);
+    const cents = subset.reduce((sum, pasada) => sum + this.aCentavos(pasada.IMPORTE_NETO), 0);
+    return cents > 0 ? cents / 100 : null;
+  }
+
+  invoiceAiFingerprintMasiva(key: string, netAmount: number | null): string | null {
+    const pdf = this.state.invoicePdfsMasiva[key];
+    if (!pdf?.text || netAmount == null || netAmount <= 0) {
+      return null;
+    }
+    return [
+      key,
+      pdf.fileName,
+      pdf.size,
+      pdf.lastModified,
+      this.state.plantillaId ?? '',
+      Math.round(netAmount * 100),
+    ].join('|');
   }
 
   setInvoiceAiAnalysis(

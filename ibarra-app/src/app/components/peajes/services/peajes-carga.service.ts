@@ -171,6 +171,7 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
           p_algoritmos_efectivos: [],
           p_errores: [],
           p_nombre_archivo: nombreArchivo,
+          p_permitir_duplicados: !!input.permitirDuplicados,
         });
         if (error) throw error;
 

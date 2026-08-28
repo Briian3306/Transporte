@@ -204,6 +204,7 @@ export class Paso9RevisionComponent implements OnInit {
               mapeos: s.mapeos,
               relacionesEstacion: s.relacionesEstacion,
               nombreArchivo: s.preview?.nombreArchivo ?? null,
+              permitirDuplicados: s.permitirDuplicados,
               parametrosEfectivos: {
                 archivo: s.preview?.nombreArchivo,
                 totalFilas: subset.length,

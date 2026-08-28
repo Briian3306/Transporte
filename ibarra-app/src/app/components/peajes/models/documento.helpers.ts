@@ -104,3 +104,56 @@ export function agruparFilasPorFactura<T extends Record<string, unknown>>(
 export function excelTieneColumnaFactura(columnas: string[]): boolean {
   return columnas.some((c) => c === COLUMNA_FACTURA_MASIVA);
 }
+
+/** Clave comparable FACTURA ↔ nombre de PDF (trim, minúsculas, sin .pdf). */
+export function normalizarClaveFacturaPdf(valor: string): string {
+  return String(valor ?? '')
+    .trim()
+    .replace(/\.pdf$/i, '')
+    .trim()
+    .toLowerCase();
+}
+
+/** Extrae la clave FACTURA desde el nombre de archivo del PDF. */
+export function claveFacturaDesdeNombrePdf(fileName: string): string {
+  const base = String(fileName ?? '')
+    .replace(/\\/g, '/')
+    .split('/')
+    .pop() ?? String(fileName ?? '');
+  return normalizarClaveFacturaPdf(base);
+}
+
+export interface MatchPdfFacturaResult<T> {
+  matched: Array<{ clave: string; factura: string; item: T }>;
+  unmatched: T[];
+}
+
+/**
+ * Relaciona PDFs con valores de columna FACTURA.
+ * `123.pdf` coincide con FACTURA `"123"` (case-insensitive).
+ */
+export function matchPdfsConFacturas<T>(
+  items: T[],
+  nombreDe: (item: T) => string,
+  facturas: string[]
+): MatchPdfFacturaResult<T> {
+  const facturaPorClave = new Map<string, string>();
+  for (const factura of facturas) {
+    const clave = normalizarClaveFacturaPdf(factura);
+    if (clave && !facturaPorClave.has(clave)) {
+      facturaPorClave.set(clave, factura.trim());
+    }
+  }
+  const matched: Array<{ clave: string; factura: string; item: T }> = [];
+  const unmatched: T[] = [];
+  for (const item of items) {
+    const clave = claveFacturaDesdeNombrePdf(nombreDe(item));
+    const factura = facturaPorClave.get(clave);
+    if (factura) {
+      matched.push({ clave, factura, item });
+    } else {
+      unmatched.push(item);
+    }
+  }
+  return { matched, unmatched };
+}
