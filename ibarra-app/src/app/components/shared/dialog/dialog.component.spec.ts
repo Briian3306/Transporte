@@ -29,4 +29,29 @@ describe('DialogComponent', () => {
     component.onEsc();
     expect(spy).toHaveBeenCalled();
   });
+
+  it('defaults to md size and center placement', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.app-dialog--xl')).toBeNull();
+    expect(root.querySelector('.app-dialog--lg')).toBeNull();
+    expect(root.querySelector('.app-dialog-backdrop--top')).toBeNull();
+  });
+
+  it('applies xl size and top placement classes', () => {
+    component.size = 'xl';
+    component.placement = 'top';
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.app-dialog--xl')).toBeTruthy();
+    expect(root.querySelector('.app-dialog-backdrop--top')).toBeTruthy();
+    expect(root.querySelector('.app-dialog--top')).toBeTruthy();
+  });
+
+  it('does not close on backdrop when closeOnBackdrop is false', () => {
+    const spy = jasmine.createSpy('closed');
+    component.closed.subscribe(spy);
+    component.closeOnBackdrop = false;
+    component.onBackdropClick();
+    expect(spy).not.toHaveBeenCalled();
+  });
 });

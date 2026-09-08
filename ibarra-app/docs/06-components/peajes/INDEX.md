@@ -15,7 +15,7 @@ Documentación de UI y servicios del módulo Peajes (wizard, catálogos, plantil
 | [reconocimiento-columnas.md](./reconocimiento-columnas.md) | F02-11 / F14-3 — reconocimiento semántico + CATEGORIA |
 | [reconocimiento-estaciones.md](./reconocimiento-estaciones.md) | F02-13 / RN-26 — estaciones por peaje/empresa |
 | [auditoria-tarifas.md](./auditoria-tarifas.md) | F14-4 — uso de `/peajes/auditoria-tarifas` (botones, tablas, servicios) |
-| [tarifario.md](./tarifario.md) | F14-17 — `/peajes/tarifario` precios actuales (RPCs locales) |
+| [tarifario.md](./tarifario.md) | F14-17 — `/peajes/tarifario` precios actuales (RPCs locales); tablero reutilizado en F14-18 |
 | [propuesta-pico-excel.md](./propuesta-pico-excel.md) | Propuesta PICO/NO_PICO ene–jul (Excel + CONFIRMAR); update masivo NO_PICO |
 | [catalogo-tarifas-audit.md](./catalogo-tarifas-audit.md) | Fase 1 — auditoría de catálogo (Excel gaps PICO/NO_PICO; no toca Supabase) |
 | [auditoria-estaciones.md](./auditoria-estaciones.md) | F16 — `/peajes/auditoria-estaciones`, Ver casos y clave canónica Paso 6 |

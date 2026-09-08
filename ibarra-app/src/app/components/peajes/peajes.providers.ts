@@ -4,13 +4,17 @@ import {
   PEAJES_CATALOGO_SERVICE,
   PEAJES_PASADAS_SERVICE,
   PEAJES_PLANTILLAS_SERVICE,
+  TARIFA_REFRESH_SERVICE,
 } from './models';
+import { PEAJES_TARIFARIO_SERVICE } from './models/tarifario.contracts';
 import {
   PeajesCargaSupabaseService,
   PeajesCatalogoSupabaseService,
   PeajesPasadasSupabaseService,
   PeajesPlantillasSupabaseService,
+  PeajesTarifarioSupabaseService,
 } from './services';
+import { TarifaRefreshServiceImpl } from './services/tarifa-refresh.service';
 
 /**
  * Providers reales (F01) para swap de mocks — Agente 05.
@@ -21,6 +25,8 @@ export const PEAJES_SUPABASE_PROVIDERS: Provider[] = [
   { provide: PEAJES_CARGA_SERVICE, useExisting: PeajesCargaSupabaseService },
   { provide: PEAJES_PLANTILLAS_SERVICE, useExisting: PeajesPlantillasSupabaseService },
   { provide: PEAJES_PASADAS_SERVICE, useExisting: PeajesPasadasSupabaseService },
+  { provide: PEAJES_TARIFARIO_SERVICE, useExisting: PeajesTarifarioSupabaseService },
+  { provide: TARIFA_REFRESH_SERVICE, useExisting: TarifaRefreshServiceImpl },
 ];
 
 export const PEAJES_CATALOGO_PROVIDERS: Provider[] = [

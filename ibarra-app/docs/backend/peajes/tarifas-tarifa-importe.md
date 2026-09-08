@@ -92,8 +92,9 @@ Detalle de columnas: [06-tablas/peajes/tarifas-tarifa-importe.md](../../06-tabla
 
 | Función | Tipo | Parámetros | Retorno | Descripción |
 |---------|------|------------|---------|-------------|
-| `peajes_resolver_tarifas_actuales` | RPC STABLE | `p_pasadas jsonb` (arreglo) | jsonb arreglo | Resuelve config + puntero + `importe` + flag IVA. Conserva `idx` / orden. No muta. |
-| `peajes_validar_tarifas_actuales` | RPC STABLE | `p_pasadas jsonb` | jsonb arreglo | Elige precio según flag; aplica 1% inclusivo. No divide por 1,21. |
+| `_peajes_tarifas_montos_candidatos` | helper STABLE | estación, categoría, status, sentido | relation | Montos vigente+historial con precedencia de sentido. Usado por F14-16 y F14-18. No es API. |
+| `peajes_resolver_tarifas_actuales` | RPC STABLE | `p_pasadas jsonb` (arreglo) | jsonb arreglo | Resuelve config + puntero + `importe` + flag IVA. Conserva `idx` / orden. No muta. Firma pública intacta. |
+| `peajes_validar_tarifas_actuales` | RPC STABLE | `p_pasadas jsonb` | jsonb arreglo | Elige precio según flag; aplica 1% inclusivo. No divide por 1,21. Firma pública intacta. |
 | `peajes_asociar_pasadas_tarifa_importe` | RPC VOLATILE | `p_asociaciones jsonb` | void | Asocia solo `AL_DIA`/`HISTORICA`. Idempotente. |
 | `peajes_backfill_pasadas_tarifa_importe` | RPC VOLATILE | — | void | Backfill por linaje único. |
 | `peajes_trg_tarifa_importe_immutable` | trigger | — | trigger | Bloquea DELETE y UPDATE de negocio. |
@@ -101,7 +102,7 @@ Detalle de columnas: [06-tablas/peajes/tarifas-tarifa-importe.md](../../06-tabla
 
 ### Detalle: `peajes_resolver_tarifas_actuales`
 
-**Ubicación:** `supabase/migrations/20260907102000_peajes_tarifas_v2_shadow_matching.sql`
+**Ubicación:** `supabase/migrations/20260907102000_peajes_tarifas_v2_shadow_matching.sql`. Cuerpo actual (helper compartido): `20260908150000_peajes_refresh_tarifas_paso9.sql`. Firma pública sin cambio.
 
 **Entrada (cada elemento):** `idx`, `estacion_id`, `categoria` (número o string dígitos), `status` opcional, `sentido` (default `AMBAS`).
 
@@ -157,7 +158,8 @@ Detalle de columnas: [06-tablas/peajes/tarifas-tarifa-importe.md](../../06-tabla
 
 ## Notes
 
-- Código: `supabase/migrations/20260907*_peajes_tarifas_v2_*.sql`, `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`
+- Código: `supabase/migrations/20260907*_peajes_tarifas_v2_*.sql`, `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`, helper reescrito en `20260908150000_peajes_refresh_tarifas_paso9.sql`
+- Refresh Paso 9: [refresh-tarifas-paso9.md](./refresh-tarifas-paso9.md)
 - Angular: `src/app/components/peajes/services/tarifa-comparison-adapter.service.ts`, `tarifa-validation.service.ts`, `wizard/paso8-validacion/`
 - Legado: [auditoria-tarifas.md](./auditoria-tarifas.md)
 - Tablas: [tarifas-tarifa-importe.md](../../06-tablas/peajes/tarifas-tarifa-importe.md)

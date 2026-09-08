@@ -147,6 +147,10 @@ export class PeajesCargaSupabaseService implements PeajesCargaService {
             quantity: Number(p.QUANTITY ?? 1),
             importe_neto: norm.importe_neto,
             categoria,
+            sentido: (() => {
+              const raw = String((p as Record<string, unknown>)['SENTIDO'] ?? '').trim().toUpperCase();
+              return raw === 'IDA' || raw === 'VUELTA' || raw === 'AMBAS' ? raw : 'AMBAS';
+            })(),
           };
         });
 

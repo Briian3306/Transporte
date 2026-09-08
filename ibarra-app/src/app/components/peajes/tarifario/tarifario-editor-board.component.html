@@ -1,0 +1,115 @@
+<section class="tf__board" aria-label="Escalera tarifaria" (keydown)="onBoardKeydown($event)">
+  <table class="tf__table">
+    <thead>
+      <tr>
+        <th class="tf__cat" rowspan="2">Categoría</th>
+        <th class="tf__lane tf__lane--nopico" colspan="2">NO_PICO</th>
+        <th class="tf__lane tf__lane--pico" colspan="2">PICO</th>
+      </tr>
+      <tr>
+        <th class="tf__sub">Actual</th>
+        <th class="tf__sub">Nuevo</th>
+        <th class="tf__sub">Actual</th>
+        <th class="tf__sub">Nuevo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let row of rows">
+        <th class="tf__cat-cell" scope="row">{{ row.categoria }}</th>
+        <td class="tf__actual" data-lane="nopico" [class.tf__missing]="row.no_pico.importe == null">
+          <div class="tf__amount">{{ displayActual(row.no_pico.importe) }}</div>
+          <time class="tf__fecha" [attr.datetime]="row.no_pico.fecha_actualizacion ?? null">
+            {{ displayFecha(row.no_pico.fecha_actualizacion) }}
+          </time>
+          <button
+            type="button"
+            class="tf__hist"
+            tabindex="-1"
+            [disabled]="!row.no_pico.tarifa_id"
+            (click)="requestHistory(row, 'NO_PICO')"
+          >Historial</button>
+        </td>
+        <td
+          class="tf__nuevo"
+          data-lane="nopico"
+          [class.tf__dirty]="isDirty(row.categoria, 'NO_PICO')"
+        >
+          <input
+            #nuevoInput
+            class="tf__input"
+            type="text"
+            inputmode="decimal"
+            [ngModel]="draftValue(row.categoria, 'NO_PICO')"
+            (ngModelChange)="setDraft(row.categoria, 'NO_PICO', $event)"
+            (keydown)="onNuevoKeydown($event)"
+            (focus)="selectNuevo($event)"
+            [class.tf__input--invalid]="isInvalid(row.categoria, 'NO_PICO')"
+            [attr.aria-invalid]="isInvalid(row.categoria, 'NO_PICO')"
+            [attr.aria-label]="'Nuevo NO_PICO categoría ' + row.categoria"
+          />
+          <ul class="tf__detected" *ngIf="detectedFor(row.categoria, 'NO_PICO').length">
+            <li *ngFor="let item of detectedFor(row.categoria, 'NO_PICO')">
+              {{ formatDetected(item.valor) }}
+              <span class="tf__detected-count">×{{ item.count }}</span>
+            </li>
+          </ul>
+        </td>
+        <td class="tf__actual" data-lane="pico" [class.tf__missing]="row.pico.importe == null">
+          <div class="tf__amount">{{ displayActual(row.pico.importe) }}</div>
+          <time class="tf__fecha" [attr.datetime]="row.pico.fecha_actualizacion ?? null">
+            {{ displayFecha(row.pico.fecha_actualizacion) }}
+          </time>
+          <button
+            type="button"
+            class="tf__hist"
+            tabindex="-1"
+            [disabled]="!row.pico.tarifa_id"
+            (click)="requestHistory(row, 'PICO')"
+          >Historial</button>
+        </td>
+        <td
+          class="tf__nuevo"
+          data-lane="pico"
+          [class.tf__dirty]="isDirty(row.categoria, 'PICO')"
+        >
+          <input
+            #nuevoInput
+            class="tf__input"
+            type="text"
+            inputmode="decimal"
+            [ngModel]="draftValue(row.categoria, 'PICO')"
+            (ngModelChange)="setDraft(row.categoria, 'PICO', $event)"
+            (keydown)="onNuevoKeydown($event)"
+            (focus)="selectNuevo($event)"
+            [class.tf__input--invalid]="isInvalid(row.categoria, 'PICO')"
+            [attr.aria-invalid]="isInvalid(row.categoria, 'PICO')"
+            [attr.aria-label]="'Nuevo PICO categoría ' + row.categoria"
+          />
+          <ul class="tf__detected" *ngIf="detectedFor(row.categoria, 'PICO').length">
+            <li *ngFor="let item of detectedFor(row.categoria, 'PICO')">
+              {{ formatDetected(item.valor) }}
+              <span class="tf__detected-count">×{{ item.count }}</span>
+            </li>
+          </ul>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="tf__add-row" *ngIf="showAddCategoria">
+    <button
+      #addCategoriaBtn
+      type="button"
+      class="tf__add"
+      [disabled]="!allowAddCategoria"
+      [attr.aria-keyshortcuts]="'+'"
+      [attr.aria-label]="'Agregar categoría ' + (categoriaCount + 1) + ' de ' + categoriasMax"
+      (click)="emitAddCategoria()"
+    >
+      <i class="fas fa-plus" aria-hidden="true"></i>
+      Agregar categoría
+    </button>
+    <span class="tf__add-hint">
+      {{ allowAddCategoria ? 'Tab o + · Enter. Máximo ' + categoriasMax + '.' : 'Ya están las ' + categoriasMax + ' categorías.' }}
+    </span>
+  </div>
+</section>

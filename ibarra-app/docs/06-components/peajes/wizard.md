@@ -59,7 +59,7 @@ pasos y el acceso al ejemplo MVP.
 | 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación filtrada por peaje de `Concesion`/empresa (RN-26); alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13). Código `0001` Zarate vs DOCK SUD: la empresa del Paso 1 acota `reconocerEstacion` (F02-17) |
 | 7 | Factura | `paso7-factura` | Cuenta opcional; subtotal, percepciones, IVA y total declarados; empresa SMS single (Paso 1); fecha DRP single. En simple, candidatos IA clickeables (F17). Recomienda crear plantilla completa (pipeline+mapeos+estaciones) |
 | 8 | Validación | `paso8-validacion` | Errores fila/columna/valor/motivo y diferencia neto de factura vs. pasadas |
-| 9 | Revisión | `paso9-revision` | Confirmación de carga |
+| 9 | Revisión | `paso9-revision` | Confirmación de carga. F14-18: analiza candidatos de tarifa; `CURRENT_TARIFF` / `HISTORICAL_TARIFF_MATCH` no abren diálogo; `NEW_TARIFF` / `STATUS_*` abren el tablero en `app-dialog` xl/top (`peajes:manage` para guardar); `CONTEXT_INCOMPLETE` bloquea confirmar. Persiste `SENTIDO` (default `AMBAS`). |
 
 ### Paso 5 — cobertura y destinos opcionales (F02-18)
 

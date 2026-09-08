@@ -1,0 +1,43 @@
+<app-dialog
+  [open]="open"
+  size="xl"
+  placement="top"
+  eyebrow="Paso 09 · tarifas"
+  title="Actualizar tarifas detectadas"
+  description="Revisá PICO y NO_PICO juntas. Un campo Nuevo vacío no cambia esa tarifa."
+  [closeOnBackdrop]="false"
+  (closed)="close()"
+>
+  <p class="trd__perm" *ngIf="!canManage" role="alert">
+    Necesitás permiso peajes:manage para guardar tarifas nuevas.
+  </p>
+
+  <section class="trd__section" *ngFor="let seccion of secciones">
+    <h3 class="trd__heading">
+      {{ seccion.estacionNombre }}
+      <span class="trd__sentido">{{ seccion.sentido }}</span>
+    </h3>
+    <app-tarifario-editor-board
+      [rows]="seccion.rows"
+      [drafts]="seccion.drafts"
+      [detected]="seccion.detected"
+      [showAddCategoria]="false"
+      [allowAddCategoria]="false"
+      (draftChange)="onDraft(seccion, $event)"
+    ></app-tarifario-editor-board>
+  </section>
+
+  <p class="trd__error" *ngIf="error" role="alert">{{ error }}</p>
+
+  <div appDialogActions>
+    <button type="button" class="trd__btn" (click)="close()">Cancelar</button>
+    <button
+      type="button"
+      class="trd__btn trd__btn--primary"
+      [disabled]="!canManage || saving"
+      (click)="guardar()"
+    >
+      {{ saving ? 'Guardando…' : 'Guardar cambios' }}
+    </button>
+  </div>
+</app-dialog>

@@ -191,8 +191,13 @@ export interface EstacionPendienteGrupo {
 }
 
 /** Fila ya mapeada a Structure Goal (pre-persistencia / preview). */
-export type PasadaEstandarizada = Record<PasadaColumnKey, string | number | null> & {
+export type PasadaEstandarizada = Omit<
+  Record<PasadaColumnKey, string | number | null>,
+  'SENTIDO' | 'TARIFA_STATUS'
+> & {
   PASADA_ID?: string | null;
+  SENTIDO?: string | number | null;
+  TARIFA_STATUS?: string | number | null;
 };
 
 export interface PlantillaConfiguracion {

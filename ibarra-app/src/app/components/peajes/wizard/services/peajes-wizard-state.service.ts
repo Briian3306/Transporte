@@ -1270,6 +1270,8 @@ export class PeajesWizardStateService {
           out['BONIFICACION'] = 0;
         }
         this.completarPrecioEImporteNeto(out);
+        if (out['SENTIDO'] === undefined) out['SENTIDO'] = null;
+        if (out['TARIFA_STATUS'] === undefined) out['TARIFA_STATUS'] = null;
 
         return out as PasadaEstandarizada;
       });
@@ -1291,6 +1293,8 @@ export class PeajesWizardStateService {
           IMPORTE_NETO: null,
           // F14-0: opcional (Patrón A = null). Se completa si hay mapeo a CATEGORIA.
           CATEGORIA: null,
+          SENTIDO: null,
+          TARIFA_STATUS: null,
         };
 
         for (const m of mapeoActivo) {
@@ -1329,6 +1333,8 @@ export class PeajesWizardStateService {
           out.BONIFICACION = 0;
         }
         this.completarPrecioEImporteNeto(out);
+        if (out['SENTIDO'] === undefined) out['SENTIDO'] = null;
+        if (out['TARIFA_STATUS'] === undefined) out['TARIFA_STATUS'] = null;
 
         return out as PasadaEstandarizada;
       });

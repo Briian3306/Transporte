@@ -27,7 +27,9 @@ export type PasadaColumnKey =
   | 'BONIFICACION'
   | 'QUANTITY'
   | 'IMPORTE_NETO'
-  | 'CATEGORIA';
+  | 'CATEGORIA'
+  | 'SENTIDO'
+  | 'TARIFA_STATUS';
 
 export const PASADA_COLUMN_KEYS: readonly PasadaColumnKey[] = [
   'PASADA_ID',
@@ -40,6 +42,8 @@ export const PASADA_COLUMN_KEYS: readonly PasadaColumnKey[] = [
   'QUANTITY',
   'IMPORTE_NETO',
   'CATEGORIA',
+  'SENTIDO',
+  'TARIFA_STATUS',
 ] as const;
 
 /** Columnas obligatorias para avanzar el mapeo. CATEGORIA y PASE_ID son opcionales (Patrón A / sin dispositivo). */

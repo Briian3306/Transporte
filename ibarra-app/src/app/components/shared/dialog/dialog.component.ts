@@ -28,7 +28,8 @@ export class DialogComponent {
   @Input() closeLabel = 'Cerrar';
   /** Si true, click en backdrop cierra. */
   @Input() closeOnBackdrop = true;
-  @Input() size: 'md' | 'lg' = 'md';
+  @Input() size: 'md' | 'lg' | 'xl' = 'md';
+  @Input() placement: 'center' | 'top' = 'center';
 
   @Output() openChange = new EventEmitter<boolean>();
   @Output() closed = new EventEmitter<void>();

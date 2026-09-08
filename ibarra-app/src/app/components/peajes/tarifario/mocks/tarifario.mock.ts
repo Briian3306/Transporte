@@ -1,7 +1,13 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import {
+  CambioRefrescoTarifa,
+  DetectarRefrescoTarifaInput,
+  DetectarRefrescoTarifaItem,
   PeajesTarifarioService,
+  PrepararRefrescoTarifaInput,
+  PrepararRefrescoTarifaItem,
+  TarifaRefrescoGuardada,
   TarifaSentido,
   TarifaStatusPico,
   TarifarioCurrentRow,
@@ -234,6 +240,22 @@ export class TarifarioMockService implements PeajesTarifarioService {
         es_actual: tarifa?.current_tarifa_id === i.id,
       }));
     return of(rows);
+  }
+
+  prepararRefresco(
+    _candidatos: PrepararRefrescoTarifaInput[],
+  ): Observable<PrepararRefrescoTarifaItem[]> {
+    return throwError(() => new Error('prepararRefresco no implementado'));
+  }
+
+  detectarRefresco(
+    _candidatos: DetectarRefrescoTarifaInput[],
+  ): Observable<DetectarRefrescoTarifaItem[]> {
+    return throwError(() => new Error('detectarRefresco no implementado'));
+  }
+
+  guardarRefresco(_cambios: CambioRefrescoTarifa[]): Observable<TarifaRefrescoGuardada[]> {
+    return throwError(() => new Error('guardarRefresco no implementado'));
   }
 
   private toExistente(t: TarifaIdentidad): TarifarioIdentidadExistente {

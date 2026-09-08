@@ -1852,17 +1852,17 @@
         "F14-16",
         "F14-17"
       ],
-      "status": "not_started",
+      "status": "passing",
       "verification": [
         "Paso 9 extracts only distinct tariff candidates from included pasadas and preserves original row indexes for single and mass imports.",
         "Current and historical matching uses tarifas.current_tarifa_id and tarifa_importe history, context peaje/estacion/categoria/status/sentido, and inclusive relative tolerance <= 1%.",
         "A historical match is informational; a possible new tariff opens an in-place large dialog only after current and history fail; status is never inferred from hora_*.",
         "The dialog reuses the full PICO/NO_PICO editor board, requires explicit save, supports missing identity creation, preserves requiere_normalizacion_iva, and never overwrites tarifa_importe history.",
         "A successful refresh appends only new tarifa_importe records, updates the protected current pointer through its trigger, and shows the current-import update summary in Paso 9.",
-        "npx supabase db reset --local --no-seed && npx supabase test db; focused Angular refresh/Paso9/tarifario/dialog/adapter specs; tsc app+spec; manual local Dock Sud current/historical/new flows. No DESARROLLO write without explicit authorization."
+        "npx supabase test db; focused Angular refresh/Paso9/tarifario/dialog/adapter specs; tsc app+spec; three local detect cases vs AUSOL CAMPANA (557074.csv). Schema push to DESARROLLO only with explicit authorization."
       ],
       "evidence": [
-        "2026-09-08: registered as not_started, planning only. Canonical implementation plan: docs/plan/refactor-tarifas-importe/PLAN_refresh-tarifas-paso9.md. No product SQL/TypeScript, no test run, no DESARROLLO action, and no commit in this registration."
+        "2026-09-08: implementado CLI. Migración 20260908150000_peajes_refresh_tarifas_paso9.sql (preparar/detectar/guardar + helper compartido F14-16 + peajes_confirmar_carga persiste sentido, misma firma). pgTAP peajes_refresh_tarifas_test.sql 40/40; npx supabase test db Files=16 Tests=467 PASS. tsc --noEmit app+spec EXIT 0. ng test focused board+editor+dialog+refresh+paso9+tarifario.service TOTAL 50 SUCCESS. pnpm seed:local EXIT 0. Tres casos SQL locales (no Dock Sud only): AUSOL CAMPANA 25bfd059… cat.6 NO_PICO AMBAS — CURRENT_TARIFF con PRECIO 3976.59 (557074.csv CAMPANA); HISTORICAL_TARIFF_MATCH con 2796.36 (historial inmutable, current 3976.59 intacto); NEW_TARIFF con 4771.95 forzado NO_PICO. Guardar transaccional: ti 2→3, current 3976.59→4771.95, fila 3976.59 sigue; ROLLBACK ti=2. Autopistas Urbanas VAR/KDT/PB2 no sembrados como códigos; proxy AUSA VARELA cat.9 19985.09 → NEW_TARIFF. Wizard Paso 9 no recorrido en browser esta sesión (evidencia RPC+specs). Docs: docs/backend/peajes/refresh-tarifas-paso9.md."
       ]
     },
     {

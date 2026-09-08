@@ -1,5 +1,18 @@
 # Handoff del proyecto — 2026-09-08
 
+## Handoff F14-18 — Refresh Tarifas Paso 9 (`passing` CLI)
+
+Paso 9 detecta candidatos distintos vs `tarifas`/`tarifa_importe` (1% inclusivo) y abre diálogo xl/top solo para `NEW_TARIFF` / `STATUS_*`. Guardar append inmutable. `CONTEXT_INCOMPLETE` bloquea confirmar.
+
+- Migración: `20260908150000_peajes_refresh_tarifas_paso9.sql`
+- pgTAP: `peajes_refresh_tarifas_test.sql` (40); suite Files=16 Tests=467
+- Angular: `TarifaRefreshServiceImpl` + `tarifa-refresh-dialog` + board extraído; focused specs **50 SUCCESS**; tsc EXIT 0
+- Tres casos SQL (AUSOL CAMPANA / `docs/plan/csv/557074.csv`): CURRENT 3976.59, HISTORICAL 2796.36, NEW 4771.95 NO_PICO. Guardar txn + ROLLBACK.
+- Autopistas Urbanas CSV no mapea a estaciones sembradas (`VAR`/`KDT`/`PB2`); proxy AUSA VARELA 19985.09 → NEW
+- Wizard UI no verificada en browser esta sesión
+- Docs: `docs/backend/peajes/refresh-tarifas-paso9.md`
+- `tarifas_normalizadas` y firmas F14-16 se retienen
+
 ## Handoff F14-17 — Tarifario RPCs CLI (`passing`)
 
 `/peajes/tarifario` ya no usa el mock vivo. Provider: `PeajesTarifarioSupabaseService` → cuatro RPCs INVOKER sobre `tarifas` + `tarifa_importe`.

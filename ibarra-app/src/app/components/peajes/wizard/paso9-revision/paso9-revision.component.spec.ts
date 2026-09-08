@@ -1,9 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Paso9RevisionComponent } from './paso9-revision.component';
-import { PEAJES_CARGA_SERVICE, PEAJES_CATALOGO_SERVICE } from '../../models';
+import { PEAJES_CARGA_SERVICE, PEAJES_CATALOGO_SERVICE, TARIFA_REFRESH_SERVICE } from '../../models';
+import { PEAJES_TARIFARIO_SERVICE } from '../../models/tarifario.contracts';
 import { PeajesCargaMockService } from '../mocks/peajes-carga.mock';
 import { PeajesCatalogoMockService } from '../mocks/peajes-catalogo.mock';
+import { TarifaRefreshMockService } from '../mocks/tarifa-refresh.mock';
+import { TarifarioMockService } from '../../tarifario/mocks/tarifario.mock';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+import { GranularPermissionService } from '../../../../services/granular-permission.service';
+import { TarifaValidationService } from '../../services/tarifa-validation.service';
 
 describe('Paso9RevisionComponent', () => {
   let fixture: ComponentFixture<Paso9RevisionComponent>;
@@ -17,6 +22,13 @@ describe('Paso9RevisionComponent', () => {
         PeajesWizardStateService,
         { provide: PEAJES_CARGA_SERVICE, useClass: PeajesCargaMockService },
         { provide: PEAJES_CATALOGO_SERVICE, useClass: PeajesCatalogoMockService },
+        { provide: TARIFA_REFRESH_SERVICE, useClass: TarifaRefreshMockService },
+        { provide: PEAJES_TARIFARIO_SERVICE, useClass: TarifarioMockService },
+        { provide: GranularPermissionService, useValue: { hasPermission: () => true } },
+        {
+          provide: TarifaValidationService,
+          useValue: { asociarTrasConfirmacion: () => Promise.resolve() },
+        },
       ],
     }).compileComponents();
 
@@ -237,5 +249,60 @@ describe('Paso9RevisionComponent', () => {
     expect(netosA).toEqual([100, 50]);
     expect(netosB).toEqual([200]);
     expect(component.erroresPorDocumento.length).toBe(0);
+  });
+
+  it('no abre diálogo ni bloquea confirmar cuando el precio vigente coincide', async () => {
+    expect(component.dialogNeeded).toBeFalse();
+    expect(component.confirmationBlocked).toBeFalse();
+    expect(component.refreshOpen).toBeFalse();
+  });
+
+  it('abre el diálogo y bloquea confirmar ante una tarifa nueva de Dock Sud', async () => {
+    const { ESTACION_DOCK_SUD } = await import('../mocks/tarifa-refresh.mock');
+    state.setPasadasEstandarizadas([
+      {
+        ...state.snapshot().pasadasEstandarizadas[0],
+        ESTACION_ID: ESTACION_DOCK_SUD,
+        PRECIO: 12500,
+        IMPORTE_NETO: 12500,
+        CATEGORIA: '2',
+        TARIFA_STATUS: 'NO_PICO',
+      },
+    ]);
+    await component.analizarTarifas();
+    fixture.detectChanges();
+    expect(component.dialogNeeded).toBeTrue();
+    expect(component.confirmationBlocked).toBeTrue();
+    expect(component.refreshOpen).toBeTrue();
+    const carga = TestBed.inject(PEAJES_CARGA_SERVICE as never) as PeajesCargaMockService;
+    const spy = spyOn(carga, 'confirmarCarga').and.callThrough();
+    await component.confirmar();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('marca coincidencia histórica como informativa sin diálogo', async () => {
+    const { ESTACION_DOCK_SUD } = await import('../mocks/tarifa-refresh.mock');
+    state.setPasadasEstandarizadas([
+      {
+        ...state.snapshot().pasadasEstandarizadas[0],
+        ESTACION_ID: ESTACION_DOCK_SUD,
+        PRECIO: 12100,
+        IMPORTE_NETO: 12100,
+        CATEGORIA: '2',
+        TARIFA_STATUS: 'NO_PICO',
+      },
+    ]);
+    await component.analizarTarifas();
+    fixture.detectChanges();
+    expect(component.resumenRefresco?.filasHistoricas).toBeGreaterThan(0);
+    expect(component.dialogNeeded).toBeFalse();
+    expect(component.refreshOpen).toBeFalse();
+  });
+
+  it('incluye sentido AMBAS por defecto en el payload de confirmación', async () => {
+    const carga = TestBed.inject(PEAJES_CARGA_SERVICE as never) as PeajesCargaMockService;
+    const spy = spyOn(carga, 'confirmarCarga').and.callThrough();
+    await component.confirmar();
+    expect(spy.calls.mostRecent().args[0].pasadas[0].SENTIDO).toBe('AMBAS');
   });
 });

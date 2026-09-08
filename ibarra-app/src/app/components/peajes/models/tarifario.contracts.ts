@@ -101,6 +101,82 @@ export interface TarifarioHistorialItem {
   es_actual: boolean;
 }
 
+export interface PrepararRefrescoTarifaInput {
+  id: string;
+  estacionId: string;
+  categoria: number | null;
+  statusSolicitado: TarifaStatusPico | null;
+  sentidoSolicitado: TarifaSentido;
+}
+
+export interface PrepararRefrescoTarifaItem {
+  id: string;
+  peajeId: string | null;
+  estacionId: string;
+  categoria: number | null;
+  status: TarifaStatusPico | null;
+  sentido: TarifaSentido;
+  tarifaId: string | null;
+  importe: number | null;
+  requiereNormalizacionIva: boolean;
+}
+
+export interface DetectarRefrescoTarifaInput {
+  id: string;
+  estacionId: string;
+  categoria: number | null;
+  statusSolicitado: TarifaStatusPico | null;
+  sentidoSolicitado: TarifaSentido;
+  precioDirecto: number;
+  precioNormalizado: number | null;
+}
+
+export type RefreshTarifaCodigoRpc =
+  | 'CURRENT_TARIFF'
+  | 'HISTORICAL_TARIFF_MATCH'
+  | 'NEW_TARIFF'
+  | 'STATUS_REQUIRED'
+  | 'STATUS_AMBIGUOUS'
+  | 'CONTEXT_INCOMPLETE';
+
+export interface DetectarRefrescoTarifaItem {
+  id: string;
+  codigo: RefreshTarifaCodigoRpc;
+  peajeId: string | null;
+  estacionId: string;
+  categoria: number | null;
+  status: TarifaStatusPico | null;
+  sentidoSolicitado: TarifaSentido;
+  sentidoAplicado: TarifaSentido | null;
+  importeActual: number | null;
+  tarifaId: string | null;
+  tarifaImporteId: string | null;
+  requiereNormalizacionIva: boolean | null;
+}
+
+export interface CambioRefrescoTarifa {
+  peajeId: string;
+  estacionId: string;
+  sentido: TarifaSentido;
+  categoria: number;
+  status: TarifaStatusPico;
+  importe: number;
+  requiereNormalizacionIva: boolean | null;
+}
+
+export interface TarifaRefrescoGuardada {
+  peaje_id: string;
+  estacion_id: string;
+  sentido: TarifaSentido;
+  categoria: number;
+  status: TarifaStatusPico;
+  tarifa_id: string;
+  anterior: number | null;
+  nueva: number;
+  tarifa_importe_id: string | null;
+  accion: 'ACTUALIZADA' | 'IDENTIDAD_CREADA' | 'SIN_CAMBIO';
+}
+
 export interface PeajesTarifarioService {
   listar(params: TarifarioListParams): Observable<TarifarioListResult>;
   obtenerEditor(
@@ -115,6 +191,13 @@ export interface PeajesTarifarioService {
     cambios: TarifarioImporteCambio[],
   ): Observable<{ actualizadas: number }>;
   listarHistorial(tarifaId: string): Observable<TarifarioHistorialItem[]>;
+  prepararRefresco(
+    candidatos: PrepararRefrescoTarifaInput[],
+  ): Observable<PrepararRefrescoTarifaItem[]>;
+  detectarRefresco(
+    candidatos: DetectarRefrescoTarifaInput[],
+  ): Observable<DetectarRefrescoTarifaItem[]>;
+  guardarRefresco(cambios: CambioRefrescoTarifa[]): Observable<TarifaRefrescoGuardada[]>;
 }
 
 export const PEAJES_TARIFARIO_SERVICE = new InjectionToken<PeajesTarifarioService>(

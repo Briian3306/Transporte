@@ -6,7 +6,7 @@ Peajes automatiza la carga de archivos Excel/CSV, reconocimiento, transformació
 
 ## Flujo implementado
 
-`/peajes` → `/wizard` (9 pasos) → `/catalogos` → `/plantillas` → `/pasadas` → `/auditoria-tarifas` (F14) → `/tarifario` (F14-17, mock).
+`/peajes` → `/wizard` (9 pasos, F14-18 gate de tarifas en Paso 9) → `/catalogos` → `/plantillas` → `/pasadas` → `/auditoria-tarifas` (F14) → `/tarifario` (F14-17, RPCs CLI).
 
 El wizard conserva estado, muestra preview de hasta 10 filas, recomienda columnas y transformaciones (incluye categoría del proveedor opcional → Patrón B), permite pipeline editable, resuelve estaciones (RN-26) y patentes, valida **Σ pasadas − bonificación de cabecera** vs subtotal con tolerancia del 1%, confirma por documento (`peajes_confirmar_carga`) y en masiva permite omitir documentos inválidos. PDF opcionales alimentan [sugerencias IA de factura](../06-components/peajes/ia-factura.md) (simple: 1 PDF; masiva: N PDF relacionados por `FACTURA`). En validación, los duplicados RN-16 se pueden confirmar con «Subir igualmente» (`pasadas.duplicado`). El Paso 8 muestra además diagnósticos **no bloqueantes** de tarifas v2 (`tarifas` / `tarifa_importe`). Tras la carga, el motor legado `peajes_normalizar_tarifas` sigue normalizando niveles; el analista confirma status en [auditoría de tarifas](../06-components/peajes/auditoria-tarifas.md). `tarifas_normalizadas` se retiene. Catálogo v2: [tarifas-tarifa-importe.md](../06-tablas/peajes/tarifas-tarifa-importe.md).
 
@@ -48,7 +48,7 @@ Los usuarios administrativos ven todas las tarjetas del home. Los usuarios opera
 
 ## Estado
 
-Según `feature_list.json` (2026-09-08): F00–F05 y F13 en `passing`. F14-0…F14-5 y **F14-16** (`tarifas` + `tarifa_importe` v2, CLI local) en `passing`. F14-17 Tarifario UI sigue `in_progress` (mock). F14-6 (QA dataset DESARROLLO) diferido sin remote. Ampliar catálogos Acceso Oeste/AUSOL (F06/F07) y gestión pasadas (F08) según evidence. F11 desglose factura permanece en seguimiento.
+Según `feature_list.json` (2026-09-08): F00–F05 y F13 en `passing`. F14-0…F14-5, **F14-16**, **F14-17** (Tarifario RPCs) y **F14-18** (refresh Paso 9) en `passing` (CLI local + evidencia SQL de tres casos AUSOL). F14-6 (QA dataset DESARROLLO) diferido. Ampliar catálogos Acceso Oeste/AUSOL (F06/F07) y gestión pasadas (F08) según evidence. F11 desglose factura permanece en seguimiento.
 
 ## Referencias
 
@@ -57,6 +57,7 @@ Según `feature_list.json` (2026-09-08): F00–F05 y F13 en `passing`. F14-0…F
 - [Plan F14-16 tarifas v2](../plan/refactor-tarifas-importe/INDEX.md)
 - [Tablas v2](../06-tablas/peajes/tarifas-tarifa-importe.md)
 - [Backend v2](../backend/peajes/tarifas-tarifa-importe.md)
+- [Refresh Paso 9](../backend/peajes/refresh-tarifas-paso9.md)
 - [Backend RPCs](../backend/index.md)
 - [Componentes](../06-components/peajes/INDEX.md)
 - [IA de factura (F17)](../06-components/peajes/ia-factura.md)

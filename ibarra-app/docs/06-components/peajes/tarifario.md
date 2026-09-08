@@ -107,7 +107,8 @@ Valores: `IDA` | `VUELTA` | `AMBAS`. Nunca null. No se fusionan contextos.
 | Path | Rol |
 |------|-----|
 | `tarifario/tarifario-list.component.*` | Listado de precios actuales |
-| `tarifario/tarifario-editor.component.*` | Tablero dual |
+| `tarifario/tarifario-editor-board.component.*` | Tablero presentacional PICO/NO_PICO (también en diálogo Paso 9) |
+| `tarifario/tarifario-editor.component.*` | Ruta editor: carga/guarda/historial/agregar categoría |
 | `tarifario/tarifario-historial-dialog.component.*` | Historial |
 | `tarifario/tarifario.helpers.ts` | parse/format es-AR, `buildEditorRows`, `collectCambios` |
 | `tarifario/mocks/tarifario.mock.ts` | Backend in-memory para specs |
@@ -116,7 +117,7 @@ Valores: `IDA` | `VUELTA` | `AMBAS`. Nunca null. No se fusionan contextos.
 | `shared/peajes-list-shell.css` | Chrome `at__` compartido con auditoría |
 | `models/tarifario.contracts.ts` | Tipos, `TARIFA_CATEGORIAS`, token |
 
-RPCs: `peajes_listar_tarifas_actuales`, `peajes_obtener_tarifario_editor`, `peajes_guardar_tarifas_actuales`, `peajes_listar_tarifa_historial`. Backend: [tarifario.md](../../backend/peajes/tarifario.md).
+RPCs de la ruta: `peajes_listar_tarifas_actuales`, `peajes_obtener_tarifario_editor`, `peajes_guardar_tarifas_actuales`, `peajes_listar_tarifa_historial`. El refresco de Paso 9 usa [refresh-tarifas-paso9.md](../../backend/peajes/refresh-tarifas-paso9.md) y `TARIFA_REFRESH_SERVICE`, no este guardar. `DialogComponent` admite `size="xl"` y `placement="top"` para ese diálogo. Backend tarifario: [tarifario.md](../../backend/peajes/tarifario.md).
 
 ---
 

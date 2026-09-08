@@ -25,6 +25,7 @@ Detalle de RPCs y flujos backend del dominio Peajes (documentos FC|NC, pasadas, 
 | [auditoria-tarifas.md](./auditoria-tarifas.md) | F14: tablas tarifas_* + 6 RPC peajes_* de normalización/auditoría |
 | [tarifas-tarifa-importe.md](./tarifas-tarifa-importe.md) | F14-16: RPCs v2 resolver/validador/asociar + `pwbi_tarifas_v2` (paralela; `tarifas_normalizadas` se retiene) |
 | [tarifario.md](./tarifario.md) | F14-17: RPCs del editor de precios actuales (`listar` / `editor` / `guardar` / `historial`) |
+| [refresh-tarifas-paso9.md](./refresh-tarifas-paso9.md) | F14-18: preparar/detectar/guardar refresco en Paso 9; helper compartido con F14-16 |
 | [auditoria-estaciones.md](./auditoria-estaciones.md) | F16: casos por fingerprint, listado, preview y corrección |
 | [empresas-tarifa-url.md](./empresas-tarifa-url.md) | `empresas.tarifa_url` (link de tarifas desde auditoría) |
 
@@ -38,6 +39,7 @@ Detalle de RPCs y flujos backend del dominio Peajes (documentos FC|NC, pasadas, 
 - Migración Power BI: `20260810194113_peajes_pwbi_views.sql` + `20260811121811_peajes_pwbi_documentos.sql` + `20260818131012_peajes_pwbi_tarifas.sql` + `20260902163000_peajes_tarifas_fecha_aparicion.sql`
 - Migración F14-16: `20260907100000`…`20260907103000_peajes_tarifas_v2_*` + `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`
 - Migración F14-17: `20260908140000_peajes_tarifario_rpcs.sql`
+- Migración F14-18: `20260908150000_peajes_refresh_tarifas_paso9.sql`
 
 ---
 

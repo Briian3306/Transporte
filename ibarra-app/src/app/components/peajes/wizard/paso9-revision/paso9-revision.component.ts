@@ -11,6 +11,9 @@ import {
   PEAJES_CATALOGO_SERVICE,
   PeajesCargaService,
   PeajesCatalogoService,
+  TARIFA_REFRESH_SERVICE,
+  TarifaRefreshService,
+  TarifaRefrescoGuardada,
   normalizarImportesPasada,
 } from '../../models';
 import {
@@ -18,11 +21,28 @@ import {
   WizardDocumentoGrupo,
 } from '../services/peajes-wizard-state.service';
 import { DialogComponent } from '../../../shared';
+import { TarifaRefreshDialogComponent } from './tarifa-refresh-dialog.component';
+import { TarifaValidationService, AsociacionTarifaImporte } from '../../services/tarifa-validation.service';
+import { GranularPermissionService } from '../../../../services/granular-permission.service';
+import { ResumenRefrescoTarifas } from '../../models/tarifa-refresh.contracts';
+
+const BLOQUEANTES = new Set([
+  'NEW_TARIFF',
+  'STATUS_REQUIRED',
+  'STATUS_AMBIGUOUS',
+  'CONTEXT_INCOMPLETE',
+]);
+
+function sentidoPasada(pasada: PasadaEstandarizada): 'IDA' | 'VUELTA' | 'AMBAS' {
+  const raw = String(pasada.SENTIDO ?? '').trim().toUpperCase();
+  if (raw === 'IDA' || raw === 'VUELTA' || raw === 'AMBAS') return raw;
+  return 'AMBAS';
+}
 
 @Component({
   selector: 'app-paso9-revision',
   standalone: true,
-  imports: [CommonModule, DialogComponent],
+  imports: [CommonModule, DialogComponent, TarifaRefreshDialogComponent],
   templateUrl: './paso9-revision.component.html',
   styleUrl: './paso9-revision.component.css',
 })
@@ -34,6 +54,7 @@ export class Paso9RevisionComponent implements OnInit {
   readonly state = inject(PeajesWizardStateService);
 
   guardando = false;
+  analizando = false;
   error: string | null = null;
   resultado: ConfirmacionCargaResultado | null = null;
   resultados: ConfirmacionCargaResultado[] = [];
@@ -41,6 +62,10 @@ export class Paso9RevisionComponent implements OnInit {
   /** Números de documentos confirmados OK (para el resumen). */
   importadosResumen: Array<{ numero: string; pasadas: number }> = [];
   exitoAbierto = false;
+  refreshOpen = false;
+  resumenRefresco: ResumenRefrescoTarifas | null = null;
+  tarifasActualizadas: TarifaRefrescoGuardada[] = [];
+  avisoAsociacion: string | null = null;
 
   private pases: Pase[] = [];
   private patentes: Patente[] = [];
@@ -48,7 +73,10 @@ export class Paso9RevisionComponent implements OnInit {
 
   constructor(
     @Inject(PEAJES_CARGA_SERVICE) private readonly carga: PeajesCargaService,
-    @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
+    @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService,
+    @Inject(TARIFA_REFRESH_SERVICE) private readonly refresh: TarifaRefreshService,
+    private readonly tarifaValidation: TarifaValidationService,
+    private readonly permissions: GranularPermissionService,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -61,6 +89,7 @@ export class Paso9RevisionComponent implements OnInit {
       this.pases = pases;
       this.patentes = patentes.filter((p) => p.activa !== false);
       this.estaciones = estaciones;
+      await this.analizarTarifas();
     } catch {
       this.pases = [];
       this.patentes = [];
@@ -120,7 +149,7 @@ export class Paso9RevisionComponent implements OnInit {
   }
 
   get sumaNetos(): number {
-    return this.pasadas.reduce((acc, p) => acc + Number(p.IMPORTE_NETO ?? 0), 0);
+    return this.pasadas.reduce((acc: number, p: PasadaEstandarizada) => acc + Number(p.IMPORTE_NETO ?? 0), 0);
   }
 
   get registrosConfirmados(): number {
@@ -132,6 +161,53 @@ export class Paso9RevisionComponent implements OnInit {
 
   get mensajeExito(): string {
     return `Se subieron ${this.registrosConfirmados} registros correctamente!`;
+  }
+
+  get canManageTarifas(): boolean {
+    return this.permissions.hasPermission('peajes', 'manage');
+  }
+
+  get confirmationBlocked(): boolean {
+    if (this.analizando || this.guardando || this.refreshOpen) return true;
+    if (!this.resumenRefresco) return true;
+    if (this.resumenRefresco.contextIncomplete) return true;
+    return this.resumenRefresco.resultados.some((r) => BLOQUEANTES.has(r.codigo));
+  }
+
+  get dialogNeeded(): boolean {
+    return (this.resumenRefresco?.resultados ?? []).some((r) =>
+      ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS'].includes(r.codigo),
+    );
+  }
+
+  async analizarTarifas(): Promise<void> {
+    this.analizando = true;
+    try {
+      this.resumenRefresco = await this.refresh.analizar({
+        pasadas: this.pasadas,
+        documentos: this.documentosIncluidos,
+        configuraciones: this.state.toConfiguracionesPlantilla(),
+      });
+      this.refreshOpen = this.dialogNeeded && this.canManageTarifas;
+      if (this.resumenRefresco.contextIncomplete) {
+        this.error =
+          'Hay pasadas sin estación o categoría numérica. Completá el contexto antes de confirmar.';
+      }
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'No se pudo analizar las tarifas.';
+    } finally {
+      this.analizando = false;
+    }
+  }
+
+  onRefreshCancelled(): void {
+    this.refreshOpen = false;
+  }
+
+  async onRefreshSaved(_saved: TarifaRefrescoGuardada[]): Promise<void> {
+    this.tarifasActualizadas = _saved;
+    this.refreshOpen = false;
+    await this.analizarTarifas();
   }
 
   paseExt(pasada: PasadaEstandarizada): string {
@@ -167,6 +243,10 @@ export class Paso9RevisionComponent implements OnInit {
   }
 
   async confirmar(): Promise<void> {
+    if (this.confirmationBlocked) {
+      if (this.dialogNeeded && this.canManageTarifas) this.refreshOpen = true;
+      return;
+    }
     this.guardando = true;
     this.error = null;
     this.erroresPorDocumento = [];
@@ -182,7 +262,7 @@ export class Paso9RevisionComponent implements OnInit {
       for (const doc of docs) {
         const subset = this.state.pasadasDeDocumento(doc, pasadasBase);
         const tipo = doc.tipo ?? 'FC';
-        const pasadasNorm = subset.map((p) => {
+        const pasadasNorm = subset.map((p: PasadaEstandarizada) => {
           const norm = normalizarImportesPasada(tipo, {
             precio: Number(p.PRECIO),
             bonificacion: Number(p.BONIFICACION ?? 0),
@@ -193,6 +273,7 @@ export class Paso9RevisionComponent implements OnInit {
             PRECIO: norm.precio,
             BONIFICACION: norm.bonificacion,
             IMPORTE_NETO: norm.importe_neto,
+            SENTIDO: sentidoPasada(p),
           };
         });
         try {
@@ -217,6 +298,7 @@ export class Paso9RevisionComponent implements OnInit {
             numero: doc.factura || '(sin número)',
             pasadas: res.pasadas?.length ?? subset.length,
           });
+          await this.asociarTrasConfirmacion(res, doc.rowIndexes ?? []);
         } catch (e) {
           this.erroresPorDocumento.push({
             numero: doc.factura || '(sin número)',
@@ -244,6 +326,31 @@ export class Paso9RevisionComponent implements OnInit {
       this.error = e instanceof Error ? e.message : 'No se pudo confirmar la carga';
     } finally {
       this.guardando = false;
+    }
+  }
+
+  private async asociarTrasConfirmacion(
+    res: ConfirmacionCargaResultado,
+    rowIndexes: number[],
+  ): Promise<void> {
+    const resultados = this.resumenRefresco?.resultados ?? [];
+    const asociaciones: AsociacionTarifaImporte[] = [];
+    (res.pasadas ?? []).forEach((pasada, i) => {
+      const sourceIndex = rowIndexes[i];
+      const hit = resultados.find((r) => r.rowIndexes.includes(sourceIndex));
+      if (!hit?.tarifaImporteId) return;
+      if (hit.codigo === 'CURRENT_TARIFF') {
+        asociaciones.push({ pasada_id: pasada.id, tarifa_importe_id: hit.tarifaImporteId, codigo: 'AL_DIA' });
+      } else if (hit.codigo === 'HISTORICAL_TARIFF_MATCH') {
+        asociaciones.push({ pasada_id: pasada.id, tarifa_importe_id: hit.tarifaImporteId, codigo: 'HISTORICA' });
+      }
+    });
+    if (!asociaciones.length) return;
+    try {
+      await this.tarifaValidation.asociarTrasConfirmacion(asociaciones);
+    } catch {
+      this.avisoAsociacion =
+        'La carga se guardó, pero no se pudieron asociar las tarifas. Podés reintentar la asociación.';
     }
   }
 }

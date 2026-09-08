@@ -91,4 +91,97 @@ describe('PeajesTarifarioSupabaseService', () => {
       p_tarifa_id: 'tarifa-1',
     });
   });
+
+  it('prepararRefresco envia candidatos en forma RPC snake_case', async () => {
+    rpcSpy.and.resolveTo({ data: [], error: null });
+    await firstValueFrom(
+      service.prepararRefresco([
+        {
+          id: 'c1',
+          estacionId: 'est-1',
+          categoria: 2,
+          statusSolicitado: 'NO_PICO',
+          sentidoSolicitado: 'AMBAS',
+        },
+      ]),
+    );
+    expect(rpcSpy).toHaveBeenCalledWith('peajes_preparar_refresco_tarifas', {
+      p_candidatos: [
+        {
+          id: 'c1',
+          estacion_id: 'est-1',
+          categoria: 2,
+          status_solicitado: 'NO_PICO',
+          sentido_solicitado: 'AMBAS',
+        },
+      ],
+    });
+  });
+
+  it('detectarRefresco propaga el error RPC', async () => {
+    rpcSpy.and.resolveTo({ data: null, error: { message: 'p_candidatos debe ser un arreglo JSON' } });
+    await expectAsync(
+      firstValueFrom(
+        service.detectarRefresco([
+          {
+            id: 'c1',
+            estacionId: 'est-1',
+            categoria: 2,
+            statusSolicitado: null,
+            sentidoSolicitado: 'AMBAS',
+            precioDirecto: 12500,
+            precioNormalizado: null,
+          },
+        ]),
+      ),
+    ).toBeRejectedWith(jasmine.objectContaining({ message: 'p_candidatos debe ser un arreglo JSON' }));
+  });
+
+  it('guardarRefresco mapea el resumen de celdas', async () => {
+    rpcSpy.and.resolveTo({
+      data: [
+        {
+          peaje_id: 'p',
+          estacion_id: 'e',
+          sentido: 'AMBAS',
+          categoria: 2,
+          status: 'NO_PICO',
+          tarifa_id: 't',
+          anterior: 11975.15,
+          nueva: 12500,
+          tarifa_importe_id: 'ti',
+          accion: 'ACTUALIZADA',
+        },
+      ],
+      error: null,
+    });
+    const out = await firstValueFrom(
+      service.guardarRefresco([
+        {
+          peajeId: 'p',
+          estacionId: 'e',
+          sentido: 'AMBAS',
+          categoria: 2,
+          status: 'NO_PICO',
+          importe: 12500,
+          requiereNormalizacionIva: false,
+        },
+      ]),
+    );
+    expect(rpcSpy).toHaveBeenCalledWith('peajes_guardar_refresco_tarifas', {
+      p_cambios: [
+        {
+          peaje_id: 'p',
+          estacion_id: 'e',
+          sentido: 'AMBAS',
+          categoria: 2,
+          status: 'NO_PICO',
+          importe: 12500,
+          requiere_normalizacion_iva: false,
+        },
+      ],
+    });
+    expect(out[0].accion).toBe('ACTUALIZADA');
+    expect(out[0].anterior).toBe(11975.15);
+  });
 });

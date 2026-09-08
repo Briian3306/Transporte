@@ -7,3 +7,4 @@ export * from './consumos-resumen.helpers';
 export * from './estacion-reconocimiento.helpers';
 export * from './auditoria-estaciones.contracts';
 export * from './tarifario.contracts';
+export * from './tarifa-refresh.contracts';

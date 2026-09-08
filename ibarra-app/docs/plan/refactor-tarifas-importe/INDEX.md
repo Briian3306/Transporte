@@ -6,7 +6,7 @@ Plan para separar el catálogo tarifario (`PEAJE + ESTACIÓN + STATUS + CATEGORY
 
 **F14-16 (hecho en CLI local, `passing`):** schema + puntero + RPCs sombra + `pwbi_tarifas_v2` paralela + backfill de linaje. Additive: `tarifas_normalizadas` permanece como camino de compatibilidad (tabla, columnas, FKs, writers, firmas RPC existentes, vistas y `pasadas.tarifa_normalizada_id`). No se elimina, renombra ni reemplaza. F14-12..F14-15 superseded by F14-16, never implemented. Docs: [tarifas-tarifa-importe.md](../../06-tablas/peajes/tarifas-tarifa-importe.md) / [backend](../../backend/peajes/tarifas-tarifa-importe.md).
 
-**F14-18 (planificado, `not_started`):** Refresh Tarifas durante Paso 9. Contrasta candidatos distintos contra precio vigente e historial con tolerancia inclusiva de 1%, exige confirmación explícita para un importe nuevo y reutiliza el editor PICO/NO_PICO dentro de un diálogo. No modifica todavía SQL, TypeScript ni DESARROLLO.
+**F14-18 (`passing` en CLI local):** Refresh Tarifas durante Paso 9. Contrasta candidatos distintos contra precio vigente e historial con tolerancia inclusiva de 1%, exige confirmación explícita para un importe nuevo y reutiliza el editor PICO/NO_PICO dentro de un diálogo. Migración `20260908150000_peajes_refresh_tarifas_paso9.sql`. Docs: [refresh-tarifas-paso9.md](../../backend/peajes/refresh-tarifas-paso9.md).
 
 ## Documentos
 

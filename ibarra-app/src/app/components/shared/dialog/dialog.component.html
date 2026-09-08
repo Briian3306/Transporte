@@ -1,5 +1,6 @@
 <div
   class="app-dialog-backdrop"
+  [class.app-dialog-backdrop--top]="placement === 'top'"
   *ngIf="open"
   (click)="onBackdropClick()"
 >
@@ -7,6 +8,8 @@
     #panel
     class="app-dialog"
     [class.app-dialog--lg]="size === 'lg'"
+    [class.app-dialog--xl]="size === 'xl'"
+    [class.app-dialog--top]="placement === 'top'"
     role="dialog"
     aria-modal="true"
     [attr.aria-labelledby]="title ? 'app-dialog-title' : null"
