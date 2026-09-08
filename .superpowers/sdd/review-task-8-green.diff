@@ -1,0 +1,65 @@
+# Review package: Task 8 GREEN parallel pwbi_tarifas_v2 (uncommitted)
+# vs Approved RED (plan(176) f14 + plan(45) pwbi; view absent).
+# pgTAP not re-run (report exit 0 / Files=14 Tests=412; migration matches tests 171–176 / pwbi 42–45).
+
+## Commits
+(none)
+
+## Files in this GREEN pass
+ ibarra-app/supabase/migrations/20260907103000_peajes_tarifas_v2_compat_cutover.sql (created)
+ .superpowers/sdd/task-8-green-report.md
+ .superpowers/sdd/progress.md (Task 8 GREEN waiting review)
+
+## pgTAP files (must be untouched — confirmed)
+ ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
+   header still: "RED: pwbi_tarifas_v2 absent; legacy RPCs stay"
+   plan(176) unchanged; tests 166–176 match Approved RED
+ ibarra-app/supabase/tests/peajes_pwbi_views_test.sql
+   header still: "Task 8 RED: pwbi_tarifas_v2 is a parallel reader"
+   plan(45); tests 42–45 unchanged; GRANT ok() groups 1–41 still omit v2
+
+## Hard-constraint greps
+- CREATE VIEW public.pwbi_tarifas_v2 (not a table; not CREATE OR REPLACE of pwbi_tarifas)
+- JOIN on ti.id = t.current_tarifa_id AND ti.tarifa_id = t.id (not MAX(fecha_aparicion))
+- quoted PascalCase: Tarifa_ID, Peaje_ID, Estacion_ID, Categoria, Sentido, Status, Importe, Current_Tarifa_ID
+- GRANT SELECT TO anon, authenticated, service_role
+- WITH (security_invoker = false)
+- no DROP of tarifas_normalizadas / pwbi_tarifas / legacy RPCs
+- no / 1.21
+- no DESARROLLO / apply_migration
+- splitSentidoCollisions Node test still skipped (Task 9)
+- no pwbi_tarifas_v2 in src/ or scripts/
+
+## Migration (created) — 20260907103000
+Applies after Task 6 …102000, before Task 7 20260908100000 (plan filename; view does not need pasadas backfill).
+
+CREATE VIEW public.pwbi_tarifas_v2
+WITH (security_invoker = false)
+AS
+SELECT
+  t.id AS "Tarifa_ID",
+  t.peaje_id AS "Peaje_ID",
+  t.estacion_id AS "Estacion_ID",
+  t.categoria AS "Categoria",
+  t.sentido AS "Sentido",
+  t.status AS "Status",
+  ti.importe AS "Importe",
+  t.current_tarifa_id AS "Current_Tarifa_ID"
+FROM public.tarifas t
+LEFT JOIN public.tarifa_importe ti
+  ON ti.id = t.current_tarifa_id
+ AND ti.tarifa_id = t.id;
+
+GRANT SELECT ON public.pwbi_tarifas_v2 TO anon, authenticated, service_role;
+NOTIFY pgrst, 'reload schema';
+
+Does not rewrite pwbi_tarifas.
+Does not DROP tarifas_normalizadas / FKs / triggers / pasadas.tarifa_normalizada_id.
+Does not change peajes_normalizar_tarifas(uuid) / peajes_recalcular_tarifas(uuid) / peajes_confirmar_status_tarifa(jsonb).
+
+## RED fixture mapping (why 176 passes without MAX(fecha_aparicion))
+- parent 168…010 PICO / categoria 4 / IDA
+- history 168…100 importe 1111 then 168…200 importe 9999
+- Task 3 promote sets current_tarifa_id = 168…200
+- decoy TN 5555 at same station is not joined
+- view Importe = ti.importe of pointer id, not latest-by-date subquery

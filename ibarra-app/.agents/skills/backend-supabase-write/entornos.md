@@ -27,12 +27,15 @@ Si un skill o doc heredado menciona esos refs, ignorarlos y usar la tabla de arr
 Desde `ibarra-app/` (este repo usa `npm` + `npx supabase`):
 
 ```powershell
-npx supabase start
+npx supabase start --ignore-health-check
 npx supabase db reset --local --no-seed
 npx supabase test db
+pnpm seed:local
 ```
 
-Para login + roles admin en CLI (`pnpm dev`), usar los seeds versionados `supabase/seed_auth.sql` + `supabase/seed_rbac.sql` (`pnpm seed:local` o `db reset --local`):  
+`--no-seed` aplica **solo** migraciones SQL (schema). No carga Auth, pasadas ni el catálogo tarifas v2.
+
+`pnpm seed:local` restaura datos de app: Kong/Auth/RBAC/pasadas **y** `node scripts/peajes-catalogo-audit/migrate-tarifario-v2.mjs --load-local`. Login CLI: `francis@transporteibarra.com.ar` / `Transporte2026`.  
 [docs/05-configuracion/cli-local-credenciales-y-permisos.md](../../../docs/05-configuracion/cli-local-credenciales-y-permisos.md).
 
 Aplicar migraciones con CLI local (`db reset`, `migration up`, o el flujo local del repo). **No** usar MCP remoto como fuente de verdad de testing.

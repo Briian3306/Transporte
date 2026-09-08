@@ -75,7 +75,7 @@ interface PeajeProgress {
     TarifaCasosDialogComponent,
   ],
   templateUrl: './auditoria-tarifas-list.component.html',
-  styleUrl: './auditoria-tarifas-list.component.css',
+  styleUrls: ['../shared/peajes-list-shell.css', './auditoria-tarifas-list.component.css'],
 })
 export class AuditoriaTarifasListComponent implements OnInit, OnDestroy {
   private readonly filter$ = new Subject<string>();

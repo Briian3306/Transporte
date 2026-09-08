@@ -27,6 +27,7 @@ Exponer el motor de diagnóstico (capa 1), la confirmación humana de status (ca
 3. Dispersión horaria con `AT TIME ZONE 'UTC'`; umbrales default 15 / 4.100 desde `tarifas_parametros_peaje` o COALESCE.
 4. Status: universales `PENDIENTE`|`POSIBLE_HORARIO` o código de `tarifas_status_catalogo` del mismo peaje (trigger). Cada peaje nuevo recibe PICO/NO_PICO por `trg_peajes_seed_status_catalogo`; peajes existentes se rellenan en `20260818125312`. Sin catálogo, la UI solo ofrece universales y confirmar `PICO`/`NO_PICO` levanta `23514`.
 5. `categoria_calculated` (smallint 0–10, NULL = sin asignar): clase vehicular que el analista anota en Patrón A. Opcional en `peajes_confirmar_status_tarifa`. Si el JSON no trae la clave, se conserva el valor. Recálculo / normalizar no la pisan. No es `pasadas.categoria` (RN-15).
+6. `fecha_aparicion` (`timestamptz`): primera `pasadas.fecha_hora` vinculada al nivel. Backfill histórico en `20260902163000`. Trigger `trg_pasadas_fecha_aparicion` (`AFTER INSERT OR UPDATE OF tarifa_normalizada_id, fecha_hora`) la setea si está NULL o si llega una fecha más temprana; no la mueve hacia adelante y no depende de `confirmado_manual`.
 
 ## Relations
 
@@ -43,7 +44,7 @@ Exponer el motor de diagnóstico (capa 1), la confirmación humana de status (ca
 |-------|-----|
 | `tarifas_parametros_peaje` | Umbrales por peaje |
 | `tarifas_status_catalogo` | Vocabulario PICO/NO_PICO/… por peaje. Semilla default al crear el peaje. |
-| `tarifas_normalizadas` | Nivel (peaje, estación, categoria, importe) + diagnóstico/status + `categoria_calculated` opcional |
+| `tarifas_normalizadas` | Nivel (peaje, estación, categoria, importe) + diagnóstico/status + `categoria_calculated` opcional + `fecha_aparicion` |
 | `pasadas` (+3 cols) | `categoria` texto crudo (RN-15); FK opcional a nivel; `tarifa_status` desnormalizado |
 
 ## Functions
@@ -64,6 +65,7 @@ Filtros de listado (jsonb): `peaje_id`, `peaje_ids[]`, `estacion_ids[]`, `catego
 
 - Trigger `trg_validar_status_tarifa` → ERRCODE `23514` si status inválido.
 - Trigger `trg_peajes_seed_status_catalogo` → `AFTER INSERT` en `peajes` siembra PICO/NO_PICO.
+- Trigger `trg_pasadas_fecha_aparicion` → setea o adelanta `tarifas_normalizadas.fecha_aparicion` (nunca hacia fechas posteriores).
 - `UNIQUE NULLS NOT DISTINCT (peaje_id, estacion_id, categoria, importe)`.
 - `categoria_calculated` CHECK 0–10 o NULL (`23514` si 11 / −1).
 - NC: `peajes_normalizar_tarifas` retorna `(0,0)` sin error.
@@ -74,18 +76,18 @@ Filtros de listado (jsonb): `peaje_id`, `peaje_ids[]`, `estacion_ids[]`, `catego
 cd ibarra-app
 npx supabase db reset --local --no-seed
 npx supabase test db
-# peajes_f14_test.sql (B-01..B-16 + prune huérfanos + F14-9 categoria_calculated) + peajes_mercosur_patron_a_test.sql + peajes_tarifas_status_catalogo_default_test.sql + regresiones F01/F06/pwbi
+# peajes_f14_test.sql (B-01..B-16 + prune huérfanos + F14-9 categoria_calculated) + peajes_f14_fecha_aparicion_test.sql + peajes_mercosur_patron_a_test.sql + peajes_tarifas_status_catalogo_default_test.sql + regresiones F01/F06/pwbi
 ```
 
 ## Notes
 
 - RLS plana `*_authenticated_all` (PRD §5.2); RLS por empresa diferida.
 - `pg_cron` no instalado: recálculo solo manual.
-- Migraciones: `20260812140628`…`20260812140653_peajes_tarifas_*` + `20260814190600_peajes_recalcular_prune_orphans` + `20260814204300_peajes_tarifas_categoria_calculated` + `20260818125312_peajes_tarifas_status_catalogo_default` + `20260818131012_peajes_pwbi_tarifas` + `20260818144011_peajes_pwbi_pasadas_categoria_calculated` + `20260821141019_peajes_confirmar_carga_hook_normalizar`.
+- Migraciones: `20260812140628`…`20260812140653_peajes_tarifas_*` + `20260814190600_peajes_recalcular_prune_orphans` + `20260814204300_peajes_tarifas_categoria_calculated` + `20260818125312_peajes_tarifas_status_catalogo_default` + `20260818131012_peajes_pwbi_tarifas` + `20260818144011_peajes_pwbi_pasadas_categoria_calculated` + `20260821141019_peajes_confirmar_carga_hook_normalizar` + `20260902163000_peajes_tarifas_fecha_aparicion`.
 - Servicio: `src/app/components/peajes/services/peajes-auditoria-tarifas.service.ts`. Hook canónico en SQL; `PeajesCargaSupabaseService` conserva un `.rpc` idempotente hasta que DESARROLLO reciba `20260821141019`.
 - Provider en `auditoria-tarifas.routes.ts` apunta al servicio Supabase (no mock).
 - **Autovía del Mercosur (excepción Pattern A):** el CSV Telepase trae `CATEGORIA`, pero el código de proveedor no coincide con la clase tarifaria (p. ej. cat `7` agrupa 5×/6×/7×/9×). Las plantillas `MERCA-SUR-*` excluyen el destino `CATEGORIA` (`20260814180732_peajes_mercosur_plantillas_patron_a.sql`). Pasadas existentes: `categoria = NULL` + borrar niveles B + `peajes_recalcular_tarifas`. No tocar `importe_neto`. Post-condición RN-13/17: `Σ pasadas.importe_neto` vs `documentos.importe_sin_iva` (+ bonificación de cabecera) dentro del 1% (`peajes_validar_documento_id`). Tests: `supabase/tests/peajes_mercosur_patron_a_test.sql`.
 
 ---
 
-> Última actualización: 2026-08-21
+> Última actualización: 2026-09-02

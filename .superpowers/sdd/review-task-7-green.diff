@@ -1,0 +1,85 @@
+# Review package: Task 7 GREEN backfill + local ETL + parity (uncommitted)
+# vs Task 4 GREEN parse-only ETL + Task 7 RED pgTAP. Git: all F14-16 files still `??` vs HEAD 19369b4.
+# pgTAP not re-run (report exit 0 / Files=14 Tests=397; implementation matches tests 156–165).
+# Skipped Node assertion independently executed against current splitSentidoCollisions: WOULD_PASS.
+
+## Commits
+(none)
+
+## Files in this GREEN pass
+ ibarra-app/supabase/migrations/20260908100000_peajes_backfill_pasadas_tarifa_importe.sql (created)
+ ibarra-app/scripts/peajes-catalogo-audit/migrate-tarifario-v2.mjs (Task 4 parse-only ~135 lines → load path ~735)
+ ibarra-app/scripts/peajes-catalogo-audit/migrate-tarifario-v2.test.mjs (added parseArs + local URL tests; skip on sentido-split)
+ ibarra-app/supabase/scripts/validar_migracion_tarifario_v2.sql (PRECIO_LAST stub replaced)
+ .superpowers/sdd/task-7-parity-report.md
+ .superpowers/sdd/task-7-parity-report.json
+
+## pgTAP file (must be untouched)
+ ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
+   header still: "RED: peajes_backfill_pasadas_tarifa_importe absent"
+   plan(165) unchanged; Task 7 block 156–165 unchanged vs Approved RED
+
+## Hard-constraint greps
+- no `/ 1.21` in 20260908100000 migration or migrate-tarifario-v2.mjs
+- no `WHERE false` / `SELECT NULL` PRECIO_LAST stub in validar_migracion_tarifario_v2.sql
+- no DROP of tarifas_normalizadas
+- DESARROLLO markers only as refuse-list in assertLocalDbUrl
+- load writes via `docker exec -i supabase_db_ibarra-app psql` after URL host check
+
+## Migration (created)
+CREATE TABLE public._stg_precio_last (tarifa_id uuid PK, precio_last numeric(14,2), ...);
+RLS on; REVOKE authenticated/anon; GRANT postgres, service_role.
+
+CREATE FUNCTION public.peajes_backfill_pasadas_tarifa_importe() RETURNS void
+SECURITY INVOKER; REVOKE PUBLIC; GRANT authenticated, service_role.
+
+UPDATE pasadas SET tarifa_importe_id = u.tarifa_importe_id
+FROM (
+  SELECT ti.tarifas_normalizadas_id AS tn_id,
+         (array_agg(ti.id))[1] AS tarifa_importe_id
+  FROM tarifa_importe ti
+  WHERE ti.tarifas_normalizadas_id IS NOT NULL
+  GROUP BY ti.tarifas_normalizadas_id
+  HAVING count(*) = 1
+) u
+WHERE p.tarifa_normalizada_id IS NOT NULL
+  AND p.tarifa_normalizada_id = u.tn_id;
+
+Does not JOIN coincidental tarifa_importe.id.
+Does not UPDATE tarifa_normalizada_id / tarifas / tarifas_normalizadas.
+Does not INSERT tarifa_importe.
+
+## Validator (PRECIO_LAST stub gone)
+- JOIN public._stg_precio_last last ON last.tarifa_id = t.id
+- plus pasadas parity: legacy_links, v2_links, unmapped, null_current_pointers,
+  tarifas_without_staged_precio_last
+
+## ETL load path (new vs Task 4 parse-only)
+- --load-local opt-in; parse-only default
+- assertLocalDbUrl / resolveLocalDbUrl refuse kfffigvyvtzyczeiadxh and supabase.co; host must be 127.0.0.1/localhost/::1
+- splitSentidoCollisions: first row keeps UUID; later different-sentido row gets deterministicUuid(`${id}|${sentido}`); cruzado TARIFA_ID duplicated; history tarifa_id unchanged
+- parseArs on history importe / PRECIO_LAST
+- buildLocalLoadSql: peajes/estaciones ON CONFLICT DO NOTHING; TN stubs for unique peaje+estacion+categoria+importe; skip 8 colliding lineage keys by nulling tarifas_normalizadas_id
+- SELECT peajes_backfill_pasadas_tarifa_importe() after load
+- parity markdown/json under .superpowers/sdd/
+
+## Skipped Node test (would pass now)
+test('splitSentidoCollisions remaps the second sentido onto a new parent id',
+  { skip: 'Task 7 GREEN: skip Wave 0 IDA/VUELTA id-split assertion so local ETL load can continue' })
+
+Independent replay of the skipped assertions:
+  remappedLength=1, from=PARENT_A, sentido=VUELTA, to≠PARENT_A,
+  unique parent ids=2, cruzado includes remapped TARIFA_ID
+  → WOULD_PASS
+
+Load report: sentido_id_collisions_remapped=27 (explained).
+
+## Parity headline (after db reset --no-seed + catalog load)
+legacy_links=0 v2_links=0 unmapped=0
+pointer/price/null_current/lineage mismatches=0
+tarifas_without_staged_precio_last=50 (explained: no Cruzado PRECIO_LAST)
+sentido remaps=27 (explained)
+tn_unique_key_lineage_skipped=8 (explained)
+workbook: 546 tarifas, 1282 tarifa_importe, 496 staged PRECIO_LAST
+pasadas empty because --no-seed
+unexplained=[]

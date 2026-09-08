@@ -83,6 +83,7 @@ copy .env.example .env
 |---|---|
 | `parse-facturas.mjs` | Parse HTML → `rows.json` |
 | `download-batch.mjs` | Download files (main CLI) |
+| `build-status-csv.mjs` | Build `scripts/downloads/status.csv` from `rows.json` |
 | `enrich-status-templates.mjs` | Extract station names from AUMESA invoice PDFs and fill `status.csv` |
 | `login.mjs` | UI login + `auth.json` (storageState) |
 | `login-via-cli.mjs` | Same via playwright-cli when available |
@@ -100,6 +101,18 @@ npm run parse
 ```
 
 Parsing initializes both path fields to `null`; running the downloader populates paths for files already present on disk as well as newly downloaded files.
+
+### 1b) Build `status.csv` for the carga-express bot
+
+The downloader does **not** write `status.csv`. After `rows.json` exists, generate it:
+
+```powershell
+cd scripts/telepase
+node build-status-csv.mjs
+# or: npm run status
+```
+
+Output: `scripts/downloads/status.csv`. Paths are filled from `rows.json` or by matching `facturas_*` / `pasadas_*` files already on disk. AUMESA `Template` stays blank until `enrich-status-templates.mjs`. Existing `uploadFileStatus` / `Template` values are kept unless you pass `--no-merge`.
 
 ### 2) Pilot (3 rows, diverse concesionarios)
 

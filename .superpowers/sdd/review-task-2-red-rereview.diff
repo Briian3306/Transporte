@@ -1,0 +1,980 @@
+﻿# Review package: Task 2 RED re-review after Important fixes
+# Base: HEAD 19369b4
+# Head: working tree (untracked test file)
+
+## Commits
+(none)
+
+## Files changed
+ ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
+
+## Diff (new file)
+diff --git a/ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql b/ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
+new file mode 100644
+index 0000000..3a3485c
+--- /dev/null
++++ b/ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
+@@ -0,0 +1,963 @@
++-- pgTAP: F14-16 Task 2 ÔÇö schema v2 (tarifas + tarifa_importe + shadow pasadas)
++-- Empty tables; no ETL data load. Current-pointer composite FK and immutability
++-- triggers belong to Task 3 and are not asserted here.
++BEGIN;
++SELECT plan(118);
++
++-- -----------------------------------------------------------------------------
++-- Hard constraint: tarifas_normalizadas stays as compatibility path
++-- -----------------------------------------------------------------------------
++SELECT has_table(
++  'public',
++  'tarifas_normalizadas',
++  'F14-16 tarifas_normalizadas sigue existiendo'
++);
++
++SELECT has_column(
++  'public',
++  'pasadas',
++  'tarifa_normalizada_id',
++  'F14-16 pasadas.tarifa_normalizada_id se retiene'
++);
++
++SELECT fk_ok(
++  'pasadas',
++  'tarifa_normalizada_id',
++  'tarifas_normalizadas',
++  'id',
++  'F14-16 FK legado pasadas.tarifa_normalizada_id ÔåÆ tarifas_normalizadas.id intacta'
++);
++
++SELECT hasnt_column(
++  'public',
++  'pasadas',
++  'peaje_id',
++  'F14-16 RN-05: pasadas sin peaje_id'
++);
++
++-- -----------------------------------------------------------------------------
++-- public.tarifas
++-- -----------------------------------------------------------------------------
++SELECT has_table('public', 'tarifas', 'F14-16 tarifas existe');
++
++SELECT col_is_pk('public', 'tarifas', 'id', 'F14-16 tarifas.id es PK');
++SELECT col_type_is('public', 'tarifas', 'id', 'uuid', 'F14-16 tarifas.id uuid');
++
++SELECT has_column('public', 'tarifas', 'peaje_id', 'F14-16 tarifas.peaje_id');
++SELECT col_not_null('public', 'tarifas', 'peaje_id', 'F14-16 tarifas.peaje_id NOT NULL');
++SELECT col_type_is('public', 'tarifas', 'peaje_id', 'uuid', 'F14-16 tarifas.peaje_id uuid');
++SELECT fk_ok(
++  'tarifas',
++  'peaje_id',
++  'peajes',
++  'id',
++  'F14-16 tarifas.peaje_id ÔåÆ peajes.id'
++);
++
++SELECT has_column('public', 'tarifas', 'estacion_id', 'F14-16 tarifas.estacion_id');
++SELECT col_not_null('public', 'tarifas', 'estacion_id', 'F14-16 tarifas.estacion_id NOT NULL');
++SELECT col_type_is('public', 'tarifas', 'estacion_id', 'uuid', 'F14-16 tarifas.estacion_id uuid');
++SELECT fk_ok(
++  'tarifas',
++  'estacion_id',
++  'estaciones',
++  'id',
++  'F14-16 tarifas.estacion_id ÔåÆ estaciones.id'
++);
++
++SELECT has_column('public', 'tarifas', 'status', 'F14-16 tarifas.status');
++SELECT col_not_null('public', 'tarifas', 'status', 'F14-16 tarifas.status NOT NULL');
++SELECT col_type_is('public', 'tarifas', 'status', 'text', 'F14-16 tarifas.status text');
++
++SELECT has_column('public', 'tarifas', 'categoria', 'F14-16 tarifas.categoria');
++SELECT col_not_null('public', 'tarifas', 'categoria', 'F14-16 tarifas.categoria NOT NULL');
++SELECT col_type_is('public', 'tarifas', 'categoria', 'smallint', 'F14-16 tarifas.categoria smallint');
++
++SELECT has_column('public', 'tarifas', 'sentido', 'F14-16 tarifas.sentido');
++SELECT col_not_null('public', 'tarifas', 'sentido', 'F14-16 tarifas.sentido NOT NULL');
++SELECT col_type_is('public', 'tarifas', 'sentido', 'text', 'F14-16 tarifas.sentido text');
++SELECT ok(
++  (
++    SELECT pg_get_expr(d.adbin, d.adrelid)
++    FROM pg_attrdef d
++    JOIN pg_attribute a ON a.attrelid = d.adrelid AND a.attnum = d.adnum
++    JOIN pg_class c ON c.oid = a.attrelid
++    JOIN pg_namespace n ON n.oid = c.relnamespace
++    WHERE n.nspname = 'public'
++      AND c.relname = 'tarifas'
++      AND a.attname = 'sentido'
++      AND NOT a.attisdropped
++  ) LIKE '%AMBAS%',
++  'F14-16 tarifas.sentido default AMBAS'
++);
++
++SELECT has_column(
++  'public',
++  'tarifas',
++  'requiere_normalizacion_iva',
++  'F14-16 tarifas.requiere_normalizacion_iva'
++);
++SELECT col_not_null(
++  'public',
++  'tarifas',
++  'requiere_normalizacion_iva',
++  'F14-16 tarifas.requiere_normalizacion_iva NOT NULL'
++);
++SELECT col_type_is(
++  'public',
++  'tarifas',
++  'requiere_normalizacion_iva',
++  'boolean',
++  'F14-16 tarifas.requiere_normalizacion_iva boolean'
++);
++SELECT ok(
++  (
++    SELECT pg_get_expr(d.adbin, d.adrelid)
++    FROM pg_attrdef d
++    JOIN pg_attribute a ON a.attrelid = d.adrelid AND a.attnum = d.adnum
++    JOIN pg_class c ON c.oid = a.attrelid
++    JOIN pg_namespace n ON n.oid = c.relnamespace
++    WHERE n.nspname = 'public'
++      AND c.relname = 'tarifas'
++      AND a.attname = 'requiere_normalizacion_iva'
++      AND NOT a.attisdropped
++  ) ILIKE '%false%',
++  'F14-16 tarifas.requiere_normalizacion_iva default false'
++);
++
++SELECT has_column('public', 'tarifas', 'current_tarifa_id', 'F14-16 tarifas.current_tarifa_id');
++SELECT col_type_is(
++  'public',
++  'tarifas',
++  'current_tarifa_id',
++  'uuid',
++  'F14-16 tarifas.current_tarifa_id uuid'
++);
++SELECT col_is_null(
++  'public',
++  'tarifas',
++  'current_tarifa_id',
++  'F14-16 tarifas.current_tarifa_id nullable en bootstrap Task 2'
++);
++
++SELECT has_column('public', 'tarifas', 'fecha_actualizacion', 'F14-16 tarifas.fecha_actualizacion');
++SELECT col_not_null(
++  'public',
++  'tarifas',
++  'fecha_actualizacion',
++  'F14-16 tarifas.fecha_actualizacion NOT NULL'
++);
++SELECT col_type_is(
++  'public',
++  'tarifas',
++  'fecha_actualizacion',
++  'timestamp with time zone',
++  'F14-16 tarifas.fecha_actualizacion timestamptz'
++);
++
++SELECT has_column('public', 'tarifas', 'created_at', 'F14-16 tarifas.created_at');
++SELECT col_not_null('public', 'tarifas', 'created_at', 'F14-16 tarifas.created_at NOT NULL');
++SELECT ok(
++  (
++    SELECT pg_get_expr(d.adbin, d.adrelid)
++    FROM pg_attrdef d
++    JOIN pg_attribute a ON a.attrelid = d.adrelid AND a.attnum = d.adnum
++    JOIN pg_class c ON c.oid = a.attrelid
++    JOIN pg_namespace n ON n.oid = c.relnamespace
++    WHERE n.nspname = 'public'
++      AND c.relname = 'tarifas'
++      AND a.attname = 'created_at'
++      AND NOT a.attisdropped
++  ) ILIKE '%now()%',
++  'F14-16 tarifas.created_at default now()'
++);
++
++SELECT has_column('public', 'tarifas', 'updated_at', 'F14-16 tarifas.updated_at');
++SELECT col_not_null('public', 'tarifas', 'updated_at', 'F14-16 tarifas.updated_at NOT NULL');
++SELECT ok(
++  (
++    SELECT pg_get_expr(d.adbin, d.adrelid)
++    FROM pg_attrdef d
++    JOIN pg_attribute a ON a.attrelid = d.adrelid AND a.attnum = d.adnum
++    JOIN pg_class c ON c.oid = a.attrelid
++    JOIN pg_namespace n ON n.oid = c.relnamespace
++    WHERE n.nspname = 'public'
++      AND c.relname = 'tarifas'
++      AND a.attname = 'updated_at'
++      AND NOT a.attisdropped
++  ) ILIKE '%now()%',
++  'F14-16 tarifas.updated_at default now()'
++);
++
++SELECT col_is_unique(
++  'public',
++  'tarifas',
++  ARRAY['peaje_id', 'estacion_id', 'status', 'categoria', 'sentido']::name[],
++  'F14-16 tarifas unique (peaje_id, estacion_id, status, categoria, sentido)'
++);
++
++-- -----------------------------------------------------------------------------
++-- public.tarifa_importe
++-- -----------------------------------------------------------------------------
++SELECT has_table('public', 'tarifa_importe', 'F14-16 tarifa_importe existe');
++
++SELECT col_is_pk('public', 'tarifa_importe', 'id', 'F14-16 tarifa_importe.id es PK');
++SELECT col_type_is('public', 'tarifa_importe', 'id', 'uuid', 'F14-16 tarifa_importe.id uuid');
++
++SELECT has_column('public', 'tarifa_importe', 'tarifa_id', 'F14-16 tarifa_importe.tarifa_id');
++SELECT col_not_null('public', 'tarifa_importe', 'tarifa_id', 'F14-16 tarifa_importe.tarifa_id NOT NULL');
++SELECT fk_ok(
++  'tarifa_importe',
++  'tarifa_id',
++  'tarifas',
++  'id',
++  'F14-16 tarifa_importe.tarifa_id ÔåÆ tarifas.id'
++);
++
++SELECT has_column('public', 'tarifa_importe', 'importe', 'F14-16 tarifa_importe.importe');
++SELECT col_not_null('public', 'tarifa_importe', 'importe', 'F14-16 tarifa_importe.importe NOT NULL');
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'importe',
++  'numeric(14,2)',
++  'F14-16 tarifa_importe.importe numeric(14,2)'
++);
++
++SELECT has_column('public', 'tarifa_importe', 'importe_base', 'F14-16 tarifa_importe.importe_base');
++SELECT ok(
++  (
++    SELECT c.data_type = 'numeric'
++    FROM information_schema.columns c
++    WHERE c.table_schema = 'public'
++      AND c.table_name = 'tarifa_importe'
++      AND c.column_name = 'importe_base'
++  ),
++  'F14-16 tarifa_importe.importe_base es numeric'
++);
++
++SELECT has_column('public', 'tarifa_importe', 'desvio', 'F14-16 tarifa_importe.desvio');
++SELECT ok(
++  (
++    SELECT c.data_type = 'numeric'
++    FROM information_schema.columns c
++    WHERE c.table_schema = 'public'
++      AND c.table_name = 'tarifa_importe'
++      AND c.column_name = 'desvio'
++  ),
++  'F14-16 tarifa_importe.desvio es numeric'
++);
++
++SELECT has_column('public', 'tarifa_importe', 'hora_min', 'F14-16 tarifa_importe.hora_min');
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'hora_min',
++  'numeric(5,2)',
++  'F14-16 tarifa_importe.hora_min numeric(5,2)'
++);
++SELECT col_is_null('public', 'tarifa_importe', 'hora_min', 'F14-16 tarifa_importe.hora_min nullable');
++
++SELECT has_column('public', 'tarifa_importe', 'hora_max', 'F14-16 tarifa_importe.hora_max');
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'hora_max',
++  'numeric(5,2)',
++  'F14-16 tarifa_importe.hora_max numeric(5,2)'
++);
++SELECT col_is_null('public', 'tarifa_importe', 'hora_max', 'F14-16 tarifa_importe.hora_max nullable');
++
++SELECT has_column('public', 'tarifa_importe', 'hora_media', 'F14-16 tarifa_importe.hora_media');
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'hora_media',
++  'numeric(5,2)',
++  'F14-16 tarifa_importe.hora_media numeric(5,2)'
++);
++SELECT col_is_null(
++  'public',
++  'tarifa_importe',
++  'hora_media',
++  'F14-16 tarifa_importe.hora_media nullable'
++);
++
++SELECT has_column(
++  'public',
++  'tarifa_importe',
++  'categoria_calculated',
++  'F14-16 tarifa_importe.categoria_calculated'
++);
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'categoria_calculated',
++  'smallint',
++  'F14-16 tarifa_importe.categoria_calculated smallint'
++);
++SELECT col_is_null(
++  'public',
++  'tarifa_importe',
++  'categoria_calculated',
++  'F14-16 tarifa_importe.categoria_calculated nullable'
++);
++
++SELECT has_column(
++  'public',
++  'tarifa_importe',
++  'fecha_aparicion',
++  'F14-16 tarifa_importe.fecha_aparicion'
++);
++SELECT col_not_null(
++  'public',
++  'tarifa_importe',
++  'fecha_aparicion',
++  'F14-16 tarifa_importe.fecha_aparicion NOT NULL'
++);
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'fecha_aparicion',
++  'timestamp with time zone',
++  'F14-16 tarifa_importe.fecha_aparicion timestamptz'
++);
++
++SELECT has_column(
++  'public',
++  'tarifa_importe',
++  'tarifas_normalizadas_id',
++  'F14-16 tarifa_importe.tarifas_normalizadas_id'
++);
++SELECT col_is_null(
++  'public',
++  'tarifa_importe',
++  'tarifas_normalizadas_id',
++  'F14-16 tarifa_importe.tarifas_normalizadas_id nullable'
++);
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'tarifas_normalizadas_id',
++  'uuid',
++  'F14-16 tarifa_importe.tarifas_normalizadas_id uuid'
++);
++SELECT fk_ok(
++  'tarifa_importe',
++  'tarifas_normalizadas_id',
++  'tarifas_normalizadas',
++  'id',
++  'F14-16 tarifa_importe.tarifas_normalizadas_id ÔåÆ tarifas_normalizadas.id'
++);
++
++SELECT has_column('public', 'tarifa_importe', 'created_at', 'F14-16 tarifa_importe.created_at');
++SELECT col_not_null(
++  'public',
++  'tarifa_importe',
++  'created_at',
++  'F14-16 tarifa_importe.created_at NOT NULL'
++);
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'created_at',
++  'timestamp with time zone',
++  'F14-16 tarifa_importe.created_at timestamptz'
++);
++SELECT ok(
++  (
++    SELECT pg_get_expr(d.adbin, d.adrelid)
++    FROM pg_attrdef d
++    JOIN pg_attribute a ON a.attrelid = d.adrelid AND a.attnum = d.adnum
++    JOIN pg_class c ON c.oid = a.attrelid
++    JOIN pg_namespace n ON n.oid = c.relnamespace
++    WHERE n.nspname = 'public'
++      AND c.relname = 'tarifa_importe'
++      AND a.attname = 'created_at'
++      AND NOT a.attisdropped
++  ) ILIKE '%now()%',
++  'F14-16 tarifa_importe.created_at default now()'
++);
++
++SELECT has_column('public', 'tarifa_importe', 'updated_at', 'F14-16 tarifa_importe.updated_at');
++SELECT col_not_null(
++  'public',
++  'tarifa_importe',
++  'updated_at',
++  'F14-16 tarifa_importe.updated_at NOT NULL'
++);
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'updated_at',
++  'timestamp with time zone',
++  'F14-16 tarifa_importe.updated_at timestamptz'
++);
++SELECT ok(
++  (
++    SELECT pg_get_expr(d.adbin, d.adrelid)
++    FROM pg_attrdef d
++    JOIN pg_attribute a ON a.attrelid = d.adrelid AND a.attnum = d.adnum
++    JOIN pg_class c ON c.oid = a.attrelid
++    JOIN pg_namespace n ON n.oid = c.relnamespace
++    WHERE n.nspname = 'public'
++      AND c.relname = 'tarifa_importe'
++      AND a.attname = 'updated_at'
++      AND NOT a.attisdropped
++  ) ILIKE '%now()%',
++  'F14-16 tarifa_importe.updated_at default now()'
++);
++
++SELECT hasnt_column(
++  'public',
++  'tarifa_importe',
++  'status',
++  'F14-16 status vive solo en tarifas, no en tarifa_importe'
++);
++SELECT hasnt_column(
++  'public',
++  'tarifa_importe',
++  'categoria',
++  'F14-16 categoria vive solo en tarifas, no en tarifa_importe'
++);
++
++SELECT col_is_unique(
++  'public',
++  'tarifa_importe',
++  ARRAY['tarifa_id', 'id']::name[],
++  'F14-16 tarifa_importe unique (tarifa_id, id) para FK compuesto Task 3'
++);
++
++SELECT ok(
++  EXISTS (
++    SELECT 1
++    FROM pg_index i
++    JOIN pg_class t ON t.oid = i.indrelid
++    JOIN pg_namespace n ON n.oid = t.relnamespace
++    WHERE n.nspname = 'public'
++      AND t.relname = 'tarifa_importe'
++      AND i.indisunique
++      AND i.indpred IS NOT NULL
++      AND pg_get_indexdef(i.indexrelid) ILIKE '%tarifas_normalizadas_id%'
++      AND pg_get_indexdef(i.indexrelid) ILIKE '%IS NOT NULL%'
++  ),
++  'F14-16 tarifa_importe unique parcial tarifas_normalizadas_id WHERE NOT NULL'
++);
++
++SELECT ok(
++  EXISTS (
++    SELECT 1
++    FROM pg_index i
++    JOIN pg_class t ON t.oid = i.indrelid
++    JOIN pg_namespace n ON n.oid = t.relnamespace
++    WHERE n.nspname = 'public'
++      AND t.relname = 'tarifa_importe'
++      AND (
++        SELECT array_agg(a.attname::text ORDER BY x.ordinality)
++        FROM unnest(i.indkey) WITH ORDINALITY AS x(attnum, ordinality)
++        JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = x.attnum
++      ) = ARRAY['tarifa_id', 'fecha_aparicion', 'created_at', 'id']::text[]
++      AND pg_get_indexdef(i.indexrelid) ILIKE '%fecha_aparicion DESC%'
++      AND pg_get_indexdef(i.indexrelid) ILIKE '%created_at DESC%'
++      AND pg_get_indexdef(i.indexrelid) ILIKE '%, id DESC%'
++  ),
++  'F14-16 ├¡ndice tarifa_importe (tarifa_id, fecha_aparicion DESC, created_at DESC, id DESC)'
++);
++
++-- -----------------------------------------------------------------------------
++-- pasadas shadow columns
++-- -----------------------------------------------------------------------------
++SELECT has_column('public', 'pasadas', 'sentido', 'F14-16 pasadas.sentido existe');
++SELECT col_not_null('public', 'pasadas', 'sentido', 'F14-16 pasadas.sentido NOT NULL');
++SELECT col_type_is('public', 'pasadas', 'sentido', 'text', 'F14-16 pasadas.sentido text');
++SELECT ok(
++  (
++    SELECT pg_get_expr(d.adbin, d.adrelid)
++    FROM pg_attrdef d
++    JOIN pg_attribute a ON a.attrelid = d.adrelid AND a.attnum = d.adnum
++    JOIN pg_class c ON c.oid = a.attrelid
++    JOIN pg_namespace n ON n.oid = c.relnamespace
++    WHERE n.nspname = 'public'
++      AND c.relname = 'pasadas'
++      AND a.attname = 'sentido'
++      AND NOT a.attisdropped
++  ) LIKE '%AMBAS%',
++  'F14-16 pasadas.sentido default AMBAS'
++);
++
++SELECT has_column(
++  'public',
++  'pasadas',
++  'tarifa_importe_id',
++  'F14-16 pasadas.tarifa_importe_id existe'
++);
++SELECT col_is_null(
++  'public',
++  'pasadas',
++  'tarifa_importe_id',
++  'F14-16 pasadas.tarifa_importe_id nullable'
++);
++SELECT col_type_is(
++  'public',
++  'pasadas',
++  'tarifa_importe_id',
++  'uuid',
++  'F14-16 pasadas.tarifa_importe_id uuid'
++);
++SELECT fk_ok(
++  'pasadas',
++  'tarifa_importe_id',
++  'tarifa_importe',
++  'id',
++  'F14-16 pasadas.tarifa_importe_id ÔåÆ tarifa_importe.id'
++);
++
++SELECT ok(
++  EXISTS (
++    SELECT 1
++    FROM pg_index i
++    JOIN pg_class t ON t.oid = i.indrelid
++    JOIN pg_namespace n ON n.oid = t.relnamespace
++    WHERE n.nspname = 'public'
++      AND t.relname = 'pasadas'
++      AND (
++        SELECT array_agg(a.attname::text ORDER BY x.ordinality)
++        FROM unnest(i.indkey) WITH ORDINALITY AS x(attnum, ordinality)
++        JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = x.attnum
++      ) = ARRAY['tarifa_importe_id']::text[]
++  ),
++  'F14-16 ├¡ndice pasadas (tarifa_importe_id)'
++);
++
++SELECT ok(
++  EXISTS (
++    SELECT 1
++    FROM pg_index i
++    JOIN pg_class t ON t.oid = i.indrelid
++    JOIN pg_namespace n ON n.oid = t.relnamespace
++    WHERE n.nspname = 'public'
++      AND t.relname = 'pasadas'
++      AND i.indpred IS NOT NULL
++      AND pg_get_indexdef(i.indexrelid) ILIKE '%estacion_id%'
++      AND pg_get_indexdef(i.indexrelid) ILIKE '%categoria%'
++      AND pg_get_indexdef(i.indexrelid) ILIKE '%tarifa_status%'
++      AND pg_get_indexdef(i.indexrelid) ILIKE '%sentido%'
++      AND pg_get_indexdef(i.indexrelid) ILIKE '%precio%'
++      AND pg_get_indexdef(i.indexrelid) ILIKE '%tarifa_importe_id IS NULL%'
++  ),
++  'F14-16 ├¡ndice parcial shadow-backlog pasadas WHERE tarifa_importe_id IS NULL'
++);
++
++-- -----------------------------------------------------------------------------
++-- RLS / grants (authenticated-all, same pattern as tarifas_normalizadas)
++-- Catalog lookups so missing tables fail as TAP, not as undefined_table.
++-- -----------------------------------------------------------------------------
++SELECT ok(
++  COALESCE(
++    (
++      SELECT c.relrowsecurity
++      FROM pg_class c
++      JOIN pg_namespace n ON n.oid = c.relnamespace
++      WHERE n.nspname = 'public'
++        AND c.relname = 'tarifas'
++        AND c.relkind = 'r'
++    ),
++    false
++  ),
++  'F14-16 tarifas tiene RLS habilitado'
++);
++
++SELECT ok(
++  COALESCE(
++    (
++      SELECT c.relrowsecurity
++      FROM pg_class c
++      JOIN pg_namespace n ON n.oid = c.relnamespace
++      WHERE n.nspname = 'public'
++        AND c.relname = 'tarifa_importe'
++        AND c.relkind = 'r'
++    ),
++    false
++  ),
++  'F14-16 tarifa_importe tiene RLS habilitado'
++);
++
++SELECT ok(
++  EXISTS (
++    SELECT 1
++    FROM pg_policies
++    WHERE schemaname = 'public'
++      AND tablename = 'tarifas'
++      AND 'authenticated' = ANY (roles)
++      AND cmd = 'ALL'
++  ),
++  'F14-16 tarifas policy authenticated ALL'
++);
++
++SELECT ok(
++  EXISTS (
++    SELECT 1
++    FROM pg_policies
++    WHERE schemaname = 'public'
++      AND tablename = 'tarifa_importe'
++      AND 'authenticated' = ANY (roles)
++      AND cmd = 'ALL'
++  ),
++  'F14-16 tarifa_importe policy authenticated ALL'
++);
++
++SELECT ok(
++  COALESCE(
++    (
++      SELECT has_table_privilege('authenticated', format('%I.%I', n.nspname, c.relname), 'SELECT')
++         AND has_table_privilege('authenticated', format('%I.%I', n.nspname, c.relname), 'INSERT')
++         AND has_table_privilege('authenticated', format('%I.%I', n.nspname, c.relname), 'UPDATE')
++         AND has_table_privilege('authenticated', format('%I.%I', n.nspname, c.relname), 'DELETE')
++      FROM pg_class c
++      JOIN pg_namespace n ON n.oid = c.relnamespace
++      WHERE n.nspname = 'public'
++        AND c.relname = 'tarifas'
++        AND c.relkind = 'r'
++    ),
++    false
++  ),
++  'F14-16 authenticated SELECT/INSERT/UPDATE/DELETE on tarifas'
++);
++
++SELECT ok(
++  COALESCE(
++    (
++      SELECT has_table_privilege('authenticated', format('%I.%I', n.nspname, c.relname), 'SELECT')
++         AND has_table_privilege('authenticated', format('%I.%I', n.nspname, c.relname), 'INSERT')
++         AND has_table_privilege('authenticated', format('%I.%I', n.nspname, c.relname), 'UPDATE')
++         AND has_table_privilege('authenticated', format('%I.%I', n.nspname, c.relname), 'DELETE')
++      FROM pg_class c
++      JOIN pg_namespace n ON n.oid = c.relnamespace
++      WHERE n.nspname = 'public'
++        AND c.relname = 'tarifa_importe'
++        AND c.relkind = 'r'
++    ),
++    false
++  ),
++  'F14-16 authenticated SELECT/INSERT/UPDATE/DELETE on tarifa_importe'
++);
++
++-- -----------------------------------------------------------------------------
++-- Seed cat├ílogos existentes (no v2) para CHECKs v├¡a throws_ok / lives_ok
++-- -----------------------------------------------------------------------------
++INSERT INTO public.peajes (id, nombre) VALUES
++  ('16200000-aaaa-4aa1-8aa1-000000000001', 'Peaje F14-16 v2');
++
++INSERT INTO public.estaciones (id, peaje_id, nombre) VALUES
++  (
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    '16200000-aaaa-4aa1-8aa1-000000000001',
++    'ESTACION F14-16'
++  );
++
++INSERT INTO public.patentes (id, patente, categoria) VALUES
++  ('16200000-aaaa-4aa1-8aa1-000000000003', 'F16PAT', 'FLOTA CAMIONES');
++
++INSERT INTO public.pases (id, pase, patente_id) VALUES
++  (
++    '16200000-aaaa-4aa1-8aa1-000000000004',
++    'F16-PASE',
++    '16200000-aaaa-4aa1-8aa1-000000000003'
++  );
++
++INSERT INTO public.documentos (
++  id, factura, cuenta, empresa_id, fecha_factura, tipo,
++  importe_sin_iva, percepciones, iva, importe_total, bonificacion
++) VALUES (
++  '16200000-aaaa-4aa1-8aa1-000000000005',
++  'F16-DOC-1', NULL, '__global__', DATE '2026-07-01', 'FC',
++  3000, 0, 0, 3000, 0
++);
++
++INSERT INTO public.tarifas_normalizadas (
++  id, peaje_id, estacion_id, categoria, importe, importe_base,
++  cases, patron, diagnostico, status
++) VALUES (
++  '16200000-aaaa-4aa1-8aa1-000000000030',
++  '16200000-aaaa-4aa1-8aa1-000000000001',
++  '16200000-aaaa-4aa1-8aa1-000000000002',
++  NULL, 1000, 1000, 0, 'A', 'REVISAR', 'PENDIENTE'
++);
++
++-- -----------------------------------------------------------------------------
++-- CHECK / unique / default behavior (wrapped so missing tables TAP-fail)
++-- -----------------------------------------------------------------------------
++SELECT throws_ok(
++  $$
++  INSERT INTO public.tarifas (
++    id, peaje_id, estacion_id, status, categoria, fecha_actualizacion
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000111',
++    '16200000-aaaa-4aa1-8aa1-000000000001',
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    'PENDIENTE',
++    2,
++    timestamptz '2026-07-01 00:00:00+00'
++  )
++  $$,
++  '23514',
++  NULL,
++  'F14-16 tarifas.status rechaza PENDIENTE'
++);
++
++SELECT throws_ok(
++  $$
++  INSERT INTO public.tarifas (
++    id, peaje_id, estacion_id, status, categoria, sentido, fecha_actualizacion
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000112',
++    '16200000-aaaa-4aa1-8aa1-000000000001',
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    'PICO',
++    2,
++    'NORTE',
++    timestamptz '2026-07-01 00:00:00+00'
++  )
++  $$,
++  '23514',
++  NULL,
++  'F14-16 tarifas.sentido rechaza NORTE'
++);
++
++SELECT throws_ok(
++  $$
++  INSERT INTO public.tarifas (
++    id, peaje_id, estacion_id, status, categoria, fecha_actualizacion
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000113',
++    '16200000-aaaa-4aa1-8aa1-000000000001',
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    'PICO',
++    11,
++    timestamptz '2026-07-01 00:00:00+00'
++  )
++  $$,
++  '23514',
++  NULL,
++  'F14-16 tarifas.categoria rechaza 11'
++);
++
++SELECT throws_ok(
++  $$
++  INSERT INTO public.tarifas (
++    id, peaje_id, estacion_id, status, categoria, fecha_actualizacion
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000114',
++    '16200000-aaaa-4aa1-8aa1-000000000001',
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    'PICO',
++    -1,
++    timestamptz '2026-07-01 00:00:00+00'
++  )
++  $$,
++  '23514',
++  NULL,
++  'F14-16 tarifas.categoria rechaza -1'
++);
++
++SELECT lives_ok(
++  $$
++  INSERT INTO public.tarifas (
++    id, peaje_id, estacion_id, status, categoria, fecha_actualizacion
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000010',
++    '16200000-aaaa-4aa1-8aa1-000000000001',
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    'PICO',
++    0,
++    timestamptz '2026-07-01 00:00:00+00'
++  )
++  $$,
++  'F14-16 tarifas acepta status PICO, categoria 0 y sentido default AMBAS'
++);
++
++SELECT throws_ok(
++  $$
++  INSERT INTO public.tarifas (
++    id, peaje_id, estacion_id, status, categoria, sentido, fecha_actualizacion
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000011',
++    '16200000-aaaa-4aa1-8aa1-000000000001',
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    'PICO',
++    0,
++    'AMBAS',
++    timestamptz '2026-07-02 00:00:00+00'
++  )
++  $$,
++  '23505',
++  NULL,
++  'F14-16 tarifas unique rechaza duplicado (peaje, estacion, status, categoria, sentido)'
++);
++
++SELECT lives_ok(
++  $$
++  INSERT INTO public.tarifas (
++    id, peaje_id, estacion_id, status, categoria, sentido, fecha_actualizacion
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000012',
++    '16200000-aaaa-4aa1-8aa1-000000000001',
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    'NO_PICO',
++    10,
++    'IDA',
++    timestamptz '2026-07-01 00:00:00+00'
++  )
++  $$,
++  'F14-16 tarifas acepta NO_PICO, categoria 10 y sentido IDA'
++);
++
++SELECT lives_ok(
++  $$
++  INSERT INTO public.tarifas (
++    id, peaje_id, estacion_id, status, categoria, sentido, fecha_actualizacion
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000013',
++    '16200000-aaaa-4aa1-8aa1-000000000001',
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    'PICO',
++    1,
++    'VUELTA',
++    timestamptz '2026-07-01 00:00:00+00'
++  )
++  $$,
++  'F14-16 tarifas acepta sentido VUELTA'
++);
++
++SELECT throws_ok(
++  $$
++  INSERT INTO public.tarifa_importe (
++    id, tarifa_id, importe, fecha_aparicion
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000021',
++    '16200000-aaaa-4aa1-8aa1-000000000010',
++    0,
++    timestamptz '2026-07-01 00:00:00+00'
++  )
++  $$,
++  '23514',
++  NULL,
++  'F14-16 tarifa_importe.importe rechaza 0'
++);
++
++SELECT lives_ok(
++  $$
++  INSERT INTO public.tarifa_importe (
++    id, tarifa_id, importe, fecha_aparicion, tarifas_normalizadas_id
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000020',
++    '16200000-aaaa-4aa1-8aa1-000000000010',
++    1000.00,
++    timestamptz '2026-07-01 00:00:00+00',
++    '16200000-aaaa-4aa1-8aa1-000000000030'
++  )
++  $$,
++  'F14-16 tarifa_importe acepta importe > 0 y linaje a tarifas_normalizadas'
++);
++
++SELECT throws_ok(
++  $$
++  INSERT INTO public.tarifa_importe (
++    id, tarifa_id, importe, fecha_aparicion, categoria_calculated
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000022',
++    '16200000-aaaa-4aa1-8aa1-000000000012',
++    500.00,
++    timestamptz '2026-07-01 00:00:00+00',
++    11
++  )
++  $$,
++  '23514',
++  NULL,
++  'F14-16 tarifa_importe.categoria_calculated rechaza 11'
++);
++
++SELECT throws_ok(
++  $$
++  INSERT INTO public.pasadas (
++    id, fecha_hora, pase_id, patente_id, estacion_id, documento_id,
++    precio, bonificacion, quantity, importe_neto, sentido
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000041',
++    timestamptz '2026-07-10 12:00:00+00',
++    '16200000-aaaa-4aa1-8aa1-000000000004',
++    '16200000-aaaa-4aa1-8aa1-000000000003',
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    '16200000-aaaa-4aa1-8aa1-000000000005',
++    1000, 0, 1, 1000,
++    'NORTE'
++  )
++  $$,
++  '23514',
++  NULL,
++  'F14-16 pasadas.sentido rechaza NORTE'
++);
++
++SELECT lives_ok(
++  $$
++  INSERT INTO public.pasadas (
++    id, fecha_hora, pase_id, patente_id, estacion_id, documento_id,
++    precio, bonificacion, quantity, importe_neto, sentido
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000042',
++    timestamptz '2026-07-10 13:00:00+00',
++    '16200000-aaaa-4aa1-8aa1-000000000004',
++    '16200000-aaaa-4aa1-8aa1-000000000003',
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    '16200000-aaaa-4aa1-8aa1-000000000005',
++    1000, 0, 1, 1000,
++    'VUELTA'
++  )
++  $$,
++  'F14-16 pasadas acepta sentido VUELTA'
++);
++
++SELECT lives_ok(
++  $$
++  INSERT INTO public.pasadas (
++    id, fecha_hora, pase_id, patente_id, estacion_id, documento_id,
++    precio, bonificacion, quantity, importe_neto, tarifa_normalizada_id
++  ) VALUES (
++    '16200000-aaaa-4aa1-8aa1-000000000040',
++    timestamptz '2026-07-10 12:00:00+00',
++    '16200000-aaaa-4aa1-8aa1-000000000004',
++    '16200000-aaaa-4aa1-8aa1-000000000003',
++    '16200000-aaaa-4aa1-8aa1-000000000002',
++    '16200000-aaaa-4aa1-8aa1-000000000005',
++    1000, 0, 1, 1000,
++    '16200000-aaaa-4aa1-8aa1-000000000030'
++  )
++  $$,
++  'F14-16 pasadas INSERT retiene tarifa_normalizada_id legado'
++);
++
++CREATE FUNCTION pg_temp.pasadas_sentido(p_id uuid)
++RETURNS text
++LANGUAGE plpgsql AS $$
++DECLARE
++  v text;
++BEGIN
++  EXECUTE format(
++    'SELECT sentido::text FROM public.pasadas WHERE id = %L',
++    p_id
++  ) INTO v;
++  RETURN v;
++EXCEPTION
++  WHEN undefined_column THEN
++    RETURN NULL;
++END;
++$$;
++
++SELECT is(
++  pg_temp.pasadas_sentido('16200000-aaaa-4aa1-8aa1-000000000040'),
++  'AMBAS',
++  'F14-16 pasadas.sentido default AMBAS tras INSERT sin columna'
++);
++
++SELECT * FROM finish();
++ROLLBACK;

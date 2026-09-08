@@ -8,7 +8,7 @@ Este trabajo es **independiente de Angular / ibarra-app**. No modifica el módul
 
 | Artefacto | Ruta |
 |---|---|
-| Documentación de uso | [`telepase-downloader.md`](./telepase-downloader.md), [`carga-express-bot.md`](./carga-express-bot.md) |
+| Documentación de uso | [`telepase-downloader.md`](./telepase-downloader.md), [`carga-express-bot.md`](./carga-express-bot.md), [`carga-express-masiva-bot.md`](./carga-express-masiva-bot.md) |
 | Estado de features | [`../feature-list-script.json`](../feature-list-script.json) |
 | Código | `scripts/telepase/`, `scripts/carga-express-bot/` |
 | HTML fuente | `scripts/html/facturas` |
@@ -62,6 +62,13 @@ node download-batch.mjs                    # relleno autenticado
 
 ## Historial de sesiones
 
+### 2026-09-02 — Generate status.csv from rows.json
+
+- `download-batch.mjs` never wrote `scripts/downloads/status.csv`; the carga-express bot expected that file.
+- Added `scripts/telepase/build-status-csv.mjs`: maps `rows.json` to the bot CSV, discovers local factura/pasada files, keeps previous Template/status on regenerate.
+- Empresa/Template from DESARROLLO plantillas (`AUSA-V3`, `AUSOL-7-2026`, `AU-OESTE-V1-08-26`, `AUBASA-7-2026`; AUMESA template left blank for enrich).
+- Verification: `node --test build-status-csv.test.mjs` 4 passed.
+
 ### 2026-08-25 - Download path metadata
 
 - Added `fileFacturaPath` and `filePasadasPath` to `rows.json`.
@@ -112,6 +119,36 @@ node download-batch.mjs                    # relleno autenticado
 - Paso 7 wait targets `app-ai-cat-loader` (not `app-graph-loader`). Logs `[AI] <numero> state=… chips=…`.
 - `npm test` — 36 passed (`resolveBaseUrl` + cat-loader selector + recognition helper).
 - Localhost smoke `--local --limit 1 --row 5009A02010049`: logged `URL: http://localhost:4200/peajes/carga-express` and `Login OK` on localhost. Invoice AI settled as `state=error chips=0` after 3 retries × 3 reloads (OpenRouter did not return suggestions). Loader wait did not time out.
+
+### 2026-08-28 — Carga-express masiva bot (Telepeaje Plus)
+
+- Added `node run-masiva.mjs` in `scripts/carga-express-bot`. Allowlist `MASIVA_FOLDERS` in `.env` (no full-tree scan). Uploads `Consumo_*_MAPPED.xlsx` + `Comprobantes/*.pdf` in **Importación masiva**, plantilla `MASIVOOO`.
+- Status: `scripts/telepeaje plus/status-masiva.csv`. Paso 7 waits accordion badge `Sugerencias listas` (5–8 min for 1–10 PDFs). Error IA / timeout / invalid form → `USER_INPUT`, no refresh, no `FAILED`.
+- Docs: `scripts/docs/carga-express-masiva-bot.md`. Feature `TS04-2`.
+
+### 2026-08-28 — Masiva AI wait: idle queue, not PDF file count
+
+- Wait no longer requires `ready === expectedPdfs`. Logs showed AI finished at ~208s with `ready=10 analyzing=0 loader=false expectedPdfs=11`; bot kept polling until timeout because one unmatched PDF never gets a pin.
+- Proceed after ~10s idle (loader off, no Analizando, no Con PDF) when at least one ready/error pin exists. Badges counted by CSS (`paso7__acc-badge--ready` / pin) plus label.
+- Suggestion chips live under accordion `*ngIf="isExpanded"`; bot expands all `.app-acc-panel__trigger` then clicks `.paso7__suggest` in `.paso7__masiva`.
+
+### 2026-08-31 — Masiva chips per accordion panel + do not skip first folder
+
+- Chips were only applied on `app-accordion-panel[1]` because that panel starts expanded; `[2]…[n]` stay behind `*ngIf="isExpanded"`. Bot now clicks each panel trigger by 1-based XPath and applies `.paso7__suggest` inside that panel.
+- Soft AI timeout no longer starts the next folder while the queue is still `Analizando`. Wait continues until idle (hard cap `max(timeout×2, 20min)`). Parked Factura tabs block new folders until chips + Continuar succeed.
+
+### 2026-08-31 — Paso 9 wait for Carga confirmada dialog
+
+- Confirm used to return immediately because `.pw__status--valid` and the `app-dialog` host are already on the page («Listo para confirmar»). Upload can take ~1 min.
+- Wait now targets the open dialog section (`app-paso9-revision/div/app-dialog/div/section`) or status «Carga confirmada», up to 90s (120s masiva). Dialog stays visible ~5s before **Cargar otro archivo**.
+
+### 2026-08-31 — Masiva duplicates stay USER_INPUT
+
+- Paso 8 duplicate detection no longer writes `DUPLICATED` and closes the tab. Parks `USER_INPUT`, keeps Chrome open, and resumes when Continuar is enabled or the user reaches Revisión (after «Subir igualmente»).
+
+### 2026-08-31 — Resume stale IN_PROGRESS
+
+- `202608-1` was `IN_PROGRESS` in `status-masiva.csv` from a previous kill. Masiva skipped it (not retryable), logged in, then quit. Stale `IN_PROGRESS` is retryable again; idle allowlist is logged instead of a silent exit.
 
 ## Bloqueos / riesgos
 

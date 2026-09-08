@@ -17,6 +17,16 @@ describe('PeajesHomeComponent: secciones visibles', () => {
     ).toContain('catalogos');
   });
 
+  it('incluye tarifario solo para peajes:manage', () => {
+    expect(PEAJES_HOME_SECTION_IDS).toContain('tarifario');
+    expect(
+      getVisiblePeajesHomeSectionIds(new Set(['peajes:manage'])),
+    ).toContain('tarifario');
+    expect(
+      getVisiblePeajesHomeSectionIds(new Set(['peajes:read', 'peajes:create'])),
+    ).not.toContain('tarifario');
+  });
+
   it('muestra las secciones operativas al usuario de carga y revisión', () => {
     expect(
       getVisiblePeajesHomeSectionIds(

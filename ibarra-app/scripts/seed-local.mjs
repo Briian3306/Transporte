@@ -1,17 +1,20 @@
 /**
  * Apply CLI seeds without db reset.
- * seed_auth.sql is a pg_dump (not upsert). Skip it when auth.users already
- * has rows so re-running `pnpm seed:local` can load pasadas.
+ * seed_auth.sql is a pg_dump (not upsert). Skip it only when
+ * francis@transporteibarra.com.ar already exists so leftover rows
+ * do not block Auth. seed_cli_login.sql always runs (CLI password).
+ * package.json then runs migrate-tarifario-v2.mjs --load-local (tarifas v2).
  */
 import { execFileSync } from 'node:child_process';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CLI_LOGIN_EMAIL, shouldSkipSeedAuth } from './local-supabase.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const container = 'supabase_db_ibarra-app';
 
 const FILES = [
-  { file: 'supabase/seed_auth.sql', skipIfAuthSeeded: true },
+  { file: 'supabase/seed_auth.sql', skipIfFrancisExists: true },
   { file: 'supabase/seed_cli_login.sql' },
   { file: 'supabase/seed_rbac_schema.sql' },
   { file: 'supabase/seed_rbac.sql' },
@@ -29,7 +32,8 @@ function docker(args, opts = {}) {
   });
 }
 
-function authUserCount() {
+function francisExists() {
+  const escaped = CLI_LOGIN_EMAIL.replace(/'/g, "''");
   const out = docker([
     'exec',
     container,
@@ -39,9 +43,9 @@ function authUserCount() {
     '-d',
     'postgres',
     '-tAc',
-    'select count(*)::int from auth.users;',
+    `select exists(select 1 from auth.users where email = '${escaped}');`,
   ]);
-  return Number.parseInt(String(out).trim(), 10) || 0;
+  return String(out).trim() === 't';
 }
 
 function applySql(relPath) {
@@ -67,27 +71,27 @@ function applySql(relPath) {
   );
 }
 
-let users = 0;
+let francis = false;
 try {
-  users = authUserCount();
+  francis = francisExists();
 } catch (err) {
   console.error(
-    'Cannot reach local Postgres. Start the stack with `npx supabase start`.'
+    'Cannot reach local Postgres. Run `pnpm seed:local` (ensures Kong) or `npx supabase start --ignore-health-check`.'
   );
   process.exit(1);
 }
 
 for (const step of FILES) {
-  if (step.skipIfAuthSeeded && users > 0) {
+  if (step.skipIfFrancisExists && shouldSkipSeedAuth(francis)) {
     console.log(
-      `[seed:local] skip ${basename(step.file)} (auth.users already has ${users} row(s))`
+      `[seed:local] skip ${basename(step.file)} (${CLI_LOGIN_EMAIL} already in auth.users)`
     );
     continue;
   }
   console.log(`[seed:local] apply ${basename(step.file)}`);
   applySql(step.file);
-  if (step.skipIfAuthSeeded) {
-    users = authUserCount();
+  if (step.skipIfFrancisExists) {
+    francis = francisExists();
   }
 }
 

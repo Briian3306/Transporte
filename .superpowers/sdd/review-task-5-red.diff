@@ -1,0 +1,169 @@
+﻿# Review package: Task 5 RED adapter spec (uncommitted)
+
+## Commits
+(none)
+
+## Files changed
+ ibarra-app/src/app/components/peajes/services/tarifa-comparison-adapter.service.spec.ts (created)
+
+## Diff (new file)
+diff --git a/ibarra-app/src/app/components/peajes/services/tarifa-comparison-adapter.service.spec.ts b/ibarra-app/src/app/components/peajes/services/tarifa-comparison-adapter.service.spec.ts
+new file mode 100644
+index 0000000..1b26813
+--- /dev/null
++++ b/ibarra-app/src/app/components/peajes/services/tarifa-comparison-adapter.service.spec.ts
+@@ -0,0 +1,154 @@
++import { TestBed } from '@angular/core/testing';
++import { ConfiguracionPlantilla, PasadaEstandarizada } from '../models/peajes.models';
++import { PeajesMotorTransformacionService } from '../plantillas/motor/peajes-motor-transformacion.service';
++import { eliminarIvaStrategy } from '../plantillas/motor/strategies/estrategias-atomicas';
++import {
++  precioComparable,
++  TarifaComparisonAdapterService,
++  TarifaComparisonInput,
++} from './tarifa-comparison-adapter.service';
++
++function plantillaConEliminarIva(): ConfiguracionPlantilla[] {
++  return [
++    {
++      id: 'cfg-eliminar-iva',
++      plantilla_id: 'plt-iva',
++      nombre_columna: 'IMPORTE_NETO',
++      columna_destino: 'IMPORTE_NETO',
++      orden: 90,
++      tipo: 'transformacion',
++      algoritmo_combinado_id: null,
++      configuracion: {
++        algoritmo_codigo: eliminarIvaStrategy.codigo,
++        columna: 'IMPORTE_NETO',
++      },
++      obligatoria: true,
++    },
++  ];
++}
++
++function pasadaPipeline(importeNeto: number | null): PasadaEstandarizada {
++  return {
++    PASADA_ID: null,
++    FECHA_HORA: '2026-07-31 10:15:00',
++    PASE_ID: 'pase-1',
++    PATENTE_ID: 'pat-1',
++    ESTACION_ID: 'est-1',
++    PRECIO: 121,
++    BONIFICACION: 0,
++    QUANTITY: 1,
++    IMPORTE_NETO: importeNeto,
++    CATEGORIA: '5',
++  };
++}
++
++describe('precioComparable', () => {
++  it('devuelve precioDirecto cuando no requiere normalizaci├│n IVA', () => {
++    const input: TarifaComparisonInput = {
++      precioDirecto: 121,
++      precioNormalizado: 100,
++      requiereNormalizacionIva: false,
++    };
++
++    expect(precioComparable(input)).toBe(121);
++  });
++
++  it('devuelve el precio normalizado del pipeline cuando el flag es true', () => {
++    const input: TarifaComparisonInput = {
++      precioDirecto: 121,
++      precioNormalizado: 100,
++      requiereNormalizacionIva: true,
++    };
++
++    expect(precioComparable(input)).toBe(100);
++  });
++
++  it('lanza error controlado si el flag es true y falta el precio normalizado', () => {
++    const input: TarifaComparisonInput = {
++      precioDirecto: 121,
++      precioNormalizado: null,
++      requiereNormalizacionIva: true,
++    };
++
++    expect(() => precioComparable(input)).toThrowError(/Precio normalizado requerido/);
++  });
++});
++
++describe('TarifaComparisonAdapterService', () => {
++  let adapter: TarifaComparisonAdapterService;
++  let motor: jasmine.SpyObj<PeajesMotorTransformacionService>;
++  const fila = { IMPORTE_NETO: 121, TARIFA: 121 };
++  const configuraciones = plantillaConEliminarIva();
++
++  beforeEach(() => {
++    motor = jasmine.createSpyObj('PeajesMotorTransformacionService', ['aplicarPipeline']);
++
++    TestBed.configureTestingModule({
++      providers: [
++        TarifaComparisonAdapterService,
++        { provide: PeajesMotorTransformacionService, useValue: motor },
++      ],
++    });
++
++    adapter = TestBed.inject(TarifaComparisonAdapterService);
++  });
++
++  it('usa precioDirecto crudo y no llama al pipeline si requiere_normalizacion_iva es false', () => {
++    motor.aplicarPipeline.and.returnValue([pasadaPipeline(100)]);
++
++    const comparable = adapter.obtenerPrecioComparable({
++      precioDirecto: 121,
++      requiereNormalizacionIva: false,
++      fila,
++      configuraciones,
++    });
++
++    expect(comparable).toBe(121);
++    expect(motor.aplicarPipeline).not.toHaveBeenCalled();
++  });
++
++  it('pide el precio normalizado al motor exactamente una vez cuando el flag es true', () => {
++    const normalizadoPipeline = 100;
++    motor.aplicarPipeline.and.returnValue([pasadaPipeline(normalizadoPipeline)]);
++
++    const comparable = adapter.obtenerPrecioComparable({
++      precioDirecto: 121,
++      requiereNormalizacionIva: true,
++      fila,
++      configuraciones,
++    });
++
++    expect(comparable).toBe(normalizadoPipeline);
++    expect(motor.aplicarPipeline).toHaveBeenCalledTimes(1);
++    expect(motor.aplicarPipeline).toHaveBeenCalledWith([fila], configuraciones);
++    const configsUsadas = motor.aplicarPipeline.calls.mostRecent().args[1] as ConfiguracionPlantilla[];
++    expect(configsUsadas.some((cfg) => cfg.configuracion?.['algoritmo_codigo'] === eliminarIvaStrategy.codigo)).toBeTrue();
++  });
++
++  it('lanza error controlado si el flag es true y el pipeline no produce importe', () => {
++    motor.aplicarPipeline.and.returnValue([]);
++
++    expect(() =>
++      adapter.obtenerPrecioComparable({
++        precioDirecto: 121,
++        requiereNormalizacionIva: true,
++        fila,
++        configuraciones,
++      })
++    ).toThrowError(/Precio normalizado requerido/);
++    expect(motor.aplicarPipeline).toHaveBeenCalledTimes(1);
++  });
++
++  it('lanza error controlado si el pipeline devuelve IMPORTE_NETO nulo', () => {
++    motor.aplicarPipeline.and.returnValue([pasadaPipeline(null)]);
++
++    expect(() =>
++      adapter.obtenerPrecioComparable({
++        precioDirecto: 121,
++        requiereNormalizacionIva: true,
++        fila,
++        configuraciones,
++      })
++    ).toThrowError(/Precio normalizado requerido/);
++  });
++});

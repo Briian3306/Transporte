@@ -1,0 +1,837 @@
+﻿# Review package: Task 6A RED Angular specs (uncommitted)
+
+## Commits
+(none)
+
+## Files changed
+ ibarra-app/src/app/components/peajes/services/tarifa-validation.service.spec.ts (created)
+ ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.spec.ts (modified)
+
+## Diff tarifa-validation.service.spec.ts
+diff --git a/ibarra-app/src/app/components/peajes/services/tarifa-validation.service.spec.ts b/ibarra-app/src/app/components/peajes/services/tarifa-validation.service.spec.ts
+new file mode 100644
+index 0000000..dc277f9
+--- /dev/null
++++ b/ibarra-app/src/app/components/peajes/services/tarifa-validation.service.spec.ts
+@@ -0,0 +1,384 @@
++import { TestBed } from '@angular/core/testing';
++import { ConfiguracionPlantilla } from '../models/peajes.models';
++import { SupabaseService } from '../../../services/supabase.service';
++import { TarifaComparisonAdapterService } from './tarifa-comparison-adapter.service';
++import {
++  AsociacionTarifaImporte,
++  PasadaValidacionTarifaInput,
++  TarifaValidationService,
++} from './tarifa-validation.service';
++
++function configuracionesPlantilla(): ConfiguracionPlantilla[] {
++  return [
++    {
++      id: 'cfg-1',
++      plantilla_id: 'plt-1',
++      nombre_columna: 'IMPORTE_NETO',
++      columna_destino: 'IMPORTE_NETO',
++      orden: 90,
++      tipo: 'transformacion',
++      algoritmo_combinado_id: null,
++      configuracion: { algoritmo_codigo: 'ELIMINAR_IVA' },
++      obligatoria: true,
++    },
++  ];
++}
++
++function pasadaInput(
++  overrides: Partial<PasadaValidacionTarifaInput> & Pick<PasadaValidacionTarifaInput, 'idx'>
++): PasadaValidacionTarifaInput {
++  return {
++    estacion_id: 'aaaaaaaa-bbbb-4ccc-8ddd-111111111111',
++    categoria: 5,
++    status: 'NO_PICO',
++    fecha_hora: '2026-07-31 10:15:00',
++    precio_directo: 1210,
++    pasada_id: null,
++    fila: { IMPORTE_NETO: 1210, PRECIO: 1210 },
++    ...overrides,
++  };
++}
++
++describe('TarifaValidationService', () => {
++  let service: TarifaValidationService;
++  let rpc: jasmine.Spy;
++  let adapter: jasmine.SpyObj<TarifaComparisonAdapterService>;
++  const configuraciones = configuracionesPlantilla();
++
++  beforeEach(() => {
++    rpc = jasmine.createSpy('rpc');
++    adapter = jasmine.createSpyObj('TarifaComparisonAdapterService', ['obtenerPrecioComparable']);
++
++    TestBed.configureTestingModule({
++      providers: [
++        TarifaValidationService,
++        {
++          provide: SupabaseService,
++          useValue: {
++            getClient: jasmine.createSpy('getClient').and.resolveTo({ rpc }),
++            executeWithRetry: <T>(operation: () => Promise<T>) => operation(),
++          },
++        },
++        { provide: TarifaComparisonAdapterService, useValue: adapter },
++      ],
++    });
++
++    service = TestBed.inject(TarifaValidationService);
++  });
++
++  it('resuelve y valida el lote en un RPC cada uno (sin N+1)', async () => {
++    const pasadas = [pasadaInput({ idx: 0 }), pasadaInput({ idx: 1 }), pasadaInput({ idx: 2 })];
++    rpc.and.callFake(async (name: string, args: { p_pasadas?: unknown[] }) => {
++      if (name === 'peajes_resolver_tarifas_actuales') {
++        expect(args.p_pasadas?.length).toBe(3);
++        return {
++          data: pasadas.map((p) => ({
++            idx: p.idx,
++            tarifa_id: `tarifa-${p.idx}`,
++            current_tarifa_id: `imp-${p.idx}`,
++            importe: 1210,
++            peaje_id: 'peaje-1',
++            sentido_aplicado: 'AMBAS',
++            requiere_normalizacion_iva: false,
++          })),
++          error: null,
++        };
++      }
++      if (name === 'peajes_validar_tarifas_actuales') {
++        expect(args.p_pasadas?.length).toBe(3);
++        return {
++          data: pasadas.map((p) => ({
++            idx: p.idx,
++            codigo: 'AL_DIA',
++            tarifa_importe_id: `imp-${p.idx}`,
++            importe: 1210,
++            precio_comparado: 1210,
++            error_relativo: 0,
++          })),
++          error: null,
++        };
++      }
++      throw new Error(`RPC inesperado: ${name}`);
++    });
++
++    const resultado = await service.validarLote(pasadas, configuraciones);
++
++    const resolverCalls = rpc.calls.all().filter((c) => c.args[0] === 'peajes_resolver_tarifas_actuales');
++    const validatorCalls = rpc.calls.all().filter((c) => c.args[0] === 'peajes_validar_tarifas_actuales');
++    expect(resolverCalls.length).toBe(1);
++    expect(validatorCalls.length).toBe(1);
++    expect(rpc.calls.argsFor(0)[0]).toBe('peajes_resolver_tarifas_actuales');
++    expect(rpc.calls.argsFor(1)[0]).toBe('peajes_validar_tarifas_actuales');
++    expect(resultado.filas.map((f: { idx: number }) => f.idx)).toEqual([0, 1, 2]);
++    expect(rpc.calls.all().some((c) => c.args[0] === 'peajes_asociar_pasadas_tarifa_importe')).toBeFalse();
++  });
++
++  it('env├¡a IDA/VUELTA tal cual al resolver y usa AMBAS si falta el mapeo SENTIDO', async () => {
++    rpc.and.callFake(async (name: string, args: { p_pasadas?: Array<{ idx: number; sentido: string }> }) => {
++      if (name === 'peajes_resolver_tarifas_actuales') {
++        const payload = args.p_pasadas ?? [];
++        expect(payload.find((r) => r.idx === 0)?.sentido).toBe('IDA');
++        expect(payload.find((r) => r.idx === 1)?.sentido).toBe('VUELTA');
++        expect(payload.find((r) => r.idx === 2)?.sentido).toBe('AMBAS');
++        return {
++          data: payload.map((r) => ({
++            idx: r.idx,
++            tarifa_id: `t${r.idx}`,
++            current_tarifa_id: `c${r.idx}`,
++            importe: 1000,
++            peaje_id: 'peaje-1',
++            sentido_aplicado: r.sentido,
++            requiere_normalizacion_iva: false,
++          })),
++          error: null,
++        };
++      }
++      if (name === 'peajes_validar_tarifas_actuales') {
++        return {
++          data: (args.p_pasadas ?? []).map((r) => ({
++            idx: r.idx,
++            codigo: 'AL_DIA',
++            tarifa_importe_id: `c${r.idx}`,
++            importe: 1000,
++            precio_comparado: 1000,
++            error_relativo: 0,
++          })),
++          error: null,
++        };
++      }
++      throw new Error(`RPC inesperado: ${name}`);
++    });
++
++    const resultado = await service.validarLote(
++      [
++        pasadaInput({ idx: 0, sentido: 'IDA' }),
++        pasadaInput({ idx: 1, sentido: 'VUELTA' }),
++        pasadaInput({ idx: 2, sentido: undefined }),
++      ],
++      configuraciones
++    );
++
++    expect(resultado.filas[0].sentido_solicitado).toBe('IDA');
++    expect(resultado.filas[1].sentido_solicitado).toBe('VUELTA');
++    expect(resultado.filas[2].sentido_solicitado).toBe('AMBAS');
++  });
++
++  it('no pide IVA al adapter si el resolver no marca requiere_normalizacion_iva', async () => {
++    rpc.and.callFake(async (name: string, args: { p_pasadas?: Array<Record<string, unknown>> }) => {
++      if (name === 'peajes_resolver_tarifas_actuales') {
++        return {
++          data: [
++            {
++              idx: 0,
++              tarifa_id: 't0',
++              current_tarifa_id: 'c0',
++              importe: 1210,
++              peaje_id: 'peaje-1',
++              sentido_aplicado: 'AMBAS',
++              requiere_normalizacion_iva: false,
++            },
++          ],
++          error: null,
++        };
++      }
++      if (name === 'peajes_validar_tarifas_actuales') {
++        const row = args.p_pasadas?.[0];
++        expect(row?.['precio_directo']).toBe(1210);
++        expect(row?.['precio_normalizado']).toBeNull();
++        expect(row?.['requiere_normalizacion_iva']).toBeFalse();
++        return {
++          data: [
++            {
++              idx: 0,
++              codigo: 'AL_DIA',
++              tarifa_importe_id: 'c0',
++              importe: 1210,
++              precio_comparado: 1210,
++              error_relativo: 0,
++            },
++          ],
++          error: null,
++        };
++      }
++      throw new Error(`RPC inesperado: ${name}`);
++    });
++
++    await service.validarLote([pasadaInput({ idx: 0, precio_directo: 1210 })], configuraciones);
++
++    expect(adapter.obtenerPrecioComparable).not.toHaveBeenCalled();
++  });
++
++  it('pide el precio comparable al adapter exactamente una vez por fila con flag IVA', async () => {
++    const normalizado = 1000;
++    adapter.obtenerPrecioComparable.and.returnValue(normalizado);
++    const filaIva = { IMPORTE_NETO: 1210, PRECIO: 1210 };
++    const filaCruda = { IMPORTE_NETO: 1100, PRECIO: 1100 };
++
++    rpc.and.callFake(async (name: string, args: { p_pasadas?: Array<Record<string, unknown>> }) => {
++      if (name === 'peajes_resolver_tarifas_actuales') {
++        return {
++          data: [
++            {
++              idx: 0,
++              tarifa_id: 't0',
++              current_tarifa_id: 'c0',
++              importe: 1000,
++              peaje_id: 'peaje-1',
++              sentido_aplicado: 'AMBAS',
++              requiere_normalizacion_iva: true,
++            },
++            {
++              idx: 1,
++              tarifa_id: 't1',
++              current_tarifa_id: 'c1',
++              importe: 1100,
++              peaje_id: 'peaje-1',
++              sentido_aplicado: 'AMBAS',
++              requiere_normalizacion_iva: false,
++            },
++          ],
++          error: null,
++        };
++      }
++      if (name === 'peajes_validar_tarifas_actuales') {
++        const flagged = args.p_pasadas?.find((r) => r['idx'] === 0);
++        const raw = args.p_pasadas?.find((r) => r['idx'] === 1);
++        expect(flagged?.['precio_directo']).toBe(1210);
++        expect(flagged?.['precio_normalizado']).toBe(normalizado);
++        expect(flagged?.['requiere_normalizacion_iva']).toBeTrue();
++        expect(raw?.['precio_directo']).toBe(1100);
++        expect(raw?.['precio_normalizado']).toBeNull();
++        return {
++          data: [
++            {
++              idx: 0,
++              codigo: 'AL_DIA',
++              tarifa_importe_id: 'c0',
++              importe: 1000,
++              precio_comparado: normalizado,
++              error_relativo: 0,
++            },
++            {
++              idx: 1,
++              codigo: 'AL_DIA',
++              tarifa_importe_id: 'c1',
++              importe: 1100,
++              precio_comparado: 1100,
++              error_relativo: 0,
++            },
++          ],
++          error: null,
++        };
++      }
++      throw new Error(`RPC inesperado: ${name}`);
++    });
++
++    await service.validarLote(
++      [
++        pasadaInput({ idx: 0, precio_directo: 1210, fila: filaIva }),
++        pasadaInput({ idx: 1, precio_directo: 1100, fila: filaCruda }),
++      ],
++      configuraciones
++    );
++
++    expect(adapter.obtenerPrecioComparable).toHaveBeenCalledTimes(1);
++    expect(adapter.obtenerPrecioComparable).toHaveBeenCalledWith({
++      precioDirecto: 1210,
++      requiereNormalizacionIva: true,
++      fila: filaIva,
++      configuraciones,
++    });
++  });
++
++  it('valida en lote solo las filas resueltas y conserva SIN_TARIFA del resolver', async () => {
++    rpc.and.callFake(async (name: string, args: { p_pasadas?: Array<Record<string, unknown>> }) => {
++      if (name === 'peajes_resolver_tarifas_actuales') {
++        return {
++          data: [
++            { idx: 0, codigo: 'SIN_TARIFA', tarifa_id: null, current_tarifa_id: null, importe: null, peaje_id: null, sentido_aplicado: 'AMBAS', requiere_normalizacion_iva: false },
++            {
++              idx: 1,
++              tarifa_id: 't1',
++              current_tarifa_id: 'c1',
++              importe: 1840,
++              peaje_id: 'peaje-1',
++              sentido_aplicado: 'IDA',
++              requiere_normalizacion_iva: false,
++            },
++          ],
++          error: null,
++        };
++      }
++      if (name === 'peajes_validar_tarifas_actuales') {
++        expect(args.p_pasadas?.length).toBe(1);
++        expect(args.p_pasadas?.[0]['idx']).toBe(1);
++        return {
++          data: [
++            {
++              idx: 1,
++              codigo: 'AL_DIA',
++              tarifa_importe_id: 'c1',
++              importe: 1840,
++              precio_comparado: 1840,
++              error_relativo: 0,
++            },
++          ],
++          error: null,
++        };
++      }
++      throw new Error(`RPC inesperado: ${name}`);
++    });
++
++    const resultado = await service.validarLote(
++      [pasadaInput({ idx: 0 }), pasadaInput({ idx: 1, sentido: 'IDA' })],
++      configuraciones
++    );
++
++    expect(rpc.calls.all().filter((c) => c.args[0] === 'peajes_validar_tarifas_actuales').length).toBe(1);
++    expect(resultado.filas[0].codigo).toBe('SIN_TARIFA');
++    expect(resultado.filas[1].codigo).toBe('AL_DIA');
++  });
++
++  it('asocia solo AL_DIA e HISTORICA tras confirmar, en lote y de forma reintentable', async () => {
++    rpc.and.callFake(async (name: string) => {
++      if (name === 'peajes_asociar_pasadas_tarifa_importe') {
++        return { data: null, error: null };
++      }
++      throw new Error(`RPC inesperado: ${name}`);
++    });
++
++    const asociaciones: AsociacionTarifaImporte[] = [
++      { pasada_id: 'pasada-1', tarifa_importe_id: 'imp-1', codigo: 'AL_DIA' },
++      { pasada_id: 'pasada-2', tarifa_importe_id: 'imp-2', codigo: 'HISTORICA' },
++      { pasada_id: 'pasada-3', tarifa_importe_id: 'imp-3', codigo: 'DESFASADO' },
++      { pasada_id: 'pasada-4', tarifa_importe_id: 'imp-4', codigo: 'SIN_TARIFA' },
++    ];
++
++    await service.asociarTrasConfirmacion(asociaciones);
++    await service.asociarTrasConfirmacion(asociaciones);
++
++    expect(rpc).toHaveBeenCalledTimes(2);
++    expect(rpc.calls.argsFor(0)[0]).toBe('peajes_asociar_pasadas_tarifa_importe');
++    expect(rpc.calls.argsFor(1)[0]).toBe('peajes_asociar_pasadas_tarifa_importe');
++    const payload = rpc.calls.argsFor(0)[1] as { p_asociaciones: AsociacionTarifaImporte[] };
++    expect(payload.p_asociaciones).toEqual([
++      { pasada_id: 'pasada-1', tarifa_importe_id: 'imp-1', codigo: 'AL_DIA' },
++      { pasada_id: 'pasada-2', tarifa_importe_id: 'imp-2', codigo: 'HISTORICA' },
++    ]);
++    expect(payload.p_asociaciones.some((a) => 'tarifa_normalizada_id' in a)).toBeFalse();
++    expect(rpc.calls.argsFor(1)[1]).toEqual(payload);
++  });
++
++  it('propaga el error del RPC de resoluci├│n sin llamar al validador', async () => {
++    rpc.and.callFake(async (name: string) => {
++      if (name === 'peajes_resolver_tarifas_actuales') {
++        return { data: null, error: { message: 'timeout', code: '57014' } };
++      }
++      throw new Error(`RPC inesperado: ${name}`);
++    });
++
++    await expectAsync(service.validarLote([pasadaInput({ idx: 0 })], configuraciones)).toBeRejected();
++    expect(rpc.calls.all().some((c) => c.args[0] === 'peajes_validar_tarifas_actuales')).toBeFalse();
++    expect(adapter.obtenerPrecioComparable).not.toHaveBeenCalled();
++  });
++});
+
+## Diff paso8-validacion.component.spec.ts vs HEAD
+
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.spec.ts b/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.spec.ts
+index f3c4c80..4ffd3c8 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.spec.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.spec.ts
+@@ -2,33 +2,79 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
+ import { of } from 'rxjs';
+ import { Paso8ValidacionComponent } from './paso8-validacion.component';
+ import {
+   ErrorValidacionPasada,
+   PEAJES_CARGA_SERVICE,
+   PEAJES_CATALOGO_SERVICE,
+ } from '../../models';
+ import { PeajesCargaMockService } from '../mocks/peajes-carga.mock';
+ import { PeajesCatalogoMockService } from '../mocks/peajes-catalogo.mock';
+ import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
++import {
++  CodigoResultadoTarifa,
++  ResultadoFilaValidacionTarifa,
++  ResultadoValidacionTarifa,
++  TarifaValidationService,
++} from '../../services/tarifa-validation.service';
++
++function filaTarifa(
++  overrides: Partial<ResultadoFilaValidacionTarifa> = {}
++): ResultadoFilaValidacionTarifa {
++  return {
++    idx: 0,
++    codigo: 'AL_DIA',
++    tarifa_id: 'tarifa-1',
++    current_tarifa_id: 'imp-1',
++    tarifa_importe_id: 'imp-1',
++    importe: 1840,
++    precio_comparado: 1840,
++    error_relativo: 0,
++    peaje_id: 'peaje-1',
++    sentido_solicitado: 'AMBAS',
++    sentido_aplicado: 'AMBAS',
++    requiere_normalizacion_iva: false,
++    categoria: 5,
++    status: 'NO_PICO',
++    estacion_id: 'aaaaaaaa-bbbb-4ccc-8ddd-444444444444',
++    ...overrides,
++  };
++}
++
++function resultadoTarifa(
++  filas: ResultadoFilaValidacionTarifa[] = [filaTarifa()]
++): ResultadoValidacionTarifa {
++  return { filas };
++}
++
++function mockTarifaValidation(resultado: ResultadoValidacionTarifa = resultadoTarifa([])): {
++  validarLote: jasmine.Spy;
++  asociarTrasConfirmacion: jasmine.Spy;
++} {
++  return {
++    validarLote: jasmine.createSpy('validarLote').and.resolveTo(resultado),
++    asociarTrasConfirmacion: jasmine.createSpy('asociarTrasConfirmacion').and.resolveTo(undefined),
++  };
++}
+ 
+ describe('Paso8ValidacionComponent', () => {
+   let fixture: ComponentFixture<Paso8ValidacionComponent>;
+   let component: Paso8ValidacionComponent;
+   let state: PeajesWizardStateService;
+ 
+   beforeEach(async () => {
+     await TestBed.configureTestingModule({
+       imports: [Paso8ValidacionComponent],
+       providers: [
+         PeajesWizardStateService,
+         { provide: PEAJES_CARGA_SERVICE, useClass: PeajesCargaMockService },
+         { provide: PEAJES_CATALOGO_SERVICE, useClass: PeajesCatalogoMockService },
++        { provide: TarifaValidationService, useValue: mockTarifaValidation() },
+       ],
+     }).compileComponents();
+ 
+     state = TestBed.inject(PeajesWizardStateService);
+     state.reiniciar();
+     state.setFactura({
+       factura: 'A-1',
+       cuenta: 'C-1',
+       empresa_id: 'E-1',
+       fecha_factura: '2026-06-30',
+@@ -64,21 +110,22 @@ describe('Paso8ValidacionComponent', () => {
+     expect(component.resultado!.errores.length).toBeGreaterThan(0);
+     const text = fixture.nativeElement.textContent as string;
+     expect(text).toContain('Fila');
+     expect(text).toContain('Columna');
+     expect(text).toContain('Valor');
+     expect(text).toContain('Motivo');
+     expect(text).toContain('PATENTE_ID');
+   });
+ 
+   it('explica el UUID inv├ílido sin ocultar los dem├ís controles', () => {
+-    expect(component.diagnosticos.length).toBe(5);
++    expect(component.diagnosticos.length).toBe(6);
++    expect(component.diagnosticos.find((d) => d.id === 'tarifas')).toBeTruthy();
+     const duplicados = component.diagnosticos.find((d) => d.id === 'duplicados');
+     expect(duplicados?.estado).toBe('error');
+     expect(duplicados?.detalle).toContain('no es un UUID');
+     expect(duplicados?.tecnico?.rpc).toBe('peajes_detectar_duplicados');
+     expect(duplicados?.tecnico?.postgresCode).toBe('22P02');
+     expect(duplicados?.tecnico?.httpStatus).toBe(400);
+   });
+ 
+   it('ofrece los detalles t├®cnicos expandibles y el enlace al paso de correcci├│n', () => {
+     const text = fixture.nativeElement.textContent as string;
+@@ -174,40 +221,42 @@ describe('Paso8ValidacionComponent last pase from patente', () => {
+   const newPaseId = 'aaaaaaaa-bbbb-4ccc-8ddd-333333333333';
+   const estacionId = 'aaaaaaaa-bbbb-4ccc-8ddd-444444444444';
+   const patenteSinPaseId = 'aaaaaaaa-bbbb-4ccc-8ddd-666666666666';
+ 
+   let fixture: ComponentFixture<Paso8ValidacionComponent>;
+   let component: Paso8ValidacionComponent;
+   let state: PeajesWizardStateService;
+   let crearPaseSpy: jasmine.Spy;
+   let detectarSpy: jasmine.Spy;
+   let duplicadosRespuesta: ErrorValidacionPasada[];
++  let tarifaValidation: ReturnType<typeof mockTarifaValidation>;
+ 
+   const pasadaBase = {
+     PASADA_ID: null as string | null,
+     FECHA_HORA: '2026-07-01 10:00:00',
+     PASE_ID: null as string | null,
+     PATENTE_ID: patenteId,
+     ESTACION_ID: estacionId,
+     PRECIO: 1840,
+     BONIFICACION: 0,
+     QUANTITY: 1,
+     IMPORTE_NETO: 1840,
+     CATEGORIA: null as string | null,
+   };
+ 
+   beforeEach(async () => {
+     crearPaseSpy = jasmine.createSpy('crearPase');
+     duplicadosRespuesta = [];
+     detectarSpy = jasmine.createSpy('detectarDuplicados').and.callFake(() =>
+       of(duplicadosRespuesta)
+     );
++    tarifaValidation = mockTarifaValidation();
+ 
+     await TestBed.configureTestingModule({
+       imports: [Paso8ValidacionComponent],
+       providers: [
+         PeajesWizardStateService,
+         {
+           provide: PEAJES_CARGA_SERVICE,
+           useValue: {
+             validarCarga: () =>
+               of({
+@@ -243,20 +292,21 @@ describe('Paso8ValidacionComponent last pase from patente', () => {
+                 {
+                   id: newPaseId,
+                   pase: 'TAG-NEW',
+                   patente_id: patenteId,
+                   created_at: '2026-08-01T00:00:00Z',
+                 },
+               ]),
+             crearPase: crearPaseSpy,
+           },
+         },
++        { provide: TarifaValidationService, useValue: tarifaValidation },
+       ],
+     }).compileComponents();
+ 
+     state = TestBed.inject(PeajesWizardStateService);
+     state.reiniciar();
+     state.setFactura({
+       factura: 'A-1',
+       cuenta: 'C-1',
+       empresa_id: 'E-1',
+       fecha_factura: '2026-06-30',
+@@ -348,10 +398,260 @@ describe('Paso8ValidacionComponent last pase from patente', () => {
+   });
+ 
+   it('emite completado cuando todas las validaciones est├ín ok', async () => {
+     const spy = spyOn(component.completado, 'emit');
+     await component.validar();
+     expect(component.puedeContinuar).toBeTrue();
+     expect(spy).toHaveBeenCalled();
+   });
+ });
+ 
++describe('Paso8ValidacionComponent shadow tariff diagnostics', () => {
++  const patenteId = 'aaaaaaaa-bbbb-4ccc-8ddd-111111111111';
++  const paseId = 'aaaaaaaa-bbbb-4ccc-8ddd-333333333333';
++  const estacionId = 'aaaaaaaa-bbbb-4ccc-8ddd-444444444444';
++
++  const pasadaBase = {
++    PASADA_ID: null as string | null,
++    FECHA_HORA: '2026-07-01 10:00:00',
++    PASE_ID: paseId,
++    PATENTE_ID: patenteId,
++    ESTACION_ID: estacionId,
++    PRECIO: 1840,
++    BONIFICACION: 0,
++    QUANTITY: 1,
++    IMPORTE_NETO: 1840,
++    CATEGORIA: '5',
++  };
++
++  const etiquetaPorCodigo: Record<CodigoResultadoTarifa, string> = {
++    AL_DIA: 'Al d├¡a',
++    HISTORICA: 'Hist├│rica',
++    DESFASADO: 'Desfasado',
++    SIN_TARIFA: 'Sin tarifa',
++    CATEGORIA_PENDIENTE: 'Categor├¡a pendiente',
++    ESTADO_AMBIGUO: 'Estado ambiguo',
++  };
++
++  let fixture: ComponentFixture<Paso8ValidacionComponent>;
++  let component: Paso8ValidacionComponent;
++  let state: PeajesWizardStateService;
++  let tarifaValidation: ReturnType<typeof mockTarifaValidation>;
++  let duplicadosRespuesta: ErrorValidacionPasada[];
++
++  async function setup(resultado: ResultadoValidacionTarifa): Promise<void> {
++    duplicadosRespuesta = [];
++    tarifaValidation = mockTarifaValidation(resultado);
++
++    await TestBed.configureTestingModule({
++      imports: [Paso8ValidacionComponent],
++      providers: [
++        PeajesWizardStateService,
++        {
++          provide: PEAJES_CARGA_SERVICE,
++          useValue: {
++            validarCarga: () =>
++              of({
++                validas: [pasadaBase],
++                errores: [],
++                diferenciaFactura: 0,
++                dentroTolerancia: true,
++              }),
++            detectarDuplicados: () => of(duplicadosRespuesta),
++          },
++        },
++        {
++          provide: PEAJES_CATALOGO_SERVICE,
++          useValue: {
++            listarPatentes: () =>
++              of([{ id: patenteId, patente: 'AD625QB', categoria: 'FLOTA CAMIONES', activa: true }]),
++            listarPases: () =>
++              of([
++                {
++                  id: paseId,
++                  pase: 'TAG-NEW',
++                  patente_id: patenteId,
++                  created_at: '2026-08-01T00:00:00Z',
++                },
++              ]),
++            listarEstaciones: () =>
++              of([{ id: estacionId, peaje_id: 'peaje-1', nombre: 'Hudson' }]),
++            crearPase: jasmine.createSpy('crearPase'),
++          },
++        },
++        { provide: TarifaValidationService, useValue: tarifaValidation },
++      ],
++    }).compileComponents();
++
++    state = TestBed.inject(PeajesWizardStateService);
++    state.reiniciar();
++    state.setFactura({
++      factura: 'A-1',
++      cuenta: 'C-1',
++      empresa_id: 'E-1',
++      fecha_factura: '2026-06-30',
++      bonificacion: 0,
++      importe_sin_iva: 1840,
++      percepciones: 0,
++      iva: 0,
++      importe_total: 1840,
++    });
++    state.setPasadasEstandarizadas([pasadaBase]);
++
++    fixture = TestBed.createComponent(Paso8ValidacionComponent);
++    component = fixture.componentInstance;
++  }
++
++  function diagnosticoTarifas() {
++    return component.diagnosticos.find((d) => d.id === 'tarifas');
++  }
++
++  it('muestra diagn├│stico ok para AL_DIA sin alterar factura ni puedeContinuar', async () => {
++    await setup(resultadoTarifa([filaTarifa({ codigo: 'AL_DIA' })]));
++    const spy = spyOn(component.completado, 'emit');
++    await component.validar();
++    fixture.detectChanges();
++
++    const tarifas = diagnosticoTarifas();
++    expect(tarifas).toBeTruthy();
++    expect(tarifas?.estado).toBe('ok');
++    expect(tarifas?.titulo).toContain('Tarifas');
++    expect(component.resultado!.dentroTolerancia).toBeTrue();
++    expect(component.resultado!.errores).toEqual([]);
++    expect(component.puedeContinuar).toBeTrue();
++    expect(spy).toHaveBeenCalled();
++    expect(tarifaValidation.asociarTrasConfirmacion).not.toHaveBeenCalled();
++    expect(fixture.nativeElement.textContent).toContain('Al d├¡a');
++  });
++
++  const advertencias: CodigoResultadoTarifa[] = [
++    'HISTORICA',
++    'DESFASADO',
++    'SIN_TARIFA',
++    'CATEGORIA_PENDIENTE',
++    'ESTADO_AMBIGUO',
++  ];
++
++  advertencias.forEach((codigo) => {
++    it(`trata ${codigo} como advertencia no bloqueante`, async () => {
++      await setup(
++        resultadoTarifa([
++          filaTarifa({
++            codigo,
++            importe: 1840,
++            precio_comparado: 2000,
++            error_relativo: 0.087,
++            tarifa_importe_id: codigo === 'HISTORICA' ? 'imp-hist' : null,
++          }),
++        ])
++      );
++      const erroresAntes = 0;
++      await component.validar();
++      fixture.detectChanges();
++
++      const tarifas = diagnosticoTarifas();
++      expect(tarifas?.estado).toBe('warning');
++      expect(component.resultado!.dentroTolerancia).toBeTrue();
++      expect(component.resultado!.errores.length).toBe(erroresAntes);
++      expect(component.puedeContinuar).toBeTrue();
++      expect(fixture.nativeElement.textContent).toContain('Advertencia');
++      expect(fixture.nativeElement.textContent).toContain(etiquetaPorCodigo[codigo]);
++    });
++  });
++
++  it('muestra la tabla espa├▒ola de tarifas y conserva detalles t├®cnicos', async () => {
++    await setup(
++      resultadoTarifa([
++        filaTarifa({
++          codigo: 'DESFASADO',
++          importe: 1840,
++          precio_comparado: 2000,
++          error_relativo: 0.087,
++          sentido_solicitado: 'IDA',
++          sentido_aplicado: 'AMBAS',
++          status: 'PICO',
++          categoria: 5,
++        }),
++      ])
++    );
++    await component.validar();
++    fixture.detectChanges();
++
++    const text = fixture.nativeElement.textContent as string;
++    expect(text).toContain('Fila');
++    expect(text).toContain('Estaci├│n');
++    expect(text).toContain('Categor├¡a');
++    expect(text).toContain('Sentido solicitado');
++    expect(text).toContain('Sentido aplicado');
++    expect(text).toContain('Estado');
++    expect(text).toContain('Importe auditado');
++    expect(text).toContain('Importe comparado');
++    expect(text).toContain('Error relativo');
++    expect(text).toContain('Resultado');
++    expect(text).toContain('Hudson');
++    expect(text).toContain('IDA');
++    expect(text).toContain('AMBAS');
++    expect(text).toContain('PICO');
++    expect(text).toContain('Detalles t├®cnicos');
++    expect(diagnosticoTarifas()?.tecnico?.rpc).toMatch(/peajes_(resolver|validar)_tarifas_actuales/);
++  });
++
++  it('convierte un fallo del servicio de tarifas en advertencia no bloqueante', async () => {
++    await setup(resultadoTarifa());
++    tarifaValidation.validarLote.and.rejectWith(
++      Object.assign(new Error('No se pudieron validar las tarifas'), {
++        rpc: 'peajes_resolver_tarifas_actuales',
++      })
++    );
++    await component.validar();
++    fixture.detectChanges();
++
++    const tarifas = diagnosticoTarifas();
++    expect(tarifas?.estado).toBe('warning');
++    expect(component.puedeContinuar).toBeTrue();
++    expect(component.resultado!.dentroTolerancia).toBeTrue();
++    expect(component.resultado!.errores).toEqual([]);
++    expect(fixture.nativeElement.textContent).toContain('Advertencia');
++    expect(fixture.nativeElement.textContent).toContain('Detalles t├®cnicos');
++    expect(tarifas?.tecnico?.rpc).toBe('peajes_resolver_tarifas_actuales');
++  });
++
++  it('no cambia el consentimiento de duplicados cuando hay advertencia de tarifa', async () => {
++    await setup(
++      resultadoTarifa([filaTarifa({ codigo: 'DESFASADO', tarifa_importe_id: null })])
++    );
++    duplicadosRespuesta = [
++      {
++        fila: 1,
++        columna: 'CLAVE_DUPLICADO',
++        valor: 'duplicate-key',
++        motivo: 'Ya existe una pasada',
++        pasada: paseId,
++        patente: patenteId,
++        pase_nombre: 'TAG-NEW',
++        patente_nombre: 'AD625QB',
++        fecha_hora: pasadaBase.FECHA_HORA,
++        fecha_hora_repetida: '2026-07-01T10:00:00.000Z',
++        valor_repetido: 1700,
++        file_upload_name: 'carga-original.csv',
++        duplicado: true,
++      },
++    ];
++
++    await component.validar();
++    fixture.detectChanges();
++
++    expect(component.puedeContinuar).toBeFalse();
++    expect(diagnosticoTarifas()?.estado).toBe('warning');
++    expect(component.resultado!.errores.some((e) => e.columna === 'CLAVE_DUPLICADO')).toBeTrue();
++
++    component.subirIgualmente();
++    fixture.detectChanges();
++
++    expect(state.snapshot().permitirDuplicados).toBeTrue();
++    expect(component.puedeContinuar).toBeTrue();
++    expect(component.resultado!.errores.some((e) => e.columna === 'CLAVE_DUPLICADO')).toBeFalse();
++    expect(diagnosticoTarifas()?.estado).toBe('warning');
++    expect(fixture.nativeElement.textContent).toContain('Subir igualmente');
++  });
++});
++

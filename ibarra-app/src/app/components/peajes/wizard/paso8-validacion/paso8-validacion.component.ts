@@ -14,6 +14,13 @@ import {
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 import { paseIdVacio, ultimoPaseIdPorPatente } from '../services/ultimo-pase-patente.helper';
 import { resolvePatenteReferences } from '../services/patente-reference.helper';
+import {
+  CodigoResultadoTarifa,
+  PasadaValidacionTarifaInput,
+  ResultadoFilaValidacionTarifa,
+  ResultadoValidacionTarifa,
+  TarifaValidationService,
+} from '../../services/tarifa-validation.service';
 
 @Component({
   selector: 'app-paso8-validacion',
@@ -28,10 +35,12 @@ export class Paso8ValidacionComponent implements OnInit {
   @Output() irAPaso = new EventEmitter<5 | 6 | 7>();
 
   readonly state = inject(PeajesWizardStateService);
+  private readonly tarifaValidation = inject(TarifaValidationService);
 
   resultado: ResultadoValidacionCarga | null = null;
   duplicados: ErrorValidacionPasada[] = [];
   duplicadosComparacion: DuplicateComparisonRow[] = [];
+  filasTarifaVista: FilaTarifaVista[] = [];
   readonly duplicadosColumns: DataTableColumn[] = [
     { key: 'pasada', label: 'Pase', width: '14%' },
     { key: 'patente', label: 'Patente', width: '12%' },
@@ -63,6 +72,7 @@ export class Paso8ValidacionComponent implements OnInit {
     this.cargando = true;
     this.error = null;
     this.duplicadosComparacion = [];
+    this.filasTarifaVista = [];
     try {
       const s = this.state.snapshot();
       let pasadas =
@@ -140,12 +150,15 @@ export class Paso8ValidacionComponent implements OnInit {
         }
       }
 
+      const tarifas = await this.ejecutarValidacionTarifas(pasadasValidacion);
+
       this.diagnosticos = [
         ...importesPorDoc,
         duplicados.diagnostico,
         campos,
         estaciones,
         patentes,
+        tarifas,
       ];
       this.duplicados = duplicados.errores;
       const erroresDup = this.state.permitirDuplicados
@@ -485,9 +498,154 @@ export class Paso8ValidacionComponent implements OnInit {
   private sumarNetos(pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>): number { return pasadas.reduce((total, p) => total + (Number(p.IMPORTE_NETO) || 0), 0); }
   moneda(valor: number | null | undefined): string { return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor ?? 0); }
   estadoTexto(estado: EstadoDiagnostico): string { return estado === 'ok' ? 'Correcto' : estado === 'warning' ? 'Advertencia' : 'Requiere revisión'; }
+  etiquetaTarifa(codigo: CodigoResultadoTarifa | string | null | undefined): string {
+    return ETIQUETA_TARIFA[codigo as CodigoResultadoTarifa] ?? String(codigo ?? '—');
+  }
   private deduplicarErrores(errores: ErrorValidacionPasada[]): ErrorValidacionPasada[] { return errores.filter((error, index, all) => all.findIndex((otro) => otro.fila === error.fila && otro.columna === error.columna && otro.motivo === error.motivo) === index); }
   private mensajeError(error: unknown): string { return this.errorTecnico(error).message || 'Error al validar'; }
   private errorTecnico(error: unknown): { message: string; code?: string; status?: number; response?: unknown; stack?: string } { const e = error as { message?: string; code?: string; status?: number; details?: unknown; hint?: unknown; stack?: string }; return { message: e?.message ?? 'Error desconocido', code: e?.code, status: e?.status, response: { details: e?.details, hint: e?.hint }, stack: e?.stack }; }
+
+  private async ejecutarValidacionTarifas(
+    pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>
+  ): Promise<DiagnosticoValidacion> {
+    const mapeadas = this.mapearPasadasTarifa(pasadas);
+    const configuraciones = this.state.toConfiguracionesPlantilla();
+    try {
+      const resultado = await this.tarifaValidation.validarLote(mapeadas, configuraciones);
+      const nombres = await this.mapaNombresEstacion();
+      this.filasTarifaVista = this.presentarFilasTarifa(resultado.filas, nombres);
+      return this.diagnosticoTarifas(resultado, mapeadas.length);
+    } catch (e) {
+      this.filasTarifaVista = [];
+      return this.diagnosticoTarifasError(e, mapeadas.length);
+    }
+  }
+
+  private mapearPasadasTarifa(
+    pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>
+  ): PasadaValidacionTarifaInput[] {
+    return pasadas.map((p, idx) => {
+      const extra = p as Record<string, unknown>;
+      const sentidoRaw = String(extra['SENTIDO'] ?? '').trim().toUpperCase();
+      const sentido =
+        sentidoRaw === 'IDA' || sentidoRaw === 'VUELTA' || sentidoRaw === 'AMBAS'
+          ? sentidoRaw
+          : 'AMBAS';
+      const neto = Number(p.IMPORTE_NETO);
+      const precio = Number(p.PRECIO);
+      const precio_directo = Number.isFinite(neto) ? neto : Number.isFinite(precio) ? precio : 0;
+      const catRaw = p.CATEGORIA;
+      let categoria: number | string | null = null;
+      if (catRaw != null && String(catRaw).trim() !== '') {
+        const n = Number(catRaw);
+        categoria = Number.isFinite(n) ? n : String(catRaw);
+      }
+      const statusRaw = extra['STATUS'] ?? extra['ESTADO'] ?? extra['tarifa_status'];
+      const status =
+        statusRaw == null || String(statusRaw).trim() === '' ? undefined : String(statusRaw);
+      return {
+        idx,
+        estacion_id: String(p.ESTACION_ID ?? ''),
+        categoria,
+        status,
+        sentido,
+        fecha_hora: p.FECHA_HORA != null ? String(p.FECHA_HORA) : null,
+        precio_directo,
+        pasada_id: p.PASADA_ID ?? null,
+        fila: extra,
+      };
+    });
+  }
+
+  private diagnosticoTarifas(
+    resultado: ResultadoValidacionTarifa,
+    registros: number
+  ): DiagnosticoValidacion {
+    const filas = resultado.filas;
+    const advertencias = filas.filter((f) => f.codigo !== 'AL_DIA');
+    const ok = filas.length === 0 || advertencias.length === 0;
+    const etiquetas = [...new Set(advertencias.map((f) => this.etiquetaTarifa(f.codigo)))];
+    const detalle = filas.length === 0
+      ? 'No hay pasadas para contrastar con el tarifario vigente.'
+      : ok
+        ? 'Todas las pasadas coinciden con la tarifa vigente (Al día).'
+        : `Hay ${advertencias.length} pasada(s) con tarifa ${etiquetas.join(', ')}.`;
+    return {
+      id: 'tarifas',
+      titulo: 'Tarifas',
+      estado: ok ? 'ok' : 'warning',
+      paso: 5,
+      detalle,
+      accion: ok
+        ? 'No requiere acción.'
+        : 'Podés continuar con la carga; el contraste tarifario queda como advertencia.',
+      tecnico: {
+        rpc: 'peajes_resolver_tarifas_actuales',
+        request: { registros },
+        response: resultado,
+      },
+    };
+  }
+
+  private diagnosticoTarifasError(error: unknown, registros: number): DiagnosticoValidacion {
+    const raw = this.errorTecnico(error);
+    const rpc =
+      typeof (error as { rpc?: unknown })?.rpc === 'string'
+        ? (error as { rpc: string }).rpc
+        : 'peajes_resolver_tarifas_actuales';
+    return {
+      id: 'tarifas',
+      titulo: 'Tarifas',
+      estado: 'warning',
+      paso: 5,
+      detalle: `No se pudieron validar las tarifas. ${raw.message}`,
+      accion: 'Podés continuar con la carga; el contraste tarifario quedó como advertencia.',
+      tecnico: {
+        rpc,
+        request: { registros },
+        response: raw.response,
+        postgresCode: raw.code,
+        httpStatus: raw.status,
+        stack: raw.stack,
+      },
+    };
+  }
+
+  private presentarFilasTarifa(
+    filas: ResultadoFilaValidacionTarifa[],
+    nombres: Map<string, string>
+  ): FilaTarifaVista[] {
+    return filas.map((f) => ({
+      fila: f.idx + 1,
+      estacion: nombres.get(f.estacion_id) ?? f.estacion_id,
+      categoria: f.categoria == null || f.categoria === '' ? '—' : String(f.categoria),
+      sentidoSolicitado: String(f.sentido_solicitado ?? '—'),
+      sentidoAplicado: String(f.sentido_aplicado ?? '—'),
+      estado: f.status?.trim() ? f.status : '—',
+      importeAuditado: this.moneda(f.importe),
+      importeComparado: this.moneda(f.precio_comparado),
+      errorRelativo: this.formatoErrorRelativo(f.error_relativo),
+      resultado: this.etiquetaTarifa(f.codigo),
+    }));
+  }
+
+  private formatoErrorRelativo(valor: number | null | undefined): string {
+    if (valor == null || !Number.isFinite(valor)) return '—';
+    return new Intl.NumberFormat('es-AR', { style: 'percent', maximumFractionDigits: 2 }).format(valor);
+  }
+
+  private async mapaNombresEstacion(): Promise<Map<string, string>> {
+    const listar = this.catalogo.listarEstaciones;
+    if (typeof listar !== 'function') {
+      return new Map();
+    }
+    try {
+      const estaciones = await firstValueFrom(listar.call(this.catalogo));
+      return new Map((estaciones ?? []).map((e) => [e.id, e.nombre]));
+    } catch {
+      return new Map();
+    }
+  }
 }
 
 type EstadoDiagnostico = 'ok' | 'warning' | 'error';
@@ -505,3 +663,23 @@ interface DuplicateComparisonRow extends Record<string, unknown> {
   file_upload_name: unknown;
   duplicado: unknown;
 }
+interface FilaTarifaVista {
+  fila: number;
+  estacion: string;
+  categoria: string;
+  sentidoSolicitado: string;
+  sentidoAplicado: string;
+  estado: string;
+  importeAuditado: string;
+  importeComparado: string;
+  errorRelativo: string;
+  resultado: string;
+}
+const ETIQUETA_TARIFA: Record<CodigoResultadoTarifa, string> = {
+  AL_DIA: 'Al día',
+  HISTORICA: 'Histórica',
+  DESFASADO: 'Desfasado',
+  SIN_TARIFA: 'Sin tarifa',
+  CATEGORIA_PENDIENTE: 'Categoría pendiente',
+  ESTADO_AMBIGUO: 'Estado ambiguo',
+};

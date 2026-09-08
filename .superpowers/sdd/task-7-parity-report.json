@@ -1,0 +1,19 @@
+{
+  "counts": {
+    "legacy_links": 8406,
+    "v2_links": 7533,
+    "unmapped": 873,
+    "current_pointer_mismatches": 0,
+    "price_comparison_mismatches": 0,
+    "null_current_pointers": 0,
+    "lineage_1n_mismatches": 0,
+    "lineage_id_mismatches": 0,
+    "pointer_parent_mismatches": 0,
+    "tarifas_without_staged_precio_last": 50,
+    "sentido_id_collisions_remapped": 27,
+    "tn_unique_key_lineage_skipped": 8,
+    "precio_last_current_mismatches": 0
+  },
+  "unexplained": [],
+  "remapped": 27
+}

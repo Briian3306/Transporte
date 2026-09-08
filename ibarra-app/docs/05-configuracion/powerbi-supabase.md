@@ -358,7 +358,7 @@ let
         "Categoria", "Categoria_Calculated", "Importe", "Importe_Base", "Cases",
         "Multiplicador", "Desvio", "Hora_Min", "Hora_Max", "Hora_Media",
         "Patron", "Diagnostico", "Status", "Muestra_Confiable", "Confirmado_Manual",
-        "created_at"
+        "created_at", "fecha_aparicion"
     },
     Origen = Json.Document(
         Web.Contents(
@@ -395,7 +395,8 @@ let
             {"Status", type text},
             {"Muestra_Confiable", type logical},
             {"Confirmado_Manual", type logical},
-            {"created_at", type datetimezone}
+            {"created_at", type datetimezone},
+            {"fecha_aparicion", type datetimezone}
         },
         "en-US"
     )
@@ -461,4 +462,4 @@ Solo si preferís el conector nativo (usuario/password DB del Dashboard → Conn
 
 ---
 
-> Última actualización: 2026-08-18 · Conexión canónica: **API URL + anon key** (sin Postgres) · M con tipos explícitos en todas las `pwbi_*`
+> Última actualización: 2026-09-02 · Conexión canónica: **API URL + anon key** (sin Postgres) · M con tipos explícitos en todas las `pwbi_*`

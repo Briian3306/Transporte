@@ -48,10 +48,13 @@ See [../backend-supabase-write/entornos.md](../backend-supabase-write/entornos.m
 ## CLI setup (from `ibarra-app/`)
 
 ```powershell
-npx supabase start
+npx supabase start --ignore-health-check
 npx supabase db reset --local --no-seed
 npx supabase test db
+pnpm seed:local
 ```
+
+`--no-seed` is schema-only (pgTAP). After tests, `pnpm seed:local` restores Auth/pasadas and runs `migrate-tarifario-v2.mjs --load-local`. Skip seed only when the session is pgTAP-only and the app will not be used.
 
 If checking DESARROLLO link:
 

@@ -2,7 +2,7 @@
 
 ## Summary
 
-Vistas de solo lectura para consumir el dominio Peajes desde Power BI: dimensiones `pwbi_estacion`, `pwbi_patentes`, `pwbi_documentos`, `pwbi_tarifas`, y hecho `pwbi_pasadas` (aliases `*_ID` / `*_Nombre`). Lectura vía Data API con rol `anon`.
+Vistas de solo lectura para consumir el dominio Peajes desde Power BI: dimensiones `pwbi_estacion`, `pwbi_patentes`, `pwbi_documentos`, `pwbi_tarifas`, **`pwbi_tarifas_v2` (paralela, F14-16)**, y hecho `pwbi_pasadas` (aliases `*_ID` / `*_Nombre`). Lectura vía Data API con rol `anon`. `pwbi_tarifas` **no** fue reemplazada.
 
 ## Index
 
@@ -25,7 +25,8 @@ Exponer un esquema estrella estable para relaciones en Power BI sin alterar las 
 - `pwbi_patentes`: una fila por patente (`Patente_ID`, `Patente`, `Patente_Categoria`, `Patente_Tipo_Trabajo`, `Patente_Activa`, `created_at`).
 - `pwbi_documentos`: una fila por documento FC|NC (importes de cabecera + empresa).
 - `pwbi_pasadas`: hecho denormalizado (pasada + estación + peaje + empresa + patente + pase + documento) con FKs para relacionar dimensiones. Incluye `Patente_Categoria`, `Patente_Tipo_Trabajo` y `Patente_Activa`, además de `Tarifa_Status` (PICO/NO_PICO) y `Estacion_Geocodificacion_Status` (`OK`|`REVIEW`, calidad de coordenadas; no es tarifa). `Categoria_Calculated` / `Categoria_Calculated_Boolean`: si `Categoria` es NULL se copia `tarifas_normalizadas.categoria_calculated` (Patrón A) y el boolean es TRUE; si hay categoría de proveedor, calculated queda NULL y el boolean es FALSE.
-- `pwbi_tarifas`: una fila por nivel de `tarifas_normalizadas`; `Status` es PICO/NO_PICO (sin `Tipo_Meta`); expone `Hora_Min` / `Hora_Max` / `Hora_Media`.
+- `pwbi_tarifas`: una fila por nivel de `tarifas_normalizadas`; `Status` es PICO/NO_PICO (sin `Tipo_Meta`); expone `Hora_Min` / `Hora_Max` / `Hora_Media` y `fecha_aparicion` (primera `pasadas.fecha_hora` del nivel). **Sigue vigente**; F14-16 no la reescribe.
+- `pwbi_tarifas_v2`: una fila por configuración `tarifas` + importe current vía puntero. Más delgada que `pwbi_tarifas`. LEFT JOIN puede dejar `Importe` NULL. No es un clon drop-in.
 - Vistas con `security_invoker = false` y `GRANT SELECT` a `anon`, `authenticated`, `service_role`.
 - Columnas PascalCase entrecomilladas en SQL para conservar el nombre exacto en el cliente.
 
@@ -37,6 +38,7 @@ Exponer un esquema estrella estable para relaciones en Power BI sin alterar las 
 | `pwbi_patentes` | `Patente_ID` ← `pwbi_pasadas.Patente_ID` |
 | `pwbi_documentos` | `Documento_ID` ← `pwbi_pasadas.Documento_ID` |
 | `pwbi_tarifas` | `Tarifa_Normalizada_ID` ← `pwbi_pasadas.Tarifa_Normalizada_ID` |
+| `pwbi_tarifas_v2` | Dimensión paralela por `Tarifa_ID` / `Current_Tarifa_ID`. `pwbi_pasadas` **no** expone aún `Tarifa_Importe_ID`. |
 | `pwbi_pasadas` | Hecho; también expone `Pase_ID`, `Peaje_ID`, `Empresa_ID` |
 
 ## Tables
@@ -47,6 +49,7 @@ Exponer un esquema estrella estable para relaciones en Power BI sin alterar las 
 | `pwbi_patentes` | dimensión | `patentes` |
 | `pwbi_documentos` | dimensión | `documentos` LEFT JOIN `empresas` |
 | `pwbi_tarifas` | dimensión | `tarifas_normalizadas` JOIN `peajes` + `estaciones` |
+| `pwbi_tarifas_v2` | dimensión paralela | `tarifas` LEFT JOIN `tarifa_importe` (puntero current) |
 | `pwbi_pasadas` | hecho | `pasadas` + catálogos + `documentos` (mismo patrón que `pasadas_gestion`) |
 
 ### Columnas `pwbi_estacion`
@@ -115,6 +118,24 @@ Exponer un esquema estrella estable para relaciones en Power BI sin alterar las 
 | `Muestra_Confiable` | `tarifas_normalizadas.muestra_confiable` |
 | `Confirmado_Manual` | `tarifas_normalizadas.confirmado_manual` |
 | `created_at` | `tarifas_normalizadas.created_at` |
+| `fecha_aparicion` | `tarifas_normalizadas.fecha_aparicion` (`timestamptz`; primera `pasadas.fecha_hora` del nivel; NULL si aún no hay match). Snake_case como `created_at`. |
+
+### Columnas `pwbi_tarifas_v2`
+
+Vista paralela (migración `20260907103000`). JOIN: `tarifas` LEFT JOIN `tarifa_importe` ON `ti.id = t.current_tarifa_id AND ti.tarifa_id = t.id`. No usa `MAX(fecha_aparicion)`. PascalCase entrecomillado.
+
+| Columna | Origen |
+|---------|--------|
+| `Tarifa_ID` | `tarifas.id` |
+| `Peaje_ID` | `tarifas.peaje_id` |
+| `Estacion_ID` | `tarifas.estacion_id` |
+| `Categoria` | `tarifas.categoria` (**smallint** calculada, no texto crudo) |
+| `Sentido` | `tarifas.sentido` |
+| `Status` | `tarifas.status` (`PICO` / `NO_PICO`) |
+| `Importe` | `tarifa_importe.importe` del puntero current. **NULL** si el puntero falta o no pertenece al padre |
+| `Current_Tarifa_ID` | `tarifas.current_tarifa_id` |
+
+No expone `Peaje_Nombre`, `Estacion_Nombre`, `hora_*`, `fecha_aparicion`, diagnóstico ni `Tarifa_Normalizada_ID`. No sustituye `pwbi_tarifas`.
 
 ### Columnas clave `pwbi_pasadas`
 
@@ -132,18 +153,19 @@ Medidas / atributos: `fecha_hora`, `precio`, `bonificacion`, `quantity`, `import
 
 | Tipo | Archivo / comando | Escenario |
 |------|-------------------|-----------|
-| `supabase_db_test` | `supabase/tests/peajes_pwbi_views_test.sql` | Existencia, columnas, GRANT anon |
-| CLI | `npx supabase db reset --local --no-seed` + `npx supabase test db` | Rebuild + suite |
+| `supabase_db_test` | `supabase/tests/peajes_pwbi_views_test.sql` | Existencia, columnas, GRANT anon; tests 42–45 `pwbi_tarifas_v2` |
+| CLI | `npx supabase db reset --local --no-seed` + `npx supabase test db` | Rebuild + suite (2026-09-08: Files=14 Tests=412) |
 
-**Estado:** DESARROLLO con `pwbi_tarifas` + `Estacion_Geocodificacion_Status` + `Patente_Categoria` / `Patente_Tipo_Trabajo` / `Patente_Activa` + `Categoria_Calculated` / `Categoria_Calculated_Boolean` en `pwbi_pasadas` (migración `20260818171958`).
+**Estado:** DESARROLLO con `pwbi_tarifas.fecha_aparicion` (snake_case, migración `20260902185000` / MCP). `Estacion_Geocodificacion_Status` + `Patente_Categoria` / `Patente_Tipo_Trabajo` / `Patente_Activa` + `Categoria_Calculated` / `Categoria_Calculated_Boolean` en `pwbi_pasadas` (migración `20260818171958`). `pwbi_tarifas_v2` verificado en CLI local (2026-09-08, Files=14 Tests=412); **no** aplicado a DESARROLLO en F14-16.
 
 ## Notes
 
-- Migraciones: `20260810194113_peajes_pwbi_views.sql`, `20260811114646_peajes_pwbi_anon_api_access.sql`, `20260811121811_peajes_pwbi_documentos.sql`, `20260812140648_peajes_tarifas_vistas.sql`, `20260818131012_peajes_pwbi_tarifas.sql`, `20260818144011_peajes_pwbi_pasadas_categoria_calculated.sql`, `20260818171958_peajes_patentes_categoria_tipo_trabajo_estado.sql`.
+- Migraciones: `20260810194113_peajes_pwbi_views.sql`, `20260811114646_peajes_pwbi_anon_api_access.sql`, `20260811121811_peajes_pwbi_documentos.sql`, `20260812140648_peajes_tarifas_vistas.sql`, `20260818131012_peajes_pwbi_tarifas.sql`, `20260818144011_peajes_pwbi_pasadas_categoria_calculated.sql`, `20260818171958_peajes_patentes_categoria_tipo_trabajo_estado.sql`, `20260902163000_peajes_tarifas_fecha_aparicion.sql`, `20260902185000_peajes_pwbi_tarifas_fecha_aparicion.sql`, `20260907103000_peajes_tarifas_v2_compat_cutover.sql` (`pwbi_tarifas_v2` paralela; no DROP de `pwbi_tarifas`).
 - No reemplaza `pasadas_gestion` ni los RPC de la UI.
-- Guía de conexión Power BI (**API URL + anon key** + tipos en Power Query): [docs/05-configuracion/powerbi-supabase.md](../../05-configuracion/powerbi-supabase.md).
+- Detalle v2: [tarifas-tarifa-importe.md](./tarifas-tarifa-importe.md).
+- Guía de conexión Power BI (**API URL + anon key** + tipos en Power Query): [docs/05-configuracion/powerbi-supabase.md](../../05-configuracion/powerbi-supabase.md). La guía de tipos M cubre `pwbi_tarifas` legado; `pwbi_tarifas_v2` aún no está en ese workbook.
 - Lectura Data API: `security_invoker=false` + `GRANT SELECT` a `anon`.
 
 ---
 
-> Última actualización: agosto 2026
+> Última actualización: 2026-09-08

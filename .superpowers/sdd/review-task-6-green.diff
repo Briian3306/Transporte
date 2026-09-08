@@ -1,0 +1,376 @@
+﻿# Review package: Task 6 GREEN RPCs (uncommitted)
+
+## Commits
+(none)
+
+## Files changed
+ ibarra-app/supabase/migrations/20260907102000_peajes_tarifas_v2_shadow_matching.sql (created)
+
+## Diff
+diff --git a/ibarra-app/supabase/migrations/20260907102000_peajes_tarifas_v2_shadow_matching.sql b/ibarra-app/supabase/migrations/20260907102000_peajes_tarifas_v2_shadow_matching.sql
+new file mode 100644
+index 0000000..372685c
+--- /dev/null
++++ b/ibarra-app/supabase/migrations/20260907102000_peajes_tarifas_v2_shadow_matching.sql
+@@ -0,0 +1,361 @@
++-- F14-16 Task 6: batch shadow resolver, 1% validator, and post-confirmation
++-- association. Additive. Does not alter peajes_normalizar_tarifas,
++-- peajes_recalcular_tarifas, peajes_confirmar_status_tarifa, or
++-- tarifas_normalizadas. SQL never applies IVA arithmetic.
++
++-- -----------------------------------------------------------------------------
++-- 1) peajes_resolver_tarifas_actuales
++-- Batch. Preserves caller array order and idx. peaje_id via estaciones.
++-- Direction: IDA/VUELTA exact first, then AMBAS. AMBAS matches only AMBAS.
++-- Status: PICO/NO_PICO or uniquely resolvable; never inferred from hora_*.
++-- -----------------------------------------------------------------------------
++CREATE OR REPLACE FUNCTION public.peajes_resolver_tarifas_actuales(
++  p_pasadas jsonb
++)
++RETURNS jsonb
++LANGUAGE plpgsql
++STABLE
++SECURITY INVOKER
++SET search_path = public
++AS $$
++DECLARE
++  v_result jsonb;
++BEGIN
++  IF p_pasadas IS NULL OR jsonb_typeof(p_pasadas) <> 'array' THEN
++    RAISE EXCEPTION 'p_pasadas debe ser un arreglo JSON';
++  END IF;
++
++  IF jsonb_array_length(p_pasadas) = 0 THEN
++    RETURN '[]'::jsonb;
++  END IF;
++
++  WITH input AS (
++    SELECT
++      t.ord,
++      COALESCE((t.elem->>'idx')::integer, (t.ord - 1)::integer) AS idx,
++      NULLIF(btrim(t.elem->>'estacion_id'), '')::uuid AS estacion_id,
++      CASE
++        WHEN t.elem->'categoria' IS NULL
++          OR jsonb_typeof(t.elem->'categoria') = 'null' THEN NULL
++        WHEN jsonb_typeof(t.elem->'categoria') = 'number'
++          AND (t.elem->>'categoria') ~ '^[0-9]+(\.0+)?$'
++          THEN trunc((t.elem->>'categoria')::numeric)::smallint
++        WHEN jsonb_typeof(t.elem->'categoria') = 'string'
++          AND btrim(t.elem->>'categoria') ~ '^[0-9]+$'
++          THEN btrim(t.elem->>'categoria')::smallint
++        ELSE NULL
++      END AS categoria,
++      NULLIF(upper(btrim(t.elem->>'status')), '') AS status_in,
++      COALESCE(NULLIF(upper(btrim(t.elem->>'sentido')), ''), 'AMBAS') AS sentido
++    FROM jsonb_array_elements(p_pasadas) WITH ORDINALITY AS t(elem, ord)
++  ),
++  with_peaje AS (
++    SELECT
++      i.*,
++      e.peaje_id,
++      CASE
++        WHEN i.categoria IS NULL THEN 'CATEGORIA_PENDIENTE'
++        WHEN e.peaje_id IS NULL THEN 'SIN_TARIFA'
++        ELSE NULL
++      END AS early_codigo
++    FROM input i
++    LEFT JOIN public.estaciones e ON e.id = i.estacion_id
++  ),
++  dir_candidates AS (
++    SELECT
++      p.ord,
++      t.id AS tarifa_id,
++      t.status,
++      t.sentido,
++      t.current_tarifa_id,
++      t.requiere_normalizacion_iva,
++      CASE
++        WHEN t.sentido = p.sentido THEN 0
++        WHEN t.sentido = 'AMBAS' THEN 1
++        ELSE 2
++      END AS dir_rank
++    FROM with_peaje p
++    INNER JOIN public.tarifas t
++      ON t.peaje_id = p.peaje_id
++     AND t.estacion_id = p.estacion_id
++     AND t.categoria = p.categoria
++     AND (
++       (p.sentido = 'AMBAS' AND t.sentido = 'AMBAS')
++       OR (p.sentido IN ('IDA', 'VUELTA') AND t.sentido IN (p.sentido, 'AMBAS'))
++     )
++    WHERE p.early_codigo IS NULL
++  ),
++  status_counts AS (
++    SELECT
++      ord,
++      count(DISTINCT status)::integer AS n_status,
++      min(status) AS only_status
++    FROM dir_candidates
++    GROUP BY ord
++  ),
++  status_resolved AS (
++    SELECT
++      p.ord,
++      p.idx,
++      p.peaje_id,
++      CASE
++        WHEN p.status_in IN ('PICO', 'NO_PICO') THEN p.status_in
++        ELSE sc.only_status
++      END AS status_res,
++      CASE
++        WHEN p.early_codigo IS NOT NULL THEN p.early_codigo
++        WHEN p.status_in IN ('PICO', 'NO_PICO') THEN NULL
++        WHEN COALESCE(sc.n_status, 0) > 1 THEN 'ESTADO_AMBIGUO'
++        ELSE NULL
++      END AS codigo_mid
++    FROM with_peaje p
++    LEFT JOIN status_counts sc ON sc.ord = p.ord
++  ),
++  picked AS (
++    SELECT DISTINCT ON (sr.ord)
++      sr.ord,
++      sr.idx,
++      sr.peaje_id,
++      sr.codigo_mid,
++      dc.tarifa_id,
++      dc.sentido AS sentido_aplicado,
++      dc.current_tarifa_id,
++      dc.requiere_normalizacion_iva
++    FROM status_resolved sr
++    LEFT JOIN dir_candidates dc
++      ON dc.ord = sr.ord
++     AND sr.codigo_mid IS NULL
++     AND dc.status = sr.status_res
++    ORDER BY sr.ord, dc.dir_rank NULLS LAST, dc.tarifa_id
++  ),
++  with_importe AS (
++    SELECT
++      p.ord,
++      p.idx,
++      p.peaje_id,
++      p.codigo_mid,
++      p.tarifa_id,
++      p.sentido_aplicado,
++      p.current_tarifa_id,
++      p.requiere_normalizacion_iva,
++      ti.importe
++    FROM picked p
++    LEFT JOIN public.tarifa_importe ti ON ti.id = p.current_tarifa_id
++  )
++  SELECT COALESCE(
++    jsonb_agg(
++      CASE
++        WHEN w.codigo_mid IS NOT NULL THEN
++          jsonb_build_object(
++            'idx', w.idx,
++            'codigo', w.codigo_mid
++          )
++        WHEN w.tarifa_id IS NULL THEN
++          jsonb_build_object(
++            'idx', w.idx,
++            'codigo', 'SIN_TARIFA'
++          )
++        ELSE
++          jsonb_build_object(
++            'idx', w.idx,
++            'tarifa_id', w.tarifa_id,
++            'current_tarifa_id', w.current_tarifa_id,
++            'importe', w.importe,
++            'peaje_id', w.peaje_id,
++            'sentido_aplicado', w.sentido_aplicado,
++            'requiere_normalizacion_iva', w.requiere_normalizacion_iva
++          )
++      END
++      ORDER BY w.ord
++    ),
++    '[]'::jsonb
++  )
++  INTO v_result
++  FROM with_importe w;
++
++  RETURN v_result;
++END;
++$$;
++
++COMMENT ON FUNCTION public.peajes_resolver_tarifas_actuales(jsonb) IS
++  'F14-16 ┬À Resuelve en lote la configuraci├│n v2 vigente (peaje v├¡a estaci├│n, sentido, status). No muta historial ni aplica IVA.';
++
++REVOKE ALL ON FUNCTION public.peajes_resolver_tarifas_actuales(jsonb) FROM PUBLIC;
++GRANT EXECUTE ON FUNCTION public.peajes_resolver_tarifas_actuales(jsonb)
++  TO authenticated, service_role;
++
++-- -----------------------------------------------------------------------------
++-- 2) peajes_validar_tarifas_actuales
++-- Chooses precio_normalizado only when requiere_normalizacion_iva is true.
++-- Inclusive 1%: abs(compared - importe) / importe <= 0.01 ÔåÆ AL_DIA.
++-- Non-current history within tolerance ÔåÆ HISTORICA. Else DESFASADO.
++-- -----------------------------------------------------------------------------
++CREATE OR REPLACE FUNCTION public.peajes_validar_tarifas_actuales(
++  p_pasadas jsonb
++)
++RETURNS jsonb
++LANGUAGE plpgsql
++STABLE
++SECURITY INVOKER
++SET search_path = public
++AS $$
++DECLARE
++  v_result jsonb;
++BEGIN
++  IF p_pasadas IS NULL OR jsonb_typeof(p_pasadas) <> 'array' THEN
++    RAISE EXCEPTION 'p_pasadas debe ser un arreglo JSON';
++  END IF;
++
++  IF jsonb_array_length(p_pasadas) = 0 THEN
++    RETURN '[]'::jsonb;
++  END IF;
++
++  WITH input AS (
++    SELECT
++      t.ord,
++      COALESCE((t.elem->>'idx')::integer, (t.ord - 1)::integer) AS idx,
++      NULLIF(btrim(t.elem->>'tarifa_id'), '')::uuid AS tarifa_id,
++      NULLIF(btrim(t.elem->>'current_tarifa_id'), '')::uuid AS current_tarifa_id,
++      (t.elem->>'importe')::numeric AS importe,
++      COALESCE((t.elem->>'requiere_normalizacion_iva')::boolean, false)
++        AS requiere_normalizacion_iva,
++      (t.elem->>'precio_directo')::numeric AS precio_directo,
++      (t.elem->>'precio_normalizado')::numeric AS precio_normalizado
++    FROM jsonb_array_elements(p_pasadas) WITH ORDINALITY AS t(elem, ord)
++  ),
++  compared AS (
++    SELECT
++      i.*,
++      CASE
++        WHEN i.requiere_normalizacion_iva THEN i.precio_normalizado
++        ELSE i.precio_directo
++      END AS precio_comparado
++    FROM input i
++  ),
++  current_match AS (
++    SELECT
++      c.*,
++      CASE
++        WHEN c.importe IS NOT NULL
++          AND c.importe <> 0
++          AND c.precio_comparado IS NOT NULL
++          AND abs(c.precio_comparado - c.importe) / c.importe <= 0.01
++        THEN true
++        ELSE false
++      END AS is_al_dia,
++      CASE
++        WHEN c.importe IS NOT NULL
++          AND c.importe <> 0
++          AND c.precio_comparado IS NOT NULL
++        THEN abs(c.precio_comparado - c.importe) / c.importe
++        ELSE NULL
++      END AS error_relativo
++    FROM compared c
++  ),
++  hist_match AS (
++    SELECT DISTINCT ON (cm.ord)
++      cm.ord,
++      ti.id AS hist_id
++    FROM current_match cm
++    INNER JOIN public.tarifa_importe ti
++      ON ti.tarifa_id = cm.tarifa_id
++     AND ti.id IS DISTINCT FROM cm.current_tarifa_id
++    WHERE NOT cm.is_al_dia
++      AND cm.precio_comparado IS NOT NULL
++      AND ti.importe <> 0
++      AND abs(cm.precio_comparado - ti.importe) / ti.importe <= 0.01
++    ORDER BY cm.ord, ti.fecha_aparicion DESC, ti.created_at DESC, ti.id DESC
++  )
++  SELECT COALESCE(
++    jsonb_agg(
++      CASE
++        WHEN cm.is_al_dia THEN
++          jsonb_build_object(
++            'idx', cm.idx,
++            'codigo', 'AL_DIA',
++            'tarifa_importe_id', cm.current_tarifa_id,
++            'importe', cm.importe,
++            'precio_comparado', cm.precio_comparado,
++            'error_relativo', cm.error_relativo
++          )
++        WHEN h.hist_id IS NOT NULL THEN
++          jsonb_build_object(
++            'idx', cm.idx,
++            'codigo', 'HISTORICA',
++            'tarifa_importe_id', h.hist_id,
++            'importe', cm.importe,
++            'precio_comparado', cm.precio_comparado,
++            'error_relativo', cm.error_relativo
++          )
++        ELSE
++          jsonb_build_object(
++            'idx', cm.idx,
++            'codigo', 'DESFASADO',
++            'importe', cm.importe,
++            'precio_comparado', cm.precio_comparado,
++            'error_relativo', cm.error_relativo
++          )
++      END
++      ORDER BY cm.ord
++    ),
++    '[]'::jsonb
++  )
++  INTO v_result
++  FROM current_match cm
++  LEFT JOIN hist_match h ON h.ord = cm.ord;
++
++  RETURN v_result;
++END;
++$$;
++
++COMMENT ON FUNCTION public.peajes_validar_tarifas_actuales(jsonb) IS
++  'F14-16 ┬À Valida en lote el precio comparable contra importe vigente e historial inmutable. Elige precio_normalizado solo si el flag es true.';
++
++REVOKE ALL ON FUNCTION public.peajes_validar_tarifas_actuales(jsonb) FROM PUBLIC;
++GRANT EXECUTE ON FUNCTION public.peajes_validar_tarifas_actuales(jsonb)
++  TO authenticated, service_role;
++
++-- -----------------------------------------------------------------------------
++-- 3) peajes_asociar_pasadas_tarifa_importe
++-- Idempotent. Writes pasadas.tarifa_importe_id only for AL_DIA / HISTORICA.
++-- Never updates tarifa_normalizada_id. Never inserts tarifa_importe.
++-- -----------------------------------------------------------------------------
++CREATE OR REPLACE FUNCTION public.peajes_asociar_pasadas_tarifa_importe(
++  p_asociaciones jsonb
++)
++RETURNS void
++LANGUAGE plpgsql
++VOLATILE
++SECURITY INVOKER
++SET search_path = public
++AS $$
++BEGIN
++  IF p_asociaciones IS NULL OR jsonb_typeof(p_asociaciones) <> 'array' THEN
++    RAISE EXCEPTION 'p_asociaciones debe ser un arreglo JSON';
++  END IF;
++
++  IF jsonb_array_length(p_asociaciones) = 0 THEN
++    RETURN;
++  END IF;
++
++  UPDATE public.pasadas p
++  SET tarifa_importe_id = v.tarifa_importe_id
++  FROM (
++    SELECT
++      NULLIF(btrim(a->>'pasada_id'), '')::uuid AS pasada_id,
++      NULLIF(btrim(a->>'tarifa_importe_id'), '')::uuid AS tarifa_importe_id
++    FROM jsonb_array_elements(p_asociaciones) AS a
++    WHERE upper(btrim(COALESCE(a->>'codigo', ''))) IN ('AL_DIA', 'HISTORICA')
++  ) v
++  WHERE p.id = v.pasada_id
++    AND v.pasada_id IS NOT NULL
++    AND v.tarifa_importe_id IS NOT NULL;
++END;
++$$;
++
++COMMENT ON FUNCTION public.peajes_asociar_pasadas_tarifa_importe(jsonb) IS
++  'F14-16 ┬À Asocia pasadas.tarifa_importe_id solo para AL_DIA/HISTORICA. Idempotente. No toca tarifa_normalizada_id ni inserta historial.';
++
++REVOKE ALL ON FUNCTION public.peajes_asociar_pasadas_tarifa_importe(jsonb) FROM PUBLIC;
++GRANT EXECUTE ON FUNCTION public.peajes_asociar_pasadas_tarifa_importe(jsonb)
++  TO authenticated, service_role;

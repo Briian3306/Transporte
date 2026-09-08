@@ -25,6 +25,7 @@ Definidos en `src/app/components/peajes/models/` (`peajes-services.contracts.ts`
 | `PEAJES_PLANTILLAS_SERVICE` / `PeajesPlantillasService` | Plantillas, configs, algoritmos |
 | `PEAJES_MOTOR_TRANSFORMACION` / `PeajesMotorTransformacion` | Pipeline Strategy/Builder |
 | `PEAJES_AUDITORIA_TARIFAS_SERVICE` / `PeajesAuditoriaTarifasService` | Listar/confirmar/recalcular tarifas normalizadas (F14) |
+| `PEAJES_TARIFARIO_SERVICE` / `PeajesTarifarioService` | Listar/editar precios actuales + historial (F14-17). Vivo: RPCs Supabase |
 
 Contratos F14: `models/auditoria-tarifas.contracts.ts`. Guía de pantalla: [auditoria-tarifas.md](./auditoria-tarifas.md).
 
@@ -39,6 +40,7 @@ Contratos F14: `models/auditoria-tarifas.contracts.ts`. Guía de pantalla: [audi
 | Plantillas | `PeajesPlantillasSupabaseService` | `PeajesPlantillasMockService` |
 | Motor | `PeajesMotorTransformacionService` | — (no mock) |
 | Auditoría tarifas | `PeajesAuditoriaTarifasSupabaseService` (provider en `auditoria-tarifas.routes.ts`) | `AuditoriaTarifasMockService` (specs) |
+| Tarifario | `PeajesTarifarioSupabaseService` (provider en `tarifario.routes.ts`) | `TarifarioMockService` (specs) |
 
 Export barrel: `src/app/components/peajes/services/index.ts`.
 
@@ -73,9 +75,11 @@ Mocks tipados quedan solo para unit tests (`PEAJES_CATALOGOS_MOCK_PROVIDERS`, sp
 - Handoff: [docs/session-handoff.md](../../session-handoff.md)
 - Tablas/RPC: [docs/06-tablas/peajes/](../../06-tablas/peajes/INDEX.md)
 - Auditoría tarifas UI: [auditoria-tarifas.md](./auditoria-tarifas.md)
+- Tarifario UI: [tarifario.md](./tarifario.md)
+- Tarifario RPCs: [docs/backend/peajes/tarifario.md](../../backend/peajes/tarifario.md)
 - IA de factura (F17): [ia-factura.md](./ia-factura.md)
 - Auditoría tarifas backend: [docs/backend/peajes/auditoria-tarifas.md](../../backend/peajes/auditoria-tarifas.md)
 
 ---
 
-> Última actualización: 2026-08-13
+> Última actualización: 2026-09-08

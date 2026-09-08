@@ -1,0 +1,57 @@
+# Task 10 docs delta (reconstruct; review did not run git or the verification suite)
+# Scope: ibarra-app/docs/** + feature_list.json F14-16 + claude-progress.md + session-handoff.md
+# No product SQL/TypeScript in the Task 10 report. No DESARROLLO. No commit.
+
+## Created
+ ibarra-app/docs/06-tablas/peajes/tarifas-tarifa-importe.md
+ ibarra-app/docs/backend/peajes/tarifas-tarifa-importe.md
+ .superpowers/sdd/task-10-brief.md
+ .superpowers/sdd/task-10-report.md
+
+## Modified (inspected)
+ ibarra-app/docs/06-tablas/peajes/INDEX.md
+ ibarra-app/docs/06-tablas/peajes/tarifas-normalizadas.md
+ ibarra-app/docs/06-tablas/peajes/modelo-datos.md
+ ibarra-app/docs/06-tablas/peajes/documentos-pasadas.md
+ ibarra-app/docs/backend/peajes/index.md
+ ibarra-app/docs/backend/functions/index.md
+ ibarra-app/docs/backend/peajes/pwbi-views.md
+ ibarra-app/docs/06-components/peajes/validacion-carga.md
+ ibarra-app/docs/modulos/peajes.md
+ ibarra-app/docs/session-handoff.md
+ ibarra-app/docs/claude-progress.md
+ ibarra-app/docs/plan/INDEX.md
+ ibarra-app/docs/plan/refactor-tarifas-importe/INDEX.md
+ ibarra-app/feature_list.json   # F14-16 status=passing; Task 9 evidence copied
+ .superpowers/sdd/progress.md   # Task 10 complete
+
+## Not in Task 10 required list (left stale; minors)
+ ibarra-app/docs/plan/normalizacion-tarifa/INDEX.md          # still "F14-12..F14-15 diferidos"
+ ibarra-app/docs/06-components/peajes/INDEX.md               # last update 2026-09-07
+ ibarra-app/docs/06-components/peajes/servicios-y-providers.md
+ ibarra-app/docs/backend/peajes/auditoria-tarifas.md         # no v2 cross-link
+ ibarra-app/docs/backend/peajes/confirmar-carga.md           # still only normalizar hook (true)
+
+## F14-16 evidence excerpt (copied from Task 9; not re-run)
+ status: passing
+ 2026-09-08 Task 9 (local only):
+   npx supabase start EXIT 0
+   npx supabase db reset --local --no-seed EXIT 0
+   npx supabase test db EXIT 0 Files=14 Tests=412 PASS
+   node --test scripts/peajes-catalogo-audit/*.test.mjs 53/53 skipped 0
+   ng adapter+tarifa-validation+paso8 TOTAL 35 SUCCESS
+   ng **/peajes/auditoria-tarifas/**/*.spec.ts TOTAL 52 SUCCESS
+   tsc --noEmit app + spec EXIT 0
+   Parity unexplained 0; pasadas 0/0/0 after --no-seed explained
+   Sin DESARROLLO
+
+## Honest deferrals present in canonical pages / handoff / evidence
+ - asociarTrasConfirmacion not wired after peajes_confirmar_carga
+ - real-volume pasadas.tarifa_importe_id backfill unproven (empty 0/0/0)
+ - pwbi_tarifas_v2 parallel, thinner, LEFT JOIN Importe nullable; pwbi_tarifas not replaced
+ - _stg_precio_last staging, not runtime catalog
+ - no DROP of legacy readers
+ - SENTIDO optional on mapped row; default AMBAS; not in PASADA_COLUMN_KEYS
+
+## F14-12..F14-15
+ remain status not_started + evidence "superseded by F14-16, never implemented"

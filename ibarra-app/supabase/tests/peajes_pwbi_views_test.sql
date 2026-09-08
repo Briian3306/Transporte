@@ -1,6 +1,7 @@
 -- pgTAP: vistas Power BI pwbi_* (+ anon API + documentos + tarifas)
+-- Task 8 RED: pwbi_tarifas_v2 is a parallel reader; do not change pwbi_tarifas.
 BEGIN;
-SELECT plan(40);
+SELECT plan(45);
 
 SELECT has_view('public', 'pwbi_estacion', 'vista pwbi_estacion existe');
 SELECT has_view('public', 'pwbi_patentes', 'vista pwbi_patentes existe');
@@ -44,6 +45,7 @@ SELECT has_column('public', 'pwbi_documentos', 'Documento_Tipo', 'pwbi_documento
 SELECT has_column('public', 'pwbi_tarifas', 'Tarifa_Normalizada_ID', 'pwbi_tarifas.Tarifa_Normalizada_ID');
 SELECT has_column('public', 'pwbi_tarifas', 'Status', 'pwbi_tarifas.Status');
 SELECT has_column('public', 'pwbi_tarifas', 'Hora_Min', 'pwbi_tarifas.Hora_Min');
+SELECT has_column('public', 'pwbi_tarifas', 'fecha_aparicion', 'pwbi_tarifas.fecha_aparicion');
 
 SELECT ok(
   has_table_privilege('authenticated', 'pwbi_pasadas', 'SELECT')
@@ -71,6 +73,12 @@ SELECT ok(
   AND NOT has_table_privilege('anon', 'pwbi_tarifas', 'INSERT'),
   'anon no tiene INSERT en vistas pwbi_*'
 );
+
+-- Parallel v2 reader (Task 8). Do not fold into the GRANT groups above.
+SELECT has_view('public', 'pwbi_tarifas_v2', 'vista pwbi_tarifas_v2 existe');
+SELECT has_column('public', 'pwbi_tarifas_v2', 'Tarifa_ID', 'pwbi_tarifas_v2.Tarifa_ID');
+SELECT has_column('public', 'pwbi_tarifas_v2', 'Importe', 'pwbi_tarifas_v2.Importe');
+SELECT has_column('public', 'pwbi_tarifas_v2', 'Sentido', 'pwbi_tarifas_v2.Sentido');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -21,6 +21,9 @@ El dominio Peajes persiste catálogos, **documentos**/pasadas, plantillas de tra
 peajes 1──* estaciones
 patentes 1──* pases
 estaciones ←── pasadas ──→ pases, patentes, documentos
+peajes 1──* tarifas ──* tarifa_importe          (F14-16 v2)
+pasadas.tarifa_normalizada_id → tarifas_normalizadas   (legado, se retiene)
+pasadas.tarifa_importe_id → tarifa_importe            (sombra v2)
 plantillas_configuracion 1──* configuraciones_plantilla
 algoritmos_combinados 1──* algoritmo_combinado_pasos
 configuraciones_plantilla.algoritmo_combinado_id → algoritmos_combinados (nullable)
@@ -46,6 +49,7 @@ Regla clave (PRD §12 / RN-05): la **pasada referencia `estacion_id`**; el peaje
 | Algoritmos: solo códigos de catálogo (RN-20) | FK a `peajes_algoritmos_catalogo`; motor TS usa `StrategyRegistry` |
 | RLS MVP (§5.2) | Policies `*_authenticated_all` (acceso pleno a `authenticated`) |
 | `system_modules` peajes | Insert condicional si existe tabla host RBAC (omitido en CLI vacío) |
+| Catálogo v2 (F14-16) | `tarifas` + `tarifa_importe` aditivos; `tarifas_normalizadas` sigue como compatibilidad |
 
 ---
 
@@ -82,7 +86,7 @@ Constante global: `PEAJES_GLOBAL_EMPRESA_ID === '__global__'` (alineada a `GLOBA
 
 La estación mantiene `latitud`, `longitud`, `camino` y `estado_geocodificacion`; los aliases proveedor-estación se modelan en una tabla relacional con alcance de empresa, no solo como texto libre.
 
-- Detalle tablas: [catalogos.md](./catalogos.md), [documentos-pasadas.md](./documentos-pasadas.md), [plantillas-algoritmos.md](./plantillas-algoritmos.md), [auditoria-y-rpcs.md](./auditoria-y-rpcs.md)
+- Detalle tablas: [catalogos.md](./catalogos.md), [documentos-pasadas.md](./documentos-pasadas.md), [tarifas-normalizadas.md](./tarifas-normalizadas.md), [tarifas-tarifa-importe.md](./tarifas-tarifa-importe.md), [plantillas-algoritmos.md](./plantillas-algoritmos.md), [auditoria-y-rpcs.md](./auditoria-y-rpcs.md)
 - Backend RPCs: [docs/backend/](../../backend/index.md)
 - Migraciones: `supabase/migrations/*peajes*.sql`
 - Módulo: [docs/modulos/peajes.md](../../modulos/peajes.md)
@@ -90,4 +94,4 @@ La estación mantiene `latitud`, `longitud`, `camino` y `estado_geocodificacion`
 
 ---
 
-> Última actualización: agosto 2026
+> Última actualización: 2026-09-08

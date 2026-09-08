@@ -20,6 +20,7 @@
       "scripts/carga-express-bot/**",
       "scripts/docs/telepase-downloader.md",
       "scripts/docs/carga-express-bot.md",
+      "scripts/docs/carga-express-masiva-bot.md",
       "scripts/docs/claude-progress-script.md",
       "scripts/feature-list-script.json",
       "scripts/.agents/**"
@@ -203,6 +204,24 @@
       ]
     },
     {
+      "id": "TS03-4",
+      "title": "Generar status.csv desde rows.json",
+      "agent_owner": "script-scraper",
+      "depends_on": ["TS00-2"],
+      "status": "passing",
+      "verification": [
+        "build-status-csv.mjs writes scripts/downloads/status.csv from scripts/telepase/rows.json",
+        "Fills Empresa/Template for AUSA, AUSOL, GCO, AUBASA; AUMESA Template stays blank",
+        "Discovers facturas_* / pasadas_* on disk when rows.json paths are null",
+        "Merges previous uploadFileStatus and Template unless --no-merge",
+        "node --test build-status-csv.test.mjs"
+      ],
+      "evidence": [
+        "2026-09-02: node --test build-status-csv.test.mjs — 4 passed",
+        "2026-09-02: node build-status-csv.mjs — 148 rows from rows.json (status.csv locked in Excel; wrote status.bot.csv; 28 with both files)"
+      ]
+    },
+    {
       "id": "TS-XREF-F13-2",
       "title": "XREF Peajes: importación masiva multi-empresa (ConsumosResumen / FACTURA)",
       "agent_owner": "script-docs",
@@ -245,7 +264,29 @@
         "2026-08-26: node run.mjs --local --limit 1 --row 5009A02010049 — URL localhost:4200, Login OK, [AI] state=error chips=0 after retries (OpenRouter)",
         "2026-08-25: scripts/carga-express-bot created (run.mjs + pages + utils)",
         "2026-08-25: npm test — 24 passed, including Paso 7 form-state and provider failover tests",
+        "2026-09-02: build-status-csv.mjs generates scripts/downloads/status.csv from rows.json",
         "2026-08-25: npm test — 6 passed (amounts + invoice-number)"
+      ]
+    },
+    {
+      "id": "TS04-2",
+      "title": "Selenium bot: carga-express importación masiva from telepeaje plus folders",
+      "agent_owner": "script-scraper",
+      "depends_on": ["TS04-1"],
+      "status": "passing",
+      "verification": [
+        "node run-masiva.mjs reads MASIVA_FOLDERS from scripts/carga-express-bot/.env and only those period folders under scripts/telepeaje plus",
+        "Uploads Consumo_*_MAPPED.xlsx + Comprobantes/*.pdf after clicking Importación masiva; plantilla MASIVOOO",
+        "Writes scripts/telepeaje plus/status-masiva.csv (COMPLETE|USER_INPUT|DUPLICATED; FAILED only for login)",
+        "Waits Paso 7 accordion badge Sugerencias listas; Error IA or timeout parks USER_INPUT without refresh",
+        "Clicks highest-confidence suggestion chips in every accordion child",
+        "Paso 8 duplicates write DUPLICATED; other validation blocks park USER_INPUT",
+        "202601-1 omitted from default MASIVA_FOLDERS",
+        "node --test utils/period-folders.test.mjs utils/invoice-ai-masiva-wait.test.mjs utils/status-masiva.test.mjs"
+      ],
+      "evidence": [
+        "2026-08-28: run-masiva.mjs + bot-masiva.mjs; MASIVA_FOLDERS allowlist; npm test 46 passed",
+        "2026-08-28: docs scripts/docs/carga-express-masiva-bot.md"
       ]
     }
   ]

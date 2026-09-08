@@ -3,6 +3,16 @@
 Standalone Node + Selenium bot that uploads Telepase CSV/PDF pairs into
 `/peajes/carga-express` using `scripts/downloads/status.csv`.
 
+That CSV is **not** created by the downloader. Build it from `scripts/telepase/rows.json`:
+
+```powershell
+cd scripts/telepase
+node build-status-csv.mjs
+```
+
+For Telepeaje Plus **importación masiva** (one Excel + many PDFs per period),
+see [`carga-express-masiva-bot.md`](./carga-express-masiva-bot.md).
+
 This is **not** part of the Angular runtime. It does not modify `ibarra-app/`.
 
 ## What it does

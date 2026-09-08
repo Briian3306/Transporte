@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { UserProfile } from '../models/user-profile.model';
 import { SupabaseService } from './supabase.service';
+import { permissionSetHas } from './permission-set.util';
 
 interface CachedUserData {
   profile: UserProfile | null;
@@ -160,9 +161,7 @@ export class UserCacheService {
    * Verifica si el usuario tiene un permiso específico en caché
    */
   hasCachedPermission(module: string, action: string): boolean {
-    const permissions = this.getCachedPermissions();
-    const permissionKey = `${module}:${action}`;
-    return permissions.includes(permissionKey) || permissions.includes('*:*');
+    return permissionSetHas(new Set(this.getCachedPermissions()), module, action);
   }
 
   /**

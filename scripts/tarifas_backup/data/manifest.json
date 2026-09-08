@@ -1,0 +1,24 @@
+{
+  "taken_at": "2026-08-31T19:12:00.000Z",
+  "source": "desarrollo",
+  "project_id": "kfffigvyvtzyczeiadxh",
+  "method": "mcp_execute_sql_keyset_by_id",
+  "live_counts": {
+    "pasadas": 41071,
+    "tarifas_normalizadas": 1080,
+    "tarifas_status_catalogo": 44,
+    "pasadas_sin_tarifa_normalizada_id": 2
+  },
+  "csv_counts": {
+    "pasadas": 41071,
+    "tarifas_normalizadas": 1080,
+    "tarifas_status_catalogo": 44,
+    "pasadas_sin_tarifa_normalizada_id": 2
+  },
+  "files": {
+    "pasadas.csv": { "bytes": 15640882, "columns": 17 },
+    "tarifas_normalizadas.csv": { "bytes": 308379, "columns": 22 },
+    "tarifas_status_catalogo.csv": { "bytes": 5883, "columns": 8 }
+  },
+  "match": true
+}

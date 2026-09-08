@@ -47,6 +47,18 @@ describe('PermissionGuard: permisos de Peajes', () => {
     ).toBeFalse();
     expect(
       matchesPermissionRequirement(
+        PEAJES_ROUTE_PERMISSIONS['/peajes/tarifario'],
+        hasPermission(operatorPermissions),
+      ),
+    ).toBeFalse();
+    expect(
+      matchesPermissionRequirement(
+        PEAJES_ROUTE_PERMISSIONS['/peajes/tarifario'],
+        hasPermission(adminPermissions),
+      ),
+    ).toBeTrue();
+    expect(
+      matchesPermissionRequirement(
         PEAJES_ROUTE_PERMISSIONS['/peajes/catalogos/empresas'],
         hasPermission(operatorPermissions),
       ),
@@ -93,6 +105,15 @@ describe('PermissionGuard: permisos de Peajes', () => {
     ).toBeFalse();
     expect(
       matchesPermissionRequirement(requirement, () => false, true),
+    ).toBeTrue();
+  });
+
+  it('users:manage implica acceso a /users (users:read)', () => {
+    expect(
+      matchesPermissionRequirement(
+        { module: 'users', action: 'read' },
+        hasPermission(new Set(['users:manage'])),
+      ),
     ).toBeTrue();
   });
 

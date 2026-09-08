@@ -92,6 +92,7 @@ node download-batch.mjs --no-auth --limit 3 --diverse   # pilot
 node download-batch.mjs --no-auth                         # full public
 node login.mjs --force
 node download-batch.mjs                                   # auth backfill
+node build-status-csv.mjs                                 # status.csv for carga-express bot
 ```
 
 ## Professional scraping rules (Telepase)

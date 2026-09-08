@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "node run.mjs",
-    "test": "node --test utils/amounts.test.mjs utils/invoice-number.test.mjs utils/status-csv.test.mjs utils/urls.test.mjs utils/search-select.test.mjs utils/invoice-ai-wait.test.mjs utils/provider-failover.test.mjs utils/invoice-form-state.test.mjs utils/validation-failure.test.mjs utils/session-report.test.mjs"
+    "start:masiva": "node run-masiva.mjs",
+    "test": "node --test utils/amounts.test.mjs utils/invoice-number.test.mjs utils/status-csv.test.mjs utils/urls.test.mjs utils/search-select.test.mjs utils/invoice-ai-wait.test.mjs utils/provider-failover.test.mjs utils/invoice-form-state.test.mjs utils/validation-failure.test.mjs utils/session-report.test.mjs utils/period-folders.test.mjs utils/invoice-ai-masiva-wait.test.mjs utils/status-masiva.test.mjs utils/revision-wait.test.mjs"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

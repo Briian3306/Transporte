@@ -1,0 +1,77 @@
+# Review package: Task 8 RED compatibility-readers pgTAP (uncommitted)
+# vs previous approved plan(165) / pwbi plan(41). Git CLI unavailable here;
+# reconstructed from the working tree vs Task 7 ending.
+
+## Commits
+(none)
+
+## Files changed
+ ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
+   header: plan(165) → plan(176); Task 8 comment
+   appended: Task 8 section after the Task 7 backfill block
+ ibarra-app/supabase/tests/peajes_pwbi_views_test.sql
+   header comment + plan(41) → plan(45); tests 42–45 appended
+   existing pwbi_tarifas assertions and combined pwbi_* GRANT ok() groups untouched
+
+## Header (f14)
+--- a/ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
++++ b/ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
+@@ -1,7 +1,8 @@
+ -- pgTAP: F14-16 Task 2 schema + Task 3 current-pointer / immutable history
+ -- + Task 6 shadow resolver / 1% validator / association RPCs
+ -- + Task 7 unique-lineage backfill
++-- + Task 8 compatibility readers (RED: pwbi_tarifas_v2 absent; legacy RPCs stay).
+ -- Empty tables; fixture inserts only. Do not load the Cruzado workbook.
+ BEGIN;
+-SELECT plan(165);
++SELECT plan(176);
+
+## Task 8 section (appended after Task 7 idempotent retry, tests 166–176)
+Helper pg_temp.pwbi_tarifas_v2_row(uuid):
+- SELECT to_jsonb(r) FROM public.pwbi_tarifas_v2 WHERE r."Tarifa_ID" = p_tarifa_id
+- CATCH undefined_table (42P01) / undefined_column (42703)
+- missing row → {_sqlstate: no_row}
+
+Fixtures (168…; peaje 162…001 already seeded):
+- estaciones T8 (168…002)
+- decoy TN b0 at that station, importe 5555, status PENDIENTE, categoria NULL
+- tarifas 010: PICO, categoria 4, sentido IDA (current_tarifa_id left to Task 3 promote)
+- tarifa_importe 100 (1111, 2026-06-01) then 200 (9999, 2026-08-01)
+  → promote trigger sets current_tarifa_id = 200
+
+Assertions 166–176:
+- has_function peajes_normalizar_tarifas(uuid)
+- has_function peajes_recalcular_tarifas(uuid)
+- has_function peajes_confirmar_status_tarifa(jsonb)
+- has_view pwbi_tarifas
+- viewdef ILIKE tarifas_normalizadas AND NOT ILIKE tarifa_importe
+- has_view pwbi_tarifas_v2
+- information_schema count of 8 PascalCase columns = 8
+- anon SELECT via catalog + relkind='v' (COALESCE false if missing)
+- authenticated SELECT same
+- helper _sqlstate IS NULL (no 42P01)
+- fixture identity + Importe 9999 (not 1111, not 5555) + Current_Tarifa_ID = 200
+  = tarifas.current_tarifa_id
+
+## pwbi suite (tests 42–45 only)
+--- a/ibarra-app/supabase/tests/peajes_pwbi_views_test.sql
++++ b/ibarra-app/supabase/tests/peajes_pwbi_views_test.sql
+@@ -1,6 +1,7 @@
+ -- pgTAP: vistas Power BI pwbi_* (+ anon API + documentos + tarifas)
++-- Task 8 RED: pwbi_tarifas_v2 is a parallel reader; do not change pwbi_tarifas.
+ BEGIN;
+-SELECT plan(41);
++SELECT plan(45);
+ ...
+ -- Parallel v2 reader (Task 8). Do not fold into the GRANT groups above.
+ SELECT has_view('public', 'pwbi_tarifas_v2', ...);
+ SELECT has_column(..., 'Tarifa_ID', ...);
+ SELECT has_column(..., 'Importe', ...);
+ SELECT has_column(..., 'Sentido', ...);
+
+## GREEN artifacts (must be absent)
+- no public.pwbi_tarifas_v2 in supabase/migrations/
+- no 20260907103000_peajes_tarifas_v2_compat_cutover.sql (or equivalent)
+- no pwbi_tarifas_v2 in src/ or scripts/
+- splitSentidoCollisions Node test still skipped (Task 9)
+- pwbi_tarifas migration still reads tarifas_normalizadas

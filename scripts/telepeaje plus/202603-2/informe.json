@@ -1,31 +1,31 @@
 {
-    "generado_en": "2026-08-26T18:23:22.067Z",
+    "generado_en": "2026-08-31T12:51:27.193Z",
     "periodo": "202603/2",
     "id_resumen": "310208237",
     "resumen": {
-        "fecha_emision": "15/08/2026",
-        "fecha_cierre": "12/08/2026",
-        "fecha_vencimiento": "20/08/2026",
+        "fecha_emision": "29/03/2026",
+        "fecha_cierre": "27/03/2026",
+        "fecha_vencimiento": "03/04/2026",
         "pagos_realizados": {
-            "periodo": "27/07/2026 - 12/08/2026",
-            "importe": 6325851.49,
-            "importe_texto": "$ 6.325.851,49"
+            "periodo": "12/03/2026 - 27/03/2026",
+            "importe": 4638603.23,
+            "importe_texto": "$ 4.638.603,23"
         },
-        "total_facturado": 6076576.92,
-        "total_facturado_texto": "$ 6.076.576,92",
+        "total_facturado": 4199766.53,
+        "total_facturado_texto": "$ 4.199.766,53",
         "saldo_pendiente": 0,
         "saldo_pendiente_texto": "$ 0,00",
-        "importe_total": 6076576.92,
-        "importe_total_texto": "$ 6.076.576,92"
+        "importe_total": 4199766.53,
+        "importe_total_texto": "$ 4.199.766,53"
     },
     "archivos": {
         "resumen": {
             "archivo": "Resumen.pdf",
-            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=354639982&idContrato=1717776&nombre=Resumen.pdf"
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=310208237&idContrato=1717776&nombre=Resumen.pdf"
         },
         "consumos": {
             "archivo": "Consumos.xlsx",
-            "url": "https://www.telepeajeplus.com/Reportes/ReporteExcel/ObtenerReporteTlpp/bXVXcTlxMHdmWXhlM2dZMG5yRElwUnJVR2ZRaGtscmw3NUlWRDFZeXdQUUNtZDNsam40cGNBPT0="
+            "url": "https://www.telepeajeplus.com/Reportes/ReporteExcel/ObtenerReporteTlpp/bXVXcTlxMHdmWXpNd1kwSFJzdWg3UnJVR2ZRaGtscmw5dEUrWUE1eW9RaE9QVzFuQWg4c1pnPT0="
         }
     }
 }

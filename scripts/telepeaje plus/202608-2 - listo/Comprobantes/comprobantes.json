@@ -1,0 +1,127 @@
+{
+    "generado_en": "2026-08-31T12:58:01.909Z",
+    "pagina": "https://www.telepeajeplus.com/Login/Inicio",
+    "carpeta_periodo": "202608-2",
+    "carpeta_comprobantes": "Comprobantes",
+    "cantidad_facturas": 10,
+    "cantidad_descargadas": 10,
+    "cantidad_errores": 0,
+    "resumen": {
+        "fecha_emision": null,
+        "fecha_cierre": null,
+        "fecha_vencimiento": null,
+        "pagos_realizados": {
+            "periodo": null,
+            "importe": null,
+            "importe_texto": null
+        },
+        "total_facturado": null,
+        "total_facturado_texto": null,
+        "saldo_pendiente": null,
+        "saldo_pendiente_texto": null,
+        "importe_total": null,
+        "importe_total_texto": null
+    },
+    "facturas": [
+        {
+            "numero": 1,
+            "fecha": "28/08/2026",
+            "nombre_factura": "CVSA TRAMO II",
+            "importe": 42485.95,
+            "importe_texto": "$ 42.485,95",
+            "archivo": "FA41276455.pdf",
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=359820835&idContrato=1717776&nombre=FA41276455.pdf",
+            "estado": "descargado"
+        },
+        {
+            "numero": 2,
+            "fecha": "28/08/2026",
+            "nombre_factura": "CVSA TRAMO IV",
+            "importe": 400581.82,
+            "importe_texto": "$ 400.581,82",
+            "archivo": "FA41312803.pdf",
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=359820835&idContrato=1717776&nombre=FA41312803.pdf",
+            "estado": "descargado"
+        },
+        {
+            "numero": 3,
+            "fecha": "28/08/2026",
+            "nombre_factura": "CORRESUR TRAMO VII",
+            "importe": 119735.53,
+            "importe_texto": "$ 119.735,53",
+            "archivo": "FA41396017.pdf",
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=359820835&idContrato=1717776&nombre=FA41396017.pdf",
+            "estado": "descargado"
+        },
+        {
+            "numero": 4,
+            "fecha": "28/08/2026",
+            "nombre_factura": "CVSA TRAMO VIII",
+            "importe": 56142.15,
+            "importe_texto": "$ 56.142,15",
+            "archivo": "FA41465270.pdf",
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=359820835&idContrato=1717776&nombre=FA41465270.pdf",
+            "estado": "descargado"
+        },
+        {
+            "numero": 5,
+            "fecha": "28/08/2026",
+            "nombre_factura": "CORRESUR TRAMO IX",
+            "importe": 1022342.27,
+            "importe_texto": "$ 1.022.342,27",
+            "archivo": "FA41523059.pdf",
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=359820835&idContrato=1717776&nombre=FA41523059.pdf",
+            "estado": "descargado"
+        },
+        {
+            "numero": 6,
+            "fecha": "28/08/2026",
+            "nombre_factura": "CVSA TRAMO VI",
+            "importe": 2949738.84,
+            "importe_texto": "$ 2.949.738,84",
+            "archivo": "FA41855227.pdf",
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=359820835&idContrato=1717776&nombre=FA41855227.pdf",
+            "estado": "descargado"
+        },
+        {
+            "numero": 7,
+            "fecha": "28/08/2026",
+            "nombre_factura": "AA2000 EZE",
+            "importe": 6828.1,
+            "importe_texto": "$ 6.828,10",
+            "archivo": "FB41975509.pdf",
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=359820835&idContrato=1717776&nombre=FB41975509.pdf",
+            "estado": "descargado"
+        },
+        {
+            "numero": 8,
+            "fecha": "28/08/2026",
+            "nombre_factura": "CVSA TRAMO III",
+            "importe": 153252.9,
+            "importe_texto": "$ 153.252,90",
+            "archivo": "FA41983566.pdf",
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=359820835&idContrato=1717776&nombre=FA41983566.pdf",
+            "estado": "descargado"
+        },
+        {
+            "numero": 9,
+            "fecha": "28/08/2026",
+            "nombre_factura": "CVSA TRAMO V",
+            "importe": 36416.53,
+            "importe_texto": "$ 36.416,53",
+            "archivo": "FA42011239.pdf",
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=359820835&idContrato=1717776&nombre=FA42011239.pdf",
+            "estado": "descargado"
+        },
+        {
+            "numero": 10,
+            "fecha": "28/08/2026",
+            "nombre_factura": "CV5 TRAMO X",
+            "importe": 634419.64,
+            "importe_texto": "$ 634.419,64",
+            "archivo": "FA42047199.pdf",
+            "url": "https://www.telepeajeplus.com/Login/DescargarArchivo?idResumen=359820835&idContrato=1717776&nombre=FA42047199.pdf",
+            "estado": "descargado"
+        }
+    ]
+}

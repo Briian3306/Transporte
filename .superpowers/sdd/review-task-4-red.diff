@@ -1,0 +1,576 @@
+﻿# Review package: Task 4 RED Node tests (uncommitted)
+
+## Commits
+(none)
+
+## Files changed
+ ibarra-app/scripts/peajes-catalogo-audit/migrate-tarifario-v2.test.mjs (created)
+ ibarra-app/scripts/peajes-catalogo-audit/match-tarifario-last.test.mjs (modified)
+
+## Diff migrate-tarifario-v2.test.mjs (new)
+diff --git a/ibarra-app/scripts/peajes-catalogo-audit/migrate-tarifario-v2.test.mjs b/ibarra-app/scripts/peajes-catalogo-audit/migrate-tarifario-v2.test.mjs
+new file mode 100644
+index 0000000..ad3e645
+--- /dev/null
++++ b/ibarra-app/scripts/peajes-catalogo-audit/migrate-tarifario-v2.test.mjs
+@@ -0,0 +1,317 @@
++import assert from 'node:assert/strict';
++import { existsSync } from 'node:fs';
++import { dirname, join } from 'node:path';
++import { fileURLToPath } from 'node:url';
++import test from 'node:test';
++
++const __dirname = dirname(fileURLToPath(import.meta.url));
++const CRUZADO_XLSX = join(__dirname, 'out', 'tarifario-last-cruzado.xlsx');
++const AUDIT_XLSX = join(__dirname, 'out', 'auditoria-catalogo-20260904.xlsx');
++const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++
++const PARENT_A = '453bcee9-b134-40e8-8db8-fbd07bc17bef';
++const PARENT_B = '28437846-7524-4de5-8ff5-ef5383eb0f16';
++const PARENT_C = 'f5e8c23e-14be-468d-82da-548bcd932f42';
++const LEGACY_A = 'f9597f66-b059-44d5-9bbe-6082cbdd7340';
++const LEGACY_B = 'd94f53b4-1b4a-47b2-b7e2-d8f79682efe8';
++const PEAJE_ID = 'ab449656-bebf-4cb2-bbb3-6221403e1c7b';
++const ESTACION_A = '2ab8b3e2-a9ab-4577-b9c4-81a68c594edc';
++const ESTACION_B = 'a12baa34-7a45-4612-aa4d-d3752637e68f';
++const MISSING_ID = '99999999-9999-4999-8999-999999999999';
++const LAST_UPDATED = '2026-07-15 06:13:13+00';
++
++async function loadEtl() {
++  return import('./migrate-tarifario-v2.mjs');
++}
++
++function tarifa(partial = {}) {
++  return {
++    id: PARENT_A,
++    peaje_id: PEAJE_ID,
++    estacion_id: ESTACION_A,
++    peaje_nombre: 'AUBASA',
++    estacion_nombre: 'HUDSON',
++    status: 'NO_PICO',
++    categoria: 5,
++    current_tarifa_id: '',
++    sentido: 'AMBAS',
++    ...partial,
++  };
++}
++
++function importe(partial = {}) {
++  return {
++    id: LEGACY_A,
++    tarifa_id: PARENT_A,
++    importe: 3550,
++    importe_base: 3550,
++    fecha_aparicion: '2026-08-01 12:00:00+00',
++    tarifas_normalizadas_id: LEGACY_A,
++    ...partial,
++  };
++}
++
++function cruzado(partial = {}) {
++  return {
++    PEAJE: 'AUBASA',
++    ESTACION_QUERY: 'HUDSON',
++    ESTACION_MATCH: 'HUDSON',
++    CATEGORIA: 5,
++    ESTADO_MATCH: 'CON_TARIFA',
++    MOTIVO: 'AL_DIA',
++    MATCH_LAST: 'TRUE',
++    STATUS: 'NO_PICO',
++    PRECIO: '$3.550,00',
++    PRECIO_LAST: '$3.550,00',
++    TARIFA_ID: PARENT_A,
++    LAST_UPDATED: '2026-08-01 12:00:00+00',
++    ...partial,
++  };
++}
++
++function sheets(partial = {}) {
++  return {
++    tarifas: partial.tarifas || [tarifa()],
++    tarifas_importe: partial.tarifas_importe || [importe()],
++    cruzado: partial.cruzado || [cruzado()],
++  };
++}
++
++function reportRow(report, parentId) {
++  return report.find((r) => r.parent_id === parentId);
++}
++
++test('tarifas sheet IDs remain parent tarifas.id with UUID syntax and uniqueness', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  const result = parseTarifarioV2(sheets({
++    tarifas: [
++      tarifa({ id: PARENT_A, categoria: 5 }),
++      tarifa({ id: PARENT_B, estacion_id: ESTACION_B, estacion_nombre: 'BERAZATEGUI', categoria: 3 }),
++    ],
++    tarifas_importe: [
++      importe({ id: LEGACY_A, tarifa_id: PARENT_A, tarifas_normalizadas_id: LEGACY_A }),
++      importe({ id: LEGACY_B, tarifa_id: PARENT_B, tarifas_normalizadas_id: LEGACY_B, importe: 2035.78 }),
++    ],
++    cruzado: [
++      cruzado({ TARIFA_ID: PARENT_A }),
++      cruzado({
++        TARIFA_ID: PARENT_B,
++        ESTACION_QUERY: 'BERAZATEGUI',
++        PRECIO: '$2.035,78',
++        PRECIO_LAST: '$2.035,78',
++      }),
++    ],
++  }));
++  const ids = result.tarifas.map((row) => row.id).sort();
++  assert.deepEqual(ids, [PARENT_B, PARENT_A].sort());
++  assert.equal(ids.length, new Set(ids).size);
++  for (const id of ids) assert.match(id, UUID_RE);
++});
++
++test('invalid parent UUID aborts', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  assert.throws(() => parseTarifarioV2(sheets({
++    tarifas: [tarifa({ id: 'not-a-uuid' })],
++    tarifas_importe: [importe({ tarifa_id: 'not-a-uuid' })],
++    cruzado: [cruzado({ TARIFA_ID: 'not-a-uuid' })],
++  })));
++});
++
++test('duplicate parent IDs abort', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  assert.throws(() => parseTarifarioV2(sheets({
++    tarifas: [
++      tarifa({ id: PARENT_A, categoria: 5 }),
++      tarifa({ id: PARENT_A, categoria: 6 }),
++    ],
++    tarifas_importe: [
++      importe({ tarifa_id: PARENT_A }),
++    ],
++    cruzado: [cruzado({ TARIFA_ID: PARENT_A })],
++  })));
++});
++
++test('sentido is IDA, VUELTA or AMBAS and AMBAS is a real value', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  const result = parseTarifarioV2(sheets({
++    tarifas: [
++      tarifa({ id: PARENT_A, sentido: 'IDA', categoria: 5 }),
++      tarifa({ id: PARENT_B, sentido: 'VUELTA', categoria: 5 }),
++      tarifa({ id: PARENT_C, sentido: 'AMBAS', categoria: 6 }),
++    ],
++    tarifas_importe: [
++      importe({ id: LEGACY_A, tarifa_id: PARENT_A, tarifas_normalizadas_id: LEGACY_A }),
++      importe({ id: LEGACY_B, tarifa_id: PARENT_B, tarifas_normalizadas_id: LEGACY_B }),
++      importe({
++        id: '5920654c-67da-4107-9fbd-722c1a13427b',
++        tarifa_id: PARENT_C,
++        tarifas_normalizadas_id: '5920654c-67da-4107-9fbd-722c1a13427b',
++      }),
++    ],
++    cruzado: [
++      cruzado({ TARIFA_ID: PARENT_A }),
++      cruzado({ TARIFA_ID: PARENT_B, CATEGORIA: 5 }),
++      cruzado({ TARIFA_ID: PARENT_C, CATEGORIA: 6 }),
++    ],
++  }));
++  const byId = new Map(result.tarifas.map((row) => [row.id, row]));
++  assert.equal(byId.get(PARENT_A).sentido, 'IDA');
++  assert.equal(byId.get(PARENT_B).sentido, 'VUELTA');
++  assert.equal(byId.get(PARENT_C).sentido, 'AMBAS');
++  assert.notEqual(byId.get(PARENT_C).sentido, '');
++  assert.notEqual(byId.get(PARENT_C).sentido, null);
++  assert.notEqual(byId.get(PARENT_C).sentido, 'UNKNOWN');
++});
++
++test('unknown sentido aborts', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  assert.throws(() => parseTarifarioV2(sheets({
++    tarifas: [tarifa({ sentido: 'DESCONOCIDO' })],
++  })));
++});
++
++test('one-to-one lineage keeps tarifa_importe.id equal to tarifas_normalizadas.id', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  const result = parseTarifarioV2(sheets());
++  const hist = result.tarifa_importe.filter((row) => row.tarifas_normalizadas_id === LEGACY_A);
++  assert.equal(hist.length, 1);
++  assert.equal(hist[0].id, LEGACY_A);
++  assert.equal(hist[0].tarifa_id, PARENT_A);
++});
++
++test('one legacy id mapping to two amount rows aborts', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  assert.throws(() => parseTarifarioV2(sheets({
++    tarifas_importe: [
++      importe({ id: LEGACY_A, tarifa_id: PARENT_A, tarifas_normalizadas_id: LEGACY_A, importe: 3550 }),
++      importe({
++        id: LEGACY_B,
++        tarifa_id: PARENT_A,
++        tarifas_normalizadas_id: LEGACY_A,
++        importe: 3600,
++        fecha_aparicion: '2026-08-02 00:00:00+00',
++      }),
++    ],
++  })));
++});
++
++test('one history id mapping to two parents aborts', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  assert.throws(() => parseTarifarioV2(sheets({
++    tarifas: [
++      tarifa({ id: PARENT_A, categoria: 5 }),
++      tarifa({ id: PARENT_B, categoria: 6 }),
++    ],
++    tarifas_importe: [
++      importe({ id: LEGACY_A, tarifa_id: PARENT_A, tarifas_normalizadas_id: LEGACY_A }),
++      importe({ id: LEGACY_A, tarifa_id: PARENT_B, tarifas_normalizadas_id: LEGACY_B }),
++    ],
++    cruzado: [
++      cruzado({ TARIFA_ID: PARENT_A }),
++      cruzado({ TARIFA_ID: PARENT_B, CATEGORIA: 6 }),
++    ],
++  })));
++});
++
++test('parent ID colliding with a different configuration key aborts', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  assert.throws(() => parseTarifarioV2(sheets({
++    tarifas: [
++      tarifa({ id: PARENT_A, estacion_id: ESTACION_A, estacion_nombre: 'HUDSON', categoria: 5, sentido: 'AMBAS' }),
++      tarifa({ id: PARENT_A, estacion_id: ESTACION_B, estacion_nombre: 'BERAZATEGUI', categoria: 3, sentido: 'IDA' }),
++    ],
++  })));
++});
++
++test('missing Cross TARIFA_ID aborts and does not invent a parent', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  assert.throws(() => parseTarifarioV2(sheets({
++    cruzado: [cruzado({ TARIFA_ID: MISSING_ID })],
++  })));
++});
++
++test('PRECIO_LAST stays the current importe when the compared price differs by 0.23%', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  const result = parseTarifarioV2(sheets({
++    tarifas_importe: [
++      importe({
++        id: LEGACY_A,
++        tarifa_id: PARENT_A,
++        importe: 31427.15,
++        importe_base: 31427.15,
++        tarifas_normalizadas_id: LEGACY_A,
++        fecha_aparicion: '2026-06-01 00:00:00+00',
++      }),
++    ],
++    cruzado: [
++      cruzado({
++        PRECIO: '$31.427,15',
++        PRECIO_LAST: '31500',
++        LAST_UPDATED,
++      }),
++    ],
++  }));
++  const currentId = result.tarifas[0].current_tarifa_id;
++  const current = result.tarifa_importe.find((row) => row.id === currentId);
++  assert.equal(Number(current.importe), 31500);
++  assert.notEqual(Number(current.importe), 31427.15);
++  const legacy = result.tarifa_importe.find((row) => row.id === LEGACY_A);
++  assert.equal(Number(legacy.importe), 31427.15);
++});
++
++test('Cross-only audited amount gets a fresh UUID, null lineage, LAST_UPDATED as fecha_aparicion, and becomes current', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  const result = parseTarifarioV2(sheets({
++    tarifas_importe: [
++      importe({
++        id: LEGACY_A,
++        tarifa_id: PARENT_A,
++        importe: 31427.15,
++        tarifas_normalizadas_id: LEGACY_A,
++        fecha_aparicion: '2026-06-01 00:00:00+00',
++      }),
++    ],
++    cruzado: [
++      cruzado({
++        PRECIO: '$31.427,15',
++        PRECIO_LAST: '$31.500,00',
++        LAST_UPDATED,
++      }),
++    ],
++  }));
++  const currentId = result.tarifas[0].current_tarifa_id;
++  assert.match(currentId, UUID_RE);
++  assert.notEqual(currentId, PARENT_A);
++  assert.notEqual(currentId, LEGACY_A);
++  const current = result.tarifa_importe.find((row) => row.id === currentId);
++  assert.equal(current.tarifas_normalizadas_id, null);
++  assert.equal(current.fecha_aparicion, LAST_UPDATED);
++  assert.equal(Number(current.importe), 31500);
++  assert.equal(current.tarifa_id, PARENT_A);
++});
++
++test('reconciliation report exposes parent, historical, legacy, audited amount, pointer and timestamp', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  const result = parseTarifarioV2(sheets());
++  assert.ok(Array.isArray(result.report));
++  const row = reportRow(result.report, PARENT_A) || result.report[0];
++  assert.equal(row.parent_id, PARENT_A);
++  assert.equal(row.historical_id, LEGACY_A);
++  assert.equal(row.legacy_id, LEGACY_A);
++  assert.equal(Number(row.audited_amount), 3550);
++  assert.equal(row.chosen_pointer, result.tarifas[0].current_tarifa_id);
++  assert.equal(row.source_timestamp, '2026-08-01 12:00:00+00');
++});
++
++test('reconciliation report is in-memory and must not land in migrations or overwrite the 20260904 audit workbook', async () => {
++  const { parseTarifarioV2 } = await loadEtl();
++  const result = parseTarifarioV2(sheets());
++  assert.ok(Array.isArray(result.report));
++  assert.ok(existsSync(CRUZADO_XLSX));
++  if (result.reportPath) {
++    const path = String(result.reportPath).replace(/\\/g, '/');
++    assert.ok(!path.includes('supabase/migrations/'));
++    assert.notEqual(path, AUDIT_XLSX.replace(/\\/g, '/'));
++    assert.ok(!path.endsWith('auditoria-catalogo-20260904.xlsx'));
++  }
++});
+
+## Diff match-tarifario-last.test.mjs vs HEAD
+
+diff --git a/ibarra-app/scripts/peajes-catalogo-audit/match-tarifario-last.test.mjs b/ibarra-app/scripts/peajes-catalogo-audit/match-tarifario-last.test.mjs
+new file mode 100644
+index 0000000..fbd4619
+--- /dev/null
++++ b/ibarra-app/scripts/peajes-catalogo-audit/match-tarifario-last.test.mjs
+@@ -0,0 +1,234 @@
++import assert from 'node:assert/strict';
++import test from 'node:test';
++import { matchEstaciones, buildInformeTarifario, filasSinPrecio } from './match-tarifario-last.mjs';
++
++function keyOf(r) {
++  return `${r.PEAJE}|${r.ESTACION_QUERY}|${r.CATEGORIA}|${r.STATUS}`;
++}
++
++test('DOCKSUD GUITIERREZ HUDSON expand to AUBASA stations', () => {
++  const byPeaje = new Map([
++    ['AUBASA', ['DOCK SUD', 'GUTIERREZ', 'HUDSON', 'MAIPU']],
++  ]);
++  const hits = matchEstaciones('AUBASA', 'DOCKSUD, GUITIERREZ, HUDSON', byPeaje);
++  assert.deepEqual(hits.map((h) => h.match).sort(), ['DOCK SUD', 'GUTIERREZ', 'HUDSON']);
++});
++
++test('informe keeps one row per key and uses the latest fecha_aparicion', () => {
++  const last = [{
++    CATEGORIA: '1',
++    'HORA NO PICO': '$3.550,00',
++    'HORA PICO': '',
++    PEAJE: 'AUBASA',
++    ESTACION: 'BERNAL',
++  }];
++  const tarifas = [
++    { id: 't-1', peaje_nombre: 'AUBASA', estacion_nombre: 'BERNAL', status: 'NO_PICO', categoria: 1 },
++  ];
++  const importes = [
++    { tarifa_id: 't-1', importe: 2550, fecha_aparicion: '2026-01-01 00:00:00+00' },
++    { tarifa_id: 't-1', importe: 3550, fecha_aparicion: '2026-08-01 12:00:00+00' },
++  ];
++  const { cruzado } = buildInformeTarifario(last, tarifas, importes);
++  const keys = cruzado.map(keyOf);
++  assert.equal(keys.length, new Set(keys).size);
++  const row = cruzado.find((r) => Number(r.CATEGORIA) === 1 && r.STATUS === 'NO_PICO');
++  assert.equal(row.ESTADO_MATCH, 'CON_TARIFA');
++  assert.equal(row.TARIFA_ID, 't-1');
++  assert.equal(row.PRECIO, '$3.550,00');
++  assert.equal(row.LAST_UPDATED, '2026-08-01 12:00:00+00');
++  assert.equal(row.MATCH_LAST, 'TRUE');
++  assert.equal(row.PRECIO_LAST, '$3.550,00');
++  assert.equal(row.MOTIVO, 'AL_DIA');
++});
++
++test('YERAU CON_TARIFA MATCH_LAST TRUE can be desfasado vs PRECIO_LAST', () => {
++  const last = [
++    { CATEGORIA: '2', 'HORA NO PICO': '$5.465,48', 'HORA PICO': '', PEAJE: 'Autov├¡a del Mercosur', ESTACION: 'YERU├ü' },
++    { CATEGORIA: '3', 'HORA NO PICO': '$6.465,48', 'HORA PICO': '', PEAJE: 'Autov├¡a del Mercosur', ESTACION: 'YERU├ü' },
++  ];
++  const tarifas = [
++    { id: 'a7609548-00b2-48c0-8c62-543e314beb64', peaje_nombre: 'Autov├¡a del Mercosur', estacion_nombre: 'YERAU', status: 'NO_PICO', categoria: 2 },
++    { id: '293e627c-8cc7-476d-8b4e-7af96db60f95', peaje_nombre: 'Autov├¡a del Mercosur', estacion_nombre: 'YERAU', status: 'NO_PICO', categoria: 3 },
++  ];
++  const importes = [
++    { tarifa_id: 'a7609548-00b2-48c0-8c62-543e314beb64', importe: 4465.48, fecha_aparicion: '2026-06-26 13:43:08+00' },
++    { tarifa_id: '293e627c-8cc7-476d-8b4e-7af96db60f95', importe: 4465.48, fecha_aparicion: '2026-06-04 02:04:45+00' },
++  ];
++  const { cruzado } = buildInformeTarifario(last, tarifas, importes);
++  const c2 = cruzado.find((r) => r.ESTACION_QUERY === 'YERAU' && Number(r.CATEGORIA) === 2 && r.STATUS === 'NO_PICO');
++  const c3 = cruzado.find((r) => r.ESTACION_QUERY === 'YERAU' && Number(r.CATEGORIA) === 3 && r.STATUS === 'NO_PICO');
++  assert.equal(c2.ESTADO_MATCH, 'CON_TARIFA');
++  assert.equal(c2.MATCH_LAST, 'TRUE');
++  assert.equal(c2.ESTACION_MATCH, 'YERU├ü');
++  assert.equal(c2.PRECIO, '$4.465,48');
++  assert.equal(c2.PRECIO_LAST, '$5.465,48');
++  assert.equal(c2.LAST_UPDATED, '2026-06-26 13:43:08+00');
++  assert.equal(c3.PRECIO_LAST, '$6.465,48');
++  assert.notEqual(c3.PRECIO, c3.PRECIO_LAST);
++  assert.equal(c2.MOTIVO, 'DESFASADO');
++  assert.equal(c3.MOTIVO, 'DESFASADO');
++});
++
++test('CON_TARIFA with MATCH_LAST FALSE when last has no key', () => {
++  const last = [];
++  const tarifas = [
++    { id: 'only-db', peaje_nombre: 'AUBASA', estacion_nombre: 'HUDSON', status: 'PICO', categoria: 4 },
++  ];
++  const importes = [
++    { tarifa_id: 'only-db', importe: 2385.97, fecha_aparicion: '2026-06-26 13:43:08+00' },
++  ];
++  const { cruzado } = buildInformeTarifario(last, tarifas, importes);
++  const row = cruzado.find((r) => Number(r.CATEGORIA) === 4 && r.STATUS === 'PICO');
++  assert.equal(row.ESTADO_MATCH, 'CON_TARIFA');
++  assert.equal(row.MATCH_LAST, 'FALSE');
++  assert.equal(row.PRECIO_LAST, '');
++  assert.equal(row.ESTACION_MATCH, '');
++  assert.equal(row.TARIFA_ID, 'only-db');
++  assert.equal(row.PRECIO, '$2.385,97');
++  assert.equal(row.MOTIVO, 'SOLO_DB');
++});
++
++test('AUSOL ALL copies ESTACION_MATCH=ALL onto every DB station with its own tarifa_id', () => {
++  const last = [{
++    CATEGORIA: '2',
++    'HORA NO PICO': '$994,15',
++    'HORA PICO': '',
++    PEAJE: 'AUSOL',
++    ESTACION: 'ALL',
++  }];
++  const tarifas = [
++    { id: 'a-off', peaje_nombre: 'AUSOL', estacion_nombre: 'BELGRANO', status: 'NO_PICO', categoria: 2 },
++    { id: 'b-off', peaje_nombre: 'AUSOL', estacion_nombre: 'PILAR', status: 'NO_PICO', categoria: 2 },
++    { id: 'c-off', peaje_nombre: 'AUSOL', estacion_nombre: 'TIGRE', status: 'NO_PICO', categoria: 2 },
++  ];
++  const importes = [
++    { tarifa_id: 'a-off', importe: 994.15, fecha_aparicion: '2026-07-01 00:00:00+00' },
++    { tarifa_id: 'b-off', importe: 994.15, fecha_aparicion: '2026-07-01 00:00:00+00' },
++    { tarifa_id: 'c-off', importe: 699.09, fecha_aparicion: '2026-07-01 00:00:00+00' },
++  ];
++  const { cruzado } = buildInformeTarifario(last, tarifas, importes);
++  const cat2 = cruzado.filter((r) => Number(r.CATEGORIA) === 2 && r.STATUS === 'NO_PICO');
++  assert.equal(cat2.length, 3);
++  assert.ok(cat2.every((r) => r.ESTACION_MATCH === 'ALL'));
++  assert.ok(cat2.every((r) => r.MATCH_LAST === 'TRUE'));
++  assert.ok(cat2.every((r) => r.PRECIO_LAST === '$994,15'));
++  const belgrano = cat2.find((r) => r.ESTACION_QUERY === 'BELGRANO');
++  const tigre = cat2.find((r) => r.ESTACION_QUERY === 'TIGRE');
++  assert.equal(belgrano.TARIFA_ID, 'a-off');
++  assert.equal(belgrano.PRECIO, '$994,15');
++  assert.equal(belgrano.MOTIVO, 'AL_DIA');
++  assert.equal(tigre.TARIFA_ID, 'c-off');
++  assert.equal(tigre.PRECIO, '$699,09');
++  assert.equal(tigre.MOTIVO, 'DESFASADO');
++});
++
++test('grid emits 1..x PICO and NO_PICO; SIN_TARIFA has no PRECIO or TARIFA_ID', () => {
++  const last = [{
++    CATEGORIA: '7',
++    'HORA NO PICO': '$1.000,00',
++    'HORA PICO': '$1.200,00',
++    PEAJE: 'AUBASA',
++    ESTACION: 'HUDSON',
++  }];
++  const tarifas = [
++    { id: 'h7', peaje_nombre: 'AUBASA', estacion_nombre: 'HUDSON', status: 'NO_PICO', categoria: 7 },
++  ];
++  const importes = [
++    { tarifa_id: 'h7', importe: 1000, fecha_aparicion: '2026-07-01 00:00:00+00' },
++  ];
++  const { cruzado } = buildInformeTarifario(last, tarifas, importes);
++  const hudson = cruzado.filter((r) => r.ESTACION_QUERY === 'HUDSON');
++  const cats = [...new Set(hudson.map((r) => Number(r.CATEGORIA)))].sort((a, b) => a - b);
++  assert.deepEqual(cats, [1, 2, 3, 4, 5, 6, 7]);
++  assert.equal(hudson.filter((r) => r.STATUS === 'PICO').length, 7);
++  assert.equal(hudson.filter((r) => r.STATUS === 'NO_PICO').length, 7);
++  const hole = hudson.find((r) => Number(r.CATEGORIA) === 1 && r.STATUS === 'NO_PICO');
++  assert.equal(hole.ESTADO_MATCH, 'SIN_TARIFA');
++  assert.equal(hole.MOTIVO, 'SIN_TARIFA');
++  assert.equal(hole.PRECIO, '');
++  assert.equal(hole.TARIFA_ID, '');
++  assert.equal(hole.LAST_UPDATED, '');
++  assert.ok(cruzado.every((r) => r.MOTIVO));
++});
++
++test('filasSinPrecio includes desfasados and SIN_TARIFA, not al-dia matches', () => {
++  const last = [{
++    CATEGORIA: '2',
++    'HORA NO PICO': '$994,15',
++    'HORA PICO': '',
++    PEAJE: 'AUSOL',
++    ESTACION: 'ALL',
++  }];
++  const tarifas = [
++    { id: 'a-off', peaje_nombre: 'AUSOL', estacion_nombre: 'BELGRANO', status: 'NO_PICO', categoria: 2 },
++    { id: 'c-off', peaje_nombre: 'AUSOL', estacion_nombre: 'TIGRE', status: 'NO_PICO', categoria: 2 },
++  ];
++  const importes = [
++    { tarifa_id: 'a-off', importe: 994.15, fecha_aparicion: '2026-07-01 00:00:00+00' },
++    { tarifa_id: 'c-off', importe: 699.09, fecha_aparicion: '2026-07-01 00:00:00+00' },
++  ];
++  const { cruzado } = buildInformeTarifario(last, tarifas, importes);
++  const missing = filasSinPrecio(cruzado);
++  assert.ok(missing.some((r) => r.ESTACION === 'TIGRE' && r.PEAJE === 'AUSOL' && String(r.CATEGORIA) === '2'));
++  assert.ok(!missing.some((r) => r.ESTACION === 'BELGRANO' && String(r.CATEGORIA) === '2' && r.STATUS === 'NO_PICO'));
++});
++
++function oneStationInforme(importe, lastPrice) {
++  const last = [{
++    CATEGORIA: '5',
++    'HORA NO PICO': lastPrice,
++    'HORA PICO': '',
++    PEAJE: 'AUBASA',
++    ESTACION: 'MAIPU',
++  }];
++  const tarifas = [
++    { id: 'maipu-5', peaje_nombre: 'AUBASA', estacion_nombre: 'MAIPU', status: 'NO_PICO', categoria: 5 },
++  ];
++  const importes = [
++    { tarifa_id: 'maipu-5', importe, fecha_aparicion: '2026-07-15 06:13:13+00' },
++  ];
++  return buildInformeTarifario(last, tarifas, importes);
++}
++
++function maipuNoPico5(cruzado) {
++  return cruzado.find((r) => r.ESTACION_QUERY === 'MAIPU' && Number(r.CATEGORIA) === 5 && r.STATUS === 'NO_PICO');
++}
++
++test('1% tolerance: exact compared price is AL_DIA', () => {
++  const { cruzado } = oneStationInforme(10000, '$10.000,00');
++  const row = maipuNoPico5(cruzado);
++  assert.equal(row.MOTIVO, 'AL_DIA');
++  assert.equal(row.MATCH_LAST, 'TRUE');
++  assert.equal(row.PRECIO, '$10.000,00');
++  assert.equal(row.PRECIO_LAST, '$10.000,00');
++});
++
++test('1% tolerance: 31427.15 vs 31500 (0.23%) is AL_DIA and does not rewrite PRECIO_LAST', () => {
++  const { cruzado } = oneStationInforme(31427.15, '$31.500,00');
++  const row = maipuNoPico5(cruzado);
++  assert.equal(row.MOTIVO, 'AL_DIA');
++  assert.equal(row.MATCH_LAST, 'TRUE');
++  assert.equal(row.PRECIO, '$31.427,15');
++  assert.equal(row.PRECIO_LAST, '$31.500,00');
++  assert.notEqual(row.PRECIO, row.PRECIO_LAST);
++});
++
++test('1% tolerance: exactly 1% relative error is AL_DIA', () => {
++  const { cruzado } = oneStationInforme(10100, '$10.000,00');
++  const row = maipuNoPico5(cruzado);
++  assert.equal(row.MOTIVO, 'AL_DIA');
++  assert.equal(row.MATCH_LAST, 'TRUE');
++  assert.equal(row.PRECIO, '$10.100,00');
++  assert.equal(row.PRECIO_LAST, '$10.000,00');
++});
++
++test('1% tolerance: greater than 1% relative error is DESFASADO', () => {
++  const { cruzado } = oneStationInforme(10101, '$10.000,00');
++  const row = maipuNoPico5(cruzado);
++  assert.equal(row.MOTIVO, 'DESFASADO');
++  assert.equal(row.MATCH_LAST, 'TRUE');
++  assert.equal(row.PRECIO, '$10.101,00');
++  assert.equal(row.PRECIO_LAST, '$10.000,00');
++});
++

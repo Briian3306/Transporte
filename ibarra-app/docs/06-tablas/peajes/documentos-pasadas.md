@@ -58,12 +58,14 @@ Conciliación: `Σ pasadas.importe_neto − documentos.bonificacion ≈ importe_
 | `file_upload_name` | text | Sí | Nombre archivo de carga |
 | `duplicado` | boolean | No | Default `false`. `true` si se insertó con consentimiento (F18-2) |
 | `categoria` | text | Sí | Texto crudo del proveedor (F14 / RN-15). **No** es `patentes.categoria`. Vacío → `NULL` = Patrón A |
-| `tarifa_normalizada_id` | uuid FK → tarifas_normalizadas | Sí | Familia tarifaria asignada por el motor |
+| `tarifa_normalizada_id` | uuid FK → tarifas_normalizadas | Sí | Familia tarifaria asignada por el motor legado (se retiene) |
 | `tarifa_status` | text | No | Copiado desde `tarifas_normalizadas.status` (default `PENDIENTE`) |
+| `sentido` | text | No | F14-16: `IDA` \| `VUELTA` \| `AMBAS` (default `AMBAS`) |
+| `tarifa_importe_id` | uuid FK → tarifa_importe | Sí | F14-16: match v2 / sombra. NULL = aún sin clasificar en v2 |
 
 UK anti-duplicados: índice único parcial `(pase_id, fecha_hora, estacion_id, patente_id) WHERE duplicado = false` — **sin** `categoria` (RN-16 / F18-2).
 
-Tablas de auditoría tarifaria (`tarifas_normalizadas`, `tarifas_parametros_peaje`, `tarifas_status_catalogo`): ver [auditoria-tarifas.md](../../backend/peajes/auditoria-tarifas.md) y [tarifas-normalizadas.md](./tarifas-normalizadas.md).
+Tablas de auditoría tarifaria (`tarifas_normalizadas`, `tarifas_parametros_peaje`, `tarifas_status_catalogo`): ver [auditoria-tarifas.md](../../backend/peajes/auditoria-tarifas.md) y [tarifas-normalizadas.md](./tarifas-normalizadas.md). Catálogo v2 (`tarifas` / `tarifa_importe`): [tarifas-tarifa-importe.md](./tarifas-tarifa-importe.md).
 
 ---
 
@@ -99,10 +101,11 @@ Confirmación: [confirmar-carga](../../backend/peajes/confirmar-carga.md).
 - SQL base: `supabase/migrations/20260730125518_peajes_facturas_pasadas.sql`
 - SQL F13: `supabase/migrations/20260807140000_peajes_documentos_tipo_nc.sql`
 - SQL F14: `supabase/migrations/2026081212*_peajes_tarifas_*` (ver backend)
+- SQL F14-16: `supabase/migrations/20260907100000_peajes_tarifas_v2_schema.sql` (`pasadas.sentido`, `pasadas.tarifa_importe_id`)
 - Backend RPC: [docs/backend/](../../backend/index.md)
 - Servicio: `PeajesCargaSupabaseService`, `PeajesPasadasSupabaseService`
 - Wizard: [wizard.md](../../06-components/peajes/wizard.md)
 
 ---
 
-> Última actualización: 2026-08-12
+> Última actualización: 2026-09-08

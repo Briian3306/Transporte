@@ -1,0 +1,654 @@
+﻿# Review package: Task 6A GREEN
+
+## Commits
+(none)
+
+## Files in this review
+ ibarra-app/src/app/components/peajes/services/tarifa-validation.service.ts
+ ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.ts
+ ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.html
+ ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.css
+
+## Diff tarifa-validation.service.ts (new)
+diff --git a/ibarra-app/src/app/components/peajes/services/tarifa-validation.service.ts b/ibarra-app/src/app/components/peajes/services/tarifa-validation.service.ts
+new file mode 100644
+index 0000000..5a061f0
+--- /dev/null
++++ b/ibarra-app/src/app/components/peajes/services/tarifa-validation.service.ts
+@@ -0,0 +1,220 @@
++import { Injectable, inject } from '@angular/core';
++import { ConfiguracionPlantilla } from '../models/peajes.models';
++import { SupabaseService } from '../../../services/supabase.service';
++import { TarifaComparisonAdapterService } from './tarifa-comparison-adapter.service';
++
++export type CodigoResultadoTarifa =
++  | 'AL_DIA'
++  | 'HISTORICA'
++  | 'DESFASADO'
++  | 'SIN_TARIFA'
++  | 'CATEGORIA_PENDIENTE'
++  | 'ESTADO_AMBIGUO';
++
++export type SentidoTarifa = 'IDA' | 'VUELTA' | 'AMBAS';
++
++export interface PasadaValidacionTarifaInput {
++  idx: number;
++  estacion_id: string;
++  categoria: number | string | null;
++  status?: string | null;
++  sentido?: SentidoTarifa | string | null;
++  fecha_hora?: string | null;
++  precio_directo: number;
++  pasada_id?: string | null;
++  fila: Record<string, unknown>;
++}
++
++export interface ResultadoFilaValidacionTarifa {
++  idx: number;
++  codigo: CodigoResultadoTarifa;
++  tarifa_id: string | null;
++  current_tarifa_id: string | null;
++  tarifa_importe_id: string | null;
++  importe: number | null;
++  precio_comparado: number | null;
++  error_relativo: number | null;
++  peaje_id: string | null;
++  sentido_solicitado: SentidoTarifa;
++  sentido_aplicado: SentidoTarifa | string | null;
++  requiere_normalizacion_iva: boolean;
++  categoria: number | string | null;
++  status: string | null;
++  estacion_id: string;
++}
++
++export interface ResultadoValidacionTarifa {
++  filas: ResultadoFilaValidacionTarifa[];
++}
++
++export interface AsociacionTarifaImporte {
++  pasada_id: string;
++  tarifa_importe_id: string;
++  codigo: CodigoResultadoTarifa;
++}
++
++interface ResolverRow {
++  idx: number;
++  codigo?: CodigoResultadoTarifa | string | null;
++  tarifa_id?: string | null;
++  current_tarifa_id?: string | null;
++  importe?: number | null;
++  peaje_id?: string | null;
++  sentido_aplicado?: string | null;
++  requiere_normalizacion_iva?: boolean | null;
++}
++
++interface ValidatorRow {
++  idx: number;
++  codigo?: CodigoResultadoTarifa | string | null;
++  tarifa_importe_id?: string | null;
++  importe?: number | null;
++  precio_comparado?: number | null;
++  error_relativo?: number | null;
++}
++
++const CODIGOS_TEMPRANOS: ReadonlySet<string> = new Set([
++  'SIN_TARIFA',
++  'CATEGORIA_PENDIENTE',
++  'ESTADO_AMBIGUO',
++]);
++
++const CODIGOS_ASOCIABLES: ReadonlySet<string> = new Set(['AL_DIA', 'HISTORICA']);
++
++function sentidoSolicitado(valor: unknown): SentidoTarifa {
++  const raw = String(valor ?? '').trim().toUpperCase();
++  if (raw === 'IDA' || raw === 'VUELTA') return raw;
++  return 'AMBAS';
++}
++
++function asRows<T>(data: unknown): T[] {
++  return Array.isArray(data) ? (data as T[]) : [];
++}
++
++function estaResuelta(row: ResolverRow | undefined): boolean {
++  if (!row) return false;
++  if (row.codigo && CODIGOS_TEMPRANOS.has(String(row.codigo))) return false;
++  return row.tarifa_id != null && String(row.tarifa_id).trim() !== '';
++}
++
++function rpcError(rpc: string, error: { message?: string } | null): Error {
++  const message = error?.message || `Error en ${rpc}`;
++  return Object.assign(new Error(message), { ...(error ?? {}), rpc });
++}
++
++@Injectable({ providedIn: 'root' })
++export class TarifaValidationService {
++  private readonly supabase = inject(SupabaseService);
++  private readonly adapter = inject(TarifaComparisonAdapterService);
++
++  async validarLote(
++    pasadas: PasadaValidacionTarifaInput[],
++    configuraciones: ConfiguracionPlantilla[]
++  ): Promise<ResultadoValidacionTarifa> {
++    return this.supabase.executeWithRetry(async () => {
++      const client = await this.supabase.getClient();
++      const resolverPayload = pasadas.map((p) => ({
++        idx: p.idx,
++        estacion_id: p.estacion_id,
++        categoria: p.categoria,
++        status: p.status ?? null,
++        sentido: sentidoSolicitado(p.sentido),
++      }));
++
++      const { data: resolverData, error: resolverError } = await client.rpc(
++        'peajes_resolver_tarifas_actuales',
++        { p_pasadas: resolverPayload }
++      );
++      if (resolverError) {
++        throw rpcError('peajes_resolver_tarifas_actuales', resolverError);
++      }
++
++      const resolverRows = asRows<ResolverRow>(resolverData);
++      const resolverPorIdx = new Map(resolverRows.map((row) => [row.idx, row]));
++
++      const validatorPayload = pasadas
++        .filter((p) => estaResuelta(resolverPorIdx.get(p.idx)))
++        .map((p) => {
++          const resolved = resolverPorIdx.get(p.idx)!;
++          const requiereIva = !!resolved.requiere_normalizacion_iva;
++          const precio_normalizado = requiereIva
++            ? this.adapter.obtenerPrecioComparable({
++                precioDirecto: p.precio_directo,
++                requiereNormalizacionIva: true,
++                fila: p.fila,
++                configuraciones,
++              })
++            : null;
++          return {
++            idx: p.idx,
++            tarifa_id: resolved.tarifa_id,
++            current_tarifa_id: resolved.current_tarifa_id,
++            importe: resolved.importe,
++            requiere_normalizacion_iva: requiereIva,
++            precio_directo: p.precio_directo,
++            precio_normalizado,
++          };
++        });
++
++      let validatorRows: ValidatorRow[] = [];
++      if (validatorPayload.length) {
++        const { data: validatorData, error: validatorError } = await client.rpc(
++          'peajes_validar_tarifas_actuales',
++          { p_pasadas: validatorPayload }
++        );
++        if (validatorError) {
++          throw rpcError('peajes_validar_tarifas_actuales', validatorError);
++        }
++        validatorRows = asRows<ValidatorRow>(validatorData);
++      }
++
++      const validatorPorIdx = new Map(validatorRows.map((row) => [row.idx, row]));
++
++      const filas = pasadas.map((p) => {
++        const resolved = resolverPorIdx.get(p.idx);
++        const validated = validatorPorIdx.get(p.idx);
++        const solicitado = sentidoSolicitado(p.sentido);
++        const codigo = (validated?.codigo ?? resolved?.codigo ?? 'SIN_TARIFA') as CodigoResultadoTarifa;
++        return {
++          idx: p.idx,
++          codigo,
++          tarifa_id: resolved?.tarifa_id ?? null,
++          current_tarifa_id: resolved?.current_tarifa_id ?? null,
++          tarifa_importe_id: validated?.tarifa_importe_id ?? null,
++          importe: validated?.importe ?? resolved?.importe ?? null,
++          precio_comparado: validated?.precio_comparado ?? null,
++          error_relativo: validated?.error_relativo ?? null,
++          peaje_id: resolved?.peaje_id ?? null,
++          sentido_solicitado: solicitado,
++          sentido_aplicado: resolved?.sentido_aplicado ?? solicitado,
++          requiere_normalizacion_iva: !!resolved?.requiere_normalizacion_iva,
++          categoria: p.categoria,
++          status: p.status ?? null,
++          estacion_id: p.estacion_id,
++        } satisfies ResultadoFilaValidacionTarifa;
++      });
++
++      return { filas };
++    });
++  }
++
++  async asociarTrasConfirmacion(asociaciones: AsociacionTarifaImporte[]): Promise<void> {
++    const p_asociaciones = asociaciones
++      .filter((a) => CODIGOS_ASOCIABLES.has(a.codigo))
++      .map((a) => ({
++        pasada_id: a.pasada_id,
++        tarifa_importe_id: a.tarifa_importe_id,
++        codigo: a.codigo,
++      }));
++
++    return this.supabase.executeWithRetry(async () => {
++      const client = await this.supabase.getClient();
++      const { error } = await client.rpc('peajes_asociar_pasadas_tarifa_importe', {
++        p_asociaciones,
++      });
++      if (error) {
++        throw rpcError('peajes_asociar_pasadas_tarifa_importe', error);
++      }
++    });
++  }
++}
+
+## Diff paso8-validacion.component.ts
+
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.ts b/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.ts
+index d0792c2..e12c282 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.ts
+@@ -7,38 +7,47 @@ import {
+   ErrorValidacionPasada,
+   PEAJES_CATALOGO_SERVICE,
+   PEAJES_CARGA_SERVICE,
+   PeajesCatalogoService,
+   PeajesCargaService,
+   ResultadoValidacionCarga,
+ } from '../../models';
+ import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+ import { paseIdVacio, ultimoPaseIdPorPatente } from '../services/ultimo-pase-patente.helper';
+ import { resolvePatenteReferences } from '../services/patente-reference.helper';
++import {
++  CodigoResultadoTarifa,
++  PasadaValidacionTarifaInput,
++  ResultadoFilaValidacionTarifa,
++  ResultadoValidacionTarifa,
++  TarifaValidationService,
++} from '../../services/tarifa-validation.service';
+ 
+ @Component({
+   selector: 'app-paso8-validacion',
+   standalone: true,
+   imports: [CommonModule, DataTableComponent],
+   templateUrl: './paso8-validacion.component.html',
+   styleUrl: './paso8-validacion.component.css',
+ })
+ export class Paso8ValidacionComponent implements OnInit {
+   @Output() completado = new EventEmitter<void>();
+   @Output() atras = new EventEmitter<void>();
+   @Output() irAPaso = new EventEmitter<5 | 6 | 7>();
+ 
+   readonly state = inject(PeajesWizardStateService);
++  private readonly tarifaValidation = inject(TarifaValidationService);
+ 
+   resultado: ResultadoValidacionCarga | null = null;
+   duplicados: ErrorValidacionPasada[] = [];
+   duplicadosComparacion: DuplicateComparisonRow[] = [];
++  filasTarifaVista: FilaTarifaVista[] = [];
+   readonly duplicadosColumns: DataTableColumn[] = [
+     { key: 'pasada', label: 'Pase', width: '14%' },
+     { key: 'patente', label: 'Patente', width: '12%' },
+     { key: 'fecha_hora', label: 'Fecha_Hora', width: '14%' },
+     { key: 'fecha_hora_repetida', label: 'Fecha_Hora repetida', width: '14%' },
+     { key: 'valor', label: 'Valor', align: 'right', width: '10%' },
+     { key: 'valor_repetido', label: 'Valor repetido', align: 'right', width: '10%' },
+     { key: 'file_upload_name', label: 'Archivo', width: '16%' },
+     { key: 'duplicado', label: 'DUPLICADO', width: '10%' },
+   ];
+@@ -56,20 +65,21 @@ export class Paso8ValidacionComponent implements OnInit {
+     if (this.resultado || this.cargando) {
+       return;
+     }
+     await this.validar();
+   }
+ 
+   async validar(): Promise<void> {
+     this.cargando = true;
+     this.error = null;
+     this.duplicadosComparacion = [];
++    this.filasTarifaVista = [];
+     try {
+       const s = this.state.snapshot();
+       let pasadas =
+         s.pasadasEstandarizadas.length > 0
+           ? s.pasadasEstandarizadas
+           : this.state.construirPasadasDesdeMapeo();
+       pasadas = await this.resolverReferenciasDeCatalogo(pasadas);
+       this.state.setPasadasEstandarizadas(pasadas);
+ 
+       const docsAll = s.documentos?.length ? s.documentos : [];
+@@ -133,26 +143,29 @@ export class Paso8ValidacionComponent implements OnInit {
+         }
+         const idx = s.documentos.findIndex((d) => d.factura === doc.factura);
+         if (idx >= 0) {
+           this.state.patchDocumento(idx, {
+             status: importe.dentroTolerancia && importe.errores.length === 0 ? 'ok' : 'error',
+             errores: importe.errores.map((e) => e.motivo),
+           });
+         }
+       }
+ 
++      const tarifas = await this.ejecutarValidacionTarifas(pasadasValidacion);
++
+       this.diagnosticos = [
+         ...importesPorDoc,
+         duplicados.diagnostico,
+         campos,
+         estaciones,
+         patentes,
++        tarifas,
+       ];
+       this.duplicados = duplicados.errores;
+       const erroresDup = this.state.permitirDuplicados
+         ? []
+         : duplicados.errores;
+       const errores = [
+         ...erroresImporte,
+         ...erroresDup,
+         ...(campos.errores ?? []),
+         ...(estaciones.errores ?? []),
+@@ -478,30 +491,195 @@ export class Paso8ValidacionComponent implements OnInit {
+     const raw = this.errorTecnico(error);
+     return { id, titulo, estado: 'error', paso, detalle: `${detalle} ${raw.message}`, accion, tecnico: { rpc, request: {}, response: raw.response, postgresCode: raw.code, httpStatus: raw.status, stack: raw.stack } };
+   }
+ 
+   private readonly idsRequeridos: Array<'PASE_ID' | 'PATENTE_ID' | 'ESTACION_ID'> = ['PASE_ID', 'PATENTE_ID', 'ESTACION_ID'];
+   private esUuid(valor: unknown): boolean { return typeof valor === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(valor); }
+   private normalizarCodigo(valor: unknown): string { return String(valor ?? '').trim().replace(/[\s-]+/g, '').toUpperCase(); }
+   private sumarNetos(pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>): number { return pasadas.reduce((total, p) => total + (Number(p.IMPORTE_NETO) || 0), 0); }
+   moneda(valor: number | null | undefined): string { return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor ?? 0); }
+   estadoTexto(estado: EstadoDiagnostico): string { return estado === 'ok' ? 'Correcto' : estado === 'warning' ? 'Advertencia' : 'Requiere revisi├│n'; }
++  etiquetaTarifa(codigo: CodigoResultadoTarifa | string | null | undefined): string {
++    return ETIQUETA_TARIFA[codigo as CodigoResultadoTarifa] ?? String(codigo ?? 'ÔÇö');
++  }
+   private deduplicarErrores(errores: ErrorValidacionPasada[]): ErrorValidacionPasada[] { return errores.filter((error, index, all) => all.findIndex((otro) => otro.fila === error.fila && otro.columna === error.columna && otro.motivo === error.motivo) === index); }
+   private mensajeError(error: unknown): string { return this.errorTecnico(error).message || 'Error al validar'; }
+   private errorTecnico(error: unknown): { message: string; code?: string; status?: number; response?: unknown; stack?: string } { const e = error as { message?: string; code?: string; status?: number; details?: unknown; hint?: unknown; stack?: string }; return { message: e?.message ?? 'Error desconocido', code: e?.code, status: e?.status, response: { details: e?.details, hint: e?.hint }, stack: e?.stack }; }
++
++  private async ejecutarValidacionTarifas(
++    pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>
++  ): Promise<DiagnosticoValidacion> {
++    const mapeadas = this.mapearPasadasTarifa(pasadas);
++    const configuraciones = this.state.toConfiguracionesPlantilla();
++    try {
++      const resultado = await this.tarifaValidation.validarLote(mapeadas, configuraciones);
++      const nombres = await this.mapaNombresEstacion();
++      this.filasTarifaVista = this.presentarFilasTarifa(resultado.filas, nombres);
++      return this.diagnosticoTarifas(resultado, mapeadas.length);
++    } catch (e) {
++      this.filasTarifaVista = [];
++      return this.diagnosticoTarifasError(e, mapeadas.length);
++    }
++  }
++
++  private mapearPasadasTarifa(
++    pasadas: ReturnType<PeajesWizardStateService['construirPasadasDesdeMapeo']>
++  ): PasadaValidacionTarifaInput[] {
++    return pasadas.map((p, idx) => {
++      const extra = p as Record<string, unknown>;
++      const sentidoRaw = String(extra['SENTIDO'] ?? '').trim().toUpperCase();
++      const sentido =
++        sentidoRaw === 'IDA' || sentidoRaw === 'VUELTA' || sentidoRaw === 'AMBAS'
++          ? sentidoRaw
++          : 'AMBAS';
++      const neto = Number(p.IMPORTE_NETO);
++      const precio = Number(p.PRECIO);
++      const precio_directo = Number.isFinite(neto) ? neto : Number.isFinite(precio) ? precio : 0;
++      const catRaw = p.CATEGORIA;
++      let categoria: number | string | null = null;
++      if (catRaw != null && String(catRaw).trim() !== '') {
++        const n = Number(catRaw);
++        categoria = Number.isFinite(n) ? n : String(catRaw);
++      }
++      const statusRaw = extra['STATUS'] ?? extra['ESTADO'] ?? extra['tarifa_status'];
++      const status =
++        statusRaw == null || String(statusRaw).trim() === '' ? undefined : String(statusRaw);
++      return {
++        idx,
++        estacion_id: String(p.ESTACION_ID ?? ''),
++        categoria,
++        status,
++        sentido,
++        fecha_hora: p.FECHA_HORA != null ? String(p.FECHA_HORA) : null,
++        precio_directo,
++        pasada_id: p.PASADA_ID ?? null,
++        fila: extra,
++      };
++    });
++  }
++
++  private diagnosticoTarifas(
++    resultado: ResultadoValidacionTarifa,
++    registros: number
++  ): DiagnosticoValidacion {
++    const filas = resultado.filas;
++    const advertencias = filas.filter((f) => f.codigo !== 'AL_DIA');
++    const ok = filas.length === 0 || advertencias.length === 0;
++    const etiquetas = [...new Set(advertencias.map((f) => this.etiquetaTarifa(f.codigo)))];
++    const detalle = filas.length === 0
++      ? 'No hay pasadas para contrastar con el tarifario vigente.'
++      : ok
++        ? 'Todas las pasadas coinciden con la tarifa vigente (Al d├¡a).'
++        : `Hay ${advertencias.length} pasada(s) con tarifa ${etiquetas.join(', ')}.`;
++    return {
++      id: 'tarifas',
++      titulo: 'Tarifas',
++      estado: ok ? 'ok' : 'warning',
++      paso: 5,
++      detalle,
++      accion: ok
++        ? 'No requiere acci├│n.'
++        : 'Pod├®s continuar con la carga; el contraste tarifario queda como advertencia.',
++      tecnico: {
++        rpc: 'peajes_resolver_tarifas_actuales',
++        request: { registros },
++        response: resultado,
++      },
++    };
++  }
++
++  private diagnosticoTarifasError(error: unknown, registros: number): DiagnosticoValidacion {
++    const raw = this.errorTecnico(error);
++    const rpc =
++      typeof (error as { rpc?: unknown })?.rpc === 'string'
++        ? (error as { rpc: string }).rpc
++        : 'peajes_resolver_tarifas_actuales';
++    return {
++      id: 'tarifas',
++      titulo: 'Tarifas',
++      estado: 'warning',
++      paso: 5,
++      detalle: `No se pudieron validar las tarifas. ${raw.message}`,
++      accion: 'Pod├®s continuar con la carga; el contraste tarifario qued├│ como advertencia.',
++      tecnico: {
++        rpc,
++        request: { registros },
++        response: raw.response,
++        postgresCode: raw.code,
++        httpStatus: raw.status,
++        stack: raw.stack,
++      },
++    };
++  }
++
++  private presentarFilasTarifa(
++    filas: ResultadoFilaValidacionTarifa[],
++    nombres: Map<string, string>
++  ): FilaTarifaVista[] {
++    return filas.map((f) => ({
++      fila: f.idx + 1,
++      estacion: nombres.get(f.estacion_id) ?? f.estacion_id,
++      categoria: f.categoria == null || f.categoria === '' ? 'ÔÇö' : String(f.categoria),
++      sentidoSolicitado: String(f.sentido_solicitado ?? 'ÔÇö'),
++      sentidoAplicado: String(f.sentido_aplicado ?? 'ÔÇö'),
++      estado: f.status?.trim() ? f.status : 'ÔÇö',
++      importeAuditado: this.moneda(f.importe),
++      importeComparado: this.moneda(f.precio_comparado),
++      errorRelativo: this.formatoErrorRelativo(f.error_relativo),
++      resultado: this.etiquetaTarifa(f.codigo),
++    }));
++  }
++
++  private formatoErrorRelativo(valor: number | null | undefined): string {
++    if (valor == null || !Number.isFinite(valor)) return 'ÔÇö';
++    return new Intl.NumberFormat('es-AR', { style: 'percent', maximumFractionDigits: 2 }).format(valor);
++  }
++
++  private async mapaNombresEstacion(): Promise<Map<string, string>> {
++    const listar = this.catalogo.listarEstaciones;
++    if (typeof listar !== 'function') {
++      return new Map();
++    }
++    try {
++      const estaciones = await firstValueFrom(listar.call(this.catalogo));
++      return new Map((estaciones ?? []).map((e) => [e.id, e.nombre]));
++    } catch {
++      return new Map();
++    }
++  }
+ }
+ 
+ type EstadoDiagnostico = 'ok' | 'warning' | 'error';
+ interface DiagnosticoTecnico { rpc: string; request: unknown; response: unknown; postgresCode?: string; httpStatus?: number; stack?: string; }
+ interface DiagnosticoValidacion { id: string; titulo: string; estado: EstadoDiagnostico; paso: 5 | 6 | 7; detalle: string; accion: string; errores?: ErrorValidacionPasada[]; tecnico?: DiagnosticoTecnico; }
+ interface ResultadoDiagnosticoImporte extends ResultadoValidacionCarga { diagnostico: DiagnosticoValidacion; }
+ interface ResultadoDiagnosticoDuplicados { errores: ErrorValidacionPasada[]; diagnostico: DiagnosticoValidacion; }
+ interface DuplicateComparisonRow extends Record<string, unknown> {
+   pasada: unknown;
+   patente: unknown;
+   fecha_hora: unknown;
+   fecha_hora_repetida: unknown;
+   valor: unknown;
+   valor_repetido: unknown;
+   file_upload_name: unknown;
+   duplicado: unknown;
+ }
++interface FilaTarifaVista {
++  fila: number;
++  estacion: string;
++  categoria: string;
++  sentidoSolicitado: string;
++  sentidoAplicado: string;
++  estado: string;
++  importeAuditado: string;
++  importeComparado: string;
++  errorRelativo: string;
++  resultado: string;
++}
++const ETIQUETA_TARIFA: Record<CodigoResultadoTarifa, string> = {
++  AL_DIA: 'Al d├¡a',
++  HISTORICA: 'Hist├│rica',
++  DESFASADO: 'Desfasado',
++  SIN_TARIFA: 'Sin tarifa',
++  CATEGORIA_PENDIENTE: 'Categor├¡a pendiente',
++  ESTADO_AMBIGUO: 'Estado ambiguo',
++};
+
+## Diff paso8-validacion.component.html
+
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.html b/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.html
+index ece5b63..ff921b4 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.html
++++ b/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.html
+@@ -42,20 +42,52 @@
+               <dt *ngIf="d.tecnico.postgresCode">PostgreSQL</dt><dd *ngIf="d.tecnico.postgresCode" class="pw__mono">{{ d.tecnico.postgresCode }}</dd>
+             </dl>
+             <p class="paso8__technical-label">Solicitud</p>
+             <pre>{{ d.tecnico.request | json }}</pre>
+             <p class="paso8__technical-label">Respuesta</p>
+             <pre>{{ d.tecnico.response | json }}</pre>
+             <p class="paso8__technical-label" *ngIf="d.tecnico.stack">Stack (desarrollo)</p>
+             <pre *ngIf="d.tecnico.stack">{{ d.tecnico.stack }}</pre>
+           </details>
+         </div>
++        <div class="paso8__tarifas-table-wrap" *ngIf="d.id === 'tarifas' && filasTarifaVista.length">
++          <table class="pw__table paso8__tarifas-table">
++            <thead>
++              <tr>
++                <th>Fila</th>
++                <th>Estaci├│n</th>
++                <th>Categor├¡a</th>
++                <th>Sentido solicitado</th>
++                <th>Sentido aplicado</th>
++                <th>Estado</th>
++                <th>Importe auditado</th>
++                <th>Importe comparado</th>
++                <th>Error relativo</th>
++                <th>Resultado</th>
++              </tr>
++            </thead>
++            <tbody>
++              <tr *ngFor="let f of filasTarifaVista">
++                <td>{{ f.fila }}</td>
++                <td>{{ f.estacion }}</td>
++                <td>{{ f.categoria }}</td>
++                <td>{{ f.sentidoSolicitado }}</td>
++                <td>{{ f.sentidoAplicado }}</td>
++                <td>{{ f.estado }}</td>
++                <td class="pw__mono">{{ f.importeAuditado }}</td>
++                <td class="pw__mono">{{ f.importeComparado }}</td>
++                <td class="pw__mono">{{ f.errorRelativo }}</td>
++                <td>{{ f.resultado }}</td>
++              </tr>
++            </tbody>
++          </table>
++        </div>
+         <div class="paso8__duplicate-comparison" *ngIf="d.id === 'duplicados' && duplicadosComparacion.length">
+           <div class="paso8__duplicate-heading">
+             <div>
+               <span class="paso8__duplicate-kicker">Contraste de la clave detectada</span>
+               <h4>Valor importado frente a valor existente</h4>
+             </div>
+             <span class="paso8__duplicate-count">{{ duplicadosComparacion.length }} coincidencia(s)</span>
+           </div>
+           <p class="paso8__duplicate-note">
+             La detecci├│n de la clave RN-16 sigue activa. Revis├í patente, pase y el archivo de origen antes de continuar.
+@@ -66,21 +98,21 @@
+           <app-data-table
+             [columns]="duplicadosColumns"
+             [rows]="duplicadosComparacion"
+             [total]="duplicadosComparacion.length"
+             [pageSize]="25"
+             [pageSizeOptions]="[25]"
+             [filterableColumnsInputs]="false"
+             [clientFilter]="false"
+             emptyMessage="No se encontraron coincidencias para comparar."
+           />
+-          <div class="paso8__duplicate-consent" *ngIf="d.estado === 'error'">
++          <div class="paso8__duplicate-consent" *ngIf="d.estado === 'error' || duplicadosConfirmados">
+             <button type="button" class="pw__btn pw__btn--primary" (click)="subirIgualmente()">
+               Subir igualmente
+             </button>
+           </div>
+         </div>
+       </article>
+     </section>
+ 
+     <div class="pw__table-wrap" *ngIf="resultado?.errores?.length">
+       <table class="pw__table">
+
+## Diff paso8-validacion.component.css
+
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.css b/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.css
+index 4d9c9e0..f215ff7 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.css
++++ b/ibarra-app/src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.css
+@@ -27,15 +27,22 @@
+ .paso8__technical-label { color: var(--pw-muted, #62758a); margin: .65rem 0 .25rem !important; }
+ .paso8__technical pre { max-height: 14rem; overflow: auto; margin: 0; padding: .65rem; border-radius: 7px; background: #17212b; color: #e8eef4; font: .72rem/1.4 var(--pw-mono, monospace); white-space: pre-wrap; }
+ .paso8__duplicate-comparison { grid-column: 2; margin-top: .95rem; padding: 1rem; border: 1px solid rgba(189, 75, 75, .24); border-radius: 10px; background: #fff; box-shadow: 0 8px 20px rgba(80, 35, 35, .06); }
+ .paso8__duplicate-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+ .paso8__duplicate-kicker { display: block; color: var(--pw-red, #bd4b4b); font: 700 .68rem/1.2 var(--pw-mono, monospace); letter-spacing: .08em; text-transform: uppercase; }
+ .paso8__duplicate-heading h4 { margin: .25rem 0 0; font-size: .92rem; }
+ .paso8__duplicate-count { flex: 0 0 auto; padding: .3rem .5rem; border-radius: 999px; color: #8e3636; background: #fff0f0; font: 700 .72rem var(--pw-mono, monospace); }
+ .paso8__duplicate-note { margin: .55rem 0 .8rem !important; color: var(--pw-muted, #62758a); font-size: .8rem !important; }
+ .paso8__duplicate-comparison .dt { border: 1px solid var(--pw-line, #dce5ee); border-radius: 8px; overflow: hidden; }
+ .paso8__duplicate-consent { margin-top: .85rem; display: flex; justify-content: flex-end; }
++.paso8__tarifas-table-wrap { grid-column: 2; margin-top: .85rem; overflow-x: auto; border: 1px solid var(--pw-line, #dce5ee); border-radius: 10px; background: #fff; }
++.paso8__tarifas-table { margin: 0; }
++.paso8__tarifas-table th { white-space: nowrap; font-size: .72rem; }
++.paso8__tarifas-table td { font-size: .8rem; white-space: nowrap; }
++@media (max-width: 720px) {
++  .paso8__tarifas-table-wrap { grid-column: 1 / -1; margin-left: -.25rem; margin-right: -.25rem; }
++}
+ @media (max-width: 720px) {
+   .paso8__duplicate-comparison { grid-column: 1 / -1; margin-left: -.25rem; margin-right: -.25rem; padding: .75rem; }
+   .paso8__duplicate-heading { flex-direction: column; }
+ }
+ @media (max-width: 720px) { .paso8__summary { grid-template-columns: 1fr 1fr; } .paso8__summary div:nth-child(2) { border-right: 0; } .paso8__summary div:nth-child(-n+2) { border-bottom: 1px solid var(--pw-line, #dce5ee); } }

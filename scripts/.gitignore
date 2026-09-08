@@ -2,3 +2,7 @@
 html/
 downloads/
 carga-express-bot/.env
+
+# tarifas_backup snapshots (scripts stay committed)
+tarifas_backup/data/*.csv
+tarifas_backup/data/pages/

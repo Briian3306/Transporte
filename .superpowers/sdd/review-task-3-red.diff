@@ -1,0 +1,299 @@
+﻿# Review package: Task 3 RED (uncommitted test additions)
+# Task 2 assertions 1-118 already review-approved. Review tests 119-132 and plan(132).
+
+## Commits
+(none)
+
+## Files changed
+ ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql (modified; Task 3 cases appended)
+
+## Task 3 section (from 'Task 3:' comment to EOF)
+-- -----------------------------------------------------------------------------
+-- Task 3: FK compuesto del puntero, historial inmutable, promociÃ³n al insertar
+-- Dedicated parents (unique config keys). fecha_actualizacion sentinel 2026-01-01
+-- so promotion copies of fecha_aparicion are distinguishable from the insert value.
+-- -----------------------------------------------------------------------------
+INSERT INTO public.tarifas (
+  id, peaje_id, estacion_id, status, categoria, sentido, fecha_actualizacion
+) VALUES
+  (
+    '16200000-aaaa-4aa1-8aa1-000000000050',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16200000-aaaa-4aa1-8aa1-000000000002',
+    'PICO', 2, 'IDA',
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16200000-aaaa-4aa1-8aa1-000000000051',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16200000-aaaa-4aa1-8aa1-000000000002',
+    'PICO', 2, 'VUELTA',
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16200000-aaaa-4aa1-8aa1-000000000052',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16200000-aaaa-4aa1-8aa1-000000000002',
+    'PICO', 3, 'AMBAS',
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16200000-aaaa-4aa1-8aa1-000000000053',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16200000-aaaa-4aa1-8aa1-000000000002',
+    'NO_PICO', 2, 'AMBAS',
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16200000-aaaa-4aa1-8aa1-000000000054',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16200000-aaaa-4aa1-8aa1-000000000002',
+    'PICO', 4, 'AMBAS',
+    timestamptz '2026-01-01 00:00:00+00'
+  );
+
+SELECT ok(
+  EXISTS (
+    SELECT 1
+    FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    JOIN pg_namespace n ON n.oid = t.relnamespace
+    JOIN pg_class ft ON ft.oid = c.confrelid
+    WHERE n.nspname = 'public'
+      AND t.relname = 'tarifas'
+      AND ft.relname = 'tarifa_importe'
+      AND c.contype = 'f'
+      AND (
+        SELECT array_agg(a.attname::text ORDER BY x.ordinality)
+        FROM unnest(c.conkey) WITH ORDINALITY AS x(attnum, ordinality)
+        JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = x.attnum
+      ) = ARRAY['id', 'current_tarifa_id']::text[]
+      AND (
+        SELECT array_agg(a.attname::text ORDER BY x.ordinality)
+        FROM unnest(c.confkey) WITH ORDINALITY AS x(attnum, ordinality)
+        JOIN pg_attribute a ON a.attrelid = ft.oid AND a.attnum = x.attnum
+      ) = ARRAY['tarifa_id', 'id']::text[]
+  ),
+  'F14-16 FK compuesto (tarifas.id, current_tarifa_id) â†’ tarifa_importe(tarifa_id, id)'
+);
+
+-- First insert promotes bootstrap NULL pointer and copies fecha_aparicion.
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at
+) VALUES (
+  '16200000-aaaa-4aa1-8aa1-000000000060',
+  '16200000-aaaa-4aa1-8aa1-000000000050',
+  1000.00,
+  timestamptz '2026-07-01 00:00:00+00',
+  timestamptz '2026-07-01 12:00:00+00'
+);
+
+SELECT is(
+  (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+  '16200000-aaaa-4aa1-8aa1-000000000060'::uuid,
+  'F14-16 primer INSERT en tarifa_importe promociona current_tarifa_id'
+);
+
+SELECT is(
+  (SELECT fecha_actualizacion FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+  timestamptz '2026-07-01 00:00:00+00',
+  'F14-16 primer INSERT copia fecha_aparicion a tarifas.fecha_actualizacion'
+);
+
+-- Strictly later (fecha_aparicion, created_at, id) promotes.
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at
+) VALUES (
+  '16200000-aaaa-4aa1-8aa1-000000000061',
+  '16200000-aaaa-4aa1-8aa1-000000000050',
+  2000.00,
+  timestamptz '2026-08-01 00:00:00+00',
+  timestamptz '2026-08-01 12:00:00+00'
+);
+
+SELECT is(
+  (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+  '16200000-aaaa-4aa1-8aa1-000000000061'::uuid,
+  'F14-16 INSERT posterior promociona current_tarifa_id'
+);
+
+SELECT is(
+  (SELECT fecha_actualizacion FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+  timestamptz '2026-08-01 00:00:00+00',
+  'F14-16 promociÃ³n posterior copia fecha_aparicion a fecha_actualizacion'
+);
+
+-- Earlier tuple never demotes.
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at
+) VALUES (
+  '16200000-aaaa-4aa1-8aa1-000000000062',
+  '16200000-aaaa-4aa1-8aa1-000000000050',
+  500.00,
+  timestamptz '2026-06-01 00:00:00+00',
+  timestamptz '2026-06-01 12:00:00+00'
+);
+
+SELECT is(
+  (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+  '16200000-aaaa-4aa1-8aa1-000000000061'::uuid,
+  'F14-16 INSERT anterior no degrada current_tarifa_id'
+);
+
+SELECT is(
+  (SELECT fecha_actualizacion FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+  timestamptz '2026-08-01 00:00:00+00',
+  'F14-16 INSERT anterior no cambia fecha_actualizacion'
+);
+
+-- Cross-parent pointer: 051 cannot point at 050's amount (composite FK).
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at
+) VALUES (
+  '16200000-aaaa-4aa1-8aa1-000000000070',
+  '16200000-aaaa-4aa1-8aa1-000000000051',
+  1500.00,
+  timestamptz '2026-07-01 00:00:00+00',
+  timestamptz '2026-07-01 12:00:00+00'
+);
+
+SELECT throws_ok(
+  $$
+  UPDATE public.tarifas
+     SET current_tarifa_id = '16200000-aaaa-4aa1-8aa1-000000000061'
+   WHERE id = '16200000-aaaa-4aa1-8aa1-000000000051'
+  $$,
+  '23503',
+  NULL,
+  'F14-16 rechaza current_tarifa_id de otra tarifa (FK compuesto)'
+);
+
+-- Immutable history: reject business UPDATE and DELETE of a non-current row
+-- (DELETE of the current pointer could be blocked by the composite FK alone).
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at
+) VALUES
+  (
+    '16200000-aaaa-4aa1-8aa1-000000000080',
+    '16200000-aaaa-4aa1-8aa1-000000000052',
+    800.00,
+    timestamptz '2026-07-01 00:00:00+00',
+    timestamptz '2026-07-01 12:00:00+00'
+  ),
+  (
+    '16200000-aaaa-4aa1-8aa1-000000000081',
+    '16200000-aaaa-4aa1-8aa1-000000000052',
+    900.00,
+    timestamptz '2026-08-01 00:00:00+00',
+    timestamptz '2026-08-01 12:00:00+00'
+  );
+
+SELECT throws_ok(
+  $$
+  UPDATE public.tarifa_importe
+     SET importe = 9999.00
+   WHERE id = '16200000-aaaa-4aa1-8aa1-000000000080'
+  $$,
+  NULL,
+  NULL,
+  'F14-16 tarifa_importe rechaza UPDATE de importe (historial inmutable)'
+);
+
+SELECT throws_ok(
+  $$
+  DELETE FROM public.tarifa_importe
+   WHERE id = '16200000-aaaa-4aa1-8aa1-000000000080'
+  $$,
+  NULL,
+  NULL,
+  'F14-16 tarifa_importe rechaza DELETE (historial inmutable)'
+);
+
+-- Equal fecha_aparicion: later created_at wins even with a smaller id.
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at
+) VALUES (
+  '16200000-aaaa-4aa1-8aa1-000000000091',
+  '16200000-aaaa-4aa1-8aa1-000000000053',
+  1100.00,
+  timestamptz '2026-07-10 00:00:00+00',
+  timestamptz '2026-07-15 10:00:00+00'
+);
+
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at
+) VALUES (
+  '16200000-aaaa-4aa1-8aa1-000000000090',
+  '16200000-aaaa-4aa1-8aa1-000000000053',
+  1200.00,
+  timestamptz '2026-07-10 00:00:00+00',
+  timestamptz '2026-07-15 11:00:00+00'
+);
+
+SELECT is(
+  (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000053'),
+  '16200000-aaaa-4aa1-8aa1-000000000090'::uuid,
+  'F14-16 misma fecha_aparicion: created_at posterior promociona (id menor no gana)'
+);
+
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at
+) VALUES (
+  '16200000-aaaa-4aa1-8aa1-000000000092',
+  '16200000-aaaa-4aa1-8aa1-000000000053',
+  1300.00,
+  timestamptz '2026-07-10 00:00:00+00',
+  timestamptz '2026-07-15 09:00:00+00'
+);
+
+SELECT is(
+  (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000053'),
+  '16200000-aaaa-4aa1-8aa1-000000000090'::uuid,
+  'F14-16 misma fecha_aparicion: created_at anterior no degrada el puntero'
+);
+
+-- Equal fecha_aparicion + equal created_at: later id promotes; earlier id does not.
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at
+) VALUES (
+  '16200000-aaaa-4aa1-8aa1-0000000000a0',
+  '16200000-aaaa-4aa1-8aa1-000000000054',
+  1400.00,
+  timestamptz '2026-07-10 00:00:00+00',
+  timestamptz '2026-07-15 12:00:00+00'
+);
+
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at
+) VALUES (
+  '16200000-aaaa-4aa1-8aa1-0000000000a1',
+  '16200000-aaaa-4aa1-8aa1-000000000054',
+  1500.00,
+  timestamptz '2026-07-10 00:00:00+00',
+  timestamptz '2026-07-15 12:00:00+00'
+);
+
+SELECT is(
+  (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000054'),
+  '16200000-aaaa-4aa1-8aa1-0000000000a1'::uuid,
+  'F14-16 misma fecha y created_at: id posterior promociona'
+);
+
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at
+) VALUES (
+  '16200000-aaaa-4aa1-8aa1-00000000009f',
+  '16200000-aaaa-4aa1-8aa1-000000000054',
+  1600.00,
+  timestamptz '2026-07-10 00:00:00+00',
+  timestamptz '2026-07-15 12:00:00+00'
+);
+
+SELECT is(
+  (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000054'),
+  '16200000-aaaa-4aa1-8aa1-0000000000a1'::uuid,
+  'F14-16 misma fecha y created_at: id anterior no degrada el puntero'
+);
+
+SELECT * FROM finish();
+ROLLBACK;

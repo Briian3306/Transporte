@@ -29,6 +29,14 @@ describe('toPostgresFechaHora', () => {
     expect(toPostgresFechaHora(d)).toBe('2026-07-13 15:54:17');
   });
 
+  it('convierte un serial de fecha Excel a timestamp PostgreSQL', () => {
+    expect(toPostgresFechaHora(46078.63943287037)).toBe('2026-02-25 15:20:47');
+  });
+
+  it('preserva correctamente el meridiano de una fecha Excel textual', () => {
+    expect(toPostgresFechaHora('01/07/2026 06:19:24 PM')).toBe('2026-07-01 18:19:24');
+  });
+
   it('rechaza fecha imposible', () => {
     expect(toPostgresFechaHora('2026-13-32 15:54:17')).toBeNull();
   });
@@ -48,6 +56,11 @@ describe('formatLocalDateTime / normalizarCeldaExcel', () => {
     expect(isUtcDateOnly(utcMidnight)).toBeTrue();
     expect(formatUtcDateOnly(utcMidnight)).toBe('2026-07-13');
     expect(normalizarCeldaExcel(utcMidnight)).toBe('2026-07-13 00:00:00');
+  });
+
+  it('normaliza un serial Excel solo cuando la columna es fecha', () => {
+    expect(normalizarCeldaExcel(46078.63943287037, true)).toBe('2026-02-25 15:20:47');
+    expect(normalizarCeldaExcel(46078.63943287037)).toBe(46078.63943287037);
   });
 });
 

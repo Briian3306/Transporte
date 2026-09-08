@@ -49,6 +49,38 @@
             <pre *ngIf="d.tecnico.stack">{{ d.tecnico.stack }}</pre>
           </details>
         </div>
+        <div class="paso8__tarifas-table-wrap" *ngIf="d.id === 'tarifas' && filasTarifaVista.length">
+          <table class="pw__table paso8__tarifas-table">
+            <thead>
+              <tr>
+                <th>Fila</th>
+                <th>Estación</th>
+                <th>Categoría</th>
+                <th>Sentido solicitado</th>
+                <th>Sentido aplicado</th>
+                <th>Estado</th>
+                <th>Importe auditado</th>
+                <th>Importe comparado</th>
+                <th>Error relativo</th>
+                <th>Resultado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let f of filasTarifaVista">
+                <td>{{ f.fila }}</td>
+                <td>{{ f.estacion }}</td>
+                <td>{{ f.categoria }}</td>
+                <td>{{ f.sentidoSolicitado }}</td>
+                <td>{{ f.sentidoAplicado }}</td>
+                <td>{{ f.estado }}</td>
+                <td class="pw__mono">{{ f.importeAuditado }}</td>
+                <td class="pw__mono">{{ f.importeComparado }}</td>
+                <td class="pw__mono">{{ f.errorRelativo }}</td>
+                <td>{{ f.resultado }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <div class="paso8__duplicate-comparison" *ngIf="d.id === 'duplicados' && duplicadosComparacion.length">
           <div class="paso8__duplicate-heading">
             <div>
@@ -73,7 +105,7 @@
             [clientFilter]="false"
             emptyMessage="No se encontraron coincidencias para comparar."
           />
-          <div class="paso8__duplicate-consent" *ngIf="d.estado === 'error'">
+          <div class="paso8__duplicate-consent" *ngIf="d.estado === 'error' || duplicadosConfirmados">
             <button type="button" class="pw__btn pw__btn--primary" (click)="subirIgualmente()">
               Subir igualmente
             </button>

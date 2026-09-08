@@ -34,8 +34,9 @@ export class RoleBasedDirective implements OnInit, OnDestroy {
     }
 
     const allowedRoles = Array.isArray(this.appRoleBased) ? this.appRoleBased : [this.appRoleBased];
-    const currentRole = this.granularPermissionService.getCurrentRole();
-    const hasRole = currentRole && allowedRoles.includes(currentRole);
+    const currentRoles = this.granularPermissionService.getCurrentRoleNames()
+      .map((name) => name.toLowerCase());
+    const hasRole = allowedRoles.some((role) => currentRoles.includes(role.toLowerCase()));
     
     const shouldShow = this.appRoleExclude ? !hasRole : hasRole;
     

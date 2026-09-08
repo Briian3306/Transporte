@@ -9,3 +9,16 @@ export function describeValidationFailure({ enabled, status = '', details = '' }
     message: duplicate ? `${details || status}` : `Paso Validación bloqueado (${status || 'Requiere revisión'}).`,
   };
 }
+
+/** Masiva: duplicates stay on the tab as USER_INPUT (do not close as DUPLICATED). */
+export function masivaValidationUserInputMessage(state = {}) {
+  const failure = describeValidationFailure(state);
+  if (!failure.failed) return '';
+  if (failure.duplicate) {
+    return (
+      `Paso Validación: hay pasadas duplicadas (${failure.message || 'duplicados'}). ` +
+      'Revisá la tabla, pulsá «Subir igualmente» si corresponde, y luego Continuar.'
+    );
+  }
+  return `${failure.message} Revisá la diferencia de factura o los errores de filas y pulsá Continuar cuando esté verde.`;
+}

@@ -8,6 +8,7 @@ export const PEAJES_HOME_SECTION_IDS = [
   'pasadas',
   'pasadas-pendientes',
   'auditoria-tarifas',
+  'tarifario',
   'auditoria-estaciones',
   'catalogos',
   'plantillas',

@@ -1,0 +1,57 @@
+/** Explicit column lists — never SELECT *. */
+
+export const TARIFAS_NORMALIZADAS_COLUMNS = [
+  'id',
+  'peaje_id',
+  'estacion_id',
+  'categoria',
+  'importe',
+  'importe_base',
+  'cases',
+  'multiplicador',
+  'desvio',
+  'hora_min',
+  'hora_max',
+  'hora_media',
+  'patron',
+  'diagnostico',
+  'status',
+  'muestra_confiable',
+  'confirmado_manual',
+  'confirmado_por',
+  'confirmado_at',
+  'created_at',
+  'updated_at',
+  'categoria_calculated',
+];
+
+export const PASADAS_COLUMNS = [
+  'id',
+  'fecha_hora',
+  'pase_id',
+  'patente_id',
+  'estacion_id',
+  'documento_id',
+  'precio',
+  'bonificacion',
+  'quantity',
+  'importe_neto',
+  'created_at',
+  'user_id',
+  'file_upload_name',
+  'categoria',
+  'tarifa_normalizada_id',
+  'tarifa_status',
+  'duplicado',
+];
+
+export const TARIFAS_STATUS_CATALOGO_COLUMNS = [
+  'id',
+  'peaje_id',
+  'codigo',
+  'etiqueta',
+  'color',
+  'tipo_meta',
+  'orden',
+  'created_at',
+];

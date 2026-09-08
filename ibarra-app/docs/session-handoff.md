@@ -1,4 +1,87 @@
-# Handoff del proyecto — 2026-08-04
+# Handoff del proyecto — 2026-09-08
+
+## Handoff F14-17 — Tarifario RPCs CLI (`passing`)
+
+`/peajes/tarifario` ya no usa el mock vivo. Provider: `PeajesTarifarioSupabaseService` → cuatro RPCs INVOKER sobre `tarifas` + `tarifa_importe`.
+
+- Migración: `20260908140000_peajes_tarifario_rpcs.sql`
+- pgTAP: `supabase/tests/peajes_tarifario_rpc_test.sql` (15 assertions; Files=15 Tests=427)
+- Guardar: INSERT `tarifa_importe`; trigger promociona `current_tarifa_id`. Identidad faltante se crea. `importe > 0`.
+- Seed: `pnpm seed:local` incluye `seed:tarifario-v2`
+- Specs de componentes siguen en `TarifarioMockService`
+- Docs: `docs/06-components/peajes/tarifario.md` + `docs/backend/peajes/tarifario.md`
+- Sin DESARROLLO. Sin commit.
+
+F14-16 schema/matching se retiene. Matching de pasadas no cambió.
+
+## Handoff F14-16 — Task 10 docs + `passing` (2026-09-08)
+
+F14-16 **`passing`** en CLI local. Docs canónicos:
+
+- Tablas: `docs/06-tablas/peajes/tarifas-tarifa-importe.md`
+- Backend: `docs/backend/peajes/tarifas-tarifa-importe.md`
+
+`tarifas_normalizadas` **se retiene** (tabla, FKs, writers, firmas RPC, `pwbi_tarifas`, `pasadas.tarifa_normalizada_id`). No DROP de legado.
+
+**Diferidos (no paper over):**
+
+1. `asociarTrasConfirmacion` implementado en `TarifaValidationService`; **no** cableado tras `peajes_confirmar_carga` (la carga sigue `peajes_normalizar_tarifas`).
+2. Backfill de volumen real de `pasadas.tarifa_importe_id` no probado fuera de pgTAP (`--no-seed` → pasadas 0/0/0).
+3. `pwbi_tarifas_v2` es paralela, no clon drop-in de `pwbi_tarifas`; LEFT JOIN puede dejar `Importe` NULL.
+4. `_stg_precio_last` es staging local, no catálogo de runtime.
+5. Sin write DESARROLLO. Sin commit.
+
+Task 9 (2026-09-08, local): `db reset --local --no-seed` EXIT 0; `test db` Files=14 Tests=412; Node 53/53; ng adapter+validation+paso8 35 SUCCESS; auditoria-tarifas 52 SUCCESS; tsc app+spec EXIT 0.
+
+F14-17 Tarifario UI sigue mock (`in_progress`); swap RPC no es esta feature.
+
+## Handoff F14-17 — Tarifario UI mock (2026-09-07)
+
+UI de precios actuales lista contra **mock stateful**. No esperar F14-16 para usar `/peajes/tarifario`.
+
+- Rutas: `/peajes/tarifario` y `/peajes/tarifario/:peajeId/:estacionId/:sentido`
+- Token: `PEAJES_TARIFARIO_SERVICE` → `TarifarioMockService` en `tarifario.routes.ts`
+- Permiso: `peajes:manage`; tarjeta home **Tarifario** (`fa-tags`)
+- Componentes no importan mock vs Supabase
+- Faltante = `—`; New vacío omitido del payload; sentido exacto IDA/VUELTA/AMBAS
+- Verify: `ng test` `**/peajes/tarifario/**/*.spec.ts` **30 SUCCESS**; home + permission **12 SUCCESS**
+- Doc UI: `docs/06-components/peajes/tarifario.md`
+- Browser: `/peajes/tarifario` pide login; el smoke visual list→editor queda pendiente de sesión `peajes:manage`
+- **Bloqueado (editor Supabase):** `PeajesTarifarioSupabaseService` + RPCs `peajes_listar_tarifas_actuales` / `peajes_obtener_tarifario_editor` / `peajes_guardar_tarifas_actuales` / `peajes_listar_tarifa_historial` + pgTAP. F14-16 matching v2 está `passing`; esos RPC de editor **no** forman parte de F14-16. Swap: una línea `useClass` cuando existan. Sin DESARROLLO. Sin commit.
+
+## Handoff F14-16 — registro y freeze F14-12..F14-15 (histórico 2026-09-07)
+
+**Histórico.** F14-16 quedó `passing` el 2026-09-08 (Task 10). Esta sección conserva el freeze de alcance.
+
+F14-16 se registró `in_progress` (docs only). Additive/shadow: **no eliminar `tarifas_normalizadas`**. La tabla, columnas, FKs, writers, firmas RPC existentes, vistas y `pasadas.tarifa_normalizada_id` permanecen como camino de compatibilidad. Un retiro futuro es otro proyecto, fuera de F14-16.
+
+- Plan ejecutable: `docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md`
+- Wave 0 F14-11: `passing` intacto (CSV/Excel; sin SQL)
+- F14-12..F14-15: superseded by F14-16, never implemented (sentido, puntero current, Cross auditado, flag IVA, historia inmutable)
+- Owner: `01-backend-supabase`; depende de F14-11
+- Product docs: `docs/06-tablas/peajes/tarifas-tarifa-importe.md` y `docs/backend/peajes/tarifas-tarifa-importe.md` (Task 10)
+- No write DESARROLLO. No commit.
+
+## Handoff F14-11 Wave 0 — fixtures CSV/Excel (histórico 2026-09-04)
+
+**Histórico.** Wave 0 **hecho** (F14-11 `passing`). Esta sección conserva rutas de fixtures; **no** es instrucción vigente de SQL/ETL/UI. F14-12..F14-15 están superseded by F14-16 y **never implemented** — no implementarlas. El trabajo SQL/ETL/UI vigente es **F14-16** (`docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md`).
+
+- Plan Wave 0 (fixtures, sin SQL): `docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md`
+- Catálogo: `scripts/peajes-catalogo-audit/fixtures/tarifas.csv` (todas las claves PICO/NO_PICO)
+- Importes: `scripts/peajes-catalogo-audit/fixtures/tarifas_importe.csv`
+- Excel: `scripts/peajes-catalogo-audit/out/tarifas-tarifas-importe.xlsx` (solo `tarifas` y `tarifas_importe`)
+- Tests: `node --test scripts/peajes-catalogo-audit/*.test.mjs` (21 PASS)
+- Validación unitaria `has_pico`: mismas categorías en PICO y NO_PICO.
+- Excel revisado completo: `auditoria-catalogo-20260904.xlsx` (no sobrescrito).
+- No DROP de `tarifas_normalizadas`. No write DESARROLLO.
+
+## Handoff F14-11..F14-15 — plan Wave 0 (histórico 2026-09-04; superseded)
+
+**Histórico / superseded.** El plan de 2026-09-04 proponía F14-12..F14-15 como SQL/ETL/UI. Ese contrato **nunca se implementó** y quedó superseded by **F14-16**. No implementar F14-12..F14-15. SQL/ETL/UI vigente: F14-16 / `docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md`.
+
+- Plan Wave 0 (fixtures, sin SQL): `docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md`
+- Excel fuente completa: `scripts/peajes-catalogo-audit/out/auditoria-catalogo-20260904.xlsx`
+- Ownership original de F14-12..F14-15 (obsoleto, no ejecutar): `01` schema/ETL/RPC; `02` Angular; `04`/`05` docs/QA. El owner vigente de SQL/ETL/UI es F14-16 (`01-backend-supabase`).
 
 ## Fuente de verdad
 

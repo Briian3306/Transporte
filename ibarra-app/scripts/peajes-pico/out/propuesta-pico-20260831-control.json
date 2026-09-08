@@ -1,0 +1,23 @@
+{
+  "total": 132,
+  "coincidencias": 123,
+  "pct": 93.2,
+  "porPeaje": {
+    "AUBASA": {
+      "total": 36,
+      "coincidencias": 27
+    },
+    "AUSA": {
+      "total": 35,
+      "coincidencias": 35
+    },
+    "AUSOL": {
+      "total": 22,
+      "coincidencias": 22
+    },
+    "AUTOPISTA DEL OESTE": {
+      "total": 39,
+      "coincidencias": 39
+    }
+  }
+}

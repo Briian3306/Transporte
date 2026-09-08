@@ -34,6 +34,13 @@
 .paso8__duplicate-note { margin: .55rem 0 .8rem !important; color: var(--pw-muted, #62758a); font-size: .8rem !important; }
 .paso8__duplicate-comparison .dt { border: 1px solid var(--pw-line, #dce5ee); border-radius: 8px; overflow: hidden; }
 .paso8__duplicate-consent { margin-top: .85rem; display: flex; justify-content: flex-end; }
+.paso8__tarifas-table-wrap { grid-column: 2; margin-top: .85rem; overflow-x: auto; border: 1px solid var(--pw-line, #dce5ee); border-radius: 10px; background: #fff; }
+.paso8__tarifas-table { margin: 0; }
+.paso8__tarifas-table th { white-space: nowrap; font-size: .72rem; }
+.paso8__tarifas-table td { font-size: .8rem; white-space: nowrap; }
+@media (max-width: 720px) {
+  .paso8__tarifas-table-wrap { grid-column: 1 / -1; margin-left: -.25rem; margin-right: -.25rem; }
+}
 @media (max-width: 720px) {
   .paso8__duplicate-comparison { grid-column: 1 / -1; margin-left: -.25rem; margin-right: -.25rem; padding: .75rem; }
   .paso8__duplicate-heading { flex-direction: column; }

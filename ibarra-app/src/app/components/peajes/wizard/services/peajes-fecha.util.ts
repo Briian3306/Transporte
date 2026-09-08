@@ -5,6 +5,9 @@
 
 export function toPostgresFechaHora(value: unknown): string | null {
   if (value == null || value === '') return null;
+  if (typeof value === 'number') {
+    return fechaHoraDesdeSerialExcel(value);
+  }
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return formatLocalDateTime(value);
   }
@@ -13,7 +16,7 @@ export function toPostgresFechaHora(value: unknown): string | null {
   if (!s) return null;
 
   // yyyy-MM-dd[ T]HH:mm[:ss] — corregir si vino como yyyy-dd-MM (mes > 12)
-  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/.exec(s);
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*(AM|PM))?)?/.exec(s);
   if (m) {
     let month = Number(m[2]);
     let day = Number(m[3]);
@@ -23,14 +26,16 @@ export function toPostgresFechaHora(value: unknown): string | null {
       day = swap;
     }
     if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-    const hh = String(Number(m[4] ?? 0)).padStart(2, '0');
+    const hora = normalizarHora(Number(m[4] ?? 0), m[7]);
+    if (hora == null) return null;
+    const hh = String(hora).padStart(2, '0');
     const mm = String(Number(m[5] ?? 0)).padStart(2, '0');
     const ss = String(Number(m[6] ?? 0)).padStart(2, '0');
     return `${m[1]}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${hh}:${mm}:${ss}`;
   }
 
   // dd/MM/yyyy[ HH:mm[:ss]] (es-AR). Si el 2.º token > 12, interpretar MM/DD.
-  m = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/.exec(s);
+  m = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*(AM|PM))?)?/.exec(s);
   if (m) {
     let day = Number(m[1]);
     let month = Number(m[2]);
@@ -40,13 +45,30 @@ export function toPostgresFechaHora(value: unknown): string | null {
       month = swap;
     }
     if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-    const hh = String(Number(m[4] ?? 0)).padStart(2, '0');
+    const hora = normalizarHora(Number(m[4] ?? 0), m[7]);
+    if (hora == null) return null;
+    const hh = String(hora).padStart(2, '0');
     const mm = String(Number(m[5] ?? 0)).padStart(2, '0');
     const ss = String(Number(m[6] ?? 0)).padStart(2, '0');
     return `${m[3]}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${hh}:${mm}:${ss}`;
   }
 
   return null;
+}
+
+function normalizarHora(value: number, amPm?: string): number | null {
+  if (!Number.isInteger(value)) return null;
+  const meridiano = amPm?.toUpperCase();
+  if (!meridiano) return value >= 0 && value <= 23 ? value : null;
+  if (value < 1 || value > 12) return null;
+  if (meridiano === 'AM') return value === 12 ? 0 : value;
+  return value === 12 ? 12 : value + 12;
+}
+
+function fechaHoraDesdeSerialExcel(value: number): string | null {
+  if (!Number.isFinite(value) || value < 20_000 || value > 80_000) return null;
+  const d = new Date(Date.UTC(1899, 11, 30) + Math.round(value * 86_400_000));
+  return Number.isNaN(d.getTime()) ? null : formatUtcDateTime(d);
 }
 
 /** Local `yyyy-MM-dd HH:mm:ss` (preserves HMS; used by Excel normalize + Postgres). */
@@ -119,8 +141,11 @@ export function formatUtcDateShort(value: string | Date | null | undefined): str
  *   (avoids ART −1 day when local getters run on UTC midnight).
  * - Datetime cells: local wall-clock (F13-RN16-FECHA / ConsumosResumen).
  */
-export function normalizarCeldaExcel(value: unknown): unknown {
+export function normalizarCeldaExcel(value: unknown, esColumnaFecha = false): unknown {
   if (value == null || value === '') return value ?? null;
+  if (esColumnaFecha) {
+    return toPostgresFechaHora(value) ?? value;
+  }
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     if (isUtcDateOnly(value)) {
       return `${formatUtcDateOnly(value)} 00:00:00`;

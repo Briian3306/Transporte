@@ -11,6 +11,7 @@ Esta carpeta reúne el PRD, el plan técnico original y los planes de evolución
 | [PRD_Feature_Normalizacion_Tarifaria.md](./PRD_Feature_Normalizacion_Tarifaria.md) | Requisitos funcionales del motor y la auditoría tarifaria. |
 | [PLAN_Backend_Frontend_Tarifas_Normalizadas.md](./PLAN_Backend_Frontend_Tarifas_Normalizadas.md) | Diseño técnico original de backend y frontend. |
 | [PLAN_Refactor_UI_UX_Auditoria_Tarifas.md](./PLAN_Refactor_UI_UX_Auditoria_Tarifas.md) | Refactor propuesto de la experiencia de inspección, clasificación, progreso y pruebas UX. |
+| [Refactor tarifas + tarifa_importe](../refactor-tarifas-importe/INDEX.md) | F14-11 fixtures CSV/Excel (sin SQL). F14-12..F14-15 diferidos. |
 
 ## Referencias
 
@@ -19,4 +20,4 @@ Esta carpeta reúne el PRD, el plan técnico original y los planes de evolución
 
 ---
 
-> Última actualización: agosto de 2026
+> Última actualización: 2026-09-04

@@ -1,0 +1,350 @@
+﻿# Review package: working tree vs HEAD 19369b4
+# Task 1 did not commit (plan forbids it). Diff is unstaged/uncommitted for the five owned files only.
+
+## Commits
+(none)
+
+## Files changed
+ ibarra-app/docs/claude-progress.md |  26 ++++++-
+ ibarra-app/docs/plan/INDEX.md      |   4 +-
+ ibarra-app/docs/session-handoff.md |  34 ++++++++-
+ ibarra-app/feature_list.json       | 144 ++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 204 insertions(+), 4 deletions(-)
+
+## Diff
+
+diff --git a/ibarra-app/docs/claude-progress.md b/ibarra-app/docs/claude-progress.md
+index 6fcfdc1..2d1c728 100644
+--- a/ibarra-app/docs/claude-progress.md
++++ b/ibarra-app/docs/claude-progress.md
+@@ -7,21 +7,37 @@
+ > 2026-08-21 ÔÇö **F16 passing (local).** F14 (auditor├¡a de tarifas) ya estaba en home; F16 es **Auditor├¡a de estaciones**. Cat├ílogos: `peajes:manage` no ve├¡a la tarjeta porque `PEAJES_HOME_SECTION_IDS` omit├¡a `'catalogos'` y el grid filtraba `isSectionVisible('catalogos')`. Seed CLI: `seed_peajes_desarrollo.sql` (24 empresas / 22 peajes MCP); `db dump --linked` 403; pasadas 8326 no versionadas ÔÇö sigue `seed_peajes_f14.sql`. pgTAP **210 PASS**. Sin `db push --linked`.
+ 
+ - PRD principal: `docs/plan/peaje-prd-short.md.md`
+ - Ejemplo operativo: `docs/plan/ejemplo-mvp-procesamiento-pasadas.md`
+ - Estado de features: `feature_list.json`
+ - Gu├¡a de agentes: `AGENTS.md`
+ - Handoff: `docs/session-handoff.md`
+ 
+ ## Estado actual
+ 
+-Fecha: 2026-08-28 ÔÇö **F18-1 / F18-2 passing (local).** Importaci├│n masiva acepta N PDF opcionales (nombre = columna FACTURA) y Paso 7 corre IA 1ÔåÆn con badges y retry de pendientes. Paso 8 muestra patente/pase por nombre + archivo + DUPLICADO; ┬½Subir igualmente┬╗ confirma el lote. Migraci├│n `20260828120000_peajes_duplicados_permitidos.sql`: columna `pasadas.duplicado`, ├¡ndice ├║nico parcial, `peajes_detectar_duplicados` enriquecido, `peajes_confirmar_carga(..., p_permitir_duplicados default false)`. La detecci├│n RN-16 corre siempre. Verify: `npx supabase db reset --local --no-seed` OK; `npx supabase test db` ÔåÆ **220 PASS**; `tsc` app+spec EXIT 0; `ng test` helpers+state+queue+paso1+paso7+paso8+carga **75 SUCCESS**. Visual wizard no corrido (auth). Sin `db push --linked`.
++Fecha: 2026-09-07 ÔÇö **F14-16 registrado `in_progress` (solo docs).** Plan ejecutable: `docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md`. Wave 0 / F14-11 `passing` intacto (fixtures, sin SQL). F14-12..F14-15 `not_started` + evidence: superseded by F14-16, never implemented (el contrato nuevo agrega sentido, puntero current, Cross auditado, flag IVA e historia inmutable). F14-16 es additive/shadow: `tarifas_normalizadas` permanece como camino de compatibilidad (tabla, columnas, FKs, writers, firmas RPC existentes, vistas y `pasadas.tarifa_normalizada_id`). No se elimina, renombra ni reemplaza. Sin SQL/TS. Sin DESARROLLO. Sin commit.
++
++Fecha: 2026-09-04 ÔÇö **Wave 0 dump completo ÔåÆ 2 CSV + Excel 2 pesta├▒as (sin SQL).** `fixtures/tarifas.csv` (520 claves) y `fixtures/tarifas_importe.csv` (1079 importes; omite PENDIENTE). Excel: `out/tarifas-tarifas-importe.xlsx` hojas `tarifas` y `tarifas_importe`. Tests **21 PASS**. F14-11 `passing`. No DESARROLLO.
++
++Fecha: 2026-09-04 ÔÇö **Plan refactor `tarifas` + `tarifa_importe` (solo docs).** Fuente de verdad del cat├ílogo: `scripts/peajes-catalogo-audit/out/auditoria-catalogo-20260904.xlsx` (641 Catalogue, 116 Summary, columna `modificated`: 4 TRUE). Plan: `docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md`. Features **F14-11..F14-15** `not_started`. Validaci├│n: si `cluster=has_pico`, el set de categor├¡as PICO debe ser igual al de NO_PICO (cada categor├¡a necesita ambos `tarifas`). Bloqueo ETL: AUSA ALBERTI y AUTOPISTA DEL OESTE BRANDSEN pasaron a `has_pico` a mano y siguen solo NO_PICO. No se toc├│ `tarifas_normalizadas` ni DESARROLLO.
++
++Fecha: 2026-09-02 ÔÇö **`pwbi_tarifas.fecha_aparicion` (snake_case) en DESARROLLO.** La vista ten├¡a `"Fecha_Aparicion"` quoted; SQL/`select=fecha_aparicion` no la ve├¡a. DROP+CREATE + `NOTIFY pgrst`. 1142/1142 filas con valor. Local: `20260902185000_peajes_pwbi_tarifas_fecha_aparicion.sql`; `npx supabase test db` **232 PASS**.
++
++Fecha: 2026-09-02 ÔÇö **F14-10 `fecha_aparicion` en DESARROLLO** (`kfffigvyvtzyczeiadxh`). `npx supabase db push --linked` dio **403** (CLI sin privilegios). Aplicado v├¡a MCP `apply_migration` `peajes_tarifas_fecha_aparicion` (historial remoto `20260902194010`; archivo local `20260902163000`). Post: 1142/1142 niveles con `fecha_aparicion` (0 NULL); mismatches vs `MIN(pasadas.fecha_hora)` = 0; trigger `trg_pasadas_fecha_aparicion` OK. Rango 2025-08-21 ÔåÆ 2026-08-29. Sin `db reset --linked`.
++
++Fecha: 2026-09-01 ÔÇö **Excel CONFIRMAR=SI aplicado en DESARROLLO** (`kfffigvyvtzyczeiadxh`) v├¡a RPC `peajes_confirmar_status_tarifa`. 842 niveles (277 PICO / 565 NO_PICO) + ~14810 pasadas. Excluidos: **Rutas Sur Atl├íntico** (0 confirmados hoy) y **6 overwrite de julio** (AUBASA Dock Sud 2/6/7, AUSA Salguero 9, AUSOL Belgrano 6, Corredores Ricchieri $6500). Fuente: `scripts/peajes-pico/out/propuesta-pico-20260831.xlsx`. El NO_PICO masivo de peajes sin hora pico **sigue sin ejecutar**.
++
++Fecha: 2026-08-31 ÔÇö **Clasificaci├│n PICO/NO_PICO (sin write a DESARROLLO).** SQL ad hoc en `supabase/scripts/`: verificaci├│n + `update_no_pico_masivo.sql` + postvalidaci├│n para peajes **sin** hora pico (preserva `confirmado_manual`). El UPDATE **no se ejecut├│**. Excel propuesta eneÔÇôjul: `scripts/peajes-pico/out/propuesta-pico-20260831.xlsx` (1716 filas, columna CONFIRMAR). Autovalidaci├│n Patr├│n B vs julio: **123/132 = 93,2 %**. Tests: `node --test scripts/peajes-pico/classifier.test.mjs` **14 pass**. Doc: `docs/06-components/peajes/propuesta-pico-excel.md`.
++
++Fecha: 2026-08-28 ÔÇö **F18-2 en DESARROLLO** (`kfffigvyvtzyczeiadxh`). `npx supabase db push --linked` dio **403** (la cuenta CLI no tiene privilegios sobre este proyecto). Aplicado v├¡a MCP `apply_migration` `peajes_duplicados_permitidos`; historial alineado a `20260828120000`. Post: `pasadas.duplicado boolean NOT NULL default false`; ├¡ndice ├║nico parcial `pasadas_duplicado_uk WHERE (duplicado = false)`; `peajes_confirmar_carga` con `p_permitir_duplicados boolean`. Sin `db reset --linked`.
++
++Fecha: 2026-08-28 ÔÇö **F18-1 / F18-2 passing (local).** Importaci├│n masiva acepta N PDF opcionales (nombre = columna FACTURA) y Paso 7 corre IA 1ÔåÆn con badges y retry de pendientes. Paso 8 muestra patente/pase por nombre + archivo + DUPLICADO; ┬½Subir igualmente┬╗ confirma el lote. Migraci├│n `20260828120000_peajes_duplicados_permitidos.sql`: columna `pasadas.duplicado`, ├¡ndice ├║nico parcial, `peajes_detectar_duplicados` enriquecido, `peajes_confirmar_carga(..., p_permitir_duplicados default false)`. La detecci├│n RN-16 corre siempre. Verify: `npx supabase db reset --local --no-seed` OK; `npx supabase test db` ÔåÆ **220 PASS**; `tsc` app+spec EXIT 0; `ng test` helpers+state+queue+paso1+paso7+paso8+carga **75 SUCCESS**. Visual wizard no corrido (auth).
+ 
+ Fecha: 2026-08-24 ÔÇö **Invoice AI Task 7 catch-up.** Code sibling Tasks 1ÔÇô5 on disk. `wizard.md` documents PDF opcional, disparo post-plantilla, neto en centavos, retry, privacidad y click-to-apply (masiva fuera de alcance). **F17-1 passing**, **F17-2 passing**, **F17-3 in_progress** (sin smoke visual `/peajes/carga-express`), **F17-4 in_progress** (live OpenRouter no autorizado), **F17-5 in_progress**. Verify: `node --test peajes-invoice-ai.test.js` **10 pass EXIT 0**; fixtures test **1 pass EXIT 0**; `verify-invoice-ai-fixtures.mjs` skip EXIT 0; `ng test` ai+paso1+paso7+wizard-state **TOTAL: 47 SUCCESS**; `tsc` app+spec EXIT 0; `ng build` development EXIT 0 (NG8107 paso9 preexistente). Live no corrido. Sin commit.
+ 
+ Fecha: 2026-08-24 ÔÇö **Invoice AI Tasks 6ÔÇô7 (QA/docs).** Plan `docs/plan/invoice-ai/PLAN_invoice-ai.md`. Canonical IDs **F17-1..F17-5** (PLAN F16-1..F16-5 collide with auditor├¡a F16-0..3). F17-1 `in_progress` (Task 1 files appeared; proxy missing). F17-2/3 `not_started`. F17-4/5 `in_progress`. Fixtures JSON + skip-live runner + `peajes-invoice-ai.fixtures.test.js`. Verify: fixtures test **1 pass EXIT 0**; runner skip EXIT 0; `peajes-invoice-ai.test.js` **Could not find ÔÇª EXIT 1**; `ng test` ai+paso1+paso7 **TOTAL: 20 SUCCESS**; `tsc` app+spec EXIT 0; `ng build` development EXIT 0 (NG8107 paso9 preexistente). Live OpenRouter **not authorized**. `wizard.md` not updated (no PDF/Paso 7 IA APIs). Handoff: server owns credentials; frontend owns UI/state; **no Supabase write**. No commit.
+ 
+ Fecha: 2026-08-21 ÔÇö **CLI seed F14 + login**. `db reset --local` aplica `seed_auth` ÔåÆ `seed_cli_login` (francis@transporteibarra.com.ar password CLI) ÔåÆ `seed_rbac_schema`/`seed_rbac` ÔåÆ `seed_peajes_f14` (80 pasadas sint├®ticas, peaje CLI Auditor├¡a tarifas). Verify: reset OK; login GoTrue local OK; tarifas 4 niveles (PICO 3000 POSIBLE_HORARIO + 3 CATEGORIA). pgTAP sigue con `--no-seed`.
+ 
+ Fecha: 2026-08-21 ÔÇö **F14-0/F14-3/F14-4 gap-fill agente 02**. Contrato CATEGORIA ya ok. Wizard: descartar `rec-categoria` excluye columna y limpia mapeo (Patr├│n A). Auditor├¡a: expand al click de fila padre, `POSIBLE_HORARIO` en botones de cat├ílogo, sticky estaci├│n y layout m├│vil `at__` bajo 720px. Verify: `tsc` app OK; wizard-state + column-recognition + paso5 + auditoria-tarifas **90 SUCCESS**. Suite wizard completa **129 SUCCESS / 5 FAILED** (carga-express conteo de pasos y specs Paso 6 preexistentes). Persistencia `categoria` ya est├í en `PeajesCargaSupabaseService` (01). **F14-6 no cerrado.** Sin commit/push.
+ 
+ Fecha: 2026-08-21 ÔÇö **F14-1/F14-2 gap-fill agente 01 (CLI)**. Checklist ┬º7.1: tablas/RPC/├¡ndices/RLS/UTC ya estaban; hueco real = hook SQL. Migraci├│n `20260821141019_peajes_confirmar_carga_hook_normalizar.sql`: `peajes_confirmar_carga` llama `peajes_normalizar_tarifas` por documento (firma p├║blica intacta; `EXCEPTION` no revierte carga v├ílida). Angular conserva `.rpc` idempotente hasta push DESARROLLO. Verify: `npx supabase db reset --local --no-seed` OK; `npx supabase test db` ÔåÆ **198 PASS**; `ng test` peajes-carga **1 SUCCESS**. Advisors: `security_definer_view` en `pwbi_*` preexistente. **No** `db push --linked`. **F14-6 no cerrado.**
+@@ -614,10 +630,18 @@ Criterio de cierre: (2) y (3) en verde sin paso de transformaci├│n parche no aco
+ - El stepper ordena Patentes antes de Estaciones y omite Estaciones cuando el reconocimiento es completo.
+ - `PeajesPlantillaApplyService` distingue excepciones de mapeo, patentes y estaciones; el wizard administrativo conserva el Paso 5 completo.
+ - `patente-reference.helper.ts` convierte c├│digos de proveedor a UUID y devuelve `null` para referencias no encontradas; Paso 8 bloquea antes de detectar duplicados o confirmar.
+ - Verificaci├│n: `npx tsc --noEmit -p tsconfig.app.json` y `tsconfig.spec.json` pasan; `ng build --configuration=development` pasa con warning preexistente NG8107 en Paso 9. ChromeHeadless no inicia en este host por `GPU process isn't usable`.
+ 
+ ### 2026-08-21 ÔÇö Skill de orquestaci├│n de planes
+ 
+ - Agregada `.agents/skills/plan-orchestrator/` para producir planes sin c├│digo de producto.
+ - Su salida can├│nica es `docs/plan/<epic>/PLAN_<epic>.md`, con planes de frontend/backend/testing solo si aplican; asigna due├▒os, skills, olas y evidencia de verificaci├│n.
+ - Las tareas planificadas se registran como `not_started` y se sincronizan con esta bit├ícora; ning├║n plan puede marcar una feature como `passing`.
++
++### 2026-09-02 ÔÇö F14-10 fecha_aparicion (CLI)
++
++- Columna `tarifas_normalizadas.fecha_aparicion timestamptz NULL`: primera `pasadas.fecha_hora` del nivel.
++- Backfill `MIN(fecha_hora)` agrupado por `tarifa_normalizada_id`.
++- Trigger `trg_pasadas_fecha_aparicion` en INSERT/UPDATE de `tarifa_normalizada_id` o `fecha_hora`: setea si NULL, adelanta si es m├ís temprana, no pisa hacia adelante.
++- `pwbi_tarifas` expone `Fecha_Aparicion` al final del SELECT. Docs Power BI / tablas / backend actualizados.
++- Verify: `npx supabase db reset --local --no-seed` OK; `npx supabase test db` ÔåÆ **232 PASS**. Feature `F14-10` passing. DESARROLLO: MCP `apply_migration` (remoto `20260902194010`); 1142/1142 niveles backfilleados, 0 mismatches. `db push --linked` sigue en 403.
+diff --git a/ibarra-app/docs/plan/INDEX.md b/ibarra-app/docs/plan/INDEX.md
+index 0bb7161..1874845 100644
+--- a/ibarra-app/docs/plan/INDEX.md
++++ b/ibarra-app/docs/plan/INDEX.md
+@@ -9,20 +9,22 @@ La aplicaci├│n y el paquete de coordinaci├│n est├ín centralizados en `ibarra-app
+ ## Orden obligatorio
+ 
+ 1. [PLAN-00-orquestador-setup.md](./PLAN-00-orquestador-setup.md) ÔÇö ├║nico agente inicial y punto de sincronizaci├│n.
+ 2. En paralelo, ├║nicamente despu├®s de que 00 registre y entregue sus contratos: [PLAN-01-backend-supabase.md](./PLAN-01-backend-supabase.md), [PLAN-02-frontend-wizard-tablas.md](./PLAN-02-frontend-wizard-tablas.md) y [PLAN-03-frontend-plantillas-builder.md](./PLAN-03-frontend-plantillas-builder.md).
+ 3. [PLAN-04-documentador.md](./PLAN-04-documentador.md) ÔÇö despu├®s de que las features documentadas est├®n verificadas como `passing`.
+ 4. [PLAN-05-integrador-qa.md](./PLAN-05-integrador-qa.md) ÔÇö ├║nico agente final.
+ 
+ ## Fuentes can├│nicas
+ 
+ - Normalizaci├│n tarifaria: [normalizacion-tarifa/INDEX.md](./normalizacion-tarifa/INDEX.md) ÔÇö PRD, plan t├®cnico y refactor UI/UX propuesto para Auditor├¡a de tarifas.
++- Refactor cat├ílogo `tarifas` + `tarifa_importe`: [refactor-tarifas-importe/INDEX.md](./refactor-tarifas-importe/INDEX.md) ÔÇö Wave 0 fixtures CSV/Excel (sin SQL); simetr├¡a PICO/NO_PICO si `has_pico`.
++- F14-16 migraci├│n gradual `tarifas` + `tarifa_importe`: [PLAN_migracion-gradual-tarifas-tarifa-importe.md](./refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md) ÔÇö plan ejecutable SQL/ETL/UI en sombra. Additive: `tarifas_normalizadas` permanece como camino de compatibilidad. F14-12..F14-15 superseded, never implemented.
+ - PRD: [peaje-prd-es.md](./peaje-prd-es.md).
+ - Caso de aceptaci├│n Demo: [ejemplo-mvp-procesamiento-pasadas.md](./ejemplo-mvp-procesamiento-pasadas.md).
+ - Caso Autopistas Urbanas (CSV): [ejemplo-autopistas-urbanas-pasadas.md](./ejemplo-autopistas-urbanas-pasadas.md) ÔÇö fuente [csv/autopistas_urbanas.csv](./csv/autopistas_urbanas.csv).
+ - Datos ejemplo: [csv/](./csv/) (`1947768.xlsx` Demo, `autopistas_urbanas.csv`).
+ - Testing plan (transform/validate MVP): [testing_plan.md](./testing_plan.md).
+ - Motor transformaciones (patrones): `../../.agents/skills/peajes-transformaciones-motor/SKILL.md`.
+ - Testing transformaciones: `../../.agents/skills/peajes-testing-transformaciones/SKILL.md`.
+ - Evidencia Acceso Oeste: [prueba-workflow-387882-acceso-oeste.md](./prueba-workflow-387882-acceso-oeste.md).
+ - Ejemplo AUSOL: [ejemplo-ausol-procesamiento-pasadas.md](./ejemplo-ausol-procesamiento-pasadas.md) y [prueba-workflow-557074-ausol.md](./prueba-workflow-557074-ausol.md).
+ - Estado y dependencias: `../../feature_list.json`.
+@@ -41,11 +43,11 @@ Solo hay **dos** entornos en este flujo:
+ No hay staging/prod separados. Todo testing SQL se hace contra **Supabase CLI**; no usar MCP remoto como fuente de verdad de testing. **No** reutilizar project refs de OrdenCompra (`edxoqshrzdqpnldktpzy`, `uurlssweuhshbwpxxatw`). Push a DESARROLLO requiere CLI verde y autorizaci├│n expl├¡cita del usuario cuando corresponda. Detalle: `.agents/skills/backend-supabase-write/entornos.md`.
+ 
+ ## Reglas de coordinaci├│n
+ 
+ - Una feature s├│lo pasa a `passing` con evidencia del comando y resultado en `feature_list.json`.
+ - Ning├║n agente modifica archivos fuera de su ownership. Las necesidades cruzadas se registran en `docs/session-handoff.md` una vez que 00 haya creado/normalizado esa bit├ícora.
+ - Los agentes 02 y 03 pueden usar mocks tipados que respeten los contratos de 00 hasta que 01 entregue el servicio real.
+ - No reutilizar `checklist_templates` ni `ChecklistTemplateService`.
+ - Los prompts de cada plan deben ejecutarse desde `ibarra-app/`; esa es la ├║nica ra├¡z de coordinaci├│n.
+ 
+-> ├Ültima actualizaci├│n: julio de 2026
++> ├Ültima actualizaci├│n: 2026-09-07
+diff --git a/ibarra-app/docs/session-handoff.md b/ibarra-app/docs/session-handoff.md
+index 7a392b7..e5b6c4c 100644
+--- a/ibarra-app/docs/session-handoff.md
++++ b/ibarra-app/docs/session-handoff.md
+@@ -1,11 +1,43 @@
+-# Handoff del proyecto ÔÇö 2026-08-04
++# Handoff del proyecto ÔÇö 2026-09-07
++
++## Handoff F14-16 ÔÇö registro y freeze F14-12..F14-15 (2026-09-07)
++
++F14-16 `in_progress` (docs only). **No SQL/TS a├║n.** Additive/shadow: **no eliminar `tarifas_normalizadas`**. La tabla, columnas, FKs, writers, firmas RPC existentes, vistas y `pasadas.tarifa_normalizada_id` permanecen como camino de compatibilidad. Un retiro futuro es otro proyecto, fuera de F14-16.
++
++- Plan ejecutable: `docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md`
++- Wave 0 F14-11: `passing` intacto (CSV/Excel; sin SQL)
++- F14-12..F14-15: superseded by F14-16, never implemented (sentido, puntero current, Cross auditado, flag IVA, historia inmutable)
++- Owner: `01-backend-supabase`; depende de F14-11
++- Product docs `tarifas-tarifa-importe.md` esperan Task 10
++- No write DESARROLLO. No commit.
++
++## Handoff F14-11 Wave 0 ÔÇö fixtures CSV/Excel (2026-09-04)
++
++Wave 0 **hecho**. **No implementar SQL** hasta pedido expl├¡cito (F14-12+). Historical Wave 0 note; SQL/ETL now tracked as F14-16, not F14-12.
++
++- Plan: `docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md`
++- Cat├ílogo: `scripts/peajes-catalogo-audit/fixtures/tarifas.csv` (todas las claves PICO/NO_PICO)
++- Importes: `scripts/peajes-catalogo-audit/fixtures/tarifas_importe.csv`
++- Excel: `scripts/peajes-catalogo-audit/out/tarifas-tarifas-importe.xlsx` (solo `tarifas` y `tarifas_importe`)
++- Tests: `node --test scripts/peajes-catalogo-audit/*.test.mjs` (21 PASS)
++- Validaci├│n unitaria `has_pico`: mismas categor├¡as en PICO y NO_PICO.
++- Excel revisado completo: `auditoria-catalogo-20260904.xlsx` (no sobrescrito).
++- No DROP de `tarifas_normalizadas`. No write DESARROLLO.
++
++## Handoff F14-11..F14-15 ÔÇö plan refactor tarifas (2026-09-04)
++
++Solo plan para SQL/ETL. **No implementar** F14-12..F14-15 hasta pedido expl├¡cito.
++
++- Plan: `docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md`
++- Excel fuente completa: `scripts/peajes-catalogo-audit/out/auditoria-catalogo-20260904.xlsx`
++- `01` posee F14-12..F14-14 (schema, ETL, RPC/pwbi). `02` entra en F14-14 Angular. `04`/`05` en F14-15.
+ 
+ ## Fuente de verdad
+ 
+ ## Handoff invoice AI (PLAN Tasks 6ÔÇô7) ÔÇö 2026-08-24 catch-up
+ 
+ QA/docs. **No commit.** Product code (Tasks 1ÔÇô5) is on disk; this session documented it and re-ran deterministic checks.
+ 
+ ### Ownership / credentials
+ 
+ - **Server** owns OpenRouter credentials (`OPENROUTER_API_URL`, `OPENROUTER_MODEL`, `OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2`). Never `NG_APP_OPENROUTER_*`.
+diff --git a/ibarra-app/feature_list.json b/ibarra-app/feature_list.json
+index d5ecd38..f93efe3 100644
+--- a/ibarra-app/feature_list.json
++++ b/ibarra-app/feature_list.json
+@@ -1665,20 +1665,162 @@
+         "peajes_listar_tarifas_normalizadas incluye categoria_calculated; peajes_recalcular_tarifas no la pisa",
+         "Panel familia: columna Categor├¡a con sello CAT 0ÔÇô10 en Patr├│n A; em dash en Patr├│n B",
+         "npx supabase db reset --local --no-seed && npx supabase test db",
+         "ng test --include=**/peajes/auditoria-tarifas/**/*.spec.ts --watch=false --browsers=ChromeHeadless"
+       ],
+       "evidence": [
+         "2026-08-14: migraci├│n 20260814204300_peajes_tarifas_categoria_calculated.sql. npx supabase db reset --local --no-seed OK. peajes_f14_test.sql 42/42 PASS. ng test auditoria-tarifas 45/45 SUCCESS. Campo opcional: confirmar sin clave no borra; 11 ÔåÆ CHECK 23514. DESARROLLO db push --linked kfffigvyvtzyczeiadxh aplic├│ la migraci├│n.",
+         "2026-08-18: CAT typed/saved sobrevive ngOnChanges y viaja en Asignar status; sello filled vs Sin clase. ng test auditoria-tarifas 49/49 SUCCESS (ChromeHeadless)."
+       ]
+     },
++    {
++      "id": "F14-10",
++      "title": "fecha_aparicion en tarifas_normalizadas: backfill hist├│rico + trigger + pwbi_tarifas",
++      "prd_refs": ["RF-26", "┬º22"],
++      "agent_owner": "01-backend-supabase",
++      "depends_on": ["F14-1", "F14-2"],
++      "status": "passing",
++      "verification": [
++        "tarifas_normalizadas.fecha_aparicion timestamptz NULL; primera pasadas.fecha_hora del nivel (MIN hist├│rico)",
++        "Migraci├│n 20260902163000 backfill por GROUP BY tarifa_normalizada_id + trigger trg_pasadas_fecha_aparicion AFTER INSERT OR UPDATE OF tarifa_normalizada_id, fecha_hora",
++        "Trigger setea si NULL, adelanta si fecha_hora es m├ís temprana, no pisa hacia fechas posteriores; no depende de confirmado_manual",
++        "pwbi_tarifas expone fecha_aparicion (snake_case, como created_at) al final del SELECT; Power Query M en powerbi-supabase.md con type datetimezone",
++        "npx supabase db reset --local --no-seed && npx supabase test db (peajes_f14_fecha_aparicion_test.sql + peajes_pwbi_views_test.sql)"
++      ],
++      "evidence": [
++        "2026-09-02: migraci├│n 20260902163000_peajes_tarifas_fecha_aparicion.sql. npx supabase db reset --local --no-seed OK. npx supabase test db ÔåÆ 232 PASS (Files=13). peajes_f14_fecha_aparicion_test.sql 11/11. pwbi_tarifas.fecha_aparicion en peajes_pwbi_views_test.sql.",
++        "2026-09-02 DESARROLLO: DROP+CREATE pwbi_tarifas con fecha_aparicion snake_case (MCP peajes_pwbi_tarifas_fecha_aparicion) + NOTIFY pgrst. 1142/1142 filas. Local test db 232 PASS."
++      ]
++    },
++    {
++      "id": "F14-11",
++      "title": "Fixtures CSV/Excel de tarifas y tarifa_importe + simetr├¡a has_pico (sin SQL)",
++      "prd_refs": [
++        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md"
++      ],
++      "agent_owner": "01-backend-supabase",
++      "depends_on": ["F14-10"],
++      "status": "passing",
++      "verification": [
++        "fixtures/tarifas.csv y fixtures/tarifas_importe.csv con todas las claves/importes PICO/NO_PICO del dump (sin crear tablas en Supabase)",
++        "out/tarifas-tarifas-importe.xlsx solo con hojas tarifas y tarifas_importe",
++        "cluster=has_pico: categor├¡as PICO = categor├¡as NO_PICO; ALBERTI/BRANDSEN fallan en el sample; HUDSON pasa; MAIPU flat no exige PICO",
++        "node --test scripts/peajes-catalogo-audit/*.test.mjs"
++      ],
++      "evidence": [
++        "2026-09-04 Wave 0: dump completo ÔåÆ tarifas.csv (520 claves) + tarifas_importe.csv (1079 importes) + Excel 2 pesta├▒as. node --test scripts/peajes-catalogo-audit/*.test.mjs ÔåÆ 21 PASS. Sin SQL. No se sobreescribi├│ auditoria-catalogo-20260904.xlsx."
++      ]
++    },
++    {
++      "id": "F14-12",
++      "title": "Tablas tarifas (cat├ílogo) y tarifa_importe (l├¡nea de tiempo) sin borrar tarifas_normalizadas",
++      "prd_refs": [
++        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
++        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
++      ],
++      "agent_owner": "01-backend-supabase",
++      "depends_on": ["F14-11"],
++      "status": "not_started",
++      "verification": [
++        "Migraci├│n additive crea tarifas UNIQUE (peaje_id, estacion_id, status, categoria) y tarifa_importe UNIQUE (tarifa_id, importe)",
++        "status de tarifas solo PICO|NO_PICO; sin tarifa_importe_id obligatorio en tarifas",
++        "tarifas_normalizadas intacta; RLS plana como el resto del m├│dulo",
++        "npx supabase db reset --local --no-seed && npx supabase test db (peajes_tarifas_catalogo_test.sql)"
++      ],
++      "evidence": [
++        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
++      ]
++    },
++    {
++      "id": "F14-13",
++      "title": "ETL Excel + tarifas_normalizadas hacia tarifas y tarifa_importe (CLI)",
++      "prd_refs": [
++        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
++        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
++      ],
++      "agent_owner": "01-backend-supabase",
++      "depends_on": ["F14-12"],
++      "status": "not_started",
++      "verification": [
++        "EXISTING se carga; SUSPECTED_GAP solo si ACTION=ADD e IMPORTE num├®rico; IGNORE se omite",
++        "ETL aborta si has_pico tiene categor├¡as NO_PICO sin el mismo set en PICO (o al rev├®s)",
++        "tarifa_importe.tarifas_normalizadas_id conserva linaje para remap de pasadas",
++        "pgTAP peajes_tarifas_etl_test.sql + conteo vs Catalogue EXISTING; sin write a DESARROLLO"
++      ],
++      "evidence": [
++        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
++      ]
++    },
++    {
++      "id": "F14-14",
++      "title": "Cutover CLI: pasadas.tarifa_importe_id, RPCs y pwbi_tarifas",
++      "prd_refs": [
++        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
++        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
++      ],
++      "agent_owner": "01-backend-supabase",
++      "depends_on": ["F14-13"],
++      "status": "not_started",
++      "verification": [
++        "pasadas.tarifa_importe_id nullable + backfill por linaje; tarifa_normalizada_id se conserva",
++        "peajes_normalizar_tarifas / recalcular / confirmar_status / listar apuntan al cat├ílogo nuevo (CLI)",
++        "pwbi_tarifas una fila por tarifa_importe con Status/Categoria desde tarifas",
++        "npx supabase test db + ng test auditoria-tarifas; sin DROP de tarifas_normalizadas; sin DESARROLLO sin autorizaci├│n"
++      ],
++      "evidence": [
++        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
++      ]
++    },
++    {
++      "id": "F14-15",
++      "title": "Docs del cat├ílogo tarifas / tarifa_importe y Excel modificated",
++      "prd_refs": [
++        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
++        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
++      ],
++      "agent_owner": "04-documentador",
++      "depends_on": ["F14-14"],
++      "status": "not_started",
++      "verification": [
++        "docs/06-tablas y docs/backend describen 1:N y fecha_aparicion en tarifa_importe",
++        "catalogo-tarifas-audit.md documenta modificated, simetr├¡a de categor├¡as PICO/NO_PICO si has_pico, y la ruta del xlsx 20260904",
++        "pwbi-views.md actualizado si cambi├│ pwbi_tarifas"
++      ],
++      "evidence": [
++        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
++      ]
++    },
++    {
++      "id": "F14-16",
++      "title": "Cat├ílogo tarifas + tarifa_importe v2 (sentido, puntero current, historia inmutable, shadow matching)",
++      "prd_refs": [
++        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md",
++        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md"
++      ],
++      "agent_owner": "01-backend-supabase",
++      "depends_on": ["F14-11"],
++      "status": "in_progress",
++      "verification": [
++        "Migraci├│n local 20260907100000_peajes_tarifas_v2_schema.sql: tablas tarifas / tarifa_importe, unique (peaje_id, estacion_id, status, categoria, sentido), pasadas.sentido default AMBAS, pasadas.tarifa_importe_id nullable; tarifas_normalizadas intacta (camino de compatibilidad; no se elimina, renombra ni reemplaza).",
++        "Migraci├│n 20260907101000_peajes_tarifas_v2_current_pointer.sql: historia append-only, puntero current_tarifa_id del mismo padre, promoci├│n por (fecha_aparicion, created_at, id).",
++        "ETL migrate-tarifario-v2.mjs + tests Node: IDs del workbook, linaje 1:1, PRECIO_LAST can├│nico, tolerancia 1% (0.23% / 1% / >1%); sin write a DESARROLLO.",
++        "Adapter Angular tarifa-comparison-adapter: IVA solo v├¡a pipeline existente; SQL sin / 1.21.",
++        "RPCs peajes_resolver_tarifas_actuales y peajes_validar_tarifas_actuales en batch; c├│digos AL_DIA / HISTORICA / DESFASADO / SIN_TARIFA / CATEGORIA_PENDIENTE / ESTADO_AMBIGUO; no mutan historia.",
++        "Paso 8: diagn├│sticos de tarifa no bloqueantes; no cambia dentroTolerancia ni puedeContinuar; asociaci├│n post-confirmaci├│n solo AL_DIA/HISTORICA.",
++        "Carga local + backfill de pasadas.tarifa_importe_id solo por linaje ├║nico; informe de paridad sin mismatches inexplicados.",
++        "Readers de compatibilidad / pwbi_tarifas_v2 solo tras paridad; pwbi_tarifas sin cambio no aprobado; sin DROP de legado; tarifas_normalizadas y pasadas.tarifa_normalizada_id se conservan.",
++        "npx supabase db reset --local --no-seed + npx supabase test db; Node ETL/matcher; ng test adapter + tarifa-validation + paso8; tsc --noEmit app+spec. Evidencia solo local."
++      ],
++      "evidence": [
++        "2026-09-07: F14-16 registrado in_progress (docs only). Additive/shadow: tarifas_normalizadas permanece como camino de compatibilidad (tabla, columnas, FKs, writers, firmas RPC existentes, vistas y pasadas.tarifa_normalizada_id). Sin SQL ni TypeScript a├║n. F14-12..F14-15 superseded, never implemented."
++      ]
++    },
+     {
+       "id": "F17-1",
+       "title": "Contratos, motor de confianza y proxy Netlify OpenRouter (invoice AI)",
+       "prd_refs": [
+         "docs/plan/invoice-ai/PLAN_invoice-ai.md",
+         "docs/plan/invoice-ai/plan_ai_invoice.md",
+         "PLAN Task 1ÔÇô2 / planned label F16-1"
+       ],
+       "agent_owner": "02-frontend-wizard-tablas",
+       "depends_on": ["F02-9", "F11-1"],
+@@ -1812,15 +1954,15 @@
+       "status": "passing",
+       "verification": [
+         "npx supabase db reset --local --no-seed",
+         "npx supabase test db (incluye peajes_duplicados_permitidos_test.sql)",
+         "peajes_detectar_duplicados sigue detectando la clave RN-16 y expone patente_nombre, pase_nombre, file_upload_name, duplicado",
+         "peajes_confirmar_carga sin p_permitir_duplicados bloquea; con true inserta duplicado=true",
+         "Paso 8 muestra nombres (no UUID), columna Archivo y bot├│n Subir igualmente",
+         "ng test paso8 + peajes-carga"
+       ],
+       "evidence": [
+-        "2026-08-28: migraci├│n 20260828120000_peajes_duplicados_permitidos.sql. db reset --local --no-seed OK; supabase test db 220 PASS. ├ìndice ├║nico parcial WHERE duplicado=false. RPC p_permitir_duplicados default false. Paso 8 nombres+Archivo+DUPLICADO+Subir igualmente. ng test paso8+peajes-carga (suite F18 75 SUCCESS). tsc EXIT 0. Sin db push --linked."
++        "2026-08-28: migraci├│n 20260828120000_peajes_duplicados_permitidos.sql. db reset --local --no-seed OK; supabase test db 220 PASS. ├ìndice ├║nico parcial WHERE duplicado=false. RPC p_permitir_duplicados default false. Paso 8 nombres+Archivo+DUPLICADO+Subir igualmente. ng test paso8+peajes-carga (suite F18 75 SUCCESS). tsc EXIT 0. DESARROLLO kfffigvyvtzyczeiadxh: apply_migration MCP (CLI db push --linked 403); historial 20260828120000; columna+├¡ndice+RPC verificados."
+       ]
+     }
+   ]
+ }

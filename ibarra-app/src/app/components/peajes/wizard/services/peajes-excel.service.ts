@@ -49,16 +49,16 @@ export class PeajesExcelService {
     const filasPreview = rows.slice(0, PREVIEW_MAX_ROWS).map((row) => {
       const out: Record<string, unknown> = {};
       for (const col of columnas) {
-        out[col] = this.normalizarCelda(row[col]);
+        out[col] = this.normalizarCelda(row[col], col);
       }
       return out;
     });
 
     const tiposInferidos: Record<string, string> = {};
     for (const col of columnas) {
-      tiposInferidos[col] = this.inferirTipo(
-        rows.slice(0, PREVIEW_MAX_ROWS).map((r) => r[col])
-      );
+      tiposInferidos[col] = this.esColumnaFecha(col)
+        ? 'fecha'
+        : this.inferirTipo(rows.slice(0, PREVIEW_MAX_ROWS).map((r) => r[col]));
     }
 
     return {
@@ -70,7 +70,7 @@ export class PeajesExcelService {
       filasOrigen: rows.map((row) => {
         const out: Record<string, unknown> = {};
         for (const col of columnas) {
-          out[col] = this.normalizarCelda(row[col]);
+          out[col] = this.normalizarCelda(row[col], col);
         }
         return out;
       }),
@@ -159,8 +159,13 @@ export class PeajesExcelService {
    * preserva hora para FECHA_HORA / RN-16; sin ambigüedad DD/MM vs MM/DD).
    * Deja texto/números; evita Date.toString().
    */
-  private normalizarCelda(value: unknown): unknown {
-    return normalizarCeldaExcel(value);
+  private normalizarCelda(value: unknown, columna: string): unknown {
+    return normalizarCeldaExcel(value, this.esColumnaFecha(columna));
+  }
+
+  private esColumnaFecha(columna: string): boolean {
+    const nombre = columna.trim().toUpperCase().replace(/[\s_-]+/g, '');
+    return nombre === 'FECHA' || nombre === 'FECHAHORA' || nombre === 'DATE' || nombre === 'DATETIME';
   }
 
   private detectarDelimitador(texto: string): string {

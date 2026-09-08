@@ -34,9 +34,10 @@ There is **no** staging/prod split in this flow. See [entornos.md](entornos.md).
 Implement backend changes as migrations + SQL task docs:
 
 1. Write `supabase/migrations/`
-2. Validate against **Supabase CLI** (`npx supabase db reset --local --no-seed`, `npx supabase test db`)
-3. Document under `docs/backend/` (RPC catalog + `peajes/` detail; **do not** use `docs/08-sql/`)
-4. Only then consider DESARROLLO (`db push --linked`) with explicit user authorization when needed
+2. Validate schema against **Supabase CLI** (`npx supabase db reset --local --no-seed`, `npx supabase test db`). `--no-seed` is required for pgTAP so fixtures stay synthetic.
+3. Restore local app data after that reset (auth, pasadas, tarifario v2). `--no-seed` does **not** load catalog data; schema migrations do **not** insert tarifas v2.
+4. Document under `docs/backend/` (RPC catalog + `peajes/` detail; **do not** use `docs/08-sql/`)
+5. Only then consider DESARROLLO (`db push --linked`) with explicit user authorization when needed
 
 After implementation, run:
 
@@ -82,11 +83,21 @@ You must not:
 
 ```powershell
 cd ibarra-app
+npx supabase start --ignore-health-check
 npx supabase migration new nombre_del_cambio
 # edit supabase/migrations/<timestamp>_nombre_del_cambio.sql
+
+# 1) Schema + pgTAP (no Auth, no pasadas, no tarifario v2)
 npx supabase db reset --local --no-seed
 npx supabase test db
+
+# 2) Restore CLI data the app needs (Kong guard + Auth/RBAC/pasadas + tarifas v2 ETL)
+pnpm seed:local
 ```
+
+`pnpm seed:local` is: `ensure-supabase-local` → `scripts/seed-local.mjs` → `node scripts/peajes-catalogo-audit/migrate-tarifario-v2.mjs --load-local`.
+
+Do **not** stop after `--no-seed`. That leaves empty `tarifas` / `tarifa_importe` / `_stg_precio_last` and no Francis login. Tarifario v2 is a Node ETL (workbook), not a file in `config.toml` `[db.seed]`. Never put `--load-local` against DESARROLLO.
 
 DESARROLLO (only after CLI green + user authorization when required):
 
@@ -111,7 +122,8 @@ Every change → `docs/backend/` (see [plantilla-sql-task.md](plantilla-sql-task
 
 - [ ] [entornos.md](entornos.md) followed (CLI = testing)
 - [ ] Migration in `supabase/migrations/`
-- [ ] CLI rebuild + tests green
+- [ ] CLI rebuild + tests green (`db reset --local --no-seed` + `test db`)
+- [ ] After `--no-seed`, `pnpm seed:local` (includes `migrate-tarifario-v2.mjs --load-local`) unless the session is pgTAP-only
 - [ ] `docs/backend/` updated (catalog + peajes detail as needed)
 - [ ] No OrdenCompra refs used
 - [ ] No secrets in migrations/docs

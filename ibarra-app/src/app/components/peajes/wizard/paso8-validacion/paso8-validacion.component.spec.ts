@@ -9,6 +9,70 @@ import {
 import { PeajesCargaMockService } from '../mocks/peajes-carga.mock';
 import { PeajesCatalogoMockService } from '../mocks/peajes-catalogo.mock';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+import {
+  CodigoResultadoTarifa,
+  PasadaValidacionTarifaInput,
+  ResultadoFilaValidacionTarifa,
+  ResultadoValidacionTarifa,
+  TarifaValidationService,
+} from '../../services/tarifa-validation.service';
+
+function filaTarifa(
+  overrides: Partial<ResultadoFilaValidacionTarifa> = {}
+): ResultadoFilaValidacionTarifa {
+  return {
+    idx: 0,
+    codigo: 'AL_DIA',
+    tarifa_id: 'tarifa-1',
+    current_tarifa_id: 'imp-1',
+    tarifa_importe_id: 'imp-1',
+    importe: 1840,
+    precio_comparado: 1840,
+    error_relativo: 0,
+    peaje_id: 'peaje-1',
+    sentido_solicitado: 'AMBAS',
+    sentido_aplicado: 'AMBAS',
+    requiere_normalizacion_iva: false,
+    categoria: 5,
+    status: 'NO_PICO',
+    estacion_id: 'aaaaaaaa-bbbb-4ccc-8ddd-444444444444',
+    ...overrides,
+  };
+}
+
+function resultadoTarifa(
+  filas: ResultadoFilaValidacionTarifa[] = [filaTarifa()]
+): ResultadoValidacionTarifa {
+  return { filas };
+}
+
+function mockTarifaValidation(resultado: ResultadoValidacionTarifa = resultadoTarifa([])): {
+  validarLote: jasmine.Spy;
+  asociarTrasConfirmacion: jasmine.Spy;
+} {
+  return {
+    validarLote: jasmine.createSpy('validarLote').and.resolveTo(resultado),
+    asociarTrasConfirmacion: jasmine.createSpy('asociarTrasConfirmacion').and.resolveTo(undefined),
+  };
+}
+
+function argsValidarLote(spy: jasmine.Spy): {
+  pasadas: PasadaValidacionTarifaInput[];
+  configuraciones: Array<{
+    nombre_columna?: string;
+    configuracion?: { algoritmo_codigo?: string } | null;
+  }>;
+} {
+  expect(spy).toHaveBeenCalled();
+  const [pasadas, configuraciones] = spy.calls.mostRecent().args as [
+    PasadaValidacionTarifaInput[],
+    Array<{
+      nombre_columna?: string;
+      configuracion?: { algoritmo_codigo?: string } | null;
+    }>,
+  ];
+  return { pasadas: pasadas ?? [], configuraciones: configuraciones ?? [] };
+}
 
 describe('Paso8ValidacionComponent', () => {
   let fixture: ComponentFixture<Paso8ValidacionComponent>;
@@ -22,6 +86,7 @@ describe('Paso8ValidacionComponent', () => {
         PeajesWizardStateService,
         { provide: PEAJES_CARGA_SERVICE, useClass: PeajesCargaMockService },
         { provide: PEAJES_CATALOGO_SERVICE, useClass: PeajesCatalogoMockService },
+        { provide: TarifaValidationService, useValue: mockTarifaValidation() },
       ],
     }).compileComponents();
 
@@ -71,7 +136,8 @@ describe('Paso8ValidacionComponent', () => {
   });
 
   it('explica el UUID inválido sin ocultar los demás controles', () => {
-    expect(component.diagnosticos.length).toBe(5);
+    expect(component.diagnosticos.length).toBe(6);
+    expect(component.diagnosticos.find((d) => d.id === 'tarifas')).toBeTruthy();
     const duplicados = component.diagnosticos.find((d) => d.id === 'duplicados');
     expect(duplicados?.estado).toBe('error');
     expect(duplicados?.detalle).toContain('no es un UUID');
@@ -181,6 +247,7 @@ describe('Paso8ValidacionComponent last pase from patente', () => {
   let crearPaseSpy: jasmine.Spy;
   let detectarSpy: jasmine.Spy;
   let duplicadosRespuesta: ErrorValidacionPasada[];
+  let tarifaValidation: ReturnType<typeof mockTarifaValidation>;
 
   const pasadaBase = {
     PASADA_ID: null as string | null,
@@ -201,6 +268,7 @@ describe('Paso8ValidacionComponent last pase from patente', () => {
     detectarSpy = jasmine.createSpy('detectarDuplicados').and.callFake(() =>
       of(duplicadosRespuesta)
     );
+    tarifaValidation = mockTarifaValidation();
 
     await TestBed.configureTestingModule({
       imports: [Paso8ValidacionComponent],
@@ -250,6 +318,7 @@ describe('Paso8ValidacionComponent last pase from patente', () => {
             crearPase: crearPaseSpy,
           },
         },
+        { provide: TarifaValidationService, useValue: tarifaValidation },
       ],
     }).compileComponents();
 
@@ -352,6 +421,293 @@ describe('Paso8ValidacionComponent last pase from patente', () => {
     await component.validar();
     expect(component.puedeContinuar).toBeTrue();
     expect(spy).toHaveBeenCalled();
+  });
+});
+
+describe('Paso8ValidacionComponent shadow tariff diagnostics', () => {
+  const patenteId = 'aaaaaaaa-bbbb-4ccc-8ddd-111111111111';
+  const paseId = 'aaaaaaaa-bbbb-4ccc-8ddd-333333333333';
+  const estacionId = 'aaaaaaaa-bbbb-4ccc-8ddd-444444444444';
+
+  const pasadaBase = {
+    PASADA_ID: null as string | null,
+    FECHA_HORA: '2026-07-01 10:00:00',
+    PASE_ID: paseId,
+    PATENTE_ID: patenteId,
+    ESTACION_ID: estacionId,
+    PRECIO: 1840,
+    BONIFICACION: 0,
+    QUANTITY: 1,
+    IMPORTE_NETO: 1840,
+    CATEGORIA: '5',
+  };
+
+  const etiquetaPorCodigo: Record<CodigoResultadoTarifa, string> = {
+    AL_DIA: 'Al día',
+    HISTORICA: 'Histórica',
+    DESFASADO: 'Desfasado',
+    SIN_TARIFA: 'Sin tarifa',
+    CATEGORIA_PENDIENTE: 'Categoría pendiente',
+    ESTADO_AMBIGUO: 'Estado ambiguo',
+  };
+
+  let fixture: ComponentFixture<Paso8ValidacionComponent>;
+  let component: Paso8ValidacionComponent;
+  let state: PeajesWizardStateService;
+  let tarifaValidation: ReturnType<typeof mockTarifaValidation>;
+  let duplicadosRespuesta: ErrorValidacionPasada[];
+
+  async function setup(resultado: ResultadoValidacionTarifa): Promise<void> {
+    duplicadosRespuesta = [];
+    tarifaValidation = mockTarifaValidation(resultado);
+
+    await TestBed.configureTestingModule({
+      imports: [Paso8ValidacionComponent],
+      providers: [
+        PeajesWizardStateService,
+        {
+          provide: PEAJES_CARGA_SERVICE,
+          useValue: {
+            validarCarga: () =>
+              of({
+                validas: [pasadaBase],
+                errores: [],
+                diferenciaFactura: 0,
+                dentroTolerancia: true,
+              }),
+            detectarDuplicados: () => of(duplicadosRespuesta),
+          },
+        },
+        {
+          provide: PEAJES_CATALOGO_SERVICE,
+          useValue: {
+            listarPatentes: () =>
+              of([{ id: patenteId, patente: 'AD625QB', categoria: 'FLOTA CAMIONES', activa: true }]),
+            listarPases: () =>
+              of([
+                {
+                  id: paseId,
+                  pase: 'TAG-NEW',
+                  patente_id: patenteId,
+                  created_at: '2026-08-01T00:00:00Z',
+                },
+              ]),
+            listarEstaciones: () =>
+              of([{ id: estacionId, peaje_id: 'peaje-1', nombre: 'Hudson' }]),
+            crearPase: jasmine.createSpy('crearPase'),
+          },
+        },
+        { provide: TarifaValidationService, useValue: tarifaValidation },
+      ],
+    }).compileComponents();
+
+    state = TestBed.inject(PeajesWizardStateService);
+    state.reiniciar();
+    state.setFactura({
+      factura: 'A-1',
+      cuenta: 'C-1',
+      empresa_id: 'E-1',
+      fecha_factura: '2026-06-30',
+      bonificacion: 0,
+      importe_sin_iva: 1840,
+      percepciones: 0,
+      iva: 0,
+      importe_total: 1840,
+    });
+    state.setPasadasEstandarizadas([pasadaBase]);
+
+    fixture = TestBed.createComponent(Paso8ValidacionComponent);
+    component = fixture.componentInstance;
+  }
+
+  function diagnosticoTarifas() {
+    return component.diagnosticos.find((d) => d.id === 'tarifas');
+  }
+
+  it('muestra diagnóstico ok para AL_DIA sin alterar factura ni puedeContinuar', async () => {
+    await setup(resultadoTarifa([filaTarifa({ codigo: 'AL_DIA' })]));
+    const spy = spyOn(component.completado, 'emit');
+    await component.validar();
+    fixture.detectChanges();
+
+    const tarifas = diagnosticoTarifas();
+    expect(tarifas).toBeTruthy();
+    expect(tarifas?.estado).toBe('ok');
+    expect(tarifas?.titulo).toContain('Tarifas');
+    expect(component.resultado!.dentroTolerancia).toBeTrue();
+    expect(component.resultado!.errores).toEqual([]);
+    expect(component.puedeContinuar).toBeTrue();
+    expect(spy).toHaveBeenCalled();
+    expect(tarifaValidation.asociarTrasConfirmacion).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Al día');
+  });
+
+  it('envía a validarLote las pasadas mapeadas, SENTIDO/AMBAS y las configuraciones de plantilla', async () => {
+    await setup(resultadoTarifa([filaTarifa({ codigo: 'AL_DIA' })]));
+    const pasadaIda = { ...pasadaBase, SENTIDO: 'IDA' };
+    const pasadaSinSentido = { ...pasadaBase, FECHA_HORA: '2026-07-01 11:00:00' };
+    state.setConfiguracionesDraft([
+      {
+        clientId: 'cfg-iva',
+        orden: 90,
+        tipo: 'transformacion',
+        nombre_columna: 'IMPORTE_NETO',
+        columna_destino: 'IMPORTE_NETO',
+        algoritmo_combinado_id: null,
+        configuracion: { algoritmo_codigo: 'ELIMINAR_IVA' },
+        obligatoria: true,
+      },
+    ]);
+    state.setPasadasEstandarizadas([pasadaIda, pasadaSinSentido] as never);
+
+    await component.validar();
+
+    expect(tarifaValidation.validarLote).toHaveBeenCalledTimes(1);
+    const { pasadas, configuraciones } = argsValidarLote(tarifaValidation.validarLote);
+
+    expect(pasadas.length).toBe(2);
+    expect(pasadas.map((p) => p.estacion_id)).toEqual([estacionId, estacionId]);
+    expect(pasadas.map((p) => p.precio_directo)).toEqual([1840, 1840]);
+    expect(pasadas.map((p) => Number(p.categoria))).toEqual([5, 5]);
+    expect(pasadas[0].fecha_hora).toBe(pasadaIda.FECHA_HORA);
+    expect(pasadas[1].fecha_hora).toBe(pasadaSinSentido.FECHA_HORA);
+    expect(pasadas[0].sentido).toBe('IDA');
+    expect(pasadas[1].sentido).toBe('AMBAS');
+
+    expect(configuraciones.length).toBeGreaterThan(0);
+    expect(configuraciones.some((c) => c.configuracion?.algoritmo_codigo === 'ELIMINAR_IVA')).toBeTrue();
+    expect(configuraciones.some((c) => c.nombre_columna === 'IMPORTE_NETO')).toBeTrue();
+  });
+
+  const advertencias: CodigoResultadoTarifa[] = [
+    'HISTORICA',
+    'DESFASADO',
+    'SIN_TARIFA',
+    'CATEGORIA_PENDIENTE',
+    'ESTADO_AMBIGUO',
+  ];
+
+  advertencias.forEach((codigo) => {
+    it(`trata ${codigo} como advertencia no bloqueante`, async () => {
+      await setup(
+        resultadoTarifa([
+          filaTarifa({
+            codigo,
+            importe: 1840,
+            precio_comparado: 2000,
+            error_relativo: 0.087,
+            tarifa_importe_id: codigo === 'HISTORICA' ? 'imp-hist' : null,
+          }),
+        ])
+      );
+      const erroresAntes = 0;
+      await component.validar();
+      fixture.detectChanges();
+
+      const tarifas = diagnosticoTarifas();
+      expect(tarifas?.estado).toBe('warning');
+      expect(component.resultado!.dentroTolerancia).toBeTrue();
+      expect(component.resultado!.errores.length).toBe(erroresAntes);
+      expect(component.puedeContinuar).toBeTrue();
+      expect(fixture.nativeElement.textContent).toContain('Advertencia');
+      expect(fixture.nativeElement.textContent).toContain(etiquetaPorCodigo[codigo]);
+    });
+  });
+
+  it('muestra la tabla española de tarifas y conserva detalles técnicos', async () => {
+    await setup(
+      resultadoTarifa([
+        filaTarifa({
+          codigo: 'DESFASADO',
+          importe: 1840,
+          precio_comparado: 2000,
+          error_relativo: 0.087,
+          sentido_solicitado: 'IDA',
+          sentido_aplicado: 'AMBAS',
+          status: 'PICO',
+          categoria: 5,
+        }),
+      ])
+    );
+    await component.validar();
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Fila');
+    expect(text).toContain('Estación');
+    expect(text).toContain('Categoría');
+    expect(text).toContain('Sentido solicitado');
+    expect(text).toContain('Sentido aplicado');
+    expect(text).toContain('Estado');
+    expect(text).toContain('Importe auditado');
+    expect(text).toContain('Importe comparado');
+    expect(text).toContain('Error relativo');
+    expect(text).toContain('Resultado');
+    expect(text).toContain('Hudson');
+    expect(text).toContain('IDA');
+    expect(text).toContain('AMBAS');
+    expect(text).toContain('PICO');
+    expect(text).toContain('Detalles técnicos');
+    expect(diagnosticoTarifas()?.tecnico?.rpc).toMatch(/peajes_(resolver|validar)_tarifas_actuales/);
+  });
+
+  it('convierte un fallo del servicio de tarifas en advertencia no bloqueante', async () => {
+    await setup(resultadoTarifa());
+    tarifaValidation.validarLote.and.rejectWith(
+      Object.assign(new Error('No se pudieron validar las tarifas'), {
+        rpc: 'peajes_resolver_tarifas_actuales',
+      })
+    );
+    await component.validar();
+    fixture.detectChanges();
+
+    const tarifas = diagnosticoTarifas();
+    expect(tarifas?.estado).toBe('warning');
+    expect(component.puedeContinuar).toBeTrue();
+    expect(component.resultado!.dentroTolerancia).toBeTrue();
+    expect(component.resultado!.errores).toEqual([]);
+    expect(fixture.nativeElement.textContent).toContain('Advertencia');
+    expect(fixture.nativeElement.textContent).toContain('Detalles técnicos');
+    expect(tarifas?.tecnico?.rpc).toBe('peajes_resolver_tarifas_actuales');
+  });
+
+  it('no cambia el consentimiento de duplicados cuando hay advertencia de tarifa', async () => {
+    await setup(
+      resultadoTarifa([filaTarifa({ codigo: 'DESFASADO', tarifa_importe_id: null })])
+    );
+    duplicadosRespuesta = [
+      {
+        fila: 1,
+        columna: 'CLAVE_DUPLICADO',
+        valor: 'duplicate-key',
+        motivo: 'Ya existe una pasada',
+        pasada: paseId,
+        patente: patenteId,
+        pase_nombre: 'TAG-NEW',
+        patente_nombre: 'AD625QB',
+        fecha_hora: pasadaBase.FECHA_HORA,
+        fecha_hora_repetida: '2026-07-01T10:00:00.000Z',
+        valor_repetido: 1700,
+        file_upload_name: 'carga-original.csv',
+        duplicado: true,
+      },
+    ];
+
+    await component.validar();
+    fixture.detectChanges();
+
+    expect(component.puedeContinuar).toBeFalse();
+    expect(diagnosticoTarifas()?.estado).toBe('warning');
+    expect(component.resultado!.errores.some((e) => e.columna === 'CLAVE_DUPLICADO')).toBeTrue();
+
+    component.subirIgualmente();
+    fixture.detectChanges();
+
+    expect(state.snapshot().permitirDuplicados).toBeTrue();
+    expect(component.puedeContinuar).toBeTrue();
+    expect(component.resultado!.errores.some((e) => e.columna === 'CLAVE_DUPLICADO')).toBeFalse();
+    expect(diagnosticoTarifas()?.estado).toBe('warning');
+    expect(fixture.nativeElement.textContent).toContain('Subir igualmente');
   });
 });
 

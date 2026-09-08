@@ -1,0 +1,34 @@
+<app-dialog
+  [open]="open"
+  size="lg"
+  eyebrow="Tarifario"
+  [title]="title"
+  description="Precios históricos de esta tarifa. El vigente es el que apunta current_tarifa_id."
+  (closed)="closed.emit()"
+>
+  <p class="at__error" *ngIf="error" role="alert">{{ error }}</p>
+  <p class="at__empty" *ngIf="loading">Cargando historial…</p>
+  <div class="at__table-wrap" *ngIf="!loading">
+    <table class="at__table">
+      <thead>
+        <tr>
+          <th scope="col">Fecha</th>
+          <th scope="col" class="at__num">Importe</th>
+          <th scope="col">Actual</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="!rows.length">
+          <td colspan="3" class="at__empty">Esta tarifa todavía no tiene historial.</td>
+        </tr>
+        <tr *ngFor="let row of rows">
+          <td>{{ formatFecha(row.fecha_aparicion) }}</td>
+          <td class="at__num at__price">{{ formatImporte(row.importe) }}</td>
+          <td>
+            <span *ngIf="row.es_actual" class="at__badge at__badge--ok">Vigente</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</app-dialog>

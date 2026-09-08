@@ -16,6 +16,9 @@ La aplicación y el paquete de coordinación están centralizados en `ibarra-app
 ## Fuentes canónicas
 
 - Normalización tarifaria: [normalizacion-tarifa/INDEX.md](./normalizacion-tarifa/INDEX.md) — PRD, plan técnico y refactor UI/UX propuesto para Auditoría de tarifas.
+- Refactor catálogo `tarifas` + `tarifa_importe`: [refactor-tarifas-importe/INDEX.md](./refactor-tarifas-importe/INDEX.md) — Wave 0 fixtures CSV/Excel (sin SQL); simetría PICO/NO_PICO si `has_pico`.
+- F14-16 migración gradual `tarifas` + `tarifa_importe`: [PLAN_migracion-gradual-tarifas-tarifa-importe.md](./refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md) — implementado en CLI local (schema, puntero, ETL, adapter, RPC sombra, Paso 8, `pwbi_tarifas_v2` paralela). Additive: `tarifas_normalizadas` permanece como camino de compatibilidad. F14-12..F14-15 superseded, never implemented. Docs: [tablas](../06-tablas/peajes/tarifas-tarifa-importe.md) / [backend](../backend/peajes/tarifas-tarifa-importe.md).
+- F14-18 Refresh Tarifas en Paso 9: [PLAN_refresh-tarifas-paso9.md](./refactor-tarifas-importe/PLAN_refresh-tarifas-paso9.md) — planificado; detección en lote current/histórica/nueva, diálogo reutilizando el tablero PICO/NO_PICO y confirmación explícita antes de importar una tarifa nueva.
 - PRD: [peaje-prd-es.md](./peaje-prd-es.md).
 - Caso de aceptación Demo: [ejemplo-mvp-procesamiento-pasadas.md](./ejemplo-mvp-procesamiento-pasadas.md).
 - Caso Autopistas Urbanas (CSV): [ejemplo-autopistas-urbanas-pasadas.md](./ejemplo-autopistas-urbanas-pasadas.md) — fuente [csv/autopistas_urbanas.csv](./csv/autopistas_urbanas.csv).
@@ -48,4 +51,4 @@ No hay staging/prod separados. Todo testing SQL se hace contra **Supabase CLI**;
 - No reutilizar `checklist_templates` ni `ChecklistTemplateService`.
 - Los prompts de cada plan deben ejecutarse desde `ibarra-app/`; esa es la única raíz de coordinación.
 
-> Última actualización: julio de 2026
+> Última actualización: 2026-09-08

@@ -5,6 +5,8 @@ import { UserProfile, UserProfileWithRole } from '../models/user-profile.model';
 import { UserRole } from '../models/user-role.model';
 import { SystemModule } from '../models/system-module.model';
 import { RolePermission } from '../models/permission-check.model';
+import { hasAdminRole } from './admin-role.util';
+import { permissionSetHas } from './permission-set.util';
 
 @Injectable({
   providedIn: 'root'
@@ -249,8 +251,7 @@ export class GranularPermissionService {
    * Verifica si el usuario tiene un permiso específico
    */
   hasPermission(module: string, action: string): boolean {
-    const permissions = this.userPermissions$.value;
-    return permissions.has(`${module}:${action}`) || permissions.has('*:*');
+    return permissionSetHas(this.userPermissions$.value, module, action);
   }
 
   /**
@@ -471,12 +472,19 @@ export class GranularPermissionService {
 
   // Métodos de utilidad
   getCurrentRole(): string | null {
-    const roles = this.currentUserProfile$.value?.roles;
-    if (roles && roles.length > 0) {
-      // Retornar el nombre del primer rol (o se puede cambiar la lógica según necesidad)
-      return roles[0]?.name || null;
+    const names = this.getCurrentRoleNames();
+    if (hasAdminRole(names)) {
+      return names.find((name) => name.toLowerCase() === 'admin')
+        ?? names.find((name) => name.toLowerCase() === 'administrador')
+        ?? names[0];
     }
-    return null;
+    return names[0] ?? null;
+  }
+
+  getCurrentRoleNames(): string[] {
+    return (this.currentUserProfile$.value?.roles ?? [])
+      .map((role) => role?.name)
+      .filter((name): name is string => !!name);
   }
 
   getCurrentUserProfile(): UserProfile | null {
@@ -484,11 +492,13 @@ export class GranularPermissionService {
   }
 
   isAdmin(): boolean {
-    return this.getCurrentRole() === 'admin';
+    return hasAdminRole(this.getCurrentRoleNames());
   }
 
   isAdministrador(): boolean {
-    return this.getCurrentRole() === 'administrador';
+    return this.getCurrentRoleNames().some(
+      (name) => name.trim().toLowerCase() === 'administrador',
+    );
   }
 
   isOperador(): boolean {

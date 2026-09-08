@@ -1,0 +1,15 @@
+folder,xlsx,pdfCount,uploadFileStatus,messageStatus
+202602-1,scripts/telepeaje plus/202602-1/Consumo_202602-1_MAPPED.xlsx,8,,Falta MAPPED xlsx
+202603-2,scripts/telepeaje plus/202603-2/Consumo_202603-2_MAPPED.xlsx,8,DUPLICATED,Duplicado: 699 pasada(s)
+202604-1,scripts/telepeaje plus/202604-1/Consumo_202604-1_MAPPED.xlsx,9,USER_INPUT,Requiere revisión
+202604-02,scripts/telepeaje plus/202604-02/Consumo_202604-02_MAPPED.xlsx,11,USER_INPUT,Requiere revisión
+202601-2,scripts/telepeaje plus/202601-2/Consumo_202601-2_MAPPED.xlsx,9,USER_INPUT,Requiere revisión
+202605-2,,,,No existe la carpeta scripts/telepeaje plus/202605-2
+202606-02,,,,No existe la carpeta scripts/telepeaje plus/202606-02
+202605-02,scripts/telepeaje plus/202605-02/Consumo_202605-02_MAPPED.xlsx,10,USER_INPUT,Requiere revisión
+202606-2,scripts/telepeaje plus/202606-2/Consumo_202606-2_MAPPED.xlsx,10,IN_PROGRESS,
+202606-1,scripts/telepeaje plus/202606-1/Consumo_202606-01_MAPPED.xlsx,10,USER_INPUT,Requiere revisión
+202605-01  - listo,scripts/telepeaje plus/202605-01  - listo/Consumo_202605-01_MAPPED.xlsx,10,USER_INPUT,Requiere revisión
+202505-01,scripts/telepeaje plus/202505-01/Consumo_202505-01_MAPPED.xlsx,2,USER_INPUT,Requiere revisión
+202608-1,scripts/telepeaje plus/202608-1/Consumo_202608-1_MAPPED.xlsx,11,USER_INPUT,Requiere revisión
+202608-2,scripts/telepeaje plus/202608-2/Consumo_202608-2_MAPPED.xlsx,10,USER_INPUT,Requiere revisión

@@ -7,6 +7,7 @@ import { SupabaseService } from '../../services/supabase.service';
 import { GranularPermissionService } from '../../services/granular-permission.service';
 import { PwaInstallService } from '../../services/pwa-install.service';
 import { SystemModule } from '../../models/system-module.model';
+import { isDashboardModuleAvailable } from './dashboard-module-access.util';
 import { User } from '@supabase/supabase-js';
 import { PwaInstallPopupComponent } from '../pwa-install-popup/pwa-install-popup.component';
 
@@ -143,7 +144,7 @@ export class DashboardComponent implements OnInit {
         isAvailable: false
       },
       {
-        id: 'checklists',
+        id: 'stock',
         name: 'Gestión de Stock',
         description: 'Administrar inventario, depósitos y movimientos',
         icon: 'fas fa-warehouse',
@@ -165,13 +166,12 @@ export class DashboardComponent implements OnInit {
 
   private loadUserModules(): void {
     this.accessibleModules$.subscribe(modules => {
-      // Actualizar disponibilidad basada en módulos accesibles
       this.dashboardModules.forEach(module => {
-        const accessibleModule = modules.find(m => 
-          m.name.toLowerCase() === module.id || 
-          m.route === module.route
+        module.isAvailable = isDashboardModuleAvailable(
+          module,
+          modules,
+          (mod, action) => this.granularPermissionService.hasPermission(mod, action),
         );
-        module.isAvailable = !!accessibleModule;
       });
     });
   }

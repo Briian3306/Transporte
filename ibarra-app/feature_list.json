@@ -1673,6 +1673,199 @@
       ]
     },
     {
+      "id": "F14-10",
+      "title": "fecha_aparicion en tarifas_normalizadas: backfill histórico + trigger + pwbi_tarifas",
+      "prd_refs": ["RF-26", "§22"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-1", "F14-2"],
+      "status": "passing",
+      "verification": [
+        "tarifas_normalizadas.fecha_aparicion timestamptz NULL; primera pasadas.fecha_hora del nivel (MIN histórico)",
+        "Migración 20260902163000 backfill por GROUP BY tarifa_normalizada_id + trigger trg_pasadas_fecha_aparicion AFTER INSERT OR UPDATE OF tarifa_normalizada_id, fecha_hora",
+        "Trigger setea si NULL, adelanta si fecha_hora es más temprana, no pisa hacia fechas posteriores; no depende de confirmado_manual",
+        "pwbi_tarifas expone fecha_aparicion (snake_case, como created_at) al final del SELECT; Power Query M en powerbi-supabase.md con type datetimezone",
+        "npx supabase db reset --local --no-seed && npx supabase test db (peajes_f14_fecha_aparicion_test.sql + peajes_pwbi_views_test.sql)"
+      ],
+      "evidence": [
+        "2026-09-02: migración 20260902163000_peajes_tarifas_fecha_aparicion.sql. npx supabase db reset --local --no-seed OK. npx supabase test db → 232 PASS (Files=13). peajes_f14_fecha_aparicion_test.sql 11/11. pwbi_tarifas.fecha_aparicion en peajes_pwbi_views_test.sql.",
+        "2026-09-02 DESARROLLO: DROP+CREATE pwbi_tarifas con fecha_aparicion snake_case (MCP peajes_pwbi_tarifas_fecha_aparicion) + NOTIFY pgrst. 1142/1142 filas. Local test db 232 PASS."
+      ]
+    },
+    {
+      "id": "F14-11",
+      "title": "Fixtures CSV/Excel de tarifas y tarifa_importe + simetría has_pico (sin SQL)",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-10"],
+      "status": "passing",
+      "verification": [
+        "fixtures/tarifas.csv y fixtures/tarifas_importe.csv con todas las claves/importes PICO/NO_PICO del dump (sin crear tablas en Supabase)",
+        "out/tarifas-tarifas-importe.xlsx solo con hojas tarifas y tarifas_importe",
+        "cluster=has_pico: categorías PICO = categorías NO_PICO; ALBERTI/BRANDSEN fallan en el sample; HUDSON pasa; MAIPU flat no exige PICO",
+        "node --test scripts/peajes-catalogo-audit/*.test.mjs"
+      ],
+      "evidence": [
+        "2026-09-04 Wave 0: dump completo → tarifas.csv (520 claves) + tarifas_importe.csv (1079 importes) + Excel 2 pestañas. node --test scripts/peajes-catalogo-audit/*.test.mjs → 21 PASS. Sin SQL. No se sobreescribió auditoria-catalogo-20260904.xlsx."
+      ]
+    },
+    {
+      "id": "F14-12",
+      "title": "Tablas tarifas (catálogo) y tarifa_importe (línea de tiempo) sin borrar tarifas_normalizadas",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-11"],
+      "status": "not_started",
+      "verification": [
+        "Migración additive crea tarifas UNIQUE (peaje_id, estacion_id, status, categoria) y tarifa_importe UNIQUE (tarifa_id, importe)",
+        "status de tarifas solo PICO|NO_PICO; sin tarifa_importe_id obligatorio en tarifas",
+        "tarifas_normalizadas intacta; RLS plana como el resto del módulo",
+        "npx supabase db reset --local --no-seed && npx supabase test db (peajes_tarifas_catalogo_test.sql)"
+      ],
+      "evidence": [
+        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
+      ]
+    },
+    {
+      "id": "F14-13",
+      "title": "ETL Excel + tarifas_normalizadas hacia tarifas y tarifa_importe (CLI)",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-12"],
+      "status": "not_started",
+      "verification": [
+        "EXISTING se carga; SUSPECTED_GAP solo si ACTION=ADD e IMPORTE numérico; IGNORE se omite",
+        "ETL aborta si has_pico tiene categorías NO_PICO sin el mismo set en PICO (o al revés)",
+        "tarifa_importe.tarifas_normalizadas_id conserva linaje para remap de pasadas",
+        "pgTAP peajes_tarifas_etl_test.sql + conteo vs Catalogue EXISTING; sin write a DESARROLLO"
+      ],
+      "evidence": [
+        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
+      ]
+    },
+    {
+      "id": "F14-14",
+      "title": "Cutover CLI: pasadas.tarifa_importe_id, RPCs y pwbi_tarifas",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-13"],
+      "status": "not_started",
+      "verification": [
+        "pasadas.tarifa_importe_id nullable + backfill por linaje; tarifa_normalizada_id se conserva",
+        "peajes_normalizar_tarifas / recalcular / confirmar_status / listar apuntan al catálogo nuevo (CLI)",
+        "pwbi_tarifas una fila por tarifa_importe con Status/Categoria desde tarifas",
+        "npx supabase test db + ng test auditoria-tarifas; sin DROP de tarifas_normalizadas; sin DESARROLLO sin autorización"
+      ],
+      "evidence": [
+        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
+      ]
+    },
+    {
+      "id": "F14-15",
+      "title": "Docs del catálogo tarifas / tarifa_importe y Excel modificated",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
+      ],
+      "agent_owner": "04-documentador",
+      "depends_on": ["F14-14"],
+      "status": "not_started",
+      "verification": [
+        "docs/06-tablas y docs/backend describen 1:N y fecha_aparicion en tarifa_importe",
+        "catalogo-tarifas-audit.md documenta modificated, simetría de categorías PICO/NO_PICO si has_pico, y la ruta del xlsx 20260904",
+        "pwbi-views.md actualizado si cambió pwbi_tarifas"
+      ],
+      "evidence": [
+        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
+      ]
+    },
+    {
+      "id": "F14-16",
+      "title": "Catálogo tarifas + tarifa_importe v2 (sentido, puntero current, historia inmutable, shadow matching)",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-11"],
+      "status": "passing",
+      "verification": [
+        "Migración local 20260907100000_peajes_tarifas_v2_schema.sql: tablas tarifas / tarifa_importe, unique (peaje_id, estacion_id, status, categoria, sentido), pasadas.sentido default AMBAS, pasadas.tarifa_importe_id nullable; tarifas_normalizadas intacta (camino de compatibilidad; no se elimina, renombra ni reemplaza).",
+        "Migración 20260907101000_peajes_tarifas_v2_current_pointer.sql: historia append-only, puntero current_tarifa_id del mismo padre, promoción por (fecha_aparicion, created_at, id).",
+        "ETL migrate-tarifario-v2.mjs + tests Node: IDs del workbook, linaje 1:1, PRECIO_LAST canónico, tolerancia 1% (0.23% / 1% / >1%); sin write a DESARROLLO.",
+        "Adapter Angular tarifa-comparison-adapter: IVA solo vía pipeline existente; SQL sin / 1.21.",
+        "RPCs peajes_resolver_tarifas_actuales y peajes_validar_tarifas_actuales en batch; códigos AL_DIA / HISTORICA / DESFASADO / SIN_TARIFA / CATEGORIA_PENDIENTE / ESTADO_AMBIGUO; no mutan historia.",
+        "Paso 8: diagnósticos de tarifa no bloqueantes; no cambia dentroTolerancia ni puedeContinuar; asociación post-confirmación solo AL_DIA/HISTORICA.",
+        "Carga local + backfill de pasadas.tarifa_importe_id solo por linaje único; informe de paridad sin mismatches inexplicados.",
+        "Readers de compatibilidad / pwbi_tarifas_v2 solo tras paridad; pwbi_tarifas sin cambio no aprobado; sin DROP de legado; tarifas_normalizadas y pasadas.tarifa_normalizada_id se conservan.",
+        "npx supabase db reset --local --no-seed + npx supabase test db; Node ETL/matcher; ng test adapter + tarifa-validation + paso8; tsc --noEmit app+spec. Evidencia solo local."
+      ],
+      "evidence": [
+        "2026-09-07: F14-16 registrado in_progress (docs only). Additive/shadow: tarifas_normalizadas permanece como camino de compatibilidad (tabla, columnas, FKs, writers, firmas RPC existentes, vistas y pasadas.tarifa_normalizada_id). Sin SQL ni TypeScript aún. F14-12..F14-15 superseded, never implemented.",
+        "2026-09-08 Task 9 (local only). npx supabase start EXIT 0. npx supabase db reset --local --no-seed EXIT 0 (aplicó 20260907100000 / 07101000 / 07102000 / 07103000 / 20260908100000). npx supabase test db EXIT 0 Files=14 Tests=412 PASS. node --test scripts/peajes-catalogo-audit/*.test.mjs EXIT 0 tests 53 pass 53 fail 0 skipped 0 (unskip splitSentidoCollisions remaps the second sentido onto a new parent id → ok 42). ng test adapter+tarifa-validation+paso8 ChromeHeadless TOTAL 35 SUCCESS EXIT 0. ng test **/peajes/auditoria-tarifas/**/*.spec.ts TOTAL 52 SUCCESS EXIT 0. tsc --noEmit tsconfig.app.json EXIT 0. tsc --noEmit tsconfig.spec.json EXIT 0. Paridad Task 7 GREEN: unexplained pointer/lineage/price = 0; pasadas 0/0/0 tras --no-seed explicado (tabla vacía; backfill de volumen real no probado fuera de fixtures pgTAP). Sin DESARROLLO.",
+        "2026-09-08 Task 10: docs canónicos docs/06-tablas/peajes/tarifas-tarifa-importe.md + docs/backend/peajes/tarifas-tarifa-importe.md. Task 9 evidence copiada (local 2026-09-08: pgTAP 14/412, Node 53/53, ng 35+52, tsc app+spec EXIT 0). tarifas_normalizadas retenida. Diferidos documentados: asociarTrasConfirmacion no cableado post peajes_confirmar_carga; backfill volumen real no probado; pwbi_tarifas_v2 paralela no clon (LEFT JOIN Importe nullable); _stg_precio_last staging; sin DROP legado. Status passing. Sin DESARROLLO. Sin commit."
+      ]
+    },
+    {
+      "id": "F14-17",
+      "title": "Tarifario UI de precios actuales (RPCs CLI sobre tarifas + tarifa_importe)",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md",
+        "docs/06-components/peajes/tarifario.md",
+        "docs/backend/peajes/tarifario.md"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F14-16"],
+      "status": "passing",
+      "verification": [
+        "npx supabase test db incluye peajes_tarifario_rpc_test.sql",
+        "pnpm exec ng test --include=\"**/peajes-tarifario.service.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "pnpm exec ng test --include=\"**/peajes/tarifario/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "tarifario.routes.ts useClass: PeajesTarifarioSupabaseService",
+        "peajes:manage; sentido IDA|VUELTA|AMBAS exacto; New vacío omitido; faltante — no 0; importe > 0"
+      ],
+      "evidence": [
+        "2026-09-08: RPCs CLI + PeajesTarifarioSupabaseService. npx supabase db reset --local --no-seed EXIT 0 (aplicó 20260908140000). npx supabase test db EXIT 0 Files=15 Tests=427 PASS (peajes_tarifario_rpc_test.sql 15/15). ng test peajes-tarifario.service.spec.ts TOTAL 4 SUCCESS. ng test **/peajes/tarifario/**/*.spec.ts TOTAL 37 SUCCESS. pnpm seed:local EXIT 0 (migrate-tarifario-v2 --load-local: current_pointer_mismatches=0). Browser CLI: /peajes/tarifario listó precios vigentes; editor CORREDORES VIALES SA > 9 DE JULIO - RUTA 5 KM 244 > AMBAS; historial Cat.1 NO_PICO con sello Vigente; guardar 1600 actualizó ACTUAL a $1.600,00 y Última actualización 8/9/26. Provider vivo = PeajesTarifarioSupabaseService. Sin DESARROLLO. Sin commit.",
+        "2026-09-07: UI + mock stateful. ng test tarifario TOTAL 30 SUCCESS; home+permission TOTAL 12 SUCCESS. Provider vivo = TarifarioMockService. Sin peajes-tarifario.service.ts ni SQL RPC. Sin write DESARROLLO. Browser: /peajes/tarifario redirige a /login (sesión requerida; no se recorrió list→editor contra el mock en el browser de esta sesión)."
+      ]
+    },
+    {
+      "id": "F14-18",
+      "title": "Refresh Tarifas during Paso 9 pasadas import",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refresh-tarifas-paso9.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md",
+        "docs/06-components/peajes/tarifario.md"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F14-16",
+        "F14-17"
+      ],
+      "status": "not_started",
+      "verification": [
+        "Paso 9 extracts only distinct tariff candidates from included pasadas and preserves original row indexes for single and mass imports.",
+        "Current and historical matching uses tarifas.current_tarifa_id and tarifa_importe history, context peaje/estacion/categoria/status/sentido, and inclusive relative tolerance <= 1%.",
+        "A historical match is informational; a possible new tariff opens an in-place large dialog only after current and history fail; status is never inferred from hora_*.",
+        "The dialog reuses the full PICO/NO_PICO editor board, requires explicit save, supports missing identity creation, preserves requiere_normalizacion_iva, and never overwrites tarifa_importe history.",
+        "A successful refresh appends only new tarifa_importe records, updates the protected current pointer through its trigger, and shows the current-import update summary in Paso 9.",
+        "npx supabase db reset --local --no-seed && npx supabase test db; focused Angular refresh/Paso9/tarifario/dialog/adapter specs; tsc app+spec; manual local Dock Sud current/historical/new flows. No DESARROLLO write without explicit authorization."
+      ],
+      "evidence": [
+        "2026-09-08: registered as not_started, planning only. Canonical implementation plan: docs/plan/refactor-tarifas-importe/PLAN_refresh-tarifas-paso9.md. No product SQL/TypeScript, no test run, no DESARROLLO action, and no commit in this registration."
+      ]
+    },
+    {
       "id": "F17-1",
       "title": "Contratos, motor de confianza y proxy Netlify OpenRouter (invoice AI)",
       "prd_refs": [
@@ -1819,7 +2012,7 @@
         "ng test paso8 + peajes-carga"
       ],
       "evidence": [
-        "2026-08-28: migración 20260828120000_peajes_duplicados_permitidos.sql. db reset --local --no-seed OK; supabase test db 220 PASS. Índice único parcial WHERE duplicado=false. RPC p_permitir_duplicados default false. Paso 8 nombres+Archivo+DUPLICADO+Subir igualmente. ng test paso8+peajes-carga (suite F18 75 SUCCESS). tsc EXIT 0. Sin db push --linked."
+        "2026-08-28: migración 20260828120000_peajes_duplicados_permitidos.sql. db reset --local --no-seed OK; supabase test db 220 PASS. Índice único parcial WHERE duplicado=false. RPC p_permitir_duplicados default false. Paso 8 nombres+Archivo+DUPLICADO+Subir igualmente. ng test paso8+peajes-carga (suite F18 75 SUCCESS). tsc EXIT 0. DESARROLLO kfffigvyvtzyczeiadxh: apply_migration MCP (CLI db push --linked 403); historial 20260828120000; columna+índice+RPC verificados."
       ]
     }
   ]

@@ -1,0 +1,726 @@
+﻿# Review package: Task 6 RED pgTAP (uncommitted additions)
+# Task 2-3 cases 1-132 already approved. Review tests 133-155 and plan(155).
+
+## Commits
+(none)
+
+## Files changed
+ ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql (Task 6 cases appended)
+
+## Task 6 section
+-- -----------------------------------------------------------------------------
+-- Task 6: shadow resolver / 1% validator / post-confirmation association
+-- Dedicated station so matching keys do not collide with Task 2â€“3 rows.
+-- RPCs are missing on RED: helpers catch 42883 so the file still finishes.
+-- Wished-for contract (GREEN):
+--   peajes_resolver_tarifas_actuales(jsonb) â†’ jsonb array, preserves idx
+--   peajes_validar_tarifas_actuales(jsonb) â†’ jsonb array, 1% inclusive
+--   peajes_asociar_pasadas_tarifa_importe(jsonb) â†’ void; AL_DIA/HISTORICA only
+-- -----------------------------------------------------------------------------
+CREATE FUNCTION pg_temp.rpc_jsonb(p_fn text, p_arg jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql AS $$
+DECLARE
+  v jsonb;
+BEGIN
+  EXECUTE format('SELECT public.%I($1)', p_fn) INTO v USING p_arg;
+  RETURN v;
+EXCEPTION
+  WHEN undefined_function THEN
+    RETURN jsonb_build_object('_sqlstate', SQLSTATE);
+END;
+$$;
+
+CREATE FUNCTION pg_temp.asociar_pasadas(p_arg jsonb)
+RETURNS text
+LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM public.peajes_asociar_pasadas_tarifa_importe(p_arg);
+  RETURN 'ok';
+EXCEPTION
+  WHEN undefined_function THEN
+    RETURN SQLSTATE;
+END;
+$$;
+
+CREATE FUNCTION pg_temp.fn_def(p_signature text)
+RETURNS text
+LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN pg_get_functiondef(p_signature::regprocedure);
+EXCEPTION
+  WHEN undefined_function THEN
+    RETURN NULL;
+END;
+$$;
+
+INSERT INTO public.estaciones (id, peaje_id, nombre) VALUES
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    'ESTACION F14-16 T6'
+  );
+
+INSERT INTO public.tarifas_normalizadas (
+  id, peaje_id, estacion_id, categoria, importe, importe_base,
+  cases, patron, diagnostico, status
+) VALUES (
+  '16600000-aaaa-4aa1-8aa1-0000000000b0',
+  '16200000-aaaa-4aa1-8aa1-000000000001',
+  '16600000-aaaa-4aa1-8aa1-000000000002',
+  NULL, 1000, 1000, 0, 'A', 'REVISAR', 'PENDIENTE'
+);
+
+INSERT INTO public.tarifas (
+  id, peaje_id, estacion_id, status, categoria, sentido,
+  requiere_normalizacion_iva, fecha_actualizacion
+) VALUES
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000010',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    'NO_PICO', 1, 'IDA', false,
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000011',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    'NO_PICO', 1, 'AMBAS', false,
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000020',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    'NO_PICO', 2, 'AMBAS', false,
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000030',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    'NO_PICO', 3, 'IDA', false,
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000031',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    'NO_PICO', 3, 'VUELTA', false,
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000050',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    'PICO', 5, 'AMBAS', false,
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000051',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    'NO_PICO', 5, 'AMBAS', false,
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000060',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    'NO_PICO', 6, 'AMBAS', false,
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000070',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    'NO_PICO', 7, 'AMBAS', false,
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000080',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    'NO_PICO', 8, 'AMBAS', false,
+    timestamptz '2026-01-01 00:00:00+00'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000090',
+    '16200000-aaaa-4aa1-8aa1-000000000001',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    'NO_PICO', 9, 'AMBAS', true,
+    timestamptz '2026-01-01 00:00:00+00'
+  );
+
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  hora_min, hora_max
+) VALUES
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000110',
+    '16600000-aaaa-4aa1-8aa1-000000000010',
+    1111.00,
+    timestamptz '2026-07-01 00:00:00+00',
+    timestamptz '2026-07-01 12:00:00+00',
+    NULL, NULL
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000111',
+    '16600000-aaaa-4aa1-8aa1-000000000011',
+    1999.00,
+    timestamptz '2026-07-01 00:00:00+00',
+    timestamptz '2026-07-01 12:00:00+00',
+    NULL, NULL
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000120',
+    '16600000-aaaa-4aa1-8aa1-000000000020',
+    2222.00,
+    timestamptz '2026-07-01 00:00:00+00',
+    timestamptz '2026-07-01 12:00:00+00',
+    NULL, NULL
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000130',
+    '16600000-aaaa-4aa1-8aa1-000000000030',
+    3001.00,
+    timestamptz '2026-07-01 00:00:00+00',
+    timestamptz '2026-07-01 12:00:00+00',
+    NULL, NULL
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000131',
+    '16600000-aaaa-4aa1-8aa1-000000000031',
+    3002.00,
+    timestamptz '2026-07-01 00:00:00+00',
+    timestamptz '2026-07-01 12:00:00+00',
+    NULL, NULL
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000150',
+    '16600000-aaaa-4aa1-8aa1-000000000050',
+    5001.00,
+    timestamptz '2026-07-01 00:00:00+00',
+    timestamptz '2026-07-01 12:00:00+00',
+    7, 9
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000151',
+    '16600000-aaaa-4aa1-8aa1-000000000051',
+    5002.00,
+    timestamptz '2026-07-01 00:00:00+00',
+    timestamptz '2026-07-01 12:00:00+00',
+    10, 18
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000160',
+    '16600000-aaaa-4aa1-8aa1-000000000060',
+    6000.00,
+    timestamptz '2026-07-01 00:00:00+00',
+    timestamptz '2026-07-01 12:00:00+00',
+    NULL, NULL
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000170',
+    '16600000-aaaa-4aa1-8aa1-000000000070',
+    1000.00,
+    timestamptz '2026-06-01 00:00:00+00',
+    timestamptz '2026-06-01 12:00:00+00',
+    NULL, NULL
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000171',
+    '16600000-aaaa-4aa1-8aa1-000000000070',
+    2000.00,
+    timestamptz '2026-08-01 00:00:00+00',
+    timestamptz '2026-08-01 12:00:00+00',
+    NULL, NULL
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000180',
+    '16600000-aaaa-4aa1-8aa1-000000000080',
+    1000.00,
+    timestamptz '2026-07-01 00:00:00+00',
+    timestamptz '2026-07-01 12:00:00+00',
+    NULL, NULL
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-000000000190',
+    '16600000-aaaa-4aa1-8aa1-000000000090',
+    1000.00,
+    timestamptz '2026-07-01 00:00:00+00',
+    timestamptz '2026-07-01 12:00:00+00',
+    NULL, NULL
+  );
+
+INSERT INTO public.pasadas (
+  id, fecha_hora, pase_id, patente_id, estacion_id, documento_id,
+  precio, bonificacion, quantity, importe_neto, sentido, tarifa_normalizada_id
+) VALUES
+  (
+    '16600000-aaaa-4aa1-8aa1-0000000000c1',
+    timestamptz '2026-09-07 10:00:00+00',
+    '16200000-aaaa-4aa1-8aa1-000000000004',
+    '16200000-aaaa-4aa1-8aa1-000000000003',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    '16200000-aaaa-4aa1-8aa1-000000000005',
+    1000, 0, 1, 1000, 'AMBAS',
+    '16600000-aaaa-4aa1-8aa1-0000000000b0'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-0000000000c2',
+    timestamptz '2026-09-07 11:00:00+00',
+    '16200000-aaaa-4aa1-8aa1-000000000004',
+    '16200000-aaaa-4aa1-8aa1-000000000003',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    '16200000-aaaa-4aa1-8aa1-000000000005',
+    1000, 0, 1, 1000, 'AMBAS',
+    '16600000-aaaa-4aa1-8aa1-0000000000b0'
+  ),
+  (
+    '16600000-aaaa-4aa1-8aa1-0000000000c3',
+    timestamptz '2026-09-07 12:00:00+00',
+    '16200000-aaaa-4aa1-8aa1-000000000004',
+    '16200000-aaaa-4aa1-8aa1-000000000003',
+    '16600000-aaaa-4aa1-8aa1-000000000002',
+    '16200000-aaaa-4aa1-8aa1-000000000005',
+    1000, 0, 1, 1000, 'AMBAS',
+    '16600000-aaaa-4aa1-8aa1-0000000000b0'
+  );
+
+CREATE FUNCTION pg_temp.t6_asoc_payload()
+RETURNS jsonb
+LANGUAGE sql IMMUTABLE AS $$
+  SELECT jsonb_build_array(
+    jsonb_build_object(
+      'pasada_id', '16600000-aaaa-4aa1-8aa1-0000000000c1',
+      'tarifa_importe_id', '16600000-aaaa-4aa1-8aa1-000000000180',
+      'codigo', 'AL_DIA'
+    ),
+    jsonb_build_object(
+      'pasada_id', '16600000-aaaa-4aa1-8aa1-0000000000c2',
+      'tarifa_importe_id', '16600000-aaaa-4aa1-8aa1-000000000170',
+      'codigo', 'HISTORICA'
+    ),
+    jsonb_build_object(
+      'pasada_id', '16600000-aaaa-4aa1-8aa1-0000000000c3',
+      'tarifa_importe_id', '16600000-aaaa-4aa1-8aa1-000000000180',
+      'codigo', 'DESFASADO'
+    )
+  );
+$$;
+
+SELECT has_function(
+  'public',
+  'peajes_resolver_tarifas_actuales',
+  ARRAY['jsonb'],
+  'F14-16 peajes_resolver_tarifas_actuales(jsonb) existe'
+);
+
+SELECT has_function(
+  'public',
+  'peajes_validar_tarifas_actuales',
+  ARRAY['jsonb'],
+  'F14-16 peajes_validar_tarifas_actuales(jsonb) existe'
+);
+
+SELECT has_function(
+  'public',
+  'peajes_asociar_pasadas_tarifa_importe',
+  ARRAY['jsonb'],
+  'F14-16 peajes_asociar_pasadas_tarifa_importe(jsonb) existe'
+);
+
+-- 1) Batch row-order preservation: missing config first, IDA match second.
+SELECT ok(
+  (
+    SELECT
+      r -> 0 ->> 'idx' = '0'
+      AND r -> 0 ->> 'codigo' = 'SIN_TARIFA'
+      AND r -> 1 ->> 'idx' = '1'
+      AND r -> 1 ->> 'tarifa_id' = '16600000-aaaa-4aa1-8aa1-000000000010'
+    FROM pg_temp.rpc_jsonb(
+      'peajes_resolver_tarifas_actuales',
+      jsonb_build_array(
+        jsonb_build_object(
+          'idx', 0,
+          'estacion_id', '16600000-aaaa-4aa1-8aa1-000000000002',
+          'categoria', 4,
+          'status', 'NO_PICO',
+          'sentido', 'AMBAS'
+        ),
+        jsonb_build_object(
+          'idx', 1,
+          'estacion_id', '16600000-aaaa-4aa1-8aa1-000000000002',
+          'categoria', 1,
+          'status', 'NO_PICO',
+          'sentido', 'IDA'
+        )
+      )
+    ) AS r
+  ),
+  'F14-16 resolver preserva idx del caller (SIN_TARIFA luego IDA)'
+);
+
+-- 2) IDA exact priority over AMBAS; peaje via estaciones.peaje_id.
+SELECT ok(
+  (
+    SELECT
+      r -> 0 ->> 'tarifa_id' = '16600000-aaaa-4aa1-8aa1-000000000010'
+      AND r -> 0 ->> 'current_tarifa_id' = '16600000-aaaa-4aa1-8aa1-000000000110'
+      AND (r -> 0 ->> 'importe')::numeric = 1111
+      AND r -> 0 ->> 'peaje_id' = '16200000-aaaa-4aa1-8aa1-000000000001'
+      AND r -> 0 ->> 'sentido_aplicado' = 'IDA'
+      AND (r -> 0 ->> 'requiere_normalizacion_iva')::boolean IS FALSE
+    FROM pg_temp.rpc_jsonb(
+      'peajes_resolver_tarifas_actuales',
+      jsonb_build_array(
+        jsonb_build_object(
+          'idx', 0,
+          'estacion_id', '16600000-aaaa-4aa1-8aa1-000000000002',
+          'categoria', 1,
+          'status', 'NO_PICO',
+          'sentido', 'IDA'
+        )
+      )
+    ) AS r
+  ),
+  'F14-16 resolver prioriza sentido IDA exacto y peaje_id de estaciones'
+);
+
+-- 3) VUELTA falls back to AMBAS when VUELTA config is absent.
+SELECT ok(
+  (
+    SELECT
+      r -> 0 ->> 'tarifa_id' = '16600000-aaaa-4aa1-8aa1-000000000020'
+      AND r -> 0 ->> 'sentido_aplicado' = 'AMBAS'
+      AND (r -> 0 ->> 'importe')::numeric = 2222
+    FROM pg_temp.rpc_jsonb(
+      'peajes_resolver_tarifas_actuales',
+      jsonb_build_array(
+        jsonb_build_object(
+          'idx', 0,
+          'estacion_id', '16600000-aaaa-4aa1-8aa1-000000000002',
+          'categoria', 2,
+          'status', 'NO_PICO',
+          'sentido', 'VUELTA'
+        )
+      )
+    ) AS r
+  ),
+  'F14-16 resolver VUELTA cae a AMBAS si no hay VUELTA'
+);
+
+-- 4) AMBAS matches only AMBAS (does not pick IDA/VUELTA).
+SELECT is(
+  pg_temp.rpc_jsonb(
+    'peajes_resolver_tarifas_actuales',
+    jsonb_build_array(
+      jsonb_build_object(
+        'idx', 0,
+        'estacion_id', '16600000-aaaa-4aa1-8aa1-000000000002',
+        'categoria', 3,
+        'status', 'NO_PICO',
+        'sentido', 'AMBAS'
+      )
+    )
+  ) -> 0 ->> 'codigo',
+  'SIN_TARIFA',
+  'F14-16 resolver AMBAS no elige IDA ni VUELTA'
+);
+
+-- 5) Missing configuration â†’ SIN_TARIFA.
+SELECT is(
+  pg_temp.rpc_jsonb(
+    'peajes_resolver_tarifas_actuales',
+    jsonb_build_array(
+      jsonb_build_object(
+        'idx', 0,
+        'estacion_id', '16600000-aaaa-4aa1-8aa1-000000000002',
+        'categoria', 4,
+        'status', 'NO_PICO',
+        'sentido', 'AMBAS'
+      )
+    )
+  ) -> 0 ->> 'codigo',
+  'SIN_TARIFA',
+  'F14-16 resolver configuraciÃ³n ausente â†’ SIN_TARIFA'
+);
+
+-- 6) Absent status with PICO+NO_PICO (hora windows would guess PICO) â†’ ESTADO_AMBIGUO.
+SELECT is(
+  pg_temp.rpc_jsonb(
+    'peajes_resolver_tarifas_actuales',
+    jsonb_build_array(
+      jsonb_build_object(
+        'idx', 0,
+        'estacion_id', '16600000-aaaa-4aa1-8aa1-000000000002',
+        'categoria', 5,
+        'sentido', 'AMBAS',
+        'fecha_hora', '2026-07-10T08:00:00+00'
+      )
+    )
+  ) -> 0 ->> 'codigo',
+  'ESTADO_AMBIGUO',
+  'F14-16 resolver status ausente con dos candidatos no infiere hora_*'
+);
+
+SELECT is(
+  pg_temp.rpc_jsonb(
+    'peajes_resolver_tarifas_actuales',
+    jsonb_build_array(
+      jsonb_build_object(
+        'idx', 0,
+        'estacion_id', '16600000-aaaa-4aa1-8aa1-000000000002',
+        'categoria', 5,
+        'status', 'PENDIENTE',
+        'sentido', 'AMBAS'
+      )
+    )
+  ) -> 0 ->> 'codigo',
+  'ESTADO_AMBIGUO',
+  'F14-16 resolver status PENDIENTE con dos candidatos â†’ ESTADO_AMBIGUO'
+);
+
+-- Unique status (only NO_PICO) is resolvable when status is omitted.
+SELECT is(
+  pg_temp.rpc_jsonb(
+    'peajes_resolver_tarifas_actuales',
+    jsonb_build_array(
+      jsonb_build_object(
+        'idx', 0,
+        'estacion_id', '16600000-aaaa-4aa1-8aa1-000000000002',
+        'categoria', 6,
+        'sentido', 'AMBAS'
+      )
+    )
+  ) -> 0 ->> 'tarifa_id',
+  '16600000-aaaa-4aa1-8aa1-000000000060',
+  'F14-16 resolver status ausente Ãºnico NO_PICO no es ESTADO_AMBIGUO'
+);
+
+-- 7) Historical-price recognition â†’ HISTORICA (non-current 1000; current is 2000).
+SELECT ok(
+  (
+    SELECT
+      r -> 0 ->> 'codigo' = 'HISTORICA'
+      AND r -> 0 ->> 'tarifa_importe_id' = '16600000-aaaa-4aa1-8aa1-000000000170'
+    FROM pg_temp.rpc_jsonb(
+      'peajes_validar_tarifas_actuales',
+      jsonb_build_array(
+        jsonb_build_object(
+          'idx', 0,
+          'tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000070',
+          'current_tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000171',
+          'importe', 2000,
+          'requiere_normalizacion_iva', false,
+          'precio_directo', 1000,
+          'precio_normalizado', NULL
+        )
+      )
+    ) AS r
+  ),
+  'F14-16 validator reconoce importe histÃ³rico no vigente â†’ HISTORICA'
+);
+
+-- 8) Inclusive 1%: exact, = 0.01, > 0.01.
+SELECT is(
+  pg_temp.rpc_jsonb(
+    'peajes_validar_tarifas_actuales',
+    jsonb_build_array(
+      jsonb_build_object(
+        'idx', 0,
+        'tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000080',
+        'current_tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000180',
+        'importe', 1000,
+        'requiere_normalizacion_iva', false,
+        'precio_directo', 1000,
+        'precio_normalizado', NULL
+      )
+    )
+  ) -> 0 ->> 'codigo',
+  'AL_DIA',
+  'F14-16 validator 1% exacto â†’ AL_DIA'
+);
+
+SELECT is(
+  pg_temp.rpc_jsonb(
+    'peajes_validar_tarifas_actuales',
+    jsonb_build_array(
+      jsonb_build_object(
+        'idx', 0,
+        'tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000080',
+        'current_tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000180',
+        'importe', 1000,
+        'requiere_normalizacion_iva', false,
+        'precio_directo', 1010,
+        'precio_normalizado', NULL
+      )
+    )
+  ) -> 0 ->> 'codigo',
+  'AL_DIA',
+  'F14-16 validator error relativo = 0.01 inclusive â†’ AL_DIA'
+);
+
+SELECT ok(
+  (
+    SELECT
+      r -> 0 ->> 'codigo' = 'DESFASADO'
+      AND (r -> 0 ->> 'importe')::numeric = 1000
+      AND (r -> 0 ->> 'precio_comparado')::numeric = 1011
+      AND abs((r -> 0 ->> 'error_relativo')::numeric - 0.011) < 0.0000001
+    FROM pg_temp.rpc_jsonb(
+      'peajes_validar_tarifas_actuales',
+      jsonb_build_array(
+        jsonb_build_object(
+          'idx', 0,
+          'tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000080',
+          'current_tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000180',
+          'importe', 1000,
+          'requiere_normalizacion_iva', false,
+          'precio_directo', 1011,
+          'precio_normalizado', NULL
+        )
+      )
+    ) AS r
+  ),
+  'F14-16 validator error relativo > 0.01 â†’ DESFASADO con importes'
+);
+
+-- 9) Validator uses supplied normalized price only when flag is true; no / 1.21.
+SELECT is(
+  pg_temp.rpc_jsonb(
+    'peajes_validar_tarifas_actuales',
+    jsonb_build_array(
+      jsonb_build_object(
+        'idx', 0,
+        'tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000090',
+        'current_tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000190',
+        'importe', 1000,
+        'requiere_normalizacion_iva', true,
+        'precio_directo', 1210,
+        'precio_normalizado', 1000
+      )
+    )
+  ) -> 0 ->> 'codigo',
+  'AL_DIA',
+  'F14-16 validator flag true usa precio_normalizado (no 1210)'
+);
+
+SELECT is(
+  pg_temp.rpc_jsonb(
+    'peajes_validar_tarifas_actuales',
+    jsonb_build_array(
+      jsonb_build_object(
+        'idx', 0,
+        'tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000090',
+        'current_tarifa_id', '16600000-aaaa-4aa1-8aa1-000000000190',
+        'importe', 1000,
+        'requiere_normalizacion_iva', false,
+        'precio_directo', 1210,
+        'precio_normalizado', 1000
+      )
+    )
+  ) -> 0 ->> 'codigo',
+  'DESFASADO',
+  'F14-16 validator flag false usa precio_directo (ignora normalizado)'
+);
+
+SELECT ok(
+  pg_temp.fn_def('public.peajes_resolver_tarifas_actuales(jsonb)') IS NOT NULL
+  AND pg_temp.fn_def('public.peajes_validar_tarifas_actuales(jsonb)') IS NOT NULL
+  AND pg_temp.fn_def('public.peajes_resolver_tarifas_actuales(jsonb)') NOT ILIKE '%/ 1.21%'
+  AND pg_temp.fn_def('public.peajes_resolver_tarifas_actuales(jsonb)') NOT ILIKE '%/1.21%'
+  AND pg_temp.fn_def('public.peajes_resolver_tarifas_actuales(jsonb)') NOT ILIKE '%/ 1,21%'
+  AND pg_temp.fn_def('public.peajes_resolver_tarifas_actuales(jsonb)') NOT ILIKE '%/1,21%'
+  AND pg_temp.fn_def('public.peajes_validar_tarifas_actuales(jsonb)') NOT ILIKE '%/ 1.21%'
+  AND pg_temp.fn_def('public.peajes_validar_tarifas_actuales(jsonb)') NOT ILIKE '%/1.21%'
+  AND pg_temp.fn_def('public.peajes_validar_tarifas_actuales(jsonb)') NOT ILIKE '%/ 1,21%'
+  AND pg_temp.fn_def('public.peajes_validar_tarifas_actuales(jsonb)') NOT ILIKE '%/1,21%',
+  'F14-16 resolver/validator SQL no divide por 1.21'
+);
+
+-- 10) Association: AL_DIA/HISTORICA write tarifa_importe_id; DESFASADO ignored;
+-- retry idempotent; tarifa_normalizada_id unchanged; no history insert.
+SELECT is(
+  pg_temp.asociar_pasadas(pg_temp.t6_asoc_payload()),
+  'ok',
+  'F14-16 peajes_asociar_pasadas_tarifa_importe ejecuta (no 42883)'
+);
+
+SELECT ok(
+  (
+    SELECT tarifa_importe_id = '16600000-aaaa-4aa1-8aa1-000000000180'::uuid
+       AND tarifa_normalizada_id = '16600000-aaaa-4aa1-8aa1-0000000000b0'::uuid
+    FROM public.pasadas
+    WHERE id = '16600000-aaaa-4aa1-8aa1-0000000000c1'
+  )
+  AND (
+    SELECT tarifa_importe_id = '16600000-aaaa-4aa1-8aa1-000000000170'::uuid
+       AND tarifa_normalizada_id = '16600000-aaaa-4aa1-8aa1-0000000000b0'::uuid
+    FROM public.pasadas
+    WHERE id = '16600000-aaaa-4aa1-8aa1-0000000000c2'
+  )
+  AND (
+    SELECT tarifa_importe_id IS NULL
+       AND tarifa_normalizada_id = '16600000-aaaa-4aa1-8aa1-0000000000b0'::uuid
+    FROM public.pasadas
+    WHERE id = '16600000-aaaa-4aa1-8aa1-0000000000c3'
+  ),
+  'F14-16 association AL_DIA/HISTORICA escribe tarifa_importe_id; DESFASADO no; TN intacto'
+);
+
+SELECT is(
+  pg_temp.asociar_pasadas(pg_temp.t6_asoc_payload()),
+  'ok',
+  'F14-16 association retry no lanza'
+);
+
+SELECT ok(
+  (
+    SELECT tarifa_importe_id = '16600000-aaaa-4aa1-8aa1-000000000180'::uuid
+    FROM public.pasadas
+    WHERE id = '16600000-aaaa-4aa1-8aa1-0000000000c1'
+  )
+  AND (
+    SELECT tarifa_importe_id = '16600000-aaaa-4aa1-8aa1-000000000170'::uuid
+    FROM public.pasadas
+    WHERE id = '16600000-aaaa-4aa1-8aa1-0000000000c2'
+  )
+  AND (
+    SELECT tarifa_importe_id IS NULL
+    FROM public.pasadas
+    WHERE id = '16600000-aaaa-4aa1-8aa1-0000000000c3'
+  ),
+  'F14-16 association retry es idempotente'
+);
+
+SELECT ok(
+  (
+    SELECT tarifa_importe_id = '16600000-aaaa-4aa1-8aa1-000000000180'::uuid
+    FROM public.pasadas
+    WHERE id = '16600000-aaaa-4aa1-8aa1-0000000000c1'
+  )
+  AND (
+    SELECT count(*)::int
+    FROM public.tarifa_importe
+    WHERE tarifa_id IN (
+      '16600000-aaaa-4aa1-8aa1-000000000010'::uuid,
+      '16600000-aaaa-4aa1-8aa1-000000000011'::uuid,
+      '16600000-aaaa-4aa1-8aa1-000000000020'::uuid,
+      '16600000-aaaa-4aa1-8aa1-000000000030'::uuid,
+      '16600000-aaaa-4aa1-8aa1-000000000031'::uuid,
+      '16600000-aaaa-4aa1-8aa1-000000000050'::uuid,
+      '16600000-aaaa-4aa1-8aa1-000000000051'::uuid,
+      '16600000-aaaa-4aa1-8aa1-000000000060'::uuid,
+      '16600000-aaaa-4aa1-8aa1-000000000070'::uuid,
+      '16600000-aaaa-4aa1-8aa1-000000000080'::uuid,
+      '16600000-aaaa-4aa1-8aa1-000000000090'::uuid
+    )
+  ) = 12,
+  'F14-16 association escribe FK y no inserta historial tarifa_importe'
+);
+
+SELECT * FROM finish();
+ROLLBACK;

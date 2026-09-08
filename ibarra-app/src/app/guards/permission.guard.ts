@@ -32,6 +32,7 @@ export const PEAJES_ROUTE_PERMISSIONS: Record<string, PermissionRequirement> = {
   '/peajes/pasadas': peajesOperational,
   '/peajes/pasadas-pendientes': peajesOperational,
   '/peajes/auditoria-tarifas': peajesOperational,
+  '/peajes/tarifario': all(peajesManage),
   '/peajes/auditoria-estaciones': peajesOperational,
   '/peajes/pdf-reader': peajesRead,
   '/peajes/carga-express': all(peajesManage),
@@ -54,9 +55,8 @@ export function matchesPermissionRequirement(
   if ('module' in requirement) {
     return (
       hasPermission(requirement.module, requirement.action) ||
-      (requirement.module === 'peajes' &&
-        requirement.action !== 'manage' &&
-        hasPermission('peajes', 'manage'))
+      (requirement.action !== 'manage' &&
+        hasPermission(requirement.module, 'manage'))
     );
   }
 

@@ -30,6 +30,41 @@ export class Paso1CargaPage extends BasePage {
     return this.byCss('app-paso1-carga .pw__alert--error');
   }
 
+  get masivaOption() {
+    return this.byXpath(
+      '/html/body/app-root/div/main/app-peajes-carga-express/div/section/app-paso1-carga/div/div[2]/fieldset//label[contains(., "Importación masiva")]',
+    );
+  }
+
+  get pdfListItems() {
+    return this.byCss('app-paso1-carga .paso1__pdf-item');
+  }
+
+  async selectMasiva() {
+    const option = await this.visible(this.masivaOption, 20000);
+    await this.driver.executeScript('arguments[0].scrollIntoView({block:"center"});', option);
+    await option.click();
+    await this.sleep(400);
+    const radio = await option.findElement(this.byCss('input[type="radio"]'));
+    const checked = await radio.getAttribute('checked');
+    if (checked == null && !(await radio.isSelected())) {
+      await this.driver.executeScript('arguments[0].click();', radio);
+    }
+  }
+
+  async uploadMasiva(xlsxPath, pdfPaths = []) {
+    const input = await this.find(this.fileInput, 20000);
+    const paths = [xlsxPath, ...pdfPaths].filter(Boolean);
+    await input.sendKeys(paths.join('\n'));
+    await this.driver.wait(async () => {
+      const name = (await this.textOf(this.fileName)).trim();
+      return name && name !== 'Sin archivo';
+    }, 30000);
+    if (pdfPaths.length) {
+      await this.driver.wait(async () => (await this.finds(this.pdfListItems)).length > 0, 30000);
+    }
+  }
+
   async uploadFiles(pasadasPath, facturaPath) {
     const input = await this.find(this.fileInput, 20000);
     const paths = [pasadasPath, facturaPath].filter(Boolean);
@@ -61,7 +96,7 @@ export class Paso1CargaPage extends BasePage {
     );
   }
 
-  async continueToNext() {
+  async continueToNext(timeout = 90000) {
     const button = await this.visible(this.continuar);
     const disabled = await button.getAttribute('disabled');
     if (disabled) {
@@ -79,7 +114,7 @@ export class Paso1CargaPage extends BasePage {
       const step = await this.detectStep();
       if (error && step === 'carga') throw new Error(error);
       return step !== 'carga';
-    }, 90000);
+    }, timeout);
     return this.detectStep();
   }
 }

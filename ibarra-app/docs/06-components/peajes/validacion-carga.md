@@ -38,8 +38,15 @@ Si una referencia continúa sin resolver, no envía un UUID inválido al backend
 | Campos obligatorios | Fecha, pase, patente, estación, precio, bonificación, cantidad e importe neto presentes (`PASE_ID` puede venir del último pase de la patente) | Sí | 5 |
 | Estaciones | `ESTACION_ID` es UUID del catálogo | Sí | 6 |
 | Patentes | `PATENTE_ID` es UUID del catálogo | Sí | 5 |
+| Tarifas v2 (sombra) | Diagnóstico de matching `tarifas` / `tarifa_importe` | No | — |
 
 Cada tarjeta presenta estado, explicación, recomendación y un botón para volver al paso que puede resolverla. Las tarjetas de RPC incluyen un `<details>` con nombre del RPC, HTTP/PostgreSQL cuando corresponde, solicitud, respuesta y stack solo si está disponible en desarrollo.
+
+### Tarifas v2 en Paso 8 (F14-16)
+
+Grupo diagnóstico adicional, **no bloqueante**. `TarifaValidationService.validarLote` llama `peajes_resolver_tarifas_actuales` y `peajes_validar_tarifas_actuales`. `AL_DIA` → `ok`; `HISTORICA` / `DESFASADO` / `SIN_TARIFA` / `CATEGORIA_PENDIENTE` / `ESTADO_AMBIGUO` y fallos RPC → `warning`. No entra en `ResultadoValidacionCarga.errores` ni cambia `dentroTolerancia` / `puedeContinuar`. Tabla en español: fila, estación, categoría, sentido solicitado/aplicado, status, importe auditado, comparado, error relativo, resultado.
+
+`SENTIDO` se lee si está en la fila; si falta, `AMBAS`. No es destino de `PASADA_COLUMN_KEYS`. `asociarTrasConfirmacion` existe en el servicio y no se llama tras confirmar la carga (sigue `peajes_normalizar_tarifas`). Detalle: [tarifas-tarifa-importe.md](../../backend/peajes/tarifas-tarifa-importe.md).
 
 ## Errores y acciones
 
@@ -67,11 +74,14 @@ columna, valor y motivo, y se bloquea la detección de duplicados y la confirmac
 - Resuelve `PASE_ID` y `PATENTE_ID` mediante `PeajesCatalogoService` antes de la detección de duplicados.
 - Sin `PASE_ID`, asigna el último pase de la patente (`ultimoPaseIdPorPatente`); no crea un pase sintético con la placa.
 - Guarda las referencias UUID resueltas en el estado para la revisión y confirmación.
+- F14-16: llama `TarifaValidationService.validarLote` para el diagnóstico de tarifas en sombra (no bloquea).
 
 Fuentes:
 
 - `src/app/components/peajes/wizard/paso8-validacion/paso8-validacion.component.ts`
 - `src/app/components/peajes/services/peajes-carga.service.ts`
+- `src/app/components/peajes/services/tarifa-validation.service.ts`
+- `src/app/components/peajes/services/tarifa-comparison-adapter.service.ts`
 
 ## Backend
 
@@ -80,6 +90,7 @@ Fuentes:
 | `peajes_validar_factura_pasadas` | Suma el arreglo de netos y lo contrasta con `subtotal + bonificacion`; devuelve `valido`, `diferencia`, `tolerancia` (1% del subtotal por defecto), `suma_pasadas`, `bonificacion`, `esperado` y `dentro_tolerancia` |
 | `peajes_detectar_duplicados` | Detecta la clave de negocio en lote y contra `pasadas` persistidas; requiere UUIDs |
 | `peajes_confirmar_carga` | Inserta factura, pasadas y auditoría solo si el subtotal total cumple la tolerancia |
+| `peajes_resolver_tarifas_actuales` / `peajes_validar_tarifas_actuales` | Matching v2 en sombra (Paso 8); no bloquean |
 
 Las migraciones `20260804183929_peajes_permitir_neto_declarado_si_total_valido.sql`, `20260804184205_peajes_permitir_neto_declarado_en_pasadas.sql` y `20260805113339_peajes_tolerancia_factura_uno_por_ciento.sql` alinean la persistencia y la tolerancia adaptativa con el Paso 8: `pasadas.importe_neto` conserva el importe declarado (no negativo) y el criterio vinculante es la conciliación del subtotal total (±1%).
 
@@ -108,10 +119,11 @@ El test SQL `peajes_f01_test.sql` incluye casos F11 de tolerancia porcentual. La
 
 - [Wizard](./wizard.md)
 - [Auditoría y RPCs](../../06-tablas/peajes/auditoria-y-rpcs.md)
+- Tarifas v2 (sombra Paso 8): [tarifas-tarifa-importe.md](../../backend/peajes/tarifas-tarifa-importe.md)
 - Backend / RPC: `docs/backend/` (catálogo y detalle; no `docs/08-sql/`)
 - Migración tolerancia: `supabase/migrations/20260805113339_peajes_tolerancia_factura_uno_por_ciento.sql`
 - [Workflow AUSOL](../../plan/prueba-workflow-557074-ausol.md)
 
 ---
 
-> Última actualización: 2026-08-19
+> Última actualización: 2026-09-08

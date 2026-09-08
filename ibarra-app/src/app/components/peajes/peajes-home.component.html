@@ -52,6 +52,13 @@
       <span class="peajes-home__link">Auditar tarifas</span>
     </a>
 
+    <a *ngIf="isSectionVisible('tarifario')" routerLink="/peajes/tarifario" class="peajes-home__card">
+      <div class="peajes-home__icon"><i class="fas fa-tags" aria-hidden="true"></i></div>
+      <h2>Tarifario</h2>
+      <p>Consultá e editá los precios vigentes del catálogo por peaje, estación y sentido.</p>
+      <span class="peajes-home__link">Abrir tarifario</span>
+    </a>
+
     <a *ngIf="isSectionVisible('auditoria-estaciones')" routerLink="/peajes/auditoria-estaciones" class="peajes-home__card">
       <div class="peajes-home__icon"><i class="fas fa-map-signs" aria-hidden="true"></i></div>
       <h2>Auditoría de estaciones</h2>

@@ -1,0 +1,77 @@
+# Review package: Task 7 RED unique-lineage backfill pgTAP (uncommitted)
+# vs previous approved plan(155). Git CLI unavailable in this review
+# sandbox; reconstructed from the working tree vs Task 6 ending.
+
+## Commits
+(none)
+
+## Files changed
+ ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
+   header: plan(155) → plan(165); Task 7 comment
+   appended: Task 7 section after the Task 6 association block
+
+## Header
+--- a/ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
++++ b/ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
+@@ -1,6 +1,6 @@
+ -- pgTAP: F14-16 Task 2 schema + Task 3 current-pointer / immutable history
+ -- + Task 6 shadow resolver / 1% validator / association RPCs
+--- Empty tables; fixture inserts only.
++-- + Task 7 unique-lineage backfill (RED: peajes_backfill_pasadas_tarifa_importe absent).
++-- Empty tables; fixture inserts only. Do not load the Cruzado workbook.
+ BEGIN;
+-SELECT plan(155);
++SELECT plan(165);
+
+## Task 7 section (appended after Task 6 association, tests 156–165)
+-- -----------------------------------------------------------------------------
+-- Task 7: unique-lineage backfill of pasadas.tarifa_importe_id
+-- Dedicated station / UUIDs (167…) so fixtures do not collide with Task 2–6.
+-- Unique index already forbids two history rows with the same
+-- tarifas_normalizadas_id; unmatched + coincidental-id (null lineage) cover
+-- “leave null / do not invent”. GREEN must still join 1:1 (HAVING count = 1).
+-- Wished-for contract (GREEN):
+--   peajes_backfill_pasadas_tarifa_importe() → void; no args
+--   Unique pasadas.tarifa_normalizada_id = tarifa_importe.tarifas_normalizadas_id
+--     → set pasadas.tarifa_importe_id to that history id (id = lineage id)
+--   Unmatched / non-unique → tarifa_importe_id stays null; no history insert
+--   Zero mutation of tarifas_normalizadas; every tarifa_normalizada_id preserved
+--   Idempotent; does not rewrite current pointers or association FKs
+-- Helper catches 42883 so the file still finishes on RED.
+-- -----------------------------------------------------------------------------
+CREATE FUNCTION pg_temp.backfill_pasadas()
+RETURNS text
+LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM public.peajes_backfill_pasadas_tarifa_importe();
+  RETURN 'ok';
+EXCEPTION
+  WHEN undefined_function THEN
+    RETURN SQLSTATE;
+END;
+$$;
+
+Fixtures (167…):
+- estaciones T7
+- TN b1 (unique lineage), b2 (no history), b3 (coincidental history id, lineage NULL)
+- tarifas 010 / 011
+- tarifa_importe b1 (tarifas_normalizadas_id = b1), b3 (id = b3, lineage NULL)
+- pasadas c1+c2 share TN b1; c3 unmatched TN b2; c4 coincidental TN b3
+
+Assertions 156–165:
+- has_function public.peajes_backfill_pasadas_tarifa_importe ARRAY[]::name[]
+- first PERFORM = 'ok' (not 42883)
+- unique 1:1 fills tarifa_importe_id = b1; tarifa_normalizada_id intact (gated on run1='ok')
+- unmatched c3 stays null (gated)
+- coincidental-id c4 stays null (gated)
+- every pasadas.tarifa_normalizada_id preserved; pasada count unchanged (gated)
+- tarifas_normalizadas count + business fingerprint unchanged (gated)
+- current_tarifa_id fingerprint, tarifa_importe count, Task 6 association FKs intact (gated)
+- retry PERFORM = 'ok'
+- retry idempotent: unique filled, unmatched/coincidental null (IS TRUE on fill compares)
+
+## GREEN artifacts (must be absent)
+- no peajes_backfill_pasadas_tarifa_importe in migrations/scripts/src
+- migrate-tarifario-v2.mjs still parse-only (no Postgres load)
+- validar_migracion_tarifario_v2.sql PRECIO_LAST stub unchanged
+- no 20260908_* migration
