@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   ConfirmacionCargaResultado,
   Estacion,
+  EstacionViaSentido,
   PasadaEstandarizada,
   Pase,
   Patente,
@@ -31,12 +32,14 @@ const BLOQUEANTES = new Set([
   'STATUS_REQUIRED',
   'STATUS_AMBIGUOUS',
   'CONTEXT_INCOMPLETE',
+  'DIRECTION_REQUIRED',
+  'DIRECTION_CONFLICT',
 ]);
 
-function sentidoPasada(pasada: PasadaEstandarizada): 'IDA' | 'VUELTA' | 'AMBAS' {
+function sentidoPasada(pasada: PasadaEstandarizada): 'IDA' | 'VUELTA' | 'AMBAS' | null {
   const raw = String(pasada.SENTIDO ?? '').trim().toUpperCase();
   if (raw === 'IDA' || raw === 'VUELTA' || raw === 'AMBAS') return raw;
-  return 'AMBAS';
+  return null;
 }
 
 @Component({
@@ -70,6 +73,7 @@ export class Paso9RevisionComponent implements OnInit {
   private pases: Pase[] = [];
   private patentes: Patente[] = [];
   private estaciones: Estacion[] = [];
+  private estacionesViasSentido: EstacionViaSentido[] = [];
 
   constructor(
     @Inject(PEAJES_CARGA_SERVICE) private readonly carga: PeajesCargaService,
@@ -81,14 +85,16 @@ export class Paso9RevisionComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     try {
-      const [pases, patentes, estaciones] = await Promise.all([
+      const [pases, patentes, estaciones, estacionesViasSentido] = await Promise.all([
         firstValueFrom(this.catalogo.listarPases()),
         firstValueFrom(this.catalogo.listarPatentes()),
         firstValueFrom(this.catalogo.listarEstaciones()),
+        firstValueFrom(this.catalogo.listarEstacionesViasSentido()),
       ]);
       this.pases = pases;
       this.patentes = patentes.filter((p) => p.activa !== false);
       this.estaciones = estaciones;
+      this.estacionesViasSentido = estacionesViasSentido;
       await this.analizarTarifas();
     } catch {
       this.pases = [];
@@ -176,19 +182,36 @@ export class Paso9RevisionComponent implements OnInit {
 
   get dialogNeeded(): boolean {
     return (this.resumenRefresco?.resultados ?? []).some((r) =>
-      ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS'].includes(r.codigo),
+      ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo),
     );
   }
 
   async analizarTarifas(): Promise<void> {
     this.analizando = true;
     try {
-      this.resumenRefresco = await this.refresh.analizar({
+      const resumen = await this.refresh.analizar({
         pasadas: this.pasadas,
         documentos: this.documentosIncluidos,
         configuraciones: this.state.toConfiguracionesPlantilla(),
+        estacionesViasSentido: this.estacionesViasSentido.map((row) => ({
+          codigoEstacion: row.codigo_estacion,
+          via: row.via,
+          sentido: row.sentido,
+        })),
       });
-      this.refreshOpen = this.dialogNeeded && this.canManageTarifas;
+      // The extractor intentionally does not invent a peaje identity. Once the
+      // station catalogue is loaded, enrich unresolved candidates so an
+      // explicit Paso 9 assignment can still be persisted safely.
+      this.resumenRefresco = {
+        ...resumen,
+        resultados: resumen.resultados.map((row) => ({
+          ...row,
+          peajeId: row.peajeId ?? this.estaciones.find((estacion) => estacion.id === row.estacionId)?.peaje_id ?? null,
+        })),
+      };
+      // Operators may review unresolved direction candidates even though only
+      // peajes:manage can persist tariff changes.
+      this.refreshOpen = this.dialogNeeded;
       if (this.resumenRefresco.contextIncomplete) {
         this.error =
           'Hay pasadas sin estación o categoría numérica. Completá el contexto antes de confirmar.';
@@ -244,7 +267,7 @@ export class Paso9RevisionComponent implements OnInit {
 
   async confirmar(): Promise<void> {
     if (this.confirmationBlocked) {
-      if (this.dialogNeeded && this.canManageTarifas) this.refreshOpen = true;
+      if (this.dialogNeeded) this.refreshOpen = true;
       return;
     }
     this.guardando = true;

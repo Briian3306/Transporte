@@ -15,9 +15,42 @@
   <section class="trd__section" *ngFor="let seccion of secciones">
     <h3 class="trd__heading">
       {{ seccion.estacionNombre }}
-      <span class="trd__sentido">{{ seccion.sentido }}</span>
+      <span *ngIf="seccion.categoria != null" class="trd__sentido">Categoría {{ seccion.categoria }}</span>
+      <span class="trd__sentido">{{ seccion.sentido || 'DIRECCIÓN PENDIENTE' }}</span>
     </h3>
+    <div class="trd__candidates" *ngIf="seccion.directionCandidates.length">
+      <strong>Precios detectados — asignación manual requerida</strong>
+      <div class="trd__candidate" *ngFor="let candidate of seccion.directionCandidates">
+        <span class="trd__candidate-price">
+          {{ candidate.price | number:'1.2-2' }}
+          <small *ngIf="candidate.sourceLane">(vía {{ candidate.sourceLane }})</small>
+        </span>
+        <label>
+          Sentido
+          <select [(ngModel)]="candidate.sentido" [disabled]="!canManage || saving">
+            <option value="">Elegir…</option>
+            <option *ngFor="let sentido of sentidos" [ngValue]="sentido">{{ sentido }}</option>
+          </select>
+        </label>
+        <label>
+          Estado
+          <select [(ngModel)]="candidate.status" [disabled]="!canManage || saving">
+            <option value="">Elegir…</option>
+            <option *ngFor="let status of statuses" [ngValue]="status">{{ status }}</option>
+          </select>
+        </label>
+        <label>
+          IVA
+          <select [(ngModel)]="candidate.requiereNormalizacionIva" [disabled]="!canManage || saving">
+            <option [ngValue]="null">Elegir…</option>
+            <option [ngValue]="false">No</option>
+            <option [ngValue]="true">Sí</option>
+          </select>
+        </label>
+      </div>
+    </div>
     <app-tarifario-editor-board
+      *ngIf="seccion.sentido"
       [rows]="seccion.rows"
       [drafts]="seccion.drafts"
       [detected]="seccion.detected"

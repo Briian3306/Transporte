@@ -3,6 +3,7 @@ import { Observable, from } from 'rxjs';
 import {
   Estacion,
   EstacionAliasProveedor,
+  EstacionViaSentido,
   Empresa,
   Pase,
   Patente,
@@ -259,6 +260,48 @@ export class PeajesCatalogoSupabaseService implements PeajesCatalogoService {
         return row as EstacionAliasProveedor;
       })
     );
+  }
+
+  listarEstacionesViasSentido(empresaId?: string, estacionId?: string): Observable<EstacionViaSentido[]> {
+    return from(this.supabase.executeWithRetry(async () => {
+      const client = await this.supabase.getClient();
+      let query = client.from('estaciones_vias_sentido').select('*').order('codigo_estacion').order('via');
+      if (empresaId) query = query.eq('empresa_id', empresaId);
+      if (estacionId) query = query.eq('estacion_id', estacionId);
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data ?? []) as EstacionViaSentido[];
+    }));
+  }
+
+  guardarEstacionViaSentido(
+    data: Omit<EstacionViaSentido, 'id' | 'created_at' | 'updated_at'>,
+  ): Observable<EstacionViaSentido> {
+    return from(this.supabase.executeWithRetry(async () => {
+      const client = await this.supabase.getClient();
+      const payload = {
+        ...data,
+        codigo_estacion: data.codigo_estacion.trim(),
+        via: data.via.trim(),
+        sentido: data.sentido,
+      };
+      const { data: row, error } = await client
+        .from('estaciones_vias_sentido')
+        .upsert(payload, { onConflict: 'empresa_id,estacion_id,codigo_estacion,via' })
+        .select('*')
+        .single();
+      if (error) throw error;
+      return row as EstacionViaSentido;
+    }));
+  }
+
+  eliminarEstacionViaSentido(id: string): Observable<{ id: string; deleted: boolean }> {
+    return from(this.supabase.executeWithRetry(async () => {
+      const client = await this.supabase.getClient();
+      const { error } = await client.from('estaciones_vias_sentido').delete().eq('id', id);
+      if (error) throw error;
+      return { id, deleted: true };
+    }));
   }
 
   private normalizarEstacion(valor: string): string {

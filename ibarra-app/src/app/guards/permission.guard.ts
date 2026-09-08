@@ -39,7 +39,9 @@ export const PEAJES_ROUTE_PERMISSIONS: Record<string, PermissionRequirement> = {
   '/peajes/catalogos': all(peajesManage),
   '/peajes/catalogos/empresas': all(peajesManage),
   '/peajes/catalogos/peajes': all(peajesManage),
-  '/peajes/catalogos/estaciones': all(peajesManage),
+  // Read access keeps the catalogue viewable; the editor disables mutations
+  // unless the user also has the operational peajes:create permission.
+  '/peajes/catalogos/estaciones': peajesRead,
   '/peajes/catalogos/patentes': all(peajesManage),
   '/peajes/catalogos/pases': all(peajesManage),
   '/peajes/plantillas': all(peajesManage),

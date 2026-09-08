@@ -220,8 +220,10 @@ export function deterministicUuid(seed) {
 
 /**
  * Wave 0 parent IDs omit sentido, so IDA+VUELTA share one UUID.
- * Load path splits VUELTA (or the later row) onto a deterministic new id.
- * History stays on the original id. Cruzado TARIFA_ID is duplicated for the new parent.
+ * Load path splits VUELTA (or the later row) onto a deterministic new id,
+ * but deliberately does not clone Cruzado history. A directionless historical
+ * amount cannot be safely assigned to either identity and is reported for
+ * reviewed remediation instead.
  */
 export function splitSentidoCollisions(tarifasIn = [], cruzadoIn = []) {
   const seen = new Map();
@@ -244,16 +246,19 @@ export function splitSentidoCollisions(tarifasIn = [], cruzadoIn = []) {
     if (used.has(newId)) fail(`could not mint unique id for sentido split ${src.id}`);
     used.add(newId);
     remapped.push({ from: src.id, to: newId, sentido: src.sentido });
-    tarifas.push({ ...src, id: newId });
+    // The source pointer is directionless too; carrying it would silently
+    // make the new direction share the original amount.
+    tarifas.push({ ...src, id: newId, current_tarifa_id: null });
   }
 
   const cruzado = cruzadoIn.map((row) => ({ ...row }));
-  for (const { from, to } of remapped) {
-    const srcRows = cruzadoIn.filter((row) => row.TARIFA_ID === from);
-    for (const row of srcRows) cruzado.push({ ...row, TARIFA_ID: to });
-  }
+  const unresolved = remapped.map((item) => ({
+    ...item,
+    reason: 'DIRECTIONAL_HISTORY_COLLISION',
+    sourceRows: cruzadoIn.filter((row) => row.TARIFA_ID === item.from),
+  }));
 
-  return { tarifas, cruzado, remapped };
+  return { tarifas, cruzado, remapped, unresolved };
 }
 
 export function readTarifarioWorkbook(workbookPath) {
@@ -266,11 +271,16 @@ export function readTarifarioWorkbook(workbookPath) {
   if (!wb.Sheets.tarifas || !wb.Sheets.tarifas_importe) {
     fail(`workbook missing tarifas / tarifas_importe sheets: ${srcPath}`);
   }
-  const tarifas = XLSX.utils.sheet_to_json(wb.Sheets.tarifas, { defval: '', raw: false }).map((row) => ({
-    ...row,
-    sentido: isPresent(row.sentido) ? row.sentido : 'AMBAS',
-    categoria: Number(row.categoria),
-  }));
+  const tarifas = XLSX.utils.sheet_to_json(wb.Sheets.tarifas, { defval: '', raw: false }).map((row, index) => {
+    if (!isPresent(row.sentido)) {
+      fail(`tarifas row ${index + 2} has no sentido; direction must be reviewed explicitly (AMBAS is never inferred)`);
+    }
+    return {
+      ...row,
+      sentido: String(row.sentido).trim().toUpperCase(),
+      categoria: Number(row.categoria),
+    };
+  });
   const tarifas_importe = XLSX.utils.sheet_to_json(wb.Sheets.tarifas_importe, { defval: '', raw: false });
   const cruzado = wb.Sheets.Cruzado
     ? XLSX.utils.sheet_to_json(wb.Sheets.Cruzado, { defval: '', raw: false })
@@ -294,7 +304,13 @@ export function fillMissingCurrentPointers(parsed) {
       String(a.fecha_aparicion).localeCompare(String(b.fecha_aparicion))
       || String(a.id).localeCompare(String(b.id))
     ));
-    if (!hist.length) fail(`null current pointer after import: ${parent.id}`);
+    // Directional parents minted from a legacy collision have no trustworthy
+    // history. Keep their current pointer NULL until a reviewed assignment
+    // supplies evidence; never copy the other direction's amount.
+    if (!hist.length) {
+      parent.current_tarifa_id = null;
+      continue;
+    }
     parent.current_tarifa_id = hist[hist.length - 1].id;
   }
   return parsed;
@@ -663,6 +679,7 @@ SELECT json_build_object(
     pointer_parent_mismatches: 0,
     tarifas_without_staged_precio_last: 0,
     sentido_id_collisions_remapped: split.remapped.length,
+    sentido_id_collisions_unresolved: split.unresolved.length,
     tn_unique_key_lineage_skipped: built.skippedLineageCount,
     ...queried,
   };
@@ -677,11 +694,12 @@ SELECT json_build_object(
   if (counts.pointer_parent_mismatches) unexplained.push(`pointer_parent_mismatches=${counts.pointer_parent_mismatches}`);
   if (counts.price_comparison_mismatches) unexplained.push(`price_comparison_mismatches=${counts.price_comparison_mismatches}`);
   if (counts.null_current_pointers) unexplained.push(`null_current_pointers=${counts.null_current_pointers}`);
+  if (split.unresolved.length) unexplained.push(`directional_history_collisions=${split.unresolved.length}`);
 
   const notes = [
     `Workbook: ${sheets.path}`,
     `tarifas loaded: ${parsed.tarifas.length}; tarifa_importe loaded: ${parsed.tarifa_importe.length}; staged PRECIO_LAST: ${parsed.report.length}.`,
-    `sentido ID collisions remapped (Wave 0 id omits sentido): ${split.remapped.length} (explained; VUELTA gets a new parent id, history stays on original).`,
+    `sentido ID collisions remapped: ${split.remapped.length}; unresolved directionless histories: ${split.unresolved.length}. No Cruzado amount is cloned across directions.`,
     `TN unique-key lineage stubs skipped: ${built.skippedLineageCount} (explained; tarifas_normalizadas unique is peaje+estacion+categoria+importe and does not include PICO/NO_PICO).`,
     'pasadas counts reflect the local CLI database after db reset --no-seed plus this catalog load (empty pasadas unless separately seeded).',
     'Did not overwrite auditoria-catalogo-20260904.xlsx.',
@@ -692,11 +710,12 @@ SELECT json_build_object(
   mkdirSync(dirname(parityPath), { recursive: true });
   writeFileSync(parityPath, markdown, 'utf8');
   const jsonPath = parityPath.replace(/\.md$/i, '.json');
-  writeFileSync(jsonPath, `${JSON.stringify({ counts, unexplained, remapped: split.remapped.length }, null, 2)}\n`, 'utf8');
+  writeFileSync(jsonPath, `${JSON.stringify({ counts, unexplained, remapped: split.remapped.length, unresolved: split.unresolved }, null, 2)}\n`, 'utf8');
 
   return {
     parsed,
     remapped: split.remapped,
+    unresolved: split.unresolved,
     counts,
     unexplained,
     loadOut,

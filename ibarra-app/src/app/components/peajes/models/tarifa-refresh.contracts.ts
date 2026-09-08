@@ -6,6 +6,7 @@
 import { InjectionToken } from '@angular/core';
 import { normalizarImportesPasada } from './documento.helpers';
 import { ConfiguracionPlantilla, PasadaEstandarizada } from './peajes.models';
+import { EstacionViaSentidoRef, resolvePasadaSentido } from './direction-resolution';
 import { DocumentoTipo } from './peajes.types';
 import {
   CambioRefrescoTarifa,
@@ -20,14 +21,21 @@ export type RefreshTarifaCodigo =
   | 'NEW_TARIFF'
   | 'STATUS_REQUIRED'
   | 'STATUS_AMBIGUOUS'
-  | 'CONTEXT_INCOMPLETE';
+  | 'CONTEXT_INCOMPLETE'
+  | 'DIRECTION_REQUIRED'
+  | 'DIRECTION_CONFLICT';
 
 export interface CandidatoRefrescoTarifa {
   id: string;
   estacionId: string;
   categoria: number | null;
   statusSolicitado: TarifaStatusPico | null;
-  sentidoSolicitado: TarifaSentido;
+  sentidoSolicitado: TarifaSentido | null;
+  directionConfidence: 'EXPLICIT' | 'LANE_MAP' | 'UNRESOLVED';
+  unresolvedReason?: 'MISSING_MAPPING' | 'CONFLICT';
+  sourceStationCode: string | null;
+  sourceLane: string | null;
+  candidatePrice: number;
   precioDirecto: number;
   filaRepresentativa: Record<string, unknown>;
   rowIndexes: number[];
@@ -35,6 +43,7 @@ export interface CandidatoRefrescoTarifa {
 
 export interface ExtraerCandidatosRefrescoOpciones {
   tipoDocumento?: DocumentoTipo | ReadonlyArray<DocumentoTipo | null | undefined>;
+  estacionesViasSentido?: readonly EstacionViaSentidoRef[];
 }
 
 export interface AnalisisRefrescoInput {
@@ -45,6 +54,7 @@ export interface AnalisisRefrescoInput {
     omitido?: boolean;
   }>;
   configuraciones: ConfiguracionPlantilla[];
+  estacionesViasSentido?: readonly EstacionViaSentidoRef[];
 }
 
 export interface ResultadoDetectarRefresco {
@@ -54,13 +64,16 @@ export interface ResultadoDetectarRefresco {
   estacionId: string;
   categoria: number | null;
   status: TarifaStatusPico | null;
-  sentidoSolicitado: TarifaSentido;
+  sentidoSolicitado: TarifaSentido | null;
   sentidoAplicado: TarifaSentido | null;
   importeActual: number | null;
   tarifaId: string | null;
   tarifaImporteId: string | null;
   requiereNormalizacionIva: boolean | null;
   rowIndexes: number[];
+  directionConfidence?: 'EXPLICIT' | 'LANE_MAP' | 'UNRESOLVED';
+  sourceLane?: string | null;
+  candidatePrice?: number | null;
 }
 
 export interface ResumenRefrescoTarifas {
@@ -97,12 +110,6 @@ function parseStatus(value: unknown): TarifaStatusPico | null {
   const raw = String(value ?? '').trim().toUpperCase();
   if (raw === 'PICO' || raw === 'NO_PICO') return raw;
   return null;
-}
-
-function parseSentido(value: unknown): TarifaSentido {
-  const raw = String(value ?? '').trim().toUpperCase();
-  if (raw === 'IDA' || raw === 'VUELTA' || raw === 'AMBAS') return raw;
-  return 'AMBAS';
 }
 
 function precioBrutoCandidato(pasada: PasadaEstandarizada): number | null {
@@ -150,12 +157,20 @@ export function extraerCandidatosRefresco(
     const estacionId = String(fila.ESTACION_ID ?? '').trim();
     const categoria = parseCategoria(fila.CATEGORIA);
     const statusSolicitado = parseStatus(fila.TARIFA_STATUS);
-    const sentidoSolicitado = parseSentido(fila.SENTIDO);
+    const sourceStationCode = fila.SOURCE_ESTACION ?? (fila as Record<string, unknown>)['ESTACION'] ?? null;
+    const sourceLane = fila.SOURCE_VIA ?? (fila as Record<string, unknown>)['VIA'] ?? null;
+    const direction = resolvePasadaSentido({
+      explicit: fila.SENTIDO,
+      codigoEstacion: sourceStationCode,
+      via: sourceLane,
+      map: opciones.estacionesViasSentido ?? [],
+    });
+    const sentidoSolicitado = direction.sentido;
     const id = [
       estacionId,
       categoria == null ? '' : String(categoria),
       statusSolicitado ?? '',
-      sentidoSolicitado,
+      sentidoSolicitado ?? '',
       clavePrecioCanonico(precioDirecto),
     ].join('|');
 
@@ -171,6 +186,11 @@ export function extraerCandidatosRefresco(
       categoria,
       statusSolicitado,
       sentidoSolicitado,
+      directionConfidence: direction.confidence,
+      ...(direction.confidence === 'UNRESOLVED' ? { unresolvedReason: direction.reason } : {}),
+      sourceStationCode: sourceStationCode == null ? null : String(sourceStationCode),
+      sourceLane: sourceLane == null ? null : String(sourceLane),
+      candidatePrice: precioDirecto,
       precioDirecto,
       filaRepresentativa: { ...fila },
       rowIndexes: [index],

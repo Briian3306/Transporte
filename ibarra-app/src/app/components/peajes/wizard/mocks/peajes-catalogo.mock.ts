@@ -8,6 +8,7 @@ import {
   Peaje,
   PeajesCatalogoService,
   EstacionAliasProveedor,
+  EstacionViaSentido,
   ResultadoReconocimientoEstacion,
   reconocerEstacionEnCatalogo,
 } from '../../models';
@@ -18,6 +19,7 @@ import {
  */
 @Injectable()
 export class PeajesCatalogoMockService implements PeajesCatalogoService {
+  private estacionesVias: EstacionViaSentido[] = [];
   private empresas: Empresa[] = [
     { id: 'EMP-001', nombre: 'Empresa Demo', descripcion: 'Proveedor demo' },
     { id: '37ab9246-a07a-40b5-b62d-7a8b8e7782db', nombre: 'AUTOVIA DEL MERCOSUR', descripcion: 'MERCOSUR' },
@@ -221,6 +223,33 @@ export class PeajesCatalogoMockService implements PeajesCatalogoService {
       estacion.codigos_proveedor = [...(estacion.codigos_proveedor ?? []), data.valor_proveedor];
     }
     return of({ ...data, id: `ALIAS-${Date.now()}`, valor_normalizado: data.valor_proveedor.trim().toUpperCase(), created_at: new Date().toISOString() });
+  }
+
+  listarEstacionesViasSentido(empresaId?: string, estacionId?: string): Observable<EstacionViaSentido[]> {
+    return of(this.estacionesVias.filter((row) =>
+      (!empresaId || row.empresa_id === empresaId) && (!estacionId || row.estacion_id === estacionId),
+    ));
+  }
+
+  guardarEstacionViaSentido(data: Omit<EstacionViaSentido, 'id' | 'created_at' | 'updated_at'>): Observable<EstacionViaSentido> {
+    const existing = this.estacionesVias.findIndex((row) =>
+      row.empresa_id === data.empresa_id && row.estacion_id === data.estacion_id &&
+      row.codigo_estacion === data.codigo_estacion && row.via === data.via,
+    );
+    const row: EstacionViaSentido = {
+      ...data,
+      id: existing >= 0 ? this.estacionesVias[existing].id : `EVS-${this.estacionesVias.length + 1}`,
+      updated_at: new Date().toISOString(),
+    };
+    this.estacionesVias = existing >= 0
+      ? this.estacionesVias.map((item, index) => index === existing ? row : item)
+      : [...this.estacionesVias, row];
+    return of(row);
+  }
+
+  eliminarEstacionViaSentido(id: string): Observable<{ id: string; deleted: boolean }> {
+    this.estacionesVias = this.estacionesVias.filter((row) => row.id !== id);
+    return of({ id, deleted: true });
   }
 
   listarPatentes(): Observable<Patente[]> {

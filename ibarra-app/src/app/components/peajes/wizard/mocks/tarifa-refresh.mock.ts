@@ -22,6 +22,9 @@ function withinPct(precio: number, importe: number): boolean {
 }
 
 function classify(c: CandidatoRefrescoTarifa): RefreshTarifaCodigo {
+  if (c.sentidoSolicitado == null) {
+    return c.unresolvedReason === 'CONFLICT' ? 'DIRECTION_CONFLICT' : 'DIRECTION_REQUIRED';
+  }
   if (c.estacionId !== ESTACION_DOCK_SUD) {
     if (!c.estacionId) return 'CONTEXT_INCOMPLETE';
     return 'CURRENT_TARIFF';
@@ -52,7 +55,9 @@ export class TarifaRefreshMockService implements TarifaRefreshService {
   lastGuardado: TarifaRefrescoGuardada[] = [];
 
   async analizar(input: AnalisisRefrescoInput): Promise<ResumenRefrescoTarifas> {
-    const candidatos = extraerCandidatosRefresco(input.pasadas);
+    const candidatos = extraerCandidatosRefresco(input.pasadas, {
+      estacionesViasSentido: input.estacionesViasSentido,
+    });
     const resultados: ResultadoDetectarRefresco[] = candidatos.map((c) => ({
       id: c.id,
       codigo: classify(c),
@@ -82,10 +87,10 @@ export class TarifaRefreshMockService implements TarifaRefreshService {
         .reduce((n, r) => n + r.rowIndexes.length, 0),
       pendientes: resultados
         .filter((r) =>
-          ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'CONTEXT_INCOMPLETE'].includes(r.codigo),
+          ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo),
         )
         .reduce((n, r) => n + r.rowIndexes.length, 0),
-      contextIncomplete: resultados.some((r) => r.codigo === 'CONTEXT_INCOMPLETE'),
+      contextIncomplete: resultados.some((r) => ['CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo)),
     };
   }
 

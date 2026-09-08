@@ -24,7 +24,7 @@ function contextKey(c: {
   estacionId: string;
   categoria: number | null;
   statusSolicitado: string | null;
-  sentidoSolicitado: string;
+  sentidoSolicitado: string | null;
 }): string {
   return [
     c.estacionId,
@@ -56,7 +56,10 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
 
   async analizar(input: AnalisisRefrescoInput): Promise<ResumenRefrescoTarifas> {
     const tipos = tiposPorIndice(input.pasadas.length, input.documentos);
-    const candidatos = extraerCandidatosRefresco(input.pasadas, { tipoDocumento: tipos });
+    const candidatos = extraerCandidatosRefresco(input.pasadas, {
+      tipoDocumento: tipos,
+      estacionesViasSentido: input.estacionesViasSentido,
+    });
     if (!candidatos.length) {
       return {
         candidatos: [],
@@ -68,9 +71,40 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
       };
     }
 
+    const unresolvedCandidates = candidatos.filter((candidate) => candidate.sentidoSolicitado == null);
+    const resolvedCandidates = candidatos.filter((candidate) => candidate.sentidoSolicitado != null);
+    const unresolvedResults: ResultadoDetectarRefresco[] = unresolvedCandidates.map((candidate) => ({
+      id: candidate.id,
+      codigo: candidate.unresolvedReason === 'CONFLICT' ? 'DIRECTION_CONFLICT' : 'DIRECTION_REQUIRED',
+      peajeId: null,
+      estacionId: candidate.estacionId,
+      categoria: candidate.categoria,
+      status: candidate.statusSolicitado,
+      sentidoSolicitado: null,
+      sentidoAplicado: null,
+      importeActual: null,
+      tarifaId: null,
+      tarifaImporteId: null,
+      requiereNormalizacionIva: null,
+      rowIndexes: candidate.rowIndexes,
+      directionConfidence: candidate.directionConfidence,
+      sourceLane: candidate.sourceLane,
+      candidatePrice: candidate.candidatePrice,
+    }));
+    if (!resolvedCandidates.length) {
+      return {
+        candidatos,
+        resultados: unresolvedResults,
+        filasVigentes: 0,
+        filasHistoricas: 0,
+        pendientes: unresolvedResults.reduce((sum, item) => sum + item.rowIndexes.length, 0),
+        contextIncomplete: unresolvedResults.length > 0,
+      };
+    }
+
     const prepareSeen = new Set<string>();
     const prepareInputs: PrepararRefrescoTarifaInput[] = [];
-    for (const c of candidatos) {
+    for (const c of resolvedCandidates) {
       const key = contextKey(c);
       if (prepareSeen.has(key)) continue;
       prepareSeen.add(key);
@@ -114,7 +148,7 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
     const detectInputs: DetectarRefrescoTarifaInput[] = [];
     const detectToCandidates = new Map<string, CandidatoRefrescoTarifa[]>();
 
-    for (const c of candidatos) {
+    for (const c of resolvedCandidates) {
       const ctx = contextKey(c);
       const needsIva = ivaByContext.get(ctx) === true;
       const comparable = needsIva
@@ -164,9 +198,13 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
           tarifaImporteId: item.tarifaImporteId,
           requiereNormalizacionIva: item.requiereNormalizacionIva,
           rowIndexes,
+          directionConfidence: group[0]?.directionConfidence,
+          sourceLane: group[0]?.sourceLane,
+          candidatePrice: group[0]?.candidatePrice,
         },
       ];
     });
+    resultados.unshift(...unresolvedResults);
 
     const filasVigentes = resultados
       .filter((r) => r.codigo === 'CURRENT_TARIFF')
@@ -176,7 +214,7 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
       .reduce((n, r) => n + r.rowIndexes.length, 0);
     const pendientes = resultados
       .filter((r) =>
-        ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'CONTEXT_INCOMPLETE'].includes(
+        ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(
           r.codigo,
         ),
       )
@@ -188,7 +226,7 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
       filasVigentes,
       filasHistoricas,
       pendientes,
-      contextIncomplete: resultados.some((r) => r.codigo === 'CONTEXT_INCOMPLETE'),
+      contextIncomplete: resultados.some((r) => ['CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo)),
     };
   }
 

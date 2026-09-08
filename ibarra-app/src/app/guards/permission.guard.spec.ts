@@ -47,6 +47,18 @@ describe('PermissionGuard: permisos de Peajes', () => {
     ).toBeFalse();
     expect(
       matchesPermissionRequirement(
+        PEAJES_ROUTE_PERMISSIONS['/peajes/catalogos/estaciones'],
+        hasPermission(operatorPermissions),
+      ),
+    ).toBeTrue();
+    expect(
+      matchesPermissionRequirement(
+        PEAJES_ROUTE_PERMISSIONS['/peajes/catalogos/estaciones'],
+        hasPermission(readOnlyPermissions),
+      ),
+    ).toBeTrue();
+    expect(
+      matchesPermissionRequirement(
         PEAJES_ROUTE_PERMISSIONS['/peajes/tarifario'],
         hasPermission(operatorPermissions),
       ),

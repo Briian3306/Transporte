@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   Estacion,
+  EstacionViaSentido,
   PEAJES_CATALOGO_SERVICE,
   Peaje,
   PeajesCatalogoService,
@@ -15,6 +16,7 @@ import {
   DataTableComponent,
   DataTablePageChange,
 } from '../../../shared';
+import { PermissionStateService } from '../../../../services/permission-state.service';
 
 @Component({
   selector: 'app-catalogo-estaciones',
@@ -42,6 +44,10 @@ export class CatalogoEstacionesComponent implements OnInit {
   error: string | null = null;
   guardando = false;
   editandoId: string | null = null;
+  viasSentido: EstacionViaSentido[] = [];
+  viaCodigo = '';
+  viaNombre = '';
+  viaSentido: 'IDA' | 'VUELTA' = 'IDA';
 
   readonly columns: DataTableColumn[] = [
     {
@@ -77,8 +83,13 @@ export class CatalogoEstacionesComponent implements OnInit {
   });
 
   constructor(
-    @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
+    @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService,
+    private readonly permissions: PermissionStateService,
   ) {}
+
+  get canEdit(): boolean {
+    return this.permissions.hasPermission('peajes', 'create') || this.permissions.hasPermission('peajes', 'manage');
+  }
 
   get tableRows(): Record<string, unknown>[] {
     return this.estaciones.map((e) => ({
@@ -96,6 +107,38 @@ export class CatalogoEstacionesComponent implements OnInit {
 
   async cargar(): Promise<void> {
     this.estaciones = await firstValueFrom(this.catalogo.listarEstaciones());
+    if (this.editandoId) await this.cargarVias(this.editandoId);
+  }
+
+  private async cargarVias(estacionId: string): Promise<void> {
+    const estacion = this.estaciones.find((item) => item.id === estacionId);
+    const empresaId = estacion?.peaje?.empresa_id ?? this.peajes.find((p) => p.id === estacion?.peaje_id)?.empresa_id ?? undefined;
+    this.viasSentido = await firstValueFrom(this.catalogo.listarEstacionesViasSentido(empresaId, estacionId));
+  }
+
+  async guardarViaSentido(): Promise<void> {
+    if (!this.editandoId || !this.viaCodigo.trim() || !this.viaNombre.trim()) return;
+    const estacion = this.estaciones.find((item) => item.id === this.editandoId);
+    const empresaId = estacion?.peaje?.empresa_id ?? this.peajes.find((p) => p.id === estacion?.peaje_id)?.empresa_id;
+    if (!empresaId) {
+      this.error = 'La estación no tiene empresa/proveedor asociado.';
+      return;
+    }
+    await firstValueFrom(this.catalogo.guardarEstacionViaSentido({
+      empresa_id: empresaId,
+      estacion_id: this.editandoId,
+      codigo_estacion: this.viaCodigo,
+      via: this.viaNombre,
+      sentido: this.viaSentido,
+    }));
+    this.viaCodigo = '';
+    this.viaNombre = '';
+    await this.cargarVias(this.editandoId);
+  }
+
+  async eliminarViaSentido(row: EstacionViaSentido): Promise<void> {
+    await firstValueFrom(this.catalogo.eliminarEstacionViaSentido(row.id));
+    this.viasSentido = this.viasSentido.filter((item) => item.id !== row.id);
   }
 
   onPageChange(ev: DataTablePageChange): void {
@@ -159,6 +202,7 @@ export class CatalogoEstacionesComponent implements OnInit {
       longitud: e.longitud ?? null,
       camino: e.camino ?? '',
     });
+    void this.cargarVias(e.id);
   }
 
   cancelarEdicion(): void {
@@ -173,5 +217,8 @@ export class CatalogoEstacionesComponent implements OnInit {
       longitud: null,
       camino: '',
     });
+    this.viasSentido = [];
+    this.viaCodigo = '';
+    this.viaNombre = '';
   }
 }

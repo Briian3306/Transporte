@@ -481,7 +481,20 @@ export class PeajesWizardStateService {
   }
 
   setPasadasEstandarizadas(pasadas: PasadaEstandarizada[]): void {
-    this.state.pasadasEstandarizadas = pasadas.map((p) => ({ ...p }));
+    this.state.pasadasEstandarizadas = pasadas.map((p) => {
+      const row = p as PasadaEstandarizada & Record<string, unknown>;
+      const rawStation = row['ESTACION'];
+      const rawVia = row['VIA'];
+      const sourceStation: string | number | null =
+        typeof rawStation === 'string' || typeof rawStation === 'number' ? rawStation : null;
+      const sourceVia: string | number | null =
+        typeof rawVia === 'string' || typeof rawVia === 'number' ? rawVia : null;
+      return {
+        ...p,
+        SOURCE_ESTACION: p.SOURCE_ESTACION ?? sourceStation,
+        SOURCE_VIA: p.SOURCE_VIA ?? sourceVia,
+      } as PasadaEstandarizada;
+    });
   }
 
   setPatentesExcluidas(patentes: string[]): void {
@@ -1224,6 +1237,10 @@ export class PeajesWizardStateService {
       rows = motorRows.map((base) => {
         const fila = base as Record<string, unknown>;
         const out: Record<string, string | number | null> = { ...base };
+        // Keep provider identity/lane even when the standard mapping replaces
+        // ESTACION with an internal UUID and excludes VIA from persistence.
+        if (out['SOURCE_ESTACION'] == null) out['SOURCE_ESTACION'] = (fila['ESTACION'] as string | number | null) ?? null;
+        if (out['SOURCE_VIA'] == null) out['SOURCE_VIA'] = (fila['VIA'] as string | number | null) ?? null;
 
         for (const m of mapeoActivo) {
           const dest = m.columnaDestino!;
@@ -1296,6 +1313,9 @@ export class PeajesWizardStateService {
           SENTIDO: null,
           TARIFA_STATUS: null,
         };
+        const source = out as Record<string, string | number | null>;
+        source['SOURCE_ESTACION'] = (fila['ESTACION'] as string | number | null) ?? null;
+        source['SOURCE_VIA'] = (fila['VIA'] as string | number | null) ?? null;
 
         for (const m of mapeoActivo) {
           const dest = m.columnaDestino!;

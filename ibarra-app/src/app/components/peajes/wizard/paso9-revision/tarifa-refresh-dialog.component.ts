@@ -40,17 +40,28 @@ interface SeccionRefresco {
   peajeId: string;
   estacionId: string;
   estacionNombre: string;
-  sentido: TarifaSentido;
+  categoria: number | null;
+  sentido: TarifaSentido | null;
   rows: TarifarioEditorRow[];
   drafts: TarifarioEditorDrafts;
   detected: TarifarioDetectedMap;
   ivaNuevo: Record<string, boolean | null>;
+  directionCandidates: Array<{
+    price: number;
+    sourceLane: string | null;
+    rows: number[];
+    sentido: TarifaSentido | '';
+    status: TarifaStatusPico | '';
+    requiereNormalizacionIva: boolean | null;
+  }>;
 }
 
 const BLOQUEANTES: ReadonlySet<string> = new Set([
   'NEW_TARIFF',
   'STATUS_REQUIRED',
   'STATUS_AMBIGUOUS',
+  'DIRECTION_REQUIRED',
+  'DIRECTION_CONFLICT',
 ]);
 
 @Component({
@@ -75,6 +86,8 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   error: string | null = null;
   cellErrors: Record<string, string> = {};
   statusChoice: Record<string, TarifaStatusPico | ''> = {};
+  readonly sentidos: TarifaSentido[] = ['IDA', 'VUELTA', 'AMBAS'];
+  readonly statuses: TarifaStatusPico[] = ['NO_PICO', 'PICO'];
 
   constructor(
     @Inject(PEAJES_TARIFARIO_SERVICE) private readonly tarifario: PeajesTarifarioService,
@@ -112,7 +125,34 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     this.error = null;
     this.cellErrors = {};
     const cambios: CambioRefrescoTarifa[] = [];
+    const cambioKeys = new Set<string>();
     for (const seccion of this.secciones) {
+      for (const candidate of seccion.directionCandidates) {
+        if (!candidate.sentido || !candidate.status || candidate.price <= 0 || candidate.requiereNormalizacionIva == null) {
+          this.error = 'Asigná cada precio detectado a sentido, estado e IVA antes de guardar.';
+          return;
+        }
+        if (!seccion.peajeId || seccion.categoria == null) {
+          this.error = 'No se pudo resolver el peaje o la categoría del candidato detectado.';
+          return;
+        }
+        const key = `${seccion.peajeId}|${seccion.estacionId}|${candidate.sentido}|${seccion.categoria}|${candidate.status}`;
+        if (cambioKeys.has(key)) {
+          this.error = 'Dos precios detectados fueron asignados a la misma identidad tarifaria.';
+          return;
+        }
+        cambioKeys.add(key);
+        cambios.push({
+          peajeId: seccion.peajeId,
+          estacionId: seccion.estacionId,
+          sentido: candidate.sentido,
+          categoria: seccion.categoria,
+          status: candidate.status,
+          importe: candidate.price,
+          requiereNormalizacionIva: candidate.requiereNormalizacionIva,
+        });
+      }
+      if (!seccion.sentido) continue;
       const errores = collectDraftErrores(seccion.rows, seccion.drafts);
       if (errores.length) {
         this.error = 'Hay importes inválidos. Corregilos antes de guardar.';
@@ -159,7 +199,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     const groups = new Map<string, ResultadoDetectarRefresco[]>();
     for (const r of this.unresolved) {
       const sentido = r.sentidoAplicado ?? r.sentidoSolicitado;
-      const key = `${r.peajeId ?? ''}|${r.estacionId}|${sentido}`;
+      const key = `${r.peajeId ?? ''}|${r.estacionId}|${sentido ?? 'UNRESOLVED'}|${sentido ? '' : r.categoria ?? ''}`;
       const list = groups.get(key) ?? [];
       list.push(r);
       groups.set(key, list);
@@ -167,11 +207,11 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     const secciones: SeccionRefresco[] = [];
     for (const [key, items] of groups) {
       const first = items[0];
-      const sentido = (first.sentidoAplicado ?? first.sentidoSolicitado) as TarifaSentido;
+      const sentido = first.sentidoAplicado ?? first.sentidoSolicitado;
       const peajeId = first.peajeId ?? '';
       let rows: TarifarioEditorRow[] = [];
       let estacionNombre = first.estacionId;
-      if (peajeId) {
+      if (peajeId && sentido) {
         try {
           const editor = await firstValueFrom(
             this.tarifario.obtenerEditor(peajeId, first.estacionId, sentido),
@@ -189,6 +229,16 @@ export class TarifaRefreshDialogComponent implements OnChanges {
       const drafts: TarifarioEditorDrafts = {};
       const detected: TarifarioDetectedMap = {};
       const ivaNuevo: Record<string, boolean | null> = {};
+      const directionCandidates = items
+        .filter((item) => item.codigo === 'DIRECTION_REQUIRED' || item.codigo === 'DIRECTION_CONFLICT')
+        .map((item) => ({
+          price: item.candidatePrice ?? 0,
+          sourceLane: item.sourceLane ?? null,
+          rows: item.rowIndexes,
+          sentido: '' as const,
+          status: (item.status ?? '') as TarifaStatusPico | '',
+          requiereNormalizacionIva: null,
+        }));
       for (const row of rows) {
         drafts[row.categoria] = { no_pico: '', pico: '' };
       }
@@ -213,11 +263,13 @@ export class TarifaRefreshDialogComponent implements OnChanges {
         peajeId,
         estacionId: first.estacionId,
         estacionNombre,
+        categoria: first.categoria,
         sentido,
         rows,
         drafts,
         detected,
         ivaNuevo,
+        directionCandidates,
       });
     }
     this.secciones = secciones;

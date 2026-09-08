@@ -2,7 +2,7 @@
 -- Fixture namespace 18180000-… (avoids F14-16 162/166 and F14-17 174).
 -- Empty tables; synthetic Dock Sud-like fixtures only.
 BEGIN;
-SELECT plan(40);
+SELECT plan(44);
 
 CREATE FUNCTION pg_temp.rpc_jsonb(p_fn text, p_arg jsonb)
 RETURNS jsonb
@@ -59,8 +59,8 @@ SELECT has_function(
   'F14-18 helper privado de dirección/current/historial existe'
 );
 
-INSERT INTO public.peajes (id, nombre) VALUES
-  ('18180000-aaaa-4aa1-8aa1-000000000001', 'AUBASA F14-18');
+INSERT INTO public.peajes (id, nombre, empresa_id) VALUES
+  ('18180000-aaaa-4aa1-8aa1-000000000001', 'AUBASA F14-18', 'test');
 
 INSERT INTO public.estaciones (id, peaje_id, nombre) VALUES
   ('18180000-aaaa-4aa1-8aa1-000000000010', '18180000-aaaa-4aa1-8aa1-000000000001', 'DOCK SUD'),
@@ -969,6 +969,41 @@ SELECT ok(
     false
   ),
   'F14-18 guardar REVOKE PUBLIC / anon sin EXECUTE'
+);
+
+SELECT has_function(
+  'public',
+  'peajes_auditar_tarifas_direccion_colisiones',
+  ARRAY[]::text[],
+  'directional collision audit is read-only and callable'
+);
+
+SELECT is(
+  pg_temp.codigo('missing-direction', public.peajes_detectar_refresco_tarifas(jsonb_build_array(
+    jsonb_build_object(
+      'id', 'missing-direction',
+      'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
+      'categoria', 2,
+      'status_solicitado', 'NO_PICO',
+      'precio_directo', 11975.15
+    )
+  ))),
+  'DIRECTION_REQUIRED',
+  'directionless refresh candidates fail closed instead of becoming AMBAS'
+);
+
+SELECT ok(
+  to_regclass('public.estaciones_vias_sentido') IS NOT NULL,
+  'station/lane direction catalogue exists'
+);
+
+SELECT throws_ok(
+  $$INSERT INTO public.estaciones_vias_sentido
+    (empresa_id, estacion_id, codigo_estacion, via, sentido)
+    VALUES ('test', '18180000-aaaa-4aa1-8aa1-000000000010', '0004', '01M', 'AMBAS')$$,
+  '23514',
+  NULL,
+  'station/lane catalogue rejects inferred AMBAS'
 );
 
 SELECT * FROM finish();

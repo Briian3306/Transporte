@@ -58,6 +58,18 @@ export interface EstacionAliasProveedor {
   created_at?: string;
 }
 
+/** Provider station/lane direction metadata. Deliberately excludes AMBAS. */
+export interface EstacionViaSentido {
+  id: string;
+  empresa_id: string;
+  estacion_id: string;
+  codigo_estacion: string;
+  via: string;
+  sentido: 'IDA' | 'VUELTA';
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface ResultadoReconocimientoEstacion {
   valorProveedor: string;
   tipo: 'exacta' | 'sugerencias' | 'sin_coincidencia';
@@ -198,6 +210,9 @@ export type PasadaEstandarizada = Omit<
   PASADA_ID?: string | null;
   SENTIDO?: string | number | null;
   TARIFA_STATUS?: string | number | null;
+  /** Source provider values retained for direction resolution in Paso 9. */
+  SOURCE_ESTACION?: string | number | null;
+  SOURCE_VIA?: string | number | null;
 };
 
 export interface PlantillaConfiguracion {

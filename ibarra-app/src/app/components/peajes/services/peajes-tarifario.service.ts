@@ -79,7 +79,7 @@ function mapPreparar(raw: Record<string, unknown>): PrepararRefrescoTarifaItem {
     estacionId: String(raw['estacion_id'] ?? ''),
     categoria: asNullableNumber(raw['categoria']),
     status: raw['status'] == null ? null : (String(raw['status']) as TarifaStatusPico),
-    sentido: String(raw['sentido'] ?? 'AMBAS') as TarifaSentido,
+    sentido: raw['sentido'] == null ? null : String(raw['sentido']) as TarifaSentido,
     tarifaId: raw['tarifa_id'] == null ? null : String(raw['tarifa_id']),
     importe: asNullableNumber(raw['importe']),
     requiereNormalizacionIva: Boolean(raw['requiere_normalizacion_iva']),
@@ -94,7 +94,7 @@ function mapDetectar(raw: Record<string, unknown>): DetectarRefrescoTarifaItem {
     estacionId: String(raw['estacion_id'] ?? ''),
     categoria: asNullableNumber(raw['categoria']),
     status: raw['status'] == null ? null : (String(raw['status']) as TarifaStatusPico),
-    sentidoSolicitado: String(raw['sentido_solicitado'] ?? 'AMBAS') as TarifaSentido,
+    sentidoSolicitado: raw['sentido_solicitado'] == null ? null : String(raw['sentido_solicitado']) as TarifaSentido,
     sentidoAplicado:
       raw['sentido_aplicado'] == null ? null : (String(raw['sentido_aplicado']) as TarifaSentido),
     importeActual: asNullableNumber(raw['importe_actual']),

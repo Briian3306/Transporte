@@ -13,28 +13,51 @@
       <form [formGroup]="form" class="cat__form" (ngSubmit)="guardar()">
         <label>
           Peaje *
-          <select formControlName="peaje_id">
+          <select formControlName="peaje_id" [disabled]="!canEdit">
             <option value="">Seleccionar…</option>
             <option *ngFor="let p of peajes" [value]="p.id">{{ p.nombre }}</option>
           </select>
         </label>
-        <label>Nombre *<input formControlName="nombre" /></label>
-        <label>Ubicación<input formControlName="ubicacion" /></label>
-        <label>Descripción<input formControlName="descripcion" /></label>
-        <label>Códigos proveedor (coma)<input formControlName="codigos_proveedor" placeholder="3, EST-3" /></label>
+        <label>Nombre *<input formControlName="nombre" [readonly]="!canEdit" /></label>
+        <label>Ubicación<input formControlName="ubicacion" [readonly]="!canEdit" /></label>
+        <label>Descripción<input formControlName="descripcion" [readonly]="!canEdit" /></label>
+        <label>Códigos proveedor (coma)<input formControlName="codigos_proveedor" placeholder="3, EST-3" [readonly]="!canEdit" /></label>
         <div class="est__geo">
-          <label>Latitud<input type="number" step="any" formControlName="latitud" /></label>
-          <label>Longitud<input type="number" step="any" formControlName="longitud" /></label>
+          <label>Latitud<input type="number" step="any" formControlName="latitud" [readonly]="!canEdit" /></label>
+          <label>Longitud<input type="number" step="any" formControlName="longitud" [readonly]="!canEdit" /></label>
         </div>
-        <label>Camino / corredor<input formControlName="camino" placeholder="Ej.: COLECTORAS" /></label>
+        <label>Camino / corredor<input formControlName="camino" placeholder="Ej.: COLECTORAS" [readonly]="!canEdit" /></label>
         <div class="cat__actions">
-          <button type="submit" [disabled]="guardando">
+          <button type="submit" [disabled]="guardando || !canEdit">
             {{ guardando ? 'Guardando…' : editandoId ? 'Guardar cambios' : 'Crear estación' }}
           </button>
           <button type="button" *ngIf="editandoId" (click)="cancelarEdicion()">Cancelar</button>
         </div>
       </form>
       <p class="cat__error" *ngIf="error">{{ error }}</p>
+
+      <section *ngIf="editandoId" class="cat__lane-map">
+        <h2>Dirección por vía</h2>
+        <p class="cat__hint">Se usa para resolver IDA/VUELTA en pasadas que no traen SENTIDO. No modifica tarifas.</p>
+        <div class="cat__form">
+          <label>Código estación<input [(ngModel)]="viaCodigo" name="viaCodigo" placeholder="0004" [readonly]="!canEdit" /></label>
+          <label>Vía / carril<input [(ngModel)]="viaNombre" name="viaNombre" placeholder="01M" [readonly]="!canEdit" /></label>
+          <label>Sentido
+            <select [(ngModel)]="viaSentido" name="viaSentido" [disabled]="!canEdit">
+              <option value="IDA">IDA</option>
+              <option value="VUELTA">VUELTA</option>
+            </select>
+          </label>
+          <div class="cat__actions"><button type="button" [disabled]="!canEdit" (click)="guardarViaSentido()">Guardar vía</button></div>
+        </div>
+        <ul *ngIf="viasSentido.length; else sinVias">
+          <li *ngFor="let via of viasSentido">
+            {{ via.codigo_estacion }} · {{ via.via }} → {{ via.sentido }}
+            <button type="button" class="est__edit" [disabled]="!canEdit" (click)="eliminarViaSentido(via)">Eliminar</button>
+          </li>
+        </ul>
+        <ng-template #sinVias><small>Aún no hay mapeos guardados.</small></ng-template>
+      </section>
 
       <h2 style="margin-top: 1.25rem">Sugerir por código/nombre</h2>
       <div class="cat__form">

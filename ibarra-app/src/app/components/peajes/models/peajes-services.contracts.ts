@@ -7,6 +7,7 @@ import {
   ErrorValidacionPasada,
   Estacion,
   EstacionAliasProveedor,
+  EstacionViaSentido,
   EstacionPendienteGrupo,
   Documento,
   Pasada,
@@ -183,6 +184,11 @@ export interface PeajesCatalogoService {
   sugerirEstacion(valorProveedor: string): Observable<Estacion[]>;
   reconocerEstacion(valorProveedor: string, empresaId?: string): Observable<ResultadoReconocimientoEstacion>;
   confirmarAliasEstacion(data: Omit<EstacionAliasProveedor, 'id' | 'created_at' | 'valor_normalizado'>): Observable<EstacionAliasProveedor>;
+  listarEstacionesViasSentido(empresaId?: string, estacionId?: string): Observable<EstacionViaSentido[]>;
+  guardarEstacionViaSentido(
+    data: Omit<EstacionViaSentido, 'id' | 'created_at' | 'updated_at'>,
+  ): Observable<EstacionViaSentido>;
+  eliminarEstacionViaSentido(id: string): Observable<{ id: string; deleted: boolean }>;
 
   listarPatentes(): Observable<Patente[]>;
   crearPatente(data: Omit<Patente, 'id' | 'created_at'>): Observable<Patente>;

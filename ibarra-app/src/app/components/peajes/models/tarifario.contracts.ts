@@ -106,7 +106,7 @@ export interface PrepararRefrescoTarifaInput {
   estacionId: string;
   categoria: number | null;
   statusSolicitado: TarifaStatusPico | null;
-  sentidoSolicitado: TarifaSentido;
+  sentidoSolicitado: TarifaSentido | null;
 }
 
 export interface PrepararRefrescoTarifaItem {
@@ -115,7 +115,7 @@ export interface PrepararRefrescoTarifaItem {
   estacionId: string;
   categoria: number | null;
   status: TarifaStatusPico | null;
-  sentido: TarifaSentido;
+  sentido: TarifaSentido | null;
   tarifaId: string | null;
   importe: number | null;
   requiereNormalizacionIva: boolean;
@@ -126,7 +126,7 @@ export interface DetectarRefrescoTarifaInput {
   estacionId: string;
   categoria: number | null;
   statusSolicitado: TarifaStatusPico | null;
-  sentidoSolicitado: TarifaSentido;
+  sentidoSolicitado: TarifaSentido | null;
   precioDirecto: number;
   precioNormalizado: number | null;
 }
@@ -137,7 +137,9 @@ export type RefreshTarifaCodigoRpc =
   | 'NEW_TARIFF'
   | 'STATUS_REQUIRED'
   | 'STATUS_AMBIGUOUS'
-  | 'CONTEXT_INCOMPLETE';
+  | 'CONTEXT_INCOMPLETE'
+  | 'DIRECTION_REQUIRED'
+  | 'DIRECTION_CONFLICT';
 
 export interface DetectarRefrescoTarifaItem {
   id: string;
@@ -146,7 +148,7 @@ export interface DetectarRefrescoTarifaItem {
   estacionId: string;
   categoria: number | null;
   status: TarifaStatusPico | null;
-  sentidoSolicitado: TarifaSentido;
+  sentidoSolicitado: TarifaSentido | null;
   sentidoAplicado: TarifaSentido | null;
   importeActual: number | null;
   tarifaId: string | null;

@@ -335,7 +335,7 @@ test('assertLocalDbUrl accepts loopback and rejects DESARROLLO', async () => {
   assert.throws(() => assertLocalDbUrl('https://kfffigvyvtzyczeiadxh.supabase.co'));
 });
 
-test('splitSentidoCollisions remaps the second sentido onto a new parent id', async () => {
+test('splitSentidoCollisions keeps directional collisions unresolved without cloning history', async () => {
   const { splitSentidoCollisions } = await loadEtl();
   const split = splitSentidoCollisions(
     [
@@ -351,5 +351,9 @@ test('splitSentidoCollisions remaps the second sentido onto a new parent id', as
   const ids = split.tarifas.map((row) => row.id);
   assert.equal(ids.length, 2);
   assert.equal(new Set(ids).size, 2);
-  assert.ok(split.cruzado.some((row) => row.TARIFA_ID === split.remapped[0].to));
+  assert.equal(split.tarifas.find((row) => row.id === split.remapped[0].to).current_tarifa_id, null);
+  assert.equal(split.cruzado.length, 1);
+  assert.equal(split.cruzado[0].TARIFA_ID, PARENT_A);
+  assert.equal(split.unresolved.length, 1);
+  assert.equal(split.unresolved[0].reason, 'DIRECTIONAL_HISTORY_COLLISION');
 });

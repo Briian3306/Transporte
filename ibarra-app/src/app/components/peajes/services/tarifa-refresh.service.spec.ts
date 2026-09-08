@@ -41,10 +41,11 @@ describe('extraerCandidatosRefresco', () => {
     expect(candidatos[0].precioDirecto).toBe(12500);
   });
 
-  it('defaults missing direction to AMBAS and keeps requested status optional', () => {
+  it('keeps missing direction unresolved and keeps requested status optional', () => {
     const candidatos = extraerCandidatosRefresco([pasada()]);
 
-    expect(candidatos[0].sentidoSolicitado).toBe('AMBAS');
+    expect(candidatos[0].sentidoSolicitado).toBeNull();
+    expect(candidatos[0].directionConfidence).toBe('UNRESOLVED');
     expect(candidatos[0].statusSolicitado).toBeNull();
   });
 
@@ -55,6 +56,18 @@ describe('extraerCandidatosRefresco', () => {
 
     expect(candidatos[0].sentidoSolicitado).toBe('IDA');
     expect(candidatos[0].statusSolicitado).toBe('PICO');
+  });
+
+  it('resolves provider lane metadata without changing the source context', () => {
+    const candidatos = extraerCandidatosRefresco([
+      pasada({ SOURCE_ESTACION: '0004', SOURCE_VIA: '51M', SENTIDO: null, PRECIO: 28740.39 }),
+    ], {
+      estacionesViasSentido: [{ codigoEstacion: '0004', via: '51M', sentido: 'VUELTA' }],
+    });
+    expect(candidatos[0].sentidoSolicitado).toBe('VUELTA');
+    expect(candidatos[0].directionConfidence).toBe('LANE_MAP');
+    expect(candidatos[0].sourceLane).toBe('51M');
+    expect(candidatos[0].candidatePrice).toBe(28740.39);
   });
 
   it('preserves every source row index for a shared physical price', () => {
@@ -181,7 +194,7 @@ describe('TarifaRefreshServiceImpl', () => {
       ],
     });
     const service = TestBed.inject(TarifaRefreshServiceImpl);
-    const filas = Array.from({ length: 20 }, () => pasada({ PRECIO: 11975.15 }));
+    const filas = Array.from({ length: 20 }, () => pasada({ PRECIO: 11975.15, SENTIDO: 'AMBAS' }));
     await service.analizar({
       pasadas: filas,
       documentos: [{ tipo: 'FC', rowIndexes: filas.map((_, i) => i) }],
