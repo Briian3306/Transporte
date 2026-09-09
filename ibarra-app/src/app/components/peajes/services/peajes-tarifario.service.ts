@@ -280,6 +280,7 @@ export class PeajesTarifarioSupabaseService implements PeajesTarifarioService {
             categoria: c.categoria,
             status: c.status,
             importe: c.importe,
+            cases: c.cases,
             requiere_normalizacion_iva: c.requiereNormalizacionIva,
           })),
         });

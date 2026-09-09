@@ -70,6 +70,7 @@ Historial de importes auditados de una configuración. `status` / `categoria` no
 | `importe_base`, `desvio` | numeric | Sí | Estadísticas históricas de clasificación. |
 | `hora_min`, `hora_max`, `hora_media` | numeric(5,2) | Sí | Distribución horaria histórica. |
 | `categoria_calculated` | smallint | Sí | Metadato legado 0–10. |
+| `cases` | integer | No | Snapshot inmutable de pasadas que evidenciaron el importe. Default `0` para catálogo/manual sin evidencia de pasadas. |
 | `fecha_aparicion` | timestamptz | No | Primera aparición de este registro de precio. |
 | `tarifas_normalizadas_id` | uuid FK | Sí | Linaje 1:1 hacia `tarifas_normalizadas`. `NULL` = monto solo en el tarifario cruzado o detectado después. `ON DELETE SET NULL`. Unique parcial cuando no es NULL. |
 | `created_at` / `updated_at` | timestamptz | No | Auditoría de insert. `updated_at` permanece escribible; columnas de negocio no. |
@@ -106,7 +107,7 @@ FK compuesto `tarifas_current_pointer_fkey`: `(tarifas.id, current_tarifa_id) �
 Trigger `trg_tarifa_importe_immutable` (`BEFORE UPDATE OR DELETE`):
 
 - Prohíbe `DELETE`.
-- Prohíbe `UPDATE` de columnas de negocio (`id`, `tarifa_id`, `importe`, estadísticas, `fecha_aparicion`, linaje, `created_at`).
+- Prohíbe `UPDATE` de columnas de negocio (`id`, `tarifa_id`, `importe`, estadísticas incluido `cases`, `fecha_aparicion`, linaje, `created_at`).
 - Correcciones: insertar una fila nueva.
 
 Trigger `trg_tarifa_importe_promote` (`AFTER INSERT`):
@@ -123,6 +124,7 @@ Implementado por el ETL `scripts/peajes-catalogo-audit/migrate-tarifario-v2.mjs`
 - `tarifas.id` se conserva del workbook tras validar UUID y unicidad.
 - Si hay `tarifas_normalizadas_id`, `tarifa_importe.id = tarifas_normalizadas_id`.
 - Si el importe current de Cruzado no tiene línea histórica exacta, se genera un UUID nuevo y el linaje queda `NULL`.
+- El ETL conserva `cases` de la fuente auditada; si un importe no tiene evidencia de pasadas, guarda `0`.
 - El ETL rechaza un ID legado mapeado a más de un importe, un historial con más de un padre, o un `TARIFA_ID` de Cross inexistente.
 
 El backfill `peajes_backfill_pasadas_tarifa_importe()` escribe `pasadas.tarifa_importe_id` **solo** cuando `pasadas.tarifa_normalizada_id` tiene exactamente un `tarifa_importe.tarifas_normalizadas_id`. No inventa historial. No reescribe `tarifa_normalizada_id`. Volumen real de pasadas no está probado fuera de fixtures pgTAP: un `db reset --local --no-seed` deja `pasadas` vacía (0/0/0).

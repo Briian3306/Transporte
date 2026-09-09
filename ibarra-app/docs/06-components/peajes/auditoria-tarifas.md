@@ -137,6 +137,8 @@ Componente `app-tarifa-familia-panel` dentro de `.at__detail`.
 
 En Supabase, las horas viven en `tarifas_normalizadas` como números decimales (`hora_min` `3.00` = 03:00). La UI las formatea a reloj; no hay columna texto `03:00` en la tabla.
 
+La auditoría sigue leyendo `tarifas_normalizadas`. Al migrar un importe al catálogo v2, su `cases` se copia como una foto histórica en `tarifa_importe`; esa copia no cambia cuando se recalcula la auditoría.
+
 ---
 
 ## Botones y acciones

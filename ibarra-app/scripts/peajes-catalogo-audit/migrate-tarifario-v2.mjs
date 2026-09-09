@@ -66,6 +66,13 @@ function parseImporte(value, label) {
   return n;
 }
 
+function parseCases(value) {
+  if (!isPresent(value)) return 0;
+  const n = typeof value === 'number' ? value : Number(String(value).trim());
+  if (!Number.isInteger(n) || n < 0) fail(`invalid cases: ${value}`);
+  return n;
+}
+
 export function parseTarifarioV2({ tarifas: tarifasIn = [], tarifas_importe: importeIn = [], cruzado: cruzadoIn = [] } = {}) {
   const parentIds = new Set();
   const configByKey = new Map();
@@ -115,6 +122,7 @@ export function parseTarifarioV2({ tarifas: tarifasIn = [], tarifas_importe: imp
       ...src,
       importe,
       importe_base,
+      cases: parseCases(src.cases),
       tarifas_normalizadas_id: lineage,
     });
   }
@@ -149,6 +157,7 @@ export function parseTarifarioV2({ tarifas: tarifasIn = [], tarifas_importe: imp
         tarifa_id: tarifaId,
         importe: audited,
         importe_base: audited,
+        cases: 0,
         fecha_aparicion: cross.LAST_UPDATED,
         tarifas_normalizadas_id: null,
       };
@@ -461,13 +470,14 @@ export function buildLocalLoadSql(parsed, { remapped = [] } = {}) {
       ${sqlNumeric(nullableNum(h.hora_min))},
       ${sqlNumeric(nullableNum(h.hora_max))},
       ${sqlNumeric(nullableNum(h.hora_media))},
+      ${sqlNumeric(h.cases)},
       ${sqlTimestamptz(h.fecha_aparicion)},
       ${skippedLineage.has(h.tarifas_normalizadas_id) ? 'NULL' : sqlUuid(h.tarifas_normalizadas_id)},
       ${sqlTimestamptz(h.fecha_aparicion)}
     )`).join(',\n  ');
     lines.push(`INSERT INTO public.tarifa_importe (
       id, tarifa_id, importe, importe_base, desvio,
-      hora_min, hora_max, hora_media, fecha_aparicion,
+      hora_min, hora_max, hora_media, cases, fecha_aparicion,
       tarifas_normalizadas_id, created_at
     )
     VALUES

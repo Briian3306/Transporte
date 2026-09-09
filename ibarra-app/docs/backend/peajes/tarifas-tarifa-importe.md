@@ -22,6 +22,8 @@ Matching en sombra y readers de compatibilidad para el catálogo v2: configuraci
 
 Resolver y validar pasadas contra el importe auditado vigente (puntero `current_tarifa_id`) con sentido, flag de IVA y tolerancia relativa del 1%, sin mutar el historial ni aplicar aritmética de IVA en SQL.
 
+`tarifa_importe.cases` es una foto inmutable de la evidencia: la migración copia el valor de la fila con linaje en `tarifas_normalizadas`, Paso 9 guarda la cantidad de filas detectadas y una edición manual guarda `0`.
+
 ## Business Logic
 
 ### Matching de dirección

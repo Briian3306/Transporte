@@ -149,6 +149,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
           categoria: seccion.categoria,
           status: candidate.status,
           importe: candidate.price,
+          cases: candidate.rows.length,
           requiereNormalizacionIva: candidate.requiereNormalizacionIva,
         });
       }
@@ -178,6 +179,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
           categoria: cambio.categoria,
           status: cambio.status,
           importe: cambio.importe,
+          cases: 0,
           requiereNormalizacionIva: iva,
         });
       }

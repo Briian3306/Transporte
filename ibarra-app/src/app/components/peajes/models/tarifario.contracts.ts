@@ -163,6 +163,8 @@ export interface CambioRefrescoTarifa {
   categoria: number;
   status: TarifaStatusPico;
   importe: number;
+  /** Immutable number of source pasadas that evidenced this price snapshot. */
+  cases: number;
   requiereNormalizacionIva: boolean | null;
 }
 

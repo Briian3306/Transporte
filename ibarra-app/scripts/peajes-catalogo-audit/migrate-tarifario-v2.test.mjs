@@ -325,6 +325,30 @@ test('history importe raw ARS string is parsed with parseArs', async () => {
   assert.equal(Number(result.tarifa_importe[0].importe_base), 3550);
 });
 
+test('history cases is a non-negative integer snapshot and defaults to zero', async () => {
+  const { buildLocalLoadSql, parseTarifarioV2 } = await loadEtl();
+  const explicit = parseTarifarioV2(sheets({
+    tarifas_importe: [importe({ cases: 17 })],
+  }));
+  assert.equal(explicit.tarifa_importe[0].cases, 17);
+
+  const defaulted = parseTarifarioV2(sheets({
+    tarifas_importe: [importe({ cases: undefined })],
+  }));
+  assert.equal(defaulted.tarifa_importe[0].cases, 0);
+
+  assert.throws(() => parseTarifarioV2(sheets({
+    tarifas_importe: [importe({ cases: -1 })],
+  })), /cases/i);
+  assert.throws(() => parseTarifarioV2(sheets({
+    tarifas_importe: [importe({ cases: 1.5 })],
+  })), /cases/i);
+
+  const { sql } = buildLocalLoadSql(explicit);
+  assert.match(sql, /hora_media, cases, fecha_aparicion/);
+  assert.match(sql, /hora_media, cases, fecha_aparicion,[\s\S]*?\n\s*17,\n\s*'2026-08-01/);
+});
+
 test('assertLocalDbUrl accepts loopback and rejects DESARROLLO', async () => {
   const { assertLocalDbUrl } = await loadEtl();
   assert.equal(
