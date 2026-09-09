@@ -1,0 +1,5 @@
+<div class="graph-loader" role="status" aria-live="polite">
+  <canvas #canvas class="graph-loader__canvas" width="240" height="220" aria-hidden="true"></canvas>
+  <p class="graph-loader__message">{{ currentMessage }}</p>
+  <p class="graph-loader__detail" *ngIf="detail">{{ detail }}</p>
+</div>

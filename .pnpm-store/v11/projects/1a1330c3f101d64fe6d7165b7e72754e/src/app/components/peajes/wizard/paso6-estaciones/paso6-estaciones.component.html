@@ -1,0 +1,328 @@
+<div class="paso6" [class.paso6--dense]="esCargaDensa">
+  <div class="pw__head">
+    <div>
+      <div class="pw__eyebrow">{{ expressMode ? 'Paso 2 · estaciones' : 'Paso 06 · catálogo maestro' }}</div>
+      <h2>Relacionar estaciones</h2>
+      <p *ngIf="scopingPorConcesion">
+        RN-26: <span class="pw__mono">{{ columnaConcesion }}</span> identifica el peaje.
+        Solo se listan estaciones de ese peaje (y empresa). Podés corregir peaje o estación.
+      </p>
+      <p *ngIf="!scopingPorConcesion">
+        Vinculá los códigos del proveedor con estaciones internas de la empresa seleccionada.
+      </p>
+    </div>
+    <span
+      class="pw__status"
+      [class.pw__status--valid]="!pendientesCount"
+      [class.pw__status--warn]="!!pendientesCount"
+    >
+      {{ relacionadasCount }} de {{ relaciones.length }} relacionadas
+    </span>
+  </div>
+
+  <div class="pw__body">
+    <app-loading-spinner
+      *ngIf="reconociendo"
+      label="Reconociendo estaciones"
+      detail="Buscando coincidencias por empresa, peaje y alias confirmados."
+    ></app-loading-spinner>
+
+    <ng-container *ngIf="!reconociendo">
+    <div class="pw__alert pw__alert--warn" *ngIf="sinPeajesEmpresa" role="status">
+      La empresa del Paso 1 no tiene peajes en el catálogo. Creá un peaje en
+      Catálogos → Peajes (asociado a esa empresa) antes de relacionar estaciones.
+      No se usan peajes de otras empresas (p. ej. AUBASA).
+    </div>
+
+    <div class="pw__alert pw__alert--info" *ngIf="codigosFueraDeEmpresa.length" role="status">
+      La plantilla apuntaba a una estación de otra empresa
+      ({{ codigosFueraDeEmpresa.join(', ') }}). Se reconoció de nuevo con la empresa del Paso 1.
+    </div>
+
+    <div class="paso6__layout">
+      <div class="paso6__relation">
+        <aside
+          class="paso6__catalog paso6__catalog--top"
+          *ngIf="mostrarPeajeRelacionado && peajePrincipal as peaje"
+        >
+          <div class="paso6__catalog-top-grid">
+            <div>
+              <div class="paso6__label">Peaje relacionado</div>
+              <div class="paso6__value paso6__value--inline">{{ peaje.nombre }}</div>
+            </div>
+            <div *ngIf="!expressMode">
+              <div class="paso6__label">ID</div>
+              <div class="paso6__value pw__mono paso6__value--sm">{{ peaje.id }}</div>
+            </div>
+            <div *ngIf="peaje.descripcion">
+              <div class="paso6__label">Descripción</div>
+              <div class="paso6__value paso6__value--muted paso6__value--sm">{{ peaje.descripcion }}</div>
+            </div>
+          </div>
+        </aside>
+
+        <aside class="paso6__lock" *ngIf="alcanceEmpresaLabel" role="note">
+          <i class="fas fa-lock" aria-hidden="true"></i>
+          <div>
+            <strong>{{ alcanceEmpresaLabel }}</strong>
+            <span>Los códigos del archivo se resuelven solo en peajes de esta empresa. El código 0001 no puede caer en otro peaje.</span>
+          </div>
+        </aside>
+
+        <div class="paso6__hero" [class.paso6__hero--compact]="esCargaDensa" *ngIf="!alcanceEmpresaLabel">
+          <div class="paso6__link-icon"><i class="fas fa-link" aria-hidden="true"></i></div>
+          <div>
+            <strong>Relación confirmada para el archivo</strong>
+            <span *ngIf="scopingPorConcesion">
+              Estaciones filtradas por peaje de Concesión. No se muestran peajes/empresas ajenos.
+            </span>
+            <span *ngIf="!scopingPorConcesion">
+              Solo se listan estaciones de los peajes de la empresa del Paso 1.
+            </span>
+          </div>
+        </div>
+
+        <div class="paso6__toolbar">
+          <label class="paso6__search">
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <input
+              class="pw__input"
+              type="search"
+              [ngModel]="filtro"
+              (ngModelChange)="onFiltroChange($event)"
+              placeholder="Buscar estación o código…"
+              aria-label="Buscar estación o código"
+            />
+          </label>
+          <div class="paso6__pager" *ngIf="relacionesFiltradas.length > pageSize">
+            <span>{{ pageRangeLabel }}</span>
+            <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="prevRowPage()" [disabled]="rowPage === 0">
+              Anterior
+            </button>
+            <button
+              type="button"
+              class="pw__btn pw__btn--ghost pw__btn--small"
+              (click)="nextRowPage()"
+              [disabled]="rowPage >= totalRowPages - 1"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+
+        <div class="paso6__table-shell">
+          <div class="pw__table-wrap paso6__table-wrap">
+            <table
+              class="pw__table paso6__table"
+              [class.paso6__table--scoped]="scopingPorConcesion"
+            >
+              <thead>
+                <tr>
+                  <th class="paso6__col-codigo">Código proveedor</th>
+                  <th class="paso6__col-peaje" *ngIf="mostrarColumnaPeaje">Peaje</th>
+                  <th class="paso6__col-estacion">Estación interna</th>
+                  <th class="paso6__col-derivado" *ngIf="!esCargaDensa">Peaje derivado</th>
+                  <th class="paso6__col-acciones">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let r of relacionesPagina; trackBy: trackByValor"
+                  [class.paso6__row--need]="necesitaCrearMap[r.valorProveedor]"
+                >
+                  <td class="paso6__col-codigo">
+                    <div class="paso6__codigo pw__mono">{{ r.valorProveedor }}</div>
+                    <div class="paso6__concesion-hint" *ngIf="r.concesionProveedor">
+                      {{ r.concesionProveedor }}
+                    </div>
+                  </td>
+                  <td class="paso6__col-peaje" *ngIf="mostrarColumnaPeaje">
+                    <app-search-select
+                      *ngIf="isEditing(r.valorProveedor); else peajeCompact"
+                      class="paso6__search-select"
+                      placeholder="Peaje de la empresa…"
+                      [options]="peajeOptionsForRow(r.valorProveedor)"
+                      [value]="peajeAlcanceDe(r.valorProveedor)"
+                      [showAllWhenEmpty]="true"
+                      (valueChange)="onPeajeAlcanceChange(r.valorProveedor, $event)"
+                    ></app-search-select>
+                    <ng-template #peajeCompact>
+                      <div class="paso6__compact">{{ peajeDe(r.estacionId, r.valorProveedor) }}</div>
+                    </ng-template>
+                  </td>
+                  <td class="paso6__col-estacion">
+                    <ng-container *ngIf="isEditing(r.valorProveedor); else estacionCompact">
+                      <app-search-select
+                        class="paso6__search-select"
+                        placeholder="Buscar estación…"
+                        [options]="estacionOptionsFor(r.valorProveedor)"
+                        [value]="r.estacionId"
+                        [showAllWhenEmpty]="true"
+                        (valueChange)="onEstacionChange(r.valorProveedor, $event)"
+                      ></app-search-select>
+                      <div class="paso6__sug" *ngIf="sugerencias[r.valorProveedor]?.length">
+                        <button
+                          type="button"
+                          class="pw__chip"
+                          *ngFor="let s of sugerencias[r.valorProveedor]"
+                          (click)="seleccionar(r.valorProveedor, s.id)"
+                        >
+                          {{ s.nombre }}
+                        </button>
+                      </div>
+                      <div class="paso6__reco" *ngIf="necesitaCrearMap[r.valorProveedor]">
+                        <span><strong>Recomendado:</strong> no hay coincidencia.</span>
+                        <button
+                          type="button"
+                          class="pw__btn pw__btn--small pw__btn--primary paso6__crear-inline"
+                          (click)="abrirCrear(r.valorProveedor)"
+                        >
+                          Crear estación
+                        </button>
+                      </div>
+                    </ng-container>
+                    <ng-template #estacionCompact>
+                      <div class="paso6__compact">
+                        <span class="paso6__compact-id pw__mono" *ngIf="!expressMode">{{ r.estacionId }}</span>
+                        <span class="paso6__compact-name">{{ estacionNombre(r.estacionId) }}</span>
+                      </div>
+                    </ng-template>
+                    <div class="paso6__derivado-inline" *ngIf="esCargaDensa">
+                      <span class="paso6__label">Peaje derivado</span>
+                      <span>{{ peajeDe(r.estacionId, r.valorProveedor) }}</span>
+                    </div>
+                  </td>
+                  <td class="paso6__col-derivado" *ngIf="!esCargaDensa">
+                    {{ peajeDe(r.estacionId, r.valorProveedor) }}
+                  </td>
+                  <td class="paso6__col-acciones">
+                    <div class="paso6__actions">
+                      <button
+                        type="button"
+                        class="pw__btn pw__btn--small pw__btn--ghost"
+                        *ngIf="r.estacionId && !isEditing(r.valorProveedor)"
+                        (click)="editarFila(r.valorProveedor)"
+                      >
+                        Cambiar estación
+                      </button>
+                      <button
+                        type="button"
+                        class="pw__btn pw__btn--small pw__btn--ghost"
+                        *ngIf="!r.estacionId || isEditing(r.valorProveedor)"
+                        (click)="abrirCrear(r.valorProveedor)"
+                      >
+                        Crear estación
+                      </button>
+                      <button
+                        type="button"
+                        class="pw__btn pw__btn--small pw__btn--ghost"
+                        *ngIf="reconocimientos[r.valorProveedor]?.tipo === 'sugerencias'"
+                        (click)="declararSinCoincidencia(r.valorProveedor)"
+                      >
+                        Ninguna coincide
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="paso6__path" *ngIf="!expressMode && !esCargaDensa && ejemploResolucion as ej">
+          <div class="paso6__label">Ejemplo de resolución</div>
+          <div class="paso6__pills">
+            <span class="paso6__pill pw__mono">ESTACION = {{ ej.codigo }}</span>
+            <span class="paso6__arrow">→</span>
+            <span class="paso6__pill paso6__pill--em pw__mono">{{ ej.id }}</span>
+            <span class="paso6__arrow">→</span>
+            <span class="paso6__pill paso6__pill--em">{{ ej.nombre }}</span>
+            <span class="paso6__arrow">→</span>
+            <span class="paso6__pill">{{ ej.peaje }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    </ng-container>
+
+    <div class="pw__alert pw__alert--ok" *ngIf="successMsg">{{ successMsg }}</div>
+    <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+  </div>
+
+  <div class="pw__footer">
+    <div class="pw__footer-hint">La pasada guarda estacion_id; el peaje se deriva de la estación.</div>
+    <div class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="atras.emit()" [disabled]="reconociendo">Volver</button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--ghost"
+        (click)="guardarPlantillaRelaciones()"
+        [disabled]="reconociendo || guardandoRelaciones || !relaciones.length"
+      >
+        {{ guardandoRelaciones ? 'Guardando…' : 'Guardar relaciones' }}
+      </button>
+      <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()" [disabled]="reconociendo">Continuar</button>
+    </div>
+  </div>
+
+  <app-dialog
+    [open]="!!creandoPara"
+    eyebrow="Catálogo de estaciones"
+    title="Crear estación"
+    [description]="
+      'Código proveedor «' + (creandoPara || '') + '» se asociará automáticamente al crear.'
+    "
+    (closed)="cerrarCrear()"
+  >
+    <div class="pw__form-grid">
+      <div class="pw__field">
+        <label for="nueva-estacion-nombre">Nombre *</label>
+        <input
+          id="nueva-estacion-nombre"
+          class="pw__input"
+          [(ngModel)]="nuevaEstacionNombre"
+          autocomplete="off"
+        />
+      </div>
+      <div class="pw__field">
+        <label for="nueva-estacion-ubicacion">Ubicación</label>
+        <input
+          id="nueva-estacion-ubicacion"
+          class="pw__input"
+          [(ngModel)]="nuevaEstacionUbicacion"
+          placeholder="Ej. Acceso Ricchieri · KM 15,80"
+          autocomplete="off"
+        />
+      </div>
+      <div class="pw__field" *ngIf="!peajeUnicoEmpresa">
+        <app-search-select
+          label="Peaje *"
+          placeholder="Buscar peaje…"
+          [options]="peajeOptions"
+          [value]="nuevaEstacionPeajeId || null"
+          [showAllWhenEmpty]="true"
+          (valueChange)="onPeajeChange($event)"
+        ></app-search-select>
+      </div>
+      <div class="pw__field" *ngIf="peajeUnicoEmpresa">
+        <label>Peaje</label>
+        <div class="paso6__peaje-fijo">{{ peajeNombreUnico }}</div>
+      </div>
+    </div>
+    <p class="paso6__hint" *ngIf="!peajesUnicos.length">
+      No hay peajes para esta empresa. Creá uno en Catálogos → Peajes.
+    </p>
+
+    <div appDialogActions class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="cerrarCrear()">Cancelar</button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--primary"
+        (click)="crearEstacion()"
+        [disabled]="!nuevaEstacionPeajeId || !nuevaEstacionNombre.trim()"
+      >
+        Crear y relacionar
+      </button>
+    </div>
+  </app-dialog>
+</div>

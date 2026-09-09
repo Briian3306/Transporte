@@ -1,0 +1,59 @@
+<div class="sms" [class.sms--disabled]="disabled">
+  <label *ngIf="label" class="sms__label">{{ label }}</label>
+  <div
+    class="sms__field"
+    [class.sms__field--open]="open"
+    (click)="focusInput()"
+  >
+    <span
+      *ngFor="let opt of selectedOptions"
+      class="sms__chip"
+      [class.sms__chip--signal]="badgeTone === 'signal'"
+      [class.sms__chip--muted]="badgeTone === 'muted'"
+      [class.sms__chip--default]="badgeTone === 'default'"
+    >
+      {{ opt.label }}
+      <button
+        *ngIf="showChipClear"
+        type="button"
+        class="sms__chip-x"
+        [attr.aria-label]="'Quitar ' + opt.label"
+        (click)="removeId(opt.id, $event)"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </span>
+    <input
+      #inputEl
+      type="search"
+      class="sms__input"
+      [placeholder]="selectedOptions.length ? '' : placeholder"
+      [disabled]="disabled"
+      [class.sms__input--hidden]="mode === 'single' && selectedOptions.length > 0 && disabled"
+      [ngModel]="query"
+      (ngModelChange)="onQueryChange($event)"
+      (focus)="onFocus()"
+      (keydown)="onKeydown($event)"
+      autocomplete="off"
+      role="combobox"
+      [attr.aria-expanded]="open"
+      aria-autocomplete="list"
+    />
+  </div>
+
+  <ul *ngIf="open" class="sms__dropdown" role="listbox">
+    <li
+      *ngFor="let opt of filteredOptions; let i = index"
+      class="sms__option"
+      [class.sms__option--active]="i === highlightedIndex"
+      role="option"
+      (mousedown)="$event.preventDefault(); selectOption(opt)"
+      (mouseenter)="highlightedIndex = i"
+    >
+      {{ opt.label }}
+    </li>
+    <li *ngIf="!filteredOptions.length" class="sms__empty" role="presentation">
+      {{ emptyMessage }}
+    </li>
+  </ul>
+</div>

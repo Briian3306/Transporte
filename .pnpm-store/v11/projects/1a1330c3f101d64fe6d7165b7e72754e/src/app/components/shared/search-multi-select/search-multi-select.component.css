@@ -1,0 +1,181 @@
+.sms {
+  --sms-signal: #004ac6;
+  --sms-rail: #f2f4f6;
+  --sms-line: #e2e8f0;
+  --sms-ink: #0f172a;
+  --sms-muted: #434655;
+  --sms-surface: #ffffff;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: var(--sms-ink);
+}
+
+.sms__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sms-muted);
+}
+
+.sms__field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--sms-line);
+  border-radius: 0.5rem;
+  background: var(--sms-surface);
+  cursor: text;
+}
+
+.sms__field--open,
+.sms__field:focus-within {
+  border-color: color-mix(in srgb, var(--sms-signal) 45%, var(--sms-line));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sms-signal) 18%, transparent);
+}
+
+.sms--disabled .sms__field {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sms__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  padding: 0.2rem 0.45rem 0.2rem 0.55rem;
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  animation: sms-chip-in 140ms ease-out;
+}
+
+.sms__chip--signal {
+  background: color-mix(in srgb, var(--sms-signal) 12%, #fff);
+  border: 1px solid color-mix(in srgb, var(--sms-signal) 28%, var(--sms-line));
+  color: var(--sms-ink);
+}
+
+.sms__chip--muted {
+  background: var(--sms-rail);
+  border: 1px solid var(--sms-line);
+  color: var(--sms-muted);
+}
+
+.sms__chip--default {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: var(--sms-ink);
+}
+
+.sms__chip-x {
+  appearance: none;
+  border: none;
+  background: color-mix(in srgb, var(--sms-ink) 8%, transparent);
+  color: inherit;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.55rem;
+  padding: 0;
+}
+
+.sms__chip-x:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--sms-signal) 20%, transparent);
+}
+
+.sms__input {
+  flex: 1 1 6rem;
+  min-width: 5rem;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: var(--sms-ink);
+  padding: 0.2rem 0.15rem;
+}
+
+.sms__input--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sms__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.sms__dropdown {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  max-height: 14rem;
+  overflow-y: auto;
+  background: var(--sms-surface);
+  border: 1px solid var(--sms-line);
+  border-radius: 0.65rem;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--sms-ink) 12%, transparent);
+  animation: sms-in 120ms ease-out;
+}
+
+.sms__option {
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.sms__option--active,
+.sms__option:hover {
+  background: color-mix(in srgb, var(--sms-signal) 10%, var(--sms-rail));
+}
+
+.sms__empty {
+  padding: 0.55rem;
+  color: var(--sms-muted);
+  font-size: 0.8125rem;
+}
+
+@keyframes sms-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sms-chip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sms__dropdown,
+  .sms__chip {
+    animation: none;
+  }
+}

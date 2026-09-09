@@ -1,0 +1,42 @@
+<div class="cat">
+  <header class="cat__header">
+    <h1><i class="fas fa-id-card" aria-hidden="true"></i> Catálogo de pases</h1>
+    <a routerLink="/peajes/catalogos" class="cat__back">Volver a catálogos</a>
+  </header>
+
+  <div class="cat__layout">
+    <section class="cat__panel">
+      <h2>Nuevo pase</h2>
+      <form [formGroup]="form" class="cat__form" (ngSubmit)="guardar()">
+        <label>Pase / dispositivo *<input formControlName="pase" /></label>
+        <label>
+          Patente *
+          <select formControlName="patente_id">
+            <option value="">Seleccionar…</option>
+            <option *ngFor="let p of patentes" [value]="p.id">{{ p.patente }}</option>
+          </select>
+        </label>
+        <div class="cat__actions">
+          <button type="submit" [disabled]="guardando">Crear</button>
+        </div>
+      </form>
+      <p class="cat__error" *ngIf="error">{{ error }}</p>
+    </section>
+
+    <section class="cat__panel">
+      <h2 class="cat__list-title">Listado</h2>
+      <app-data-table
+        [columns]="columns"
+        [rows]="tableRows"
+        [page]="page"
+        [pageSize]="pageSize"
+        [clientFilter]="true"
+        [filterableColumnsInputs]="true"
+        [searchableInputMain]="['pase']"
+        [exportLabel]="''"
+        emptyMessage="Sin resultados para el filtro."
+        (pageChange)="onPageChange($event)"
+      />
+    </section>
+  </div>
+</div>

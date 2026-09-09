@@ -1,0 +1,36 @@
+<div class="cat">
+  <header class="cat__header">
+    <h1><i class="fas fa-car" aria-hidden="true"></i> Catálogo de patentes</h1>
+    <a routerLink="/peajes/catalogos" class="cat__back">Volver a catálogos</a>
+  </header>
+
+  <div class="cat__layout">
+    <section class="cat__panel">
+      <h2>{{ editandoId ? 'Editar patente' : 'Nueva patente' }}</h2>
+      <form [formGroup]="form" class="cat__form" (ngSubmit)="guardar()">
+        <label>Patente *<input formControlName="patente" class="uppercase" /></label>
+        <label>Categoría *<select formControlName="categoria"><option *ngFor="let c of categorias" [value]="c">{{ c }}</option></select></label>
+        <label>Tipo de trabajo<input formControlName="tipo_trabajo" placeholder="Ej. E 52,5 media" /></label>
+        <div class="cat__actions">
+          <button type="submit" [disabled]="guardando">{{ guardando ? 'Guardando…' : (editandoId ? 'Guardar cambios' : 'Crear') }}</button>
+          <button *ngIf="editandoId" type="button" (click)="cancelarEdicion()">Cancelar</button>
+        </div>
+      </form>
+      <p class="cat__error" *ngIf="error" role="alert">{{ error }}</p>
+    </section>
+
+    <section class="cat__panel">
+      <h2 class="cat__list-title">Listado</h2>
+      <app-data-table [columns]="columns" [rows]="tableRows" [page]="page" [pageSize]="pageSize" [clientFilter]="true"
+        [filterableColumnsInputs]="true" [searchableInputMain]="['patente', 'tipo_trabajo']" [filterOptions]="{ activa: [{ id: 'true', label: 'Activa' }, { id: 'false', label: 'Inactiva' }] }"
+        [exportLabel]="''" emptyMessage="Sin resultados para el filtro." (pageChange)="onPageChange($event)">
+        <ng-template appDataTableColumn="tipo_trabajo" let-row>{{ row['tipo_trabajo'] || '—' }}</ng-template>
+        <ng-template appDataTableColumn="activa" let-row><span [class]="row['activa'] ? 'cat__status cat__status--active' : 'cat__status cat__status--inactive'">{{ row['activa'] ? 'Activa' : 'Inactiva' }}</span></ng-template>
+        <ng-template appDataTableColumn="acciones" let-row>
+          <button type="button" class="cat__action" title="Editar" (click)="$event.stopPropagation(); editar(row)"><i class="fas fa-pen" aria-hidden="true"></i></button>
+          <button type="button" class="cat__action" [title]="row['activa'] ? 'Deshabilitar' : 'Habilitar'" (click)="$event.stopPropagation(); cambiarEstado(asPatente(row))"><i class="fas" [class.fa-ban]="row['activa']" [class.fa-check]="!row['activa']" aria-hidden="true"></i></button>
+        </ng-template>
+      </app-data-table>
+    </section>
+  </div>
+</div>

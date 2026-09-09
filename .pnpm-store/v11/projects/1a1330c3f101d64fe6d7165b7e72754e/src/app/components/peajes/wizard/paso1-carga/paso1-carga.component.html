@@ -1,0 +1,301 @@
+<div class="paso1">
+  <div class="pw__head">
+    <div>
+      <div class="pw__eyebrow">{{ expressMode ? 'Paso 1 · cargar archivo' : 'Paso 01 · origen y configuración' }}</div>
+      <h2>Cargar pasadas y factura</h2>
+      <p>
+        Subí el Excel o CSV de pasadas. En simple, un PDF de factura opcional.
+        En masiva, varios PDF opcionales cuyo nombre coincida con la columna FACTURA.
+      </p>
+    </div>
+    <div class="head-actions">
+      <span class="pw__status pw__status--valid" *ngIf="meta">Archivo listo</span>
+      <span class="pw__status pw__status--warn" *ngIf="!meta">Pendiente</span>
+    </div>
+  </div>
+
+  <div class="pw__body">
+    <fieldset class="paso1__modo">
+      <legend>Modo de importación</legend>
+      <label class="paso1__modo-option">
+        <input
+          type="radio"
+          name="modoImportacion"
+          [checked]="modoImportacion === 'simple'"
+          (change)="onModoImportacionChange('simple')"
+        />
+        <span>
+          <strong>Importación simple</strong>
+          <small>Un documento por archivo (flujo actual)</small>
+        </span>
+      </label>
+      <label class="paso1__modo-option">
+        <input
+          type="radio"
+          name="modoImportacion"
+          [checked]="modoImportacion === 'masiva'"
+          (change)="onModoImportacionChange('masiva')"
+        />
+        <span>
+          <strong>Importación masiva</strong>
+          <small>
+            Varios documentos por columna FACTURA. Podés adjuntar PDF opcionales
+            (el nombre del archivo debe coincidir con FACTURA, p. ej. 123.pdf).
+            Puede incluir múltiples empresas; la empresa se elige por documento.
+          </small>
+        </span>
+      </label>
+    </fieldset>
+
+    <div class="paso1__layout">
+      <label
+        class="pw__drop"
+        [class.pw__drop--active]="dragOver"
+        (drop)="onDrop($event)"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave()"
+      >
+        <div>
+          <div class="pw__drop-icon"><i class="fas fa-cloud-upload-alt" aria-hidden="true"></i></div>
+          <h3>Arrastrá los archivos aquí</h3>
+          <p>
+            <ng-container *ngIf="modoImportacion === 'simple'; else dropMasiva">
+              Excel o CSV de pasadas y, si querés, el PDF de factura (mismo gesto).<br />
+            </ng-container>
+            <ng-template #dropMasiva>
+              Excel o CSV de pasadas y, si querés, varios PDF de factura
+              (nombre = valor de FACTURA, p. ej. <strong>123.pdf</strong>).<br />
+            </ng-template>
+            {{ expressMode ? 'La plantilla se aplicará automáticamente.' : 'El MVP limita la vista previa a 10 registros.' }}
+          </p>
+          <span class="pw__btn pw__btn--ghost">Seleccionar archivos</span>
+          <input
+            type="file"
+            multiple
+            [accept]="'.xlsx,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/pdf'"
+            (change)="onFileInput($event)"
+          />
+        </div>
+      </label>
+
+      <aside class="paso1__file-card">
+        <ng-container *ngIf="meta; else emptyFile">
+          <div class="paso1__file-row">
+            <div class="paso1__file-icon">XLSX</div>
+            <div>
+              <div class="paso1__file-name">{{ meta.nombreArchivo }}</div>
+              <div class="paso1__file-meta">Archivo de origen · {{ meta.tamanioBytes | number }} bytes</div>
+            </div>
+          </div>
+          <div class="paso1__stats">
+            <div class="paso1__stat"><span>Registros detectados</span><strong>{{ meta.totalFilas }}</strong></div>
+            <div class="paso1__stat"><span>Columnas</span><strong>{{ meta.columnas.length }}</strong></div>
+            <div class="paso1__stat"><span>Formato</span><strong>Excel Workbook</strong></div>
+            <div class="paso1__stat">
+              <span>Estado de lectura</span>
+              <span class="pw__status pw__status--valid">Correcto</span>
+            </div>
+          </div>
+          <div class="paso1__template-box">
+            <app-search-select
+              [label]="modoImportacion === 'masiva' ? 'Empresa (opcional / default)' : 'Empresa'"
+              [placeholder]="
+                modoImportacion === 'masiva'
+                  ? 'Opcional: default; se puede cambiar por documento…'
+                  : 'Buscar o seleccionar empresa…'
+              "
+              [options]="empresaOptions"
+              [value]="empresaId || null"
+              (valueChange)="onEmpresaChange($event)"
+            ></app-search-select>
+            <button type="button" class="pw__btn pw__btn--small" *ngIf="!expressMode" (click)="crearEmpresaAbierto = true">+ Crear empresa</button>
+            <aside class="paso1__lock" *ngIf="modoImportacion === 'simple'" role="note">
+              <i class="fas fa-lock" aria-hidden="true"></i>
+              <div>
+                <strong>La empresa cierra el peaje</strong>
+                <p>
+                  Las estaciones se reconocen solo en los peajes de esta empresa.
+                  El código 0001 es Zárate en MERCOSUR y DOCK SUD en AUBASA.
+                </p>
+              </div>
+            </aside>
+            <p class="paso1__hint" *ngIf="modoImportacion === 'masiva'">
+              En masiva podés dejar la empresa vacía y asignarla por cada FACTURA en el paso Documento.
+            </p>
+            <div class="paso1__template-head">
+              <div>
+                <strong>Importación con plantilla</strong>
+                <p>
+                  Con plantilla: Continuar aplica transformaciones, mapeos y estaciones y va a Factura.
+                  Sin plantilla: seguís el wizard desde la previsualización.
+                </p>
+              </div>
+              <span class="pw__status pw__status--valid" *ngIf="!expressMode && esEjemploMvp">Ejemplo MVP</span>
+            </div>
+            <app-search-select
+              label="Plantilla a aplicar"
+              [placeholder]="expressMode ? 'Buscar plantilla obligatoria…' : 'Elegir más adelante / buscar…'"
+              [options]="plantillaOptions"
+              [value]="plantillaId || null"
+              [showAllWhenEmpty]="true"
+              (valueChange)="onPlantillaChange($event)"
+            ></app-search-select>
+          </div>
+          <button type="button" class="pw__btn pw__btn--small" (click)="fileInput.click()">
+            Reemplazar archivos
+          </button>
+          <div class="paso1__attached-pdf" *ngIf="modoImportacion === 'simple' && invoicePdfName">
+            <div class="paso1__file-icon">PDF</div>
+            <div>
+              <div class="paso1__file-name">{{ invoicePdfName }}</div>
+              <div class="paso1__file-meta">Factura opcional · solo en memoria</div>
+            </div>
+            <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="quitarPdf()">
+              Quitar PDF
+            </button>
+          </div>
+          <ul class="paso1__pdf-list" *ngIf="modoImportacion === 'masiva' && pdfsMasiva.length">
+            <li *ngFor="let pdf of pdfsMasiva" class="paso1__pdf-item" [class.paso1__pdf-item--orphan]="!pdf.factura">
+              <div class="paso1__file-icon">PDF</div>
+              <div>
+                <div class="paso1__file-name">{{ pdf.fileName }}</div>
+                <div class="paso1__file-meta" *ngIf="pdf.factura">Relacionado con FACTURA {{ pdf.factura }}</div>
+                <div class="paso1__file-meta" *ngIf="!pdf.factura">Sin factura correspondiente</div>
+              </div>
+              <span class="paso1__pdf-pin" *ngIf="pdf.factura" aria-hidden="true">
+                <i class="fas fa-map-pin"></i>
+              </span>
+              <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="quitarPdfMasiva(pdf.fileName)">
+                Quitar
+              </button>
+            </li>
+          </ul>
+          <p class="paso1__hint" *ngIf="modoImportacion === 'simple' && meta && !invoicePdfName">
+            Podés arrastrar o seleccionar el PDF junto al Excel, o agregarlo después.
+          </p>
+          <p class="paso1__hint" *ngIf="modoImportacion === 'masiva' && meta && !pdfsMasiva.length">
+            Los PDF son opcionales. El nombre (sin .pdf) debe coincidir con la columna FACTURA.
+          </p>
+        </ng-container>
+        <ng-template #emptyFile>
+          <div class="paso1__file-row">
+            <div class="paso1__file-icon paso1__file-icon--empty">—</div>
+            <div>
+              <div class="paso1__file-name">Sin archivo</div>
+              <div class="paso1__file-meta">{{ expressMode ? 'Cargá .xlsx/.csv y, si querés, el PDF' : 'Cargá un .xlsx o el ejemplo MVP' }}</div>
+            </div>
+          </div>
+          <div class="paso1__template-box" *ngIf="!expressMode">
+            <div class="paso1__template-head">
+              <div>
+                <strong>Fixture del ejemplo</strong>
+                <p>
+                  10 filas de <em>pasadas_junio_2026</em> con total factura $102.060 (sin IVA).
+                </p>
+              </div>
+              <span class="pw__status pw__status--warn">Recomendado</span>
+            </div>
+            <app-search-select
+              label="Plantilla opcional"
+              placeholder="Elegir más adelante / buscar…"
+              [options]="plantillaOptions"
+              [value]="plantillaId || null"
+              [showAllWhenEmpty]="true"
+              (valueChange)="onPlantillaChange($event)"
+            ></app-search-select>
+            <button type="button" class="pw__btn pw__btn--primary" *ngIf="!expressMode" (click)="cargarEjemploMvp()" style="width: 100%">
+              <i class="fas fa-flask" aria-hidden="true"></i>
+              Cargar ejemplo MVP
+            </button>
+          </div>
+          <div class="paso1__template-box" *ngIf="expressMode">
+            <strong>Prepará tu archivo</strong>
+            <p>Después de cargarlo vas a seleccionar la empresa y la plantilla de esta importación.</p>
+          </div>
+        </ng-template>
+      </aside>
+    </div>
+
+    <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+    <div class="pw__alert pw__alert--error" *ngIf="erroresPlantilla.length" role="alert">
+      <div *ngFor="let e of erroresPlantilla">{{ e }}</div>
+    </div>
+    <div class="pw__alert pw__alert--info" *ngIf="info && !erroresPlantilla.length">{{ info }}</div>
+    <div class="pw__alert pw__alert--info" *ngIf="cargando">Procesando archivo…</div>
+    <div class="pw__alert pw__alert--info" *ngIf="aplicandoPlantilla">Aplicando plantilla…</div>
+    <div class="pw__alert pw__alert--info" *ngIf="analizandoFactura">Analizando factura…</div>
+
+    <div class="pw__alert pw__alert--error" *ngIf="pdfError" role="status">{{ pdfError }}</div>
+  </div>
+
+  <div class="pw__footer">
+    <div class="pw__footer-hint">
+      {{
+        plantillaId
+          ? 'Con plantilla se omite el detalle del wizard si no hay excepciones.'
+          : modoImportacion === 'simple'
+            ? 'Excel/CSV obligatorio. PDF de factura opcional en la misma carga.'
+            : 'Excel/CSV obligatorio. PDF opcionales cuyo nombre coincida con FACTURA.'
+      }}
+    </div>
+    <div class="pw__footer-actions">
+      <button type="button" class="pw__btn pw__btn--ghost" *ngIf="!meta && !expressMode" (click)="cargarEjemploMvp()">
+        Usar ejemplo MVP
+      </button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--primary"
+        [disabled]="!puedeContinuar"
+        (click)="continuar()"
+      >
+        {{ plantillaId ? 'Aplicar plantilla' : 'Continuar' }}
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <app-dialog
+    [open]="crearEmpresaAbierto"
+    eyebrow="Catálogo de empresas"
+    title="Crear empresa"
+    description="La empresa será el contexto de esta carga, sus peajes y estaciones."
+    (closed)="crearEmpresaAbierto = false"
+  >
+    <div class="pw__form-grid">
+      <label class="pw__field">
+        Nombre *
+        <input [(ngModel)]="nuevaEmpresaNombre" autofocus autocomplete="organization" />
+      </label>
+      <label class="pw__field">
+        Descripción
+        <input [(ngModel)]="nuevaEmpresaDescripcion" autocomplete="off" />
+      </label>
+    </div>
+    <div appDialogActions class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="crearEmpresaAbierto = false">Cancelar</button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--primary"
+        [disabled]="!nuevaEmpresaNombre.trim()"
+        (click)="crearEmpresa()"
+      >
+        Crear y seleccionar
+      </button>
+    </div>
+  </app-dialog>
+
+  <input
+    #fileInput
+    type="file"
+    hidden
+    multiple
+    [accept]="'.xlsx,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/pdf'"
+    (change)="onFileInput($event)"
+  />
+
+  <app-ai-cat-loader
+    *ngIf="modoImportacion === 'simple'"
+    data-testid="invoice-ai-assistant"
+    [messages]="['Soy Olivia!, tu Asistente de IA']"
+  ></app-ai-cat-loader>
+</div>

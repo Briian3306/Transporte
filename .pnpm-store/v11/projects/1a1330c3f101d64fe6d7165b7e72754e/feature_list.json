@@ -1,0 +1,2019 @@
+{
+  "project": "peajes-module-automation-tool",
+  "source_of_truth": "docs/plan/peaje-prd-es.md",
+  "single_active_feature_per_agent": true,
+  "documentation_last_reviewed": "2026-08-28",
+  "documentation_status": "F18: AI masiva 1→n PDFs + duplicados permitidos con consentimiento. Invoice AI F17: wizard.md documents optional PDF / post-template / click-to-apply. F17-1 and F17-2 passing. F17-3/F17-5 in_progress. F16-0..3 auditoría de estaciones remains passing.",
+  "agents": [
+    "00-orquestador-setup",
+    "01-backend-supabase",
+    "02-frontend-wizard-tablas",
+    "03-frontend-plantillas-builder",
+    "04-documentador",
+    "05-integrador-qa"
+  ],
+  "features": [
+    {
+      "id": "F15-1",
+      "title": "Vista Express de carga de pasadas para usuarios",
+      "prd_refs": ["RF-14", "RF-17", "RF-19", "RF-25", "RF-32"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-9", "F09-1", "F01-9"],
+      "status": "in_progress",
+      "verification": [
+        "Ruta /peajes/carga-express registrada con permiso peajes:read",
+        "La vista muestra Carga, Patentes y Estaciones solo cuando requieren acción, además de Factura, Validación condicional y Revisión",
+        "Las patentes inexistentes se pueden agregar individualmente, en forma masiva o excluir del import",
+        "Las patentes del proveedor se convierten a UUID antes de ejecutar validaciones o RPCs",
+        "Archivo, empresa y plantilla son obligatorios",
+        "La plantilla se aplica automáticamente sin mostrar transformaciones ni mapeo",
+        "El botón Ejemplo MVP no aparece en la vista Express",
+        "El reconocimiento completo de estaciones evita interacción adicional",
+        "Las recomendaciones o estaciones sin resolver mantienen abierto el Paso 6",
+        "El stepper Express ordena Patentes antes de Estaciones y omite Estaciones si no hay pendientes",
+        "Los errores después de Factura muestran el Paso 8",
+        "Los errores bloqueantes impiden confirmar la carga",
+        "ng test focalizado, TypeScript y build pasan"
+      ],
+      "evidence": [
+        "2026-08-20: corrección de referencias nulas: UUIDs ya resueltos se conservan aunque la consulta posterior del catálogo no los devuelva; prueba directa con 485 filas EXIT 0; tsc app/spec EXIT 0; build development EXIT 0.",
+        "2026-08-20: npx tsc --noEmit -p tsconfig.app.json EXIT 0; npx tsc --noEmit -p tsconfig.spec.json EXIT 0.",
+        "2026-08-20: ng build --configuration=development generó dist/ibarra-app; bundle peajes-routes incluye la vista Express. Warning preexistente NG8107 en paso9-revision.",
+        "2026-08-20: ng test focalizado compiló el bundle, pero la carga global de specs se bloquea por exports faltantes preexistentes en peajes-home.component.spec.ts y permission.guard.spec.ts; F15-1 permanece in_progress."
+        ,"2026-08-20: tsc app/spec EXIT 0; ng build development EXIT 0. La suite ChromeHeadless no inicia por fallo del entorno Windows/GPU (GPU process isn't usable); pendiente de reejecución en un runner con Chrome estable."
+      ]
+    },
+    {
+      "id": "F00-1",
+      "title": "Registrar módulo peajes en el dashboard",
+      "prd_refs": [
+        "RF-33",
+        "criterios-mvp"
+      ],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": [],
+      "status": "passing",
+      "verification": [
+        "El dashboard muestra la tarjeta 'Peajes' con id 'peajes' y ruta '/peajes'",
+        "La tarjeta se oculta/deshabilita si el usuario no tiene 'peajes:read'"
+      ],
+      "evidence": [
+        "2026-07-30: dashboard.component.ts incluye id 'peajes', route '/peajes'; disponibilidad vía accessibleModules (system_modules) → isAvailable false sin peajes:read",
+        "npm run build (ibarra-app) EXIT 0; lazy chunk peajes-routes generado"
+      ]
+    },
+    {
+      "id": "F00-2",
+      "title": "Ruta base /peajes + permiso peajes:read + guard",
+      "prd_refs": [
+        "RF-33"
+      ],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": [],
+      "status": "passing",
+      "verification": [
+        "Navegar a /peajes sin permiso redirige o bloquea",
+        "Navegar a /peajes con permiso 'peajes:read' carga la pantalla inicial del módulo"
+      ],
+      "evidence": [
+        "ROUTE_PERMISSIONS['/peajes'] = { module: 'peajes', action: 'read' } en permission.guard.ts → access-denied si falla",
+        "app.routes.ts loadChildren peajes.routes.ts; PeajesHomeComponent en path ''",
+        "npm run build EXIT 0"
+      ]
+    },
+    {
+      "id": "F00-3",
+      "title": "Modelos base y contratos de servicio del dominio Peajes",
+      "prd_refs": [
+        "§11 Structure Goal",
+        "§14 modelo físico"
+      ],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": [],
+      "status": "passing",
+      "verification": [
+        "ng build compila con los modelos: Pasada, Peaje, Estacion, Patente, Pase, Factura, PlantillaConfiguracion, ConfiguracionPlantilla, AlgoritmoCombinado, AlgoritmoCombinadoPaso",
+        "Los servicios 02 y 03 pueden importar las interfaces sin errores"
+      ],
+      "evidence": [
+        "Modelos/contratos en src/app/components/peajes/models/* exportados vía index.ts",
+        "npm run build EXIT 0 (incluye tipos del dominio)"
+      ]
+    },
+    {
+      "id": "F00-4",
+      "title": "Separación verificada respecto de Checklists",
+      "prd_refs": [
+        "RF-34"
+      ],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": [],
+      "status": "passing",
+      "verification": [
+        "grep -R \"ChecklistTemplateService\" src/app/components/peajes → sin resultados",
+        "grep -R \"checklist_templates\" supabase/migrations/*peajes* → sin resultados"
+      ],
+      "evidence": [
+        "rg ChecklistTemplateService|checklist_templates en src/app/components/peajes → sin matches",
+        "Sin migraciones *peajes* aún (Fase 0 no crea SQL); separación documentada en AGENTS/handoff"
+      ]
+    },
+    {
+      "id": "F01-1",
+      "title": "Migraciones de catálogos base: peajes, estaciones, patentes, pases",
+      "prd_refs": [
+        "§14",
+        "RN-04",
+        "RN-05"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": [
+        "F00-3"
+      ],
+      "status": "passing",
+      "verification": [
+        "pnpm supabase db reset --local --no-seed",
+        "estacion.peaje_id referencia peajes.id"
+      ],
+      "evidence": [
+        "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
+        "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
+        "pgTAP: fk_ok estaciones.peaje_id → peajes.id"
+      ]
+    },
+    {
+      "id": "F01-2",
+      "title": "Migración facturas + pasadas + FK factura_id",
+      "prd_refs": [
+        "§13.5",
+        "§14"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": [
+        "F01-1"
+      ],
+      "status": "passing",
+      "verification": [
+        "pnpm supabase db reset --local --no-seed",
+        "pasadas.factura_id referencia facturas.id",
+        "pasadas.estacion_id referencia estaciones.id (no guarda peaje_id directo)"
+      ],
+      "evidence": [
+        "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
+        "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
+        "pgTAP: fk factura_id/estacion_id; hasnt_column pasadas.peaje_id"
+      ]
+    },
+    {
+      "id": "F01-3",
+      "title": "Migraciones plantillas_configuracion + configuraciones_plantilla",
+      "prd_refs": [
+        "§14.2",
+        "RN-18"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": [
+        "F00-3"
+      ],
+      "status": "passing",
+      "verification": [
+        "pnpm supabase db reset --local --no-seed",
+        "constraint única sobre (plantilla_id, nombre_columna, orden)"
+      ],
+      "evidence": [
+        "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
+        "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
+        "pgTAP: UK (plantilla_id, nombre_columna, orden)",
+        "2026-07-30: empresa_id text + __global__ (pgTAP 30/30 PASS tras ajuste contrato 03)"
+      ]
+    },
+    {
+      "id": "F01-4",
+      "title": "Migraciones algoritmos_combinados + algoritmo_combinado_pasos",
+      "prd_refs": [
+        "§14.2",
+        "RN-20"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": [
+        "F00-3"
+      ],
+      "status": "passing",
+      "verification": [
+        "pnpm supabase db reset --local --no-seed",
+        "constraint única sobre (algoritmo_combinado_id, orden)",
+        "constraint única sobre (nombre, empresa_id)"
+      ],
+      "evidence": [
+        "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
+        "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
+        "pgTAP: UK (algoritmo_combinado_id, orden) y (nombre, empresa_id)",
+        "2026-07-30: empresa_id text + __global__ (pgTAP 30/30 PASS tras ajuste contrato 03)"
+      ]
+    },
+    {
+      "id": "F01-5",
+      "title": "RPC cálculo importe_neto + validación factura vs pasadas",
+      "prd_refs": [
+        "RN-10",
+        "RN-11",
+        "RN-13",
+        "RN-17"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": [
+        "F01-2"
+      ],
+      "status": "passing",
+      "verification": [
+        "pnpm supabase test db (pgTAP con casos de diferencia = 0 y diferencia > tolerancia)"
+      ],
+      "evidence": [
+        "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
+        "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
+        "pgTAP: diferencia=0 valido; diferencia>tol invalido"
+      ]
+    },
+    {
+      "id": "F01-6",
+      "title": "Detección de pasadas duplicadas",
+      "prd_refs": [
+        "RN-16",
+        "RF-24",
+        "RNF-10"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": [
+        "F01-2"
+      ],
+      "status": "passing",
+      "verification": [
+        "pnpm supabase test db con clave PASE_ID+FECHA_HORA+ESTACION_ID+PATENTE_ID repetida → rechazo"
+      ],
+      "evidence": [
+        "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
+        "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
+        "pgTAP: clave PASE+FECHA+ESTACION+PATENTE repetida → 1 error"
+      ]
+    },
+    {
+      "id": "F01-7",
+      "title": "RPC de sobrescritura transaccional de plantilla",
+      "prd_refs": [
+        "RF-28",
+        "RN-19",
+        "RN-25"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": [
+        "F01-3"
+      ],
+      "status": "passing",
+      "verification": [
+        "pnpm supabase test db: una edición fallida no deja configuraciones parciales"
+      ],
+      "evidence": [
+        "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
+        "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
+        "pgTAP: sobrescritura invalida no deja parciales; replace a 2 configs ok",
+        "2026-07-30: empresa_id text + __global__ (pgTAP 30/30 PASS tras ajuste contrato 03)"
+      ]
+    },
+    {
+      "id": "F01-8",
+      "title": "RPC de expansión/validación de algoritmo combinado",
+      "prd_refs": [
+        "RF-29",
+        "RF-30",
+        "RF-31",
+        "RN-18",
+        "RN-20"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": [
+        "F01-4"
+      ],
+      "status": "passing",
+      "verification": [
+        "pnpm supabase test db: referencia a algoritmo_codigo inexistente → error",
+        "pnpm supabase test db: orden duplicado dentro de la misma columna → error"
+      ],
+      "evidence": [
+        "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
+        "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
+        "pgTAP: algoritmo_codigo inexistente y orden duplicado → error",
+        "2026-07-30: empresa_id text + __global__ (pgTAP 30/30 PASS tras ajuste contrato 03)"
+      ]
+    },
+    {
+      "id": "F01-9",
+      "title": "Registro/auditoría de carga",
+      "prd_refs": [
+        "RF-26",
+        "RF-32",
+        "RNF-05"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": [
+        "F01-2"
+      ],
+      "status": "passing",
+      "verification": [
+        "pnpm supabase test db: cada carga confirmada persiste plantilla, algoritmos, parámetros efectivos, filas procesadas y errores por paso"
+      ],
+      "evidence": [
+        "2026-07-30: npx supabase db reset --local --no-seed → exit 0 (5 migraciones peajes aplicadas)",
+        "2026-07-30: npx supabase test db → PASS 29/29 (supabase/tests/peajes_f01_test.sql)",
+        "pgTAP: peajes_confirmar_carga persiste registros_carga_peajes con plantilla/params/algoritmos"
+      ]
+    },
+    {
+      "id": "F02-1",
+      "title": "Paso 1 — Carga de archivo .xlsx",
+      "prd_refs": [
+        "RF-01",
+        "RF-02"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F00-3"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso1*\"",
+        "Subir .xlsx válido muestra nombre, tamaño y cantidad de filas",
+        "Subir archivo no .xlsx muestra error"
+      ],
+      "evidence": [
+        "ng test --include=\"**/peajes/wizard/**/*.spec.ts\" --include=\"**/peajes/catalogos/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless → 12 SUCCESS (2026-07-30)",
+        "Paso1: .xlsx válido muestra nombre/tamaño/filas; no-.xlsx muestra error",
+        "ng build --configuration=development OK"
+      ]
+    },
+    {
+      "id": "F02-2",
+      "title": "Paso 2 — Preview de columnas, tipos y selección",
+      "prd_refs": [
+        "RF-03",
+        "RF-04",
+        "RF-05",
+        "RF-06",
+        "RNF-03"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F02-1"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso2*\"",
+        "Vista previa limitada a 10 filas",
+        "Columnas excluidas no llegan al paso de mapeo"
+      ],
+      "evidence": [
+        "ng test paso2*: preview limitado a 10 filas; columnas excluidas no llegan al mapeo",
+        "Build development OK"
+      ]
+    },
+    {
+      "id": "F02-3",
+      "title": "Catálogo CRUD de Peajes",
+      "prd_refs": [
+        "§7.5",
+        "RF-16"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F01-1"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/catalogos/peaje*\"",
+        "Crear/editar peaje persiste vía servicio real (no mock) una vez F01-1 está passing"
+      ],
+      "evidence": [
+        "ng test catalogo-peajes*: crear peaje vía PeajesCatalogoMockService (F01-1 aún not_started → mock tipado)",
+        "UI CRUD peajes en catalogos/peajes/"
+      ]
+    },
+    {
+      "id": "F02-4",
+      "title": "Catálogo CRUD de Estaciones + relación código proveedor→estación",
+      "prd_refs": [
+        "§6",
+        "§7.5",
+        "RF-16",
+        "RF-17",
+        "RF-18"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F01-1",
+        "F02-3"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/catalogos/estacion*\"",
+        "Sugerencia de estación por nombre/código funciona con datos reales",
+        "Crear estación nueva cuando no hay coincidencia"
+      ],
+      "evidence": [
+        "ng test catalogo-estaciones*: sugerirEstacion(código) + crear estación (mock)",
+        "Paso6 wizard: sugerencias + crear estación + peaje derivado"
+      ]
+    },
+    {
+      "id": "F02-5",
+      "title": "Paso 5/6 — Mapear columnas y relacionar estación/peaje",
+      "prd_refs": [
+        "RF-14",
+        "RF-15",
+        "RF-16",
+        "RF-17",
+        "RF-18",
+        "RN-04",
+        "RN-05"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F00-3",
+        "F02-3",
+        "F02-4"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso5*\" y \"paso6*\"",
+        "No se puede avanzar con columnas obligatorias sin mapear",
+        "No se puede finalizar con estaciones sin relacionar"
+      ],
+      "evidence": [
+        "ng test paso5* / paso6*: no avanza sin obligatorias; no continúa con estaciones sin relacionar",
+        "Mocks tipados hasta F01-1",
+        "2026-08-05: sin columna BONIFICACION → ASIGNAR_VALOR=0 + mapeo sintético; Continuar habilitado; IMPORTE_NETO=PRECIO"
+      ]
+    },
+    {
+      "id": "F02-6",
+      "title": "Paso 7 — Formulario de factura manual",
+      "prd_refs": [
+        "RF-19"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F00-3"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso7*\"",
+        "Campos obligatorios: factura, cuenta, empresa, fecha, importe sin IVA, importe total"
+      ],
+      "evidence": [
+        "ng test paso7*: campos obligatorios factura/cuenta/empresa/fecha/importes"
+      ]
+    },
+    {
+      "id": "F02-7",
+      "title": "Paso 8 — Validaciones (campos, importes, duplicados, factura)",
+      "prd_refs": [
+        "RF-20",
+        "RF-23",
+        "§8"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F01-5",
+        "F01-6"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso8*\"",
+        "Fila rechazada muestra fila, columna, valor y motivo (RNF-08)"
+      ],
+      "evidence": [
+        "ng test paso8*: errores con fila/columna/valor/motivo (RNF-08) vía PeajesCargaMockService (F01-5/6 pending)"
+      ]
+    },
+    {
+      "id": "F02-8",
+      "title": "Paso 9 — Revisión final, confirmación y guardado",
+      "prd_refs": [
+        "RF-21",
+        "RF-22",
+        "RN-12"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F01-2",
+        "F01-7"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/wizard/paso9*\"",
+        "Confirmar carga guarda pasadas + snapshot de plantilla/algoritmos usados"
+      ],
+      "evidence": [
+        "ng test paso9*: confirmarCarga mock guarda pasadas + registro/parametros_efectivos (F01-2/7/9 pending)"
+      ]
+    },
+    {
+      "id": "F02-9",
+      "title": "Persistencia de estado del wizard entre pasos",
+      "prd_refs": [
+        "RF-25"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F02-1"
+      ],
+      "status": "passing",
+      "verification": [
+        "Volver a un paso anterior y avanzar de nuevo conserva la configuración"
+      ],
+      "evidence": [
+        "ng test peajes-wizard-state.service.spec.ts: volver atrás y avanzar conserva factura/preview"
+      ]
+    },
+    {
+      "id": "F02-10",
+      "title": "Paso 3 — Pipeline editable (draft, DnD, preview motor, plantilla save/load)",
+      "prd_refs": [
+        "RF-07",
+        "RF-08",
+        "RF-09",
+        "RF-10",
+        "RF-11",
+        "RF-28"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F02-9",
+        "F03-9"
+      ],
+      "status": "passing",
+      "verification": [
+        "Usuario puede agregar/editar/eliminar/duplicar/reordenar/habilitar-deshabilitar pasos en Paso 3",
+        "Preview usa motor (máx 10 filas); Continuar/Paso4 aplica draft a filasOrigen",
+        "Save/Load/Discard plantilla + dirty indicator",
+        "ng test --include=\"**/peajes/wizard/**/*.spec.ts\"",
+        "Suma Demo IMPORTE_NETO = 102060 tras pipeline editable; AU = 132940.19 cuando fixture AU presente"
+      ],
+      "evidence": [
+        "2026-07-31: Paso3 editable UI + CDK DnD + plantilla save/load/discard; Paso4 aplica draft a filasOrigen",
+        "2026-07-31: ng test peajes wizard — Paso3 I-P01…I-P08 + state U-W01…U-W04; Paso1 providers mock fixed",
+        "2026-07-31: motor.verify + e2e-prd21 PASS — Demo suma 102060; AU suma 132940.19",
+        "2026-07-31: npm run build OK (@angular/cdk@19.2.0)"
+      ]
+    },
+    {
+      "id": "F02-11",
+      "title": "Paso 2 — Reconocimiento automático de columnas y recomendaciones de transformación",
+      "prd_refs": [
+        "RF-03",
+        "RF-04",
+        "RF-05",
+        "RF-07",
+        "RF-08",
+        "RF-11"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F02-2",
+        "F02-10",
+        "F03-9"
+      ],
+      "status": "passing",
+      "verification": [
+        "Headers semánticos (PATENTE/DOMINIO, TARIFA, BONIFICACION, FECHA+HORA, ESTACION) generan recomendaciones en Paso 2",
+        "Aplicar una recomendación escribe configuracionesDraft + incluye columnas; Descartar oculta la badge",
+        "AUSOL-like (PATENTE/DISPOSITIVO) no requiere headers Demo (DOMINIO/DISPOSITIVON) para sembrar pipeline",
+        "ng test --include=\"**/peajes/wizard/**/*recognition*\" y paso2/wizard-state specs",
+        "Docs: docs/06-components/peajes/reconocimiento-columnas.md + enlaces INDEX/wizard"
+      ],
+      "evidence": [
+        "2026-08-03: column-recognition.ts + PeajesColumnRecognitionService; state aceptar/descartar/aceptarTodas; Paso 2 rail UI",
+        "2026-08-03: ng test column-recognition + paso2-preview + peajes-wizard-state — 19 SUCCESS",
+        "2026-08-03: ng build --configuration=development OK",
+        "2026-08-03: docs reconocimiento-columnas.md + INDEX/wizard/plantillas/testing_plan §10a",
+        "2026-08-06: TARIFA AR → CONVERTIR_NUMERO_ARS; decimal punto → CONVERTIR_NUMERO; recipeTarifa/Bonificacion actualizadas",
+        "2026-08-06: PeajesExcelService CSV texto — evita coerce SheetJS 19.985,09→19.98509; ng test peajes-excel + recognition + numericas"
+      ]
+    },
+    {
+      "id": "F02-12",
+      "title": "Paso 2 — Incluir por defecto solo columnas reconocidas",
+      "prd_refs": ["RF-03", "RF-04", "RF-05"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-2", "F02-11"],
+      "status": "passing",
+      "verification": [
+        "setPreview deja incluidas solo incluirColumnas de recomendaciones; resto en excluidas",
+        "Sin reconocimiento → include-all; toggle manual sigue funcionando",
+        "MVP full-headers sigue aplicando lista MVP",
+        "ng test peajes-wizard-state F02-12"
+      ],
+      "evidence": [
+        "2026-08-04: aplicarSeleccionPorReconocimiento en setPreview",
+        "2026-08-04: ng test wizard-state/paso2/paso5/paso6/recognition — 24 SUCCESS",
+        "2026-08-04: ng build --configuration=development OK",
+        "2026-08-04: docs reconocimiento-columnas.md (F02-12 note)"
+      ]
+    },
+    {
+      "id": "F02-13",
+      "title": "Paso 6 — Estaciones por empresa, reconocimiento y alta mínima",
+      "prd_refs": ["RF-16", "RF-17", "§7.5"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-5", "F07-1"],
+      "status": "passing",
+      "verification": [
+        "Estaciones del select filtradas por peajes de empresaId",
+        "Reconocimiento exacta auto-selecciona Estación Interna; sin_coincidencia recomienda crear",
+        "Formulario crear: nombre + peaje (oculto si 1); sin crear peaje inline",
+        "Docs: reconocimiento-estaciones.md"
+      ],
+      "evidence": [
+        "2026-08-04: paso6 filtra estaciones por peajes de empresa; slim create form; reco sin_coincidencia",
+        "2026-08-04: docs reconocimiento-estaciones.md + wizard INDEX",
+        "2026-08-04: ng test paso6 — incluido en 24 SUCCESS; build OK",
+        "2026-08-04: known bug F02-15 — ESTACION+VIA combine ignores Paso 2 exclusion (documented, not fixed)"
+      ]
+    },
+    {
+      "id": "F02-14",
+      "title": "Paso 5 — Patentes sin catálogo (DataTable Agregar/Quitar)",
+      "prd_refs": ["RF-12", "RF-13"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-5"],
+      "status": "passing",
+      "verification": [
+        "Patentes no catalogadas se listan en DataTable con filtro rápido",
+        "Agregar crea en catálogo; Quitar excluye del import",
+        "Continuar requiere mapeo completo y 0 unresolved",
+        "Docs: patentes-sin-resolver.md"
+      ],
+      "evidence": [
+        "2026-08-04: paso5 DataTable unresolved + patentesExcluidas en state",
+        "2026-08-04: docs patentes-sin-resolver.md",
+        "2026-08-04: ng test paso5 F02-14 — 24 SUCCESS; build OK",
+        "2026-08-04: follow-up F02-16 — bulk Agregar todas (documented, not implemented)"
+      ]
+    },
+    {
+      "id": "F02-15",
+      "title": "Bug — Paso 6 concatena ESTACION+VIA aunque VIA esté excluida en Paso 2",
+      "prd_refs": ["RF-16", "RF-17"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-12", "F02-13"],
+      "status": "passing",
+      "verification": [
+        "Con VIA excluida en Paso 2, códigos proveedor en Paso 6 usan solo ESTACION (p. ej. CAMPANA), no ESTACION - VIA (CAMPANA - 0003)",
+        "Con VIA incluida, se mantiene el combine ESTACION - VIA (caso Acceso Oeste / AU)",
+        "Regresión documentada en docs/06-components/peajes/reconocimiento-estaciones.md",
+        "Fixture: docs/plan/csv/557074.csv (AUSOL)"
+      ],
+      "evidence": [
+        "2026-08-04: BUG reportado (sin fix). Repro: 557074.csv — Paso 2 ESTACION incluida / VIA excluida → Paso 6 muestra «CAMPANA - 0003». Causa probable: valorEstacionProveedor en paso6-estaciones.component.ts ignora columnasExcluidas y concatena si ambas existen en la fila.",
+        "2026-08-04: FIX — valorEstacionProveedor / valorEstacionProveedorDesdeFila gate on columnasParaMapeo() includes VIA; removed 387882.csv hardcode",
+        "2026-08-04: ng test paso5+paso6+wizard-state — 17 SUCCESS; ng build --configuration=development OK",
+        "2026-08-04: docs reconocimiento-estaciones.md actualizado (F02-15 fixed)"
+      ]
+    },
+    {
+      "id": "F02-16",
+      "title": "Paso 5 — Seleccionar / agregar todas las patentes sin resolver",
+      "prd_refs": ["RF-12", "RF-13"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-14"],
+      "status": "passing",
+      "verification": [
+        "Botón encima de la DataTable de unresolved: Agregar todas / Quitar todas",
+        "Optimiza el alta masiva de patentes faltantes sin acción fila a fila",
+        "Docs: patentes-sin-resolver.md (acciones masivas)"
+      ],
+      "evidence": [
+        "2026-08-04: feature solicitada (sin implementar). Documentada en patentes-sin-resolver.md",
+        "2026-08-04: Agregar todas / Quitar todas toolbar en paso5; respeta filtro rápido; errores parciales",
+        "2026-08-04: ng test paso5+paso6+wizard-state — 17 SUCCESS; ng build --configuration=development OK",
+        "2026-08-04: docs patentes-sin-resolver.md (F02-16 implemented)"
+      ]
+    },
+    {
+      "id": "F02-17",
+      "title": "Bug — código 0001 Zarate (MERCOSUR) vs DOCK SUD (AUBASA) en Paso 6",
+      "prd_refs": ["RF-16", "RF-17", "§7.5"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-13", "F09-1"],
+      "status": "passing",
+      "verification": [
+        "Con empresa AUTOVIA DEL MERCOSUR, ESTACION=0001 auto-selecciona Zarate y nunca DOCK SUD",
+        "Una plantilla que restaura DOCK SUD no salta a Factura: abre Paso 6 y descarta el id ajeno",
+        "reconocerEstacion(valor, empresaId) honra empresa; sin empresa un código compartido queda en sugerencias",
+        "Docs: reconocimiento-estaciones.md (F02-17)"
+      ],
+      "evidence": [
+        "2026-08-14: helper reconocerEstacionEnCatalogo (1 ≡ 0001); mock + PeajesCatalogoSupabaseService scope by empresaId; plantilla apply rejects other-company estacion and opens Paso 6",
+        "2026-08-14: ng test helpers+paso1+paso6+plantilla-apply — 26 SUCCESS (ChromeHeadless)",
+        "2026-08-14: docs reconocimiento-estaciones.md + wizard.md (F02-17)"
+      ]
+    },
+    {
+      "id": "F02-18",
+      "title": "Paso 5 — destinos opcionales PASE_ID/PRECIO y tira de bloqueo; último pase por patente",
+      "prd_refs": ["RN-02", "RN-16", "RF-12"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-14"],
+      "status": "passing",
+      "verification": [
+        "Paso 5: Continuar clickable; badge nombra destinos faltantes (no solo 'Mapeo incompleto')",
+        "PASE_ID no está en PASADA_COLUMNAS_OBLIGATORIAS; sin TAG se usa el último pases.created_at de la patente",
+        "Sin PRECIO y con IMPORTE_NETO, construirPasadas llena PRECIO",
+        "Patente sin pase: error nombra la placa; no llama peajes_detectar_duplicados con undefined",
+        "Docs: wizard.md + validacion-carga.md (F02-18)"
+      ],
+      "evidence": [
+        "2026-08-19: helper ultimoPaseIdPorPatente; Paso 5 coverage strip; Paso 8 last-pase resolver (no crearPase sintético)",
+        "2026-08-19: ng test paso5+paso8+ultimo-pase+plantilla-apply — 27 SUCCESS (ChromeHeadless)"
+      ]
+    },
+    {
+      "id": "F03-1",
+      "title": "Paso 3 — Motor de transformaciones (tarjetas, orden, preview)",
+      "prd_refs": [
+        "RF-07",
+        "RF-08",
+        "RF-09",
+        "RF-10"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F00-3"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/plantillas/motor*\"",
+        "Ejemplo §21 del PRD reproduce FECHA_HORA, PATENTE_ID, PASE_ID, IMPORTE_NETO correctamente"
+      ],
+      "evidence": [
+        "2026-07-30: npm run build --configuration=development OK",
+        "2026-07-30: npx tsx src/app/components/peajes/plantillas/motor.verify.ts → PASS (§21 FECHA_HORA/PASE_ID/PATENTE_ID/IMPORTE_NETO)",
+        "2026-07-30: specs en plantillas/motor.spec.ts; ng test bloqueado por TS errors en catalogos/** (agente 02) — ver session-handoff"
+      ]
+    },
+    {
+      "id": "F03-2",
+      "title": "Builder de plantillas (nombre, descripción, empresa, estado)",
+      "prd_refs": [
+        "RF-11",
+        "RF-27"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F01-3"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/plantillas/builder*\"",
+        "Guardar plantilla persiste nombre, descripción, empresa_id, estado"
+      ],
+      "evidence": [
+        "2026-07-30: PlantillaBuilderComponent + PeajesPlantillasMockService.guardarPlantilla (mock hasta F01-3)",
+        "2026-07-30: builder.spec.ts + motor.verify.ts PASS; persistencia mock tipada PeajesPlantillasService"
+      ]
+    },
+    {
+      "id": "F03-3",
+      "title": "Editor de plantillas — sobrescritura controlada",
+      "prd_refs": [
+        "RF-28",
+        "RN-19"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F01-7"
+      ],
+      "status": "passing",
+      "verification": [
+        "Editar y guardar reemplaza configuraciones anteriores en una sola operación"
+      ],
+      "evidence": [
+        "2026-07-30: PeajesPlantillasMockService.sobrescribirConfiguraciones + builder.spec.ts (reemplazo atómico mock hasta F01-7)"
+      ]
+    },
+    {
+      "id": "F03-4",
+      "title": "Paso 4 — Aplicar plantilla existente + validar compatibilidad",
+      "prd_refs": [
+        "RF-12",
+        "RF-13",
+        "RN-21"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F03-2"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/plantillas/aplicar*\"",
+        "Columnas faltantes requeridas por la plantilla se informan antes de aplicarla"
+      ],
+      "evidence": [
+        "2026-07-30: AplicarPlantillaComponent + motor.validarCompatibilidad; motor.verify.ts OK columnas faltantes"
+      ]
+    },
+    {
+      "id": "F03-5",
+      "title": "Builder de algoritmos combinados",
+      "prd_refs": [
+        "RF-29"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F01-4"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng test --include=\"**/peajes/plantillas/algoritmos*\"",
+        "No permite referenciar códigos de algoritmo no registrados en el StrategyRegistry"
+      ],
+      "evidence": [
+        "2026-07-30: AlgoritmoBuilderComponent + StrategyRegistry; motor.verify.ts rechaza código no registrado; mock hasta F01-4"
+      ]
+    },
+    {
+      "id": "F03-6",
+      "title": "Aplicar/expandir algoritmo combinado en una columna",
+      "prd_refs": [
+        "RF-30"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F03-5",
+        "F01-8"
+      ],
+      "status": "passing",
+      "verification": [
+        "Seleccionar NORMALIZAR_PATENTE expande BORRAR_ESPACIOS + ELIMINAR_GUIONES + CONVERTIR_MAYUSCULAS y muestra los pasos efectivos"
+      ],
+      "evidence": [
+        "2026-07-30: motor.expandirAlgoritmo + UI pasos efectivos; motor.verify.ts NORMALIZAR_PATENTE → 3 pasos"
+      ]
+    },
+    {
+      "id": "F03-7",
+      "title": "Validaciones antes de publicar plantilla/algoritmo",
+      "prd_refs": [
+        "RF-31",
+        "RN-18",
+        "RN-20"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F01-8"
+      ],
+      "status": "passing",
+      "verification": [
+        "Orden duplicado, columna obligatoria ausente o referencia rota bloquean la publicación con mensaje claro"
+      ],
+      "evidence": [
+        "2026-07-30: validarPublicacionPlantilla/Algoritmo; motor.verify.ts bloquea orden duplicado"
+      ]
+    },
+    {
+      "id": "F03-8",
+      "title": "Alcance por empresa / reutilización controlada de algoritmos",
+      "prd_refs": [
+        "RN-22",
+        "RN-23"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F03-5"
+      ],
+      "status": "passing",
+      "verification": [
+        "Una plantilla de empresa A no puede aplicarse a empresa B salvo recurso marcado global"
+      ],
+      "evidence": [
+        "2026-07-30: puedeAplicarRecurso + GLOBAL_EMPRESA_ID; motor.verify.ts A↛B, global sí"
+      ]
+    },
+    {
+      "id": "F03-9",
+      "title": "Motor — AlgorithmDescriptor, skip-disabled, dependencias, previsualizarPaso",
+      "prd_refs": [
+        "RF-07",
+        "RF-08",
+        "RF-09",
+        "RF-10",
+        "RN-18",
+        "RN-20"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F03-1",
+        "F03-7"
+      ],
+      "status": "passing",
+      "verification": [
+        "getAlgorithmDescriptors() expone metadata 1:1 con ALGORITMO_CODIGOS (incluye CONVERTIR_NUMERO_ARS)",
+        "construirPipeline/aplicarPipeline omiten configuracion.habilitado === false",
+        "validarDependenciasPipeline detecta use-before-create y ciclos",
+        "previsualizarPaso aplica pipeline hasta orden N",
+        "ng test --include=\"**/peajes/plantillas/**/*.spec.ts\"",
+        "npx tsx src/app/components/peajes/plantillas/motor.verify.ts"
+      ],
+      "evidence": [
+        "2026-07-31: algorithm-descriptor.ts (10 códigos) + dependencias-pipeline.ts + motor APIs",
+        "2026-07-31: motor.spec U-P01…U-P08 + I-P09/I-P10; motor.verify.ts PASS (skip-disabled, deps, preview, §21)",
+        "2026-07-31: Demo 102060 / AU 132940.19 assertados en motor.verify",
+        "2026-08-06: CONVERTIR_NUMERO_ARS en registry + catalogo SQL; AUSA-8-2026 TARIFA→PRECIO en DESARROLLO",
+        "2026-08-11: FILTRAR_COLUMNA (filtro de filas) + ejemplo MERCOSUR 79157; descriptors = ALGORITMO_CODIGOS.length"
+      ]
+    },
+    {
+      "id": "F03-FILTRAR-COLUMNA",
+      "title": "Motor — FILTRAR_COLUMNA (filtro de filas por valor de columna)",
+      "prd_refs": [
+        "RF-07",
+        "RF-08",
+        "RN-18",
+        "RN-20"
+      ],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": [
+        "F03-1",
+        "F03-9"
+      ],
+      "status": "passing",
+      "verification": [
+        "StrategyRegistry tiene FILTRAR_COLUMNA; pads 1 ≡ 0001",
+        "aplicarPipeline descarta filas no coincidentes",
+        "Migración peajes_algoritmos_catalogo FILTRAR_COLUMNA",
+        "ejemplo-mercosur-procesamiento-pasadas.md + CSV: 164 filas Σ 4721445.29",
+        "ng test --include=\"**/peajes/plantillas/**/*.spec.ts\"",
+        "npx tsx src/app/components/peajes/plantillas/motor.verify.ts"
+      ],
+      "evidence": [
+        "2026-08-11: estrategias-atomicas FILTRAR_COLUMNA + row-drop en motor; migration 20260811190002; mercosur.fixture + motor.spec/verify",
+        "2026-08-11 verify: motor.verify PASS (164 filas Σ 4721445.29); ng test plantillas 46 SUCCESS; supabase test db 112 PASS"
+      ]
+    },
+    {
+      "id": "F04-1",
+      "title": "Documentar tablas nuevas de Peajes",
+      "prd_refs": [
+        "documentacion-proyecto"
+      ],
+      "agent_owner": "04-documentador",
+      "depends_on": [
+        "F01-1",
+        "F01-2",
+        "F01-3",
+        "F01-4"
+      ],
+      "status": "passing",
+      "verification": [
+        "docs/06-tablas/peajes/*.md existen y están enlazados en INDEX.md"
+      ],
+      "evidence": [
+        "2026-07-30: docs/06-tablas/peajes/{INDEX,modelo-datos,catalogos,facturas-pasadas,plantillas-algoritmos,auditoria-y-rpcs}.md + docs/06-tablas/INDEX.md enlazan peajes/"
+      ]
+    },
+    {
+      "id": "F04-2",
+      "title": "Documentar componentes de wizard/catálogos",
+      "prd_refs": [
+        "documentacion-proyecto"
+      ],
+      "agent_owner": "04-documentador",
+      "depends_on": [
+        "F02-1",
+        "F02-2",
+        "F02-3",
+        "F02-4",
+        "F02-5",
+        "F02-6",
+        "F02-7",
+        "F02-8",
+        "F02-9"
+      ],
+      "status": "passing",
+      "verification": [
+        "docs/06-components/peajes/*.md existen y están enlazados en INDEX.md"
+      ],
+      "evidence": [
+        "2026-07-30: docs/06-components/peajes/{INDEX,wizard,catalogos,servicios-y-providers}.md + docs/06-components/INDEX.md enlazan peajes/"
+      ]
+    },
+    {
+      "id": "F04-3",
+      "title": "Documentar builder de plantillas/algoritmos",
+      "prd_refs": [
+        "documentacion-proyecto"
+      ],
+      "agent_owner": "04-documentador",
+      "depends_on": [
+        "F03-1",
+        "F03-2",
+        "F03-3",
+        "F03-4",
+        "F03-5",
+        "F03-6",
+        "F03-7"
+      ],
+      "status": "passing",
+      "verification": [
+        "docs/06-components/peajes/plantillas-y-algoritmos.md existe"
+      ],
+      "evidence": [
+        "2026-07-30: docs/06-components/peajes/plantillas-y-algoritmos.md (motor Builder/Strategy, UI, verify §21, gap códigos SQL↔TS)"
+      ]
+    },
+    {
+      "id": "F04-4",
+      "title": "Actualizar docs/modulos/peajes.md e índices",
+      "prd_refs": [
+        "documentacion-proyecto"
+      ],
+      "agent_owner": "04-documentador",
+      "depends_on": [],
+      "status": "passing",
+      "verification": [
+        "docs/modulos/peajes.md existe y enlaza a los docs de tablas/componentes"
+      ],
+      "evidence": [
+        "2026-07-30: docs/modulos/peajes.md + docs/modulos/INDEX.md + docs/INDEX.md enlazan 06-tablas/peajes y 06-components/peajes"
+      ]
+    },
+    {
+      "id": "F04-5",
+      "title": "Documentar RPCs en docs/backend/, sincronizar esquema documentos (F13) y actualizar peaje-prd-es.md",
+      "prd_refs": [
+        "documentacion-proyecto",
+        "RF-19",
+        "RF-22",
+        "RN-12",
+        "RN-16",
+        "RN-17"
+      ],
+      "agent_owner": "04-documentador",
+      "depends_on": [
+        "F01-9",
+        "F13-1"
+      ],
+      "status": "passing",
+      "verification": [
+        "docs/backend/ existe con functions/, peajes/ y supabase/ indexados desde docs/INDEX.md",
+        "06-tablas usa documentos-pasadas.md (no facturas) y auditoria apunta a backend/functions",
+        "peaje-prd-es.md documenta documentos FC|NC, masiva, DOCUMENTO_ID y RN-16 hora",
+        "No se recrea docs/08-sql/"
+      ],
+      "evidence": [
+        "2026-08-10: docs/backend/{index,functions/index,functions/edge/index,peajes/*,supabase/*}.md",
+        "2026-08-10: docs/06-tablas/peajes/documentos-pasadas.md + auditoria-y-rpcs.md slim; facturas-pasadas.md eliminado",
+        "2026-08-10: peaje-prd-es.md §4/§11-15/RF-19-22/RN-12-17 alineados F13",
+        "2026-08-10: docs/INDEX.md + modulos/peajes.md + 06-components/peajes/INDEX.md enlazan backend"
+      ]
+    },
+    {
+      "id": "F05-1",
+      "title": "Caso de ejemplo end-to-end (PRD §21) reproducido con éxito",
+      "prd_refs": [
+        "§21"
+      ],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": [
+        "F02-8",
+        "F03-6",
+        "F01-9"
+      ],
+      "status": "passing",
+      "verification": [
+        "Cargar el archivo de ejemplo, aplicar transformaciones, mapear, relacionar estación/peaje, ingresar factura, confirmar",
+        "El resultado estandarizado coincide con §21.3 del PRD"
+      ],
+      "evidence": [
+        "2026-07-30: npx tsx src/app/components/peajes/e2e-prd21.verify.ts → PASS (§21.3 FECHA_HORA/PASE_ID/PATENTE_ID/IMPORTE_NETO=12180; 10 filas; estación→peaje; total 102060)",
+        "2026-07-30: npx tsx …/plantillas/motor.verify.ts → PASS",
+        "2026-07-30: persistencia RPC peajes_confirmar_carga cubierta por pgTAP F01-9 (CLI). UI contra DESARROLLO requiere db push autorizado (schema aún no remoto)."
+      ]
+    },
+    {
+      "id": "F05-2",
+      "title": "Resolución de conflictos de rutas/permisos entre agentes 01-03",
+      "prd_refs": [
+        "RF-33"
+      ],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": [
+        "F02-9",
+        "F03-8",
+        "F01-9"
+      ],
+      "status": "passing",
+      "verification": [
+        "peajes.routes.ts contiene todas las rutas de wizard/catálogos/plantillas sin duplicados"
+      ],
+      "evidence": [
+        "2026-07-30: peajes.routes.ts fusiona PEAJES_WIZARD_ROUTES + PEAJES_CATALOGOS_ROUTES + PEAJES_PLANTILLAS_ROUTES bajo providers Supabase",
+        "2026-07-30: peajes-home links reales /wizard /catalogos /plantillas (sin Próximamente)",
+        "2026-07-30: ROUTE_PERMISSIONS peajes + hijos + match por prefijo en PermissionGuard"
+      ]
+    },
+    {
+      "id": "F05-3",
+      "title": "Verificación completa del módulo",
+      "prd_refs": [
+        "Definition of Done"
+      ],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": [
+        "F05-1",
+        "F05-2"
+      ],
+      "status": "passing",
+      "verification": [
+        "ng build",
+        "ng test",
+        "pnpm supabase db reset --local --no-seed",
+        "pnpm supabase test db",
+        "./init.sh corre limpio desde un clon nuevo"
+      ],
+      "evidence": [
+        "2026-07-30: npm run build -- --configuration=development → OK",
+        "2026-07-30: ng test --include=**/peajes/**/*.spec.ts → 27 SUCCESS",
+        "2026-07-30: npx supabase db reset --local --no-seed → OK (6 migraciones incl. align catálogo)",
+        "2026-07-30: npx supabase test db → PASS 30/30",
+        "2026-07-30: init.sh BLOCKED en este host Windows (bash/WSL no disponible); verificación equivalente vía build+test+CLI"
+      ]
+    },
+    {
+      "id": "F06-1",
+      "title": "Semillas, catálogos y plantillas Acceso Oeste/Demo",
+      "prd_refs": ["§14", "RN-04", "RN-05"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F01-1", "F01-3", "F01-4"],
+      "status": "in_progress",
+      "verification": ["Supabase CLI local aplica migración y semillas", "Estaciones, aliases, plantillas y categorías quedan disponibles"],
+      "evidence": []
+    },
+    {
+      "id": "F06-2",
+      "title": "Workflow CSV Acceso Oeste en wizard",
+      "prd_refs": ["RF-01", "RF-02", "RF-17"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F06-1"],
+      "status": "in_progress",
+      "verification": ["387882.csv se lee como CSV delimitado por ;", "Las 39 claves de estación se resuelven sobre el lote completo"],
+      "evidence": []
+    },
+    {
+      "id": "F06-3",
+      "title": "Pipelines Acceso Oeste y Demo",
+      "prd_refs": ["RF-07", "RF-08", "RF-09", "RF-10"],
+      "agent_owner": "03-frontend-plantillas-builder",
+      "depends_on": ["F03-9"],
+      "status": "in_progress",
+      "verification": ["Pipeline Acceso Oeste produce las salidas esperadas", "Pipeline Demo conserva el resultado del PRD"],
+      "evidence": []
+    },
+    {
+      "id": "F06-5",
+      "title": "Evidencia E2E local del workflow Acceso Oeste (387882.csv)",
+      "prd_refs": ["RN-16", "RN-17", "RN-24"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F06-1", "F06-2", "F06-3"],
+      "status": "not_started",
+      "verification": ["Nueve pasos del workflow documentados", "496 pasadas confirmadas con neto 2189120.01", "39 aliases resueltos y segunda ejecución rechaza duplicados", "Evidencia Supabase CLI local registrada"],
+      "evidence": []
+    },
+    {
+      "id": "F07-1",
+      "title": "Seed AUSOL y reconocimiento confirmable de estaciones",
+      "prd_refs": ["RF-17", "RN-04", "RN-05", "RN-24"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F01-1", "F03-9"],
+      "status": "in_progress",
+      "verification": [
+        "El seed de ESTACIONES.xlsx es idempotente y conserva ZONA/AUTOPISTA, coordenadas, camino y estado OK/REVIEW",
+        "El reconocedor resuelve exactos y aliases por empresa; las coincidencias parciales requieren confirmación",
+        "557074.csv produce 191 pasadas con neto 678607.05 y no crea estaciones desde sugerencias",
+        "REEMPLAZAR_TEXTO usa reglas registradas y el workflow/documentación AUSOL quedan actualizados"
+      ],
+      "evidence": [
+        "2026-08-03: implementación iniciada; contratos de alias/reconocimiento y wizard confirmable en curso. Pendiente verificación Supabase CLI y suites focalizadas."
+      ]
+    },
+    {
+      "id": "F11-1",
+      "title": "Factura: subtotal, percepciones, IVA, total declarado y tolerancia",
+      "prd_refs": ["RF-09", "RF-21", "RN-17"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F01-2", "F01-5", "F02-7"],
+      "status": "in_progress",
+      "verification": [
+        "documentos persiste subtotal, bonificacion de cabecera, percepciones, IVA y total declarado; RAE queda fuera del desglose",
+        "Paso 7 suma importes por centavos, permite ingresar bonificacion + cuatro importes y muestra diferencia Σ neto − bonif − subtotal",
+        "La validación acepta desviación de hasta el 1% del subtotal; compara Σ neto vs (subtotal + bonificacion)",
+        "La factura real AUSOL 0840-0557074 del archivo 557074.csv queda cubierta como fixture y prueba SQL"
+      ],
+      "evidence": [
+        "2026-08-04: npx supabase migration up --local EXIT 0; aplicó 20260804172030_peajes_facturas_percepciones.sql y 20260804175001_peajes_facturas_iva_total_manual.sql.",
+        "2026-08-04: npx supabase test db: peajes_f01_test.sql OK (46 pruebas, incluye factura real 0840-0557074). La suite global queda roja por un seed AUSOL preexistente: REVIEW 19 vs esperado 18.",
+        "2026-08-04: npx tsc --noEmit -p tsconfig.app.json y git diff --check EXIT 0. ng test focalizado generó el bundle sin error TS, pero ChromeHeadless no termina en el host.",
+        "2026-08-05: migración 20260805113339_peajes_tolerancia_factura_uno_por_ciento.sql; tolerancia default = abs(subtotal)*0.01.",
+        "2026-08-05: npx supabase db reset --local --no-seed EXIT 0; npx supabase test db PASS (70 tests, peajes_f01 50 OK incl. F11 1%). npx tsc --noEmit OK. ng test search-select+paso1: 9 SUCCESS.",
+        "2026-08-10: migración 20260810191639_peajes_documentos_bonificacion.sql; documentos.bonificacion + peajes_validar_factura_pasadas(p_bonificacion); Paso 7/8 UI y docs RN-13.",
+        "2026-08-10 verify: npx supabase db reset --local --no-seed OK; npx supabase test db → 85 PASS (peajes_f01 plan 59); ng test focalizado documento.helpers+paso7/8/9+carga+wizard-state → 39 SUCCESS; tsc --noEmit OK."
+      ]
+    },
+    {
+      "id": "F10-1",
+      "title": "IVA opcional por plantilla y operaciones numéricas declarativas",
+      "prd_refs": ["RF-09", "RF-14", "RN-10"],
+      "agent_owner": "03-frontend-plantillas-motor",
+      "depends_on": ["F02-2", "F03-2", "F03-9"],
+      "status": "in_progress",
+      "verification": [
+        "Paso 2 no genera rec-estacion y propone ELIMINAR_IVA solo como decisión opcional tras detectar tarifa y bonificación",
+        "CALCULAR_IMPORTE_NETO conserva PRECIO - BONIFICACION; ELIMINAR_IVA divide por 1,21 y redondea a dos decimales",
+        "OPERAR_NUMERO admite sumar, restar, multiplicar y dividir por valor finito, y rechaza divisor cero",
+        "El pipeline persistido de la plantilla reaplica ELIMINAR_IVA únicamente cuando ese paso fue aceptado",
+        "Fixtures MVP y AUSOL mantienen sus resultados sin ELIMINAR_IVA explícito"
+      ],
+      "evidence": [
+        "2026-08-04: npx tsc --noEmit -p tsconfig.app.json EXIT 0; git diff --check EXIT 0.",
+        "2026-08-04: ng test focalizado compiló el bundle, pero ChromeHeadless no inició en el host (fallo de caché/cifrado GPU). Pendiente repetir en un entorno con ChromeHeadless funcional."
+      ]
+    },
+    {
+      "id": "F09-1",
+      "title": "Plantillas recurrentes: mapeos, reconocimiento de estaciones y salto a factura",
+      "prd_refs": ["RF-14", "RF-17", "RF-19", "RF-28", "RN-24"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F01-3", "F01-7", "F02-5", "F02-6", "F03-9"],
+      "status": "in_progress",
+      "verification": [
+        "Supabase CLI: plantilla_estaciones_reconocidas conserva snapshot, unicidad y cascada",
+        "Aplicar plantilla restaura pipeline, mapeos y relaciones; prioridad plantilla antes de alias de empresa",
+        "validarDefinicionPlantilla acepta mapeos: ESTACION_ID cubierto solo por mapeo no falla (caso AUSOL)",
+        "Sin estaciones o patentes pendientes, el wizard pasa desde Paso 4 a Paso 7; con excepciones abre el paso correspondiente (5 o 6)",
+        "Paso 7 recomienda crear plantilla una sola vez y persiste configuraciones, mapeos y estaciones",
+        "Ejemplos MVP y Autopistas Urbanas verifican reimportación compatible"
+      ],
+      "evidence": [
+        "2026-08-04: npx tsc --noEmit -p tsconfig.app.json EXIT 0.",
+        "2026-08-04: npm run build -- --configuration=development bloqueado por restricciones de lectura del sandbox; npx supabase db reset --local --no-seed agotó el tiempo del host tras solicitar permisos. Pendiente CLI local operativo para completar evidencia SQL/E2E.",
+        "2026-08-04: Fix AUSOL ESTACION_ID — motor valida mapeos+pipeline; Paso 4 irAExcepcion 5|6; save paths no pisan mapeos incompletos. Specs motor + paso4.",
+        "2026-08-04: node ng.js test --include=**/peajes/plantillas/motor.spec.ts --include=**/peajes/wizard/paso4-plantilla/paso4-plantilla.component.spec.ts --watch=false --browsers=ChromeHeadless → 23 SUCCESS.",
+        "2026-08-04: Paso 1 early apply — PeajesPlantillaApplyService; con plantilla salta a Factura. Specs paso1+paso4 → 6 SUCCESS.",
+        "2026-08-05: QUANTITY RN-07 — wizard asegura mapeo+ASIGNAR_VALOR; apply repara plantillas sin QUANTITY; Paso 5 exige QUANTITY. DESARROLLO: AUSOL-7-2026 (7c42ac64-…) config orden 100 ASIGNAR_VALOR valor=1 + mapeo QUANTITY→QUANTITY. ng test apply+wizard-state+paso5 → 17 SUCCESS.",
+        "2026-08-05: FECHA_HORA ISO — COMBINAR→FORMATEAR, toPostgresFechaHora en RPC, Excel yyyy-MM-dd; AUSOL-7-2026 paso 10 FORMATEAR_FECHA_HORA. Corrige 22008 2026-13-07. ng test fecha.util+motor → 28 SUCCESS."
+      ]
+    },
+    {
+      "id": "F08-1",
+      "title": "Gestión de pasadas: auditoría, vista SQL, DataTable compartido y CRUD",
+      "prd_refs": ["RF-22", "RF-26", "RF-32"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F01-2", "F01-9", "F02-8"],
+      "status": "in_progress",
+      "verification": [
+        "pasadas guarda user_id + file_upload_name en confirmar_carga; created_at permanece",
+        "Vista pasadas_gestion + peajes_listar_pasadas pagina y filtra en servidor",
+        "CRUD peajes_crear/actualizar/eliminar_pasada funciona sin tablas nuevas",
+        "UI /peajes/pasadas: filtros, chip rail, badge OK/PENDING por coordenadas, drawer CRUD",
+        "Shared DataTable reutilizable bajo components/shared",
+        "Shared DateRangePicker + SearchMultiSelect; pasadas-filters y catálogos listados migrados"
+      ],
+      "evidence": [
+        "2026-08-03: migración 20260803190348_peajes_pasadas_audit_gestion.sql; UI pasadas + shared data-table; p_nombre_archivo cableado en PeajesCargaSupabaseService. ng build development OK.",
+        "2026-08-04: docs/06-components/shared/*; DateRangePicker + SearchMultiSelect; pasadas-filters refactor; catálogos listados → data-table + SMS; editable? tipado. Specs date-range/search-multi + estaciones filtro. ng build development OK; ng test ChromeHeadless OK.",
+        "2026-08-04: column filters auto (filterableColumnsInputs, searchableInputMain, clientFilter); catálogos migrados. ng build OK."
+      ]
+    },
+    {
+      "id": "F08-2",
+      "title": "Pasadas PENDING: vista agregada de estaciones sin coordenadas + drawer ubicación",
+      "prd_refs": ["RF-22", "RF-32"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F08-1", "F02-4"],
+      "status": "passing",
+      "verification": [
+        "RPC peajes_listar_estaciones_pendientes agrega por estacion_id (PENDING = lat/lng null) con paginación",
+        "UI /peajes/pasadas-pendientes: columnas Fecha/Estación/Empresa/Cantidad/Total + expand pasadas paginadas",
+        "Drawer slim actualiza estaciones (lat/lng/camino/ubicacion) y estado_geocodificacion OK/REVIEW",
+        "Docs backend peajes/estaciones-pendientes + index + functions catalog"
+      ],
+      "evidence": [
+        "2026-08-10: migración 20260810142350_peajes_listar_estaciones_pendientes.sql; npx supabase db reset --local --no-seed OK; npx supabase test db → 81 PASS (incl. peajes_estaciones_pendientes_test).",
+        "2026-08-10: UI pasadas-pendientes + drawer ubicación; contrato listarEstacionesPendientes; peajes-home + ROUTE_PERMISSIONS.",
+        "2026-08-10: ng build --configuration=development EXIT 0; ng test estacion-ubicacion-drawer → 2 SUCCESS (ChromeHeadless)."
+      ]
+    },
+    {
+      "id": "F13-1",
+      "title": "Documentos (ex facturas) + importación masiva por FACTURA + NC",
+      "prd_refs": ["RF-19", "RF-20", "RF-22", "RN-12", "RN-17"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F01-2", "F01-5", "F01-9", "F02-7"],
+      "status": "passing",
+      "verification": [
+        "Migración facturas→documentos con tipo FC|NC; FKs documento_id; datos existentes tipo=FC",
+        "Importación masiva exige columna exacta FACTURA; sin ella bloquea sin fallback",
+        "Paso 7 renderiza accordion shared (sin PrimeNG) con un panel por FACTURA y autofill del número",
+        "NC normaliza PRECIO/IMPORTE_NETO (y cabecera) a negativo; FC permanece positivo",
+        "Confirmación orquesta peajes_confirmar_carga por documento con errores aislados"
+      ],
+      "evidence": [
+        "2026-08-07: migration 20260807140000_peajes_documentos_tipo_nc.sql; models Documento + helpers; shared app-accordion; wizard modo masiva Paso1/7/8/9. (docs/08-sql/peajes eliminada 2026-08-10; canonical backend docs → docs/backend/)",
+        "2026-08-07: ng build --configuration=development EXIT 0.",
+        "2026-08-07: ng test --include documento.helpers + accordion + paso7 → 17 SUCCESS.",
+        "2026-08-07: npx supabase db reset --local --no-seed EXIT 0; npx supabase test db → All tests successful (75), peajes_f01_test OK con NC negativos.",
+        "2026-08-10: DESARROLLO migration 20260807140000_peajes_documentos_tipo_nc aplicada; public.documentos disponible, public.facturas removida y cache PostgREST recargada. Preservadas 696 pasadas / 11 documentos de ConsumosResumen-202607-1.xlsx.",
+        "2026-08-10: confirmarCarga deja de hacer SELECTs posteriores al RPC para evitar falsos errores después del commit; peajes-carga.service.spec.ts 1 SUCCESS y tsc --noEmit OK."
+      ]
+    },
+    {
+      "id": "F13-2",
+      "title": "Importación masiva multi-empresa: empresa editable por documento en Paso 7",
+      "prd_refs": ["RF-19", "RF-14", "RF-17"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F13-1"],
+      "status": "passing",
+      "verification": [
+        "Modo masiva: empresa en Paso 1 es opcional (default); no bloquea continuar sin empresa",
+        "Paso 7 (masiva): cada panel FACTURA tiene selector de empresa editable",
+        "Desde cada documento se puede ir a Paso 5 (mapeo) o Paso 6 (estaciones) tras cambiar empresa",
+        "Referencia stitch: docs/templates-stich/stitch_json_developer_toolkit/paso_1_cargar_archivo/"
+      ],
+      "evidence": [
+        "2026-08-07: Paso1 empresa opcional si modo=masiva; Paso7 empresaIdsPorDoc + SearchMultiSelect por panel; irAPaso 5|6; wizard label Documento; stitch paso_1 documentado como referencia de carga."
+      ]
+    },
+    {
+      "id": "F13-3",
+      "title": "ConsumosResumen masiva: mapeos Tag/Estación/Concesión, FC+IVA por documento, estaciones cross-empresa",
+      "prd_refs": ["RF-14", "RF-17", "RF-19", "RN-17"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F13-1", "F13-2", "F02-13"],
+      "status": "passing",
+      "verification": [
+        "Aliases ConsumosResumen: Tag Nº→PASE_ID, Estación→ESTACION_ID, Dominio→PATENTE_ID, Importe Original→PRECIO, Descuento Importe→BONIFICACION, Fecha→FECHA_HORA",
+        "FACTURA y Concesion excluidas del Structure Goal; Concesion autocompleta empresa (o peaje→empresa) en Paso 7",
+        "Paso 7 masiva: número FACTURA autofill, tipo siempre FC, botones Quitar IVA / Agregar IVA por accordion",
+        "Paso 6 masiva: estaciones de todas las empresas; permitido Station A + Company B",
+        "Docs: importacion-masiva-consumos-resumen.md + reconocimiento-estaciones.md + stitch paso_4"
+      ],
+      "evidence": [
+        "2026-08-07: consumos-resumen.helpers + column-recognition aliases; rebuildDocumentosDesdeFactura.concesionProveedor; paso7 FC+IVA; paso6 cross-empresa; guide docs/06-components/peajes/importacion-masiva-consumos-resumen.md; sample scripts/telepeaje plus/202607-2/ConsumosResumen.xlsx"
+      ]
+    },
+    {
+      "id": "F13-4",
+      "title": "RN-26: Concesion→Peaje→Estaciones filtradas por empresa (Paso 5/6)",
+      "prd_refs": ["RN-26", "RF-16", "RF-17"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F13-3", "F02-13"],
+      "status": "passing",
+      "verification": [
+        "PRD peaje-prd-es.md documenta RN-26 y Paso 5/6 Company→Concesion→Peaje→Estaciones",
+        "wizard.md documenta la cadena y el comportamiento Paso 5 vs 6",
+        "Paso 5 detecta Concesion y muestra peajes recomendados del catálogo",
+        "Paso 6 filtra selector/sugerencias de estación al peaje de Concesion; peaje corregible manualmente",
+        "No se listan estaciones de peajes/empresas ajenos en el alcance por defecto"
+      ],
+      "evidence": [
+        "2026-08-07: PRD RN-26 + wizard.md; paso5 panel Concesion→Peaje; paso6 peajeIdAlcance + estacionOptionsFor; helpers resolverPeajeDesdeConcesion / concesionPorValorEstacion"
+      ]
+    },
+    {
+      "id": "F13-RN16-FECHA",
+      "title": "Fix FECHA_HORA: preservar HH:mm:ss al leer Excel Date (ConsumosResumen / RN-16)",
+      "prd_refs": ["RN-16", "RF-02"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F13-3"],
+      "status": "passing",
+      "verification": [
+        "Date Excel → yyyy-MM-dd HH:mm:ss (no solo día)",
+        "Caso ZARATE 07/24 tag 99779063: 4 horas distintas no colapsan a 00:00:00",
+        "Sin paso de transformación parche para reconstruir FECHA_HORA"
+      ],
+      "evidence": [
+        "2026-08-10: normalizarCeldaExcel/formatLocalDateTime en peajes-fecha.util; PeajesExcelService.normalizarCelda preserva HMS. ng test peajes-excel + peajes-fecha.util + paso7/8/9 → 29 SUCCESS"
+      ]
+    },
+    {
+      "id": "F13-5",
+      "title": "Importación masiva: omitir documentos inválidos y continuar con válidos",
+      "prd_refs": ["RF-18", "RF-19"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F13-1", "F13-2"],
+      "status": "passing",
+      "verification": [
+        "Paso 7: botón por panel Omitir + bulk «Omitir documentos con error y continuar»",
+        "Wizard gate / Paso 8 validan solo documentos no omitidos",
+        "Paso 9 confirma solo incluidos y resume importados / omitidos+errores / fallos de confirmación"
+      ],
+      "evidence": [
+        "2026-08-10: WizardDocumentoGrupo.omitido + helpers; paso7/8/9. ng test paso7-factura + paso8-validacion + paso9-revision → SUCCESS"
+      ]
+    },
+    {
+      "id": "F14-0",
+      "title": "Contrato: destino CATEGORIA en PasadaColumnKey / PASADA_COLUMN_KEYS",
+      "prd_refs": ["RF-14", "RF-06", "RN-15", "§21"],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": [],
+      "status": "passing",
+      "verification": [
+        "models/peajes.types.ts: 'CATEGORIA' presente en PasadaColumnKey y PASADA_COLUMN_KEYS (10 keys)",
+        "'CATEGORIA' NO está en PASADA_COLUMNAS_OBLIGATORIAS: un archivo sin categoría (Patrón A) sigue validando",
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0 (ningún switch exhaustivo sobre PasadaColumnKey roto)",
+        "ng test --include=\"**/peajes/**\" --watch=false --browsers=ChromeHeadless sin fallos nuevos",
+        "Cambio comiteado antes de que arranquen F14-1 y F14-3 (regla 1 del modelo de agentes)"
+      ],
+      "evidence": [
+        "2026-08-12: PasadaColumnKey + PASADA_COLUMN_KEYS incluyen CATEGORIA (10 keys); ausente de PASADA_COLUMNAS_OBLIGATORIAS. Inicializador wizard CATEGORIA:null. Specs PasadaEstandarizada actualizados.",
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0",
+        "ng test auditoria-tarifas → 14/14 SUCCESS; peajes-carga + paso8 + paso9 → 9/9 SUCCESS",
+        "Nota: F14-1/F14-2 ya estaban passing (CLI) antes de este commit; F14-3 (detección aliases/MVP) sigue pendiente"
+      ]
+    },
+    {
+      "id": "F14-1",
+      "title": "Tablas tarifas_normalizadas / parámetros / catálogo de status + ALTER pasadas + RLS + trigger",
+      "prd_refs": ["§22", "§25", "§26", "RN-05", "RN-16", "RN-20", "RN-24"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-0"],
+      "status": "passing",
+      "verification": [
+        "Migración YYYYMMDDHHMMSS_peajes_*.sql crea tarifas_normalizadas, tarifas_parametros_peaje (umbrales 15 / 4.100 / auto_confirmar false) y tarifas_status_catalogo (tipo_meta PICO|NO_PICO|NEUTRO)",
+        "ALTER TABLE pasadas agrega categoria text null, tarifa_normalizada_id uuid null y tarifa_status text not null default 'PENDIENTE'; NO agrega peaje_id (RN-05) y pasadas_duplicado_uk queda intacta (RN-16)",
+        "Trigger de validación de status: acepta PENDIENTE/POSIBLE_HORARIO, acepta PICO y NO_PICO cargados en tarifas_status_catalogo del peaje, y rechaza con excepción un código ajeno",
+        "RLS plana {tabla}_authenticated_all en las tres tablas nuevas, igual que el resto del módulo (PRD §5.2)",
+        "Vistas pasadas_con_peaje, pasadas_gestion, pwbi_pasadas, pwbi_documentos, pwbi_estacion y pwbi_patentes revisadas y respondiendo tras el ALTER",
+        "Verificado contra Supabase CLI local desde cero + supabase db advisors sin hallazgos nuevos sin justificar"
+      ],
+      "evidence": [
+        "2026-08-12: migraciones 20260812140628 + 20260812140633 + 20260812140648. npx supabase db reset --local --no-seed OK. npx supabase test db → 144 PASS (incl. peajes_f14_test B-06/B-07/B-08 schema). Sin peaje_id en pasadas. Docs docs/backend/peajes/auditoria-tarifas.md. Nota: F14-0 (CATEGORIA en types) sigue pendiente de agente 00; el DDL no lo requiere.",
+        "2026-08-18: pwbi_tarifas + pwbi_pasadas.Estacion_Geocodificacion_Status. Migración 20260818131012_peajes_pwbi_tarifas.sql. npx supabase db reset --local --no-seed OK. npx supabase test db → 187 PASS (peajes_pwbi_views_test plan 33). db push --linked DESARROLLO kfffigvyvtzyczeiadxh: pwbi_tarifas 304 filas, pwbi_pasadas 4900, anon SELECT.",
+        "2026-08-18: pwbi_pasadas.Categoria_Calculated + Categoria_Calculated_Boolean. Migración 20260818144011. db push --linked DESARROLLO: 2860 TRUE / 2040 FALSE. M Power BI actualizado.",
+        "2026-08-21 (agente 01 gap-fill §7.1, CLI): esquema F14-1 intacto (3 tablas, 3 cols pasadas, sin peaje_id, UK duplicado intacta, índices, RLS plana, trigger 23514). MCP DESARROLLO kfffigvyvtzyczeiadxh (SELECT): tablas/RPC ya existían; peajes.empresa_id text; sin concesiones; sin pg_cron/pg_net; auto_confirmar_horario false. Drift 20260811190002 ya aplicado en remoto (sesión 2026-08-12). Docs backend auditoria-tarifas.md. Sin ALTER pasadas extra; sin recrear vistas. Sin db push."
+      ]
+    },
+    {
+      "id": "F14-2",
+      "title": "RPCs de normalización/confirmación tarifaria + enganche post-carga en peajes_confirmar_carga",
+      "prd_refs": ["§23", "§24", "§27", "RN-05", "RN-20", "RN-24", "RF-32"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-1"],
+      "status": "passing",
+      "verification": [
+        "Existen peajes_normalizar_tarifas(p_documento_id), peajes_recalcular_tarifas(p_peaje_id), peajes_confirmar_status_tarifa(p_asignaciones jsonb), peajes_marcar_diagnostico_tarifa(id, diagnostico), peajes_listar_tarifas_normalizadas(p_filtros, p_page, p_page_size, p_sort) y peajes_grupos_similares_tarifa(id, p_tolerancia)",
+        "peajes_confirmar_carga dispara peajes_normalizar_tarifas por documento confirmado sin cambiar su firma pública ni romper PeajesCargaSupabaseService.confirmarCarga()",
+        "peaje_id de tarifas_normalizadas se deriva vía estaciones.peaje_id, nunca desde pasadas (RN-05)",
+        "peajes_recalcular_tarifas sobre las 1711 pasadas del dataset (ConsumosResumen.xlsx 1015 + ConsumosResumen-202607-1.xlsx 696) produce filas conciliables con las 119 del CSV de referencia (34 estaciones, 22 niveles de importe)",
+        "Filas con confirmado_manual = true no son pisadas por el recálculo",
+        "supabase db advisors EXIT limpio tras crear las funciones"
+      ],
+      "evidence": [
+        "2026-08-12: RPC en 20260812140637/40/44/53. Enganche opción (b) en PeajesCargaSupabaseService + persiste categoria. PeajesAuditoriaTarifasSupabaseService + provider swap en auditoria-tarifas.routes. npx supabase test db → 144 PASS (B-01..B-16 sintéticos: MUESTRA_INSUFICIENTE, TARIFA_UNICA, POSIBLE_HORARIO, confirmado_manual, NC=0, listar). Recálculo dataset 1711/119 diferido a F14-6 (DESARROLLO/seed). Contratos models/auditoria-tarifas.contracts.ts.",
+        "2026-08-21 (agente 01 gap-fill §7.1): hook SQL peajes_confirmar_carga → peajes_normalizar_tarifas (firma pública intacta; fallo clasificador no revierte carga). Migración 20260821141019_peajes_confirmar_carga_hook_normalizar.sql. COMMENT ON POLICY RLS plana + rol/empresa diferida. Angular conserva .rpc idempotente (B-10) hasta db push DESARROLLO. npx supabase db reset --local --no-seed OK; npx supabase test db → 198 PASS (10 files; peajes_f14_test plan 46 incl. hook FC/NC). ng test peajes-carga.service.spec 1 SUCCESS. Advisors: security_definer_view en pwbi_* preexistente (anon Power BI); sin hallazgo nuevo del hook. Sin db push --linked. F14-6 no cerrado."
+      ]
+    },
+    {
+      "id": "F14-3",
+      "title": "Wizard: detección de CATEGORIA en Paso 2, destino en Paso 5 y persistencia de pasadas.categoria",
+      "prd_refs": ["RF-06", "RF-14", "RN-15", "§21"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F14-0", "F14-1"],
+      "status": "passing",
+      "verification": [
+        "COLUMN_ALIASES incluye CATEGORIA; detectColumnRecommendations propone el destino en Paso 2 (CATEGORIA/CATEGORÍA/categoria colapsan por normalizarEncabezadoColumna)",
+        "MVP_COLUMNAS_EXCLUIDAS ya no lista 'CATEGORIA' y ningún fixture MVP cambia de resultado",
+        "Paso 5 ofrece CATEGORIA como destino opcional y el valor llega crudo al payload de peajes_confirmar_carga → pasadas.categoria (texto del proveedor, nunca patentes.categoria, RN-15)",
+        "Archivo sin columna de categoría recorre los 9 pasos y guarda con pasadas.categoria = NULL (Patrón A), sin advertencias nuevas en Paso 8",
+        "ng test --include=\"**/peajes/wizard/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless SUCCESS"
+      ],
+      "evidence": [
+        "2026-08-12: COLUMN_ALIASES.category + kind categoria + rec-categoria (draftSteps=[], mapeoHints→CATEGORIA). MVP/AU: CATEGORIA incluida y mapeada; EXCLUIDAS sin CATEGORIA. Paso 5 marca destinos opcionales. Payload peajes_confirmar_carga.categoria con trim (F14-2).",
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0",
+        "ng test --include=\"**/peajes/wizard/**/*.spec.ts\" --include=\"**/peajes/services/peajes-carga.service.spec.ts\" --watch=false --browsers=ChromeHeadless → 96 SUCCESS",
+        "2026-08-21 (agente 02 gap-fill §7.2): descartar rec-categoria excluye columna y limpia mapeo (Patrón A). npx tsc --noEmit -p tsconfig.app.json EXIT 0. Focused wizard-state + column-recognition + paso5 + auditoria-tarifas → 90 SUCCESS. Full wizard/** 129 SUCCESS / 5 FAILED (carga-express + Paso 6 preexistentes). Persistencia categoria ya en PeajesCargaSupabaseService (F14-2). F14-6 no cerrado."
+      ]
+    },
+    {
+      "id": "F14-4",
+      "title": "Pantalla /peajes/auditoria-tarifas + tarjeta en peajes-home",
+      "prd_refs": ["RF-26", "RF-32", "§27", "RN-24"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F14-2"],
+      "status": "passing",
+      "verification": [
+        "Ruta /peajes/auditoria-tarifas registrada con permiso { module: 'peajes', action: 'read' } y tarjeta en peajes-home.component.html (icono fas fa-chart-line, título 'Auditoría de tarifas', link 'Auditar tarifas')",
+        "Pantalla con patrón pasadas-pendientes: tabla nativa padre, único expandedId, fila de detalle con colspan y app-data-table anidada, paginador manual, filtros con debounce 300ms; prefijo CSS at__",
+        "Badges de status resueltos en runtime desde tarifas_status_catalogo (PICO / NO_PICO en el dataset); PENDIENTE y POSIBLE_HORARIO con presentación fija y código desconocido en badge neutro sin romper la vista",
+        "Panel de comparación asigna status por nivel (2, 3 o N) y llama peajes_confirmar_status_tarifa; acciones 'Es variación por categoría' y 'Marcar para revisar' llaman peajes_marcar_diagnostico_tarifa",
+        "Botón Recalcular invoca peajes_recalcular_tarifas con estado de carga y feedback",
+        "ng test --include=\"**/peajes/auditoria-tarifas/**\" --watch=false --browsers=ChromeHeadless SUCCESS"
+      ],
+      "evidence": [
+        "2026-08-12: UI F14-4 en src/app/components/peajes/auditoria-tarifas/ (list, familia-panel, status-buttons, status-badge, comparar-dialog, mock, routes). Ruta + permiso + tarjeta peajes-home cableados.",
+        "Provider PeajesAuditoriaTarifasSupabaseService (F14-2) activo en auditoria-tarifas.routes.ts; contracts.local.ts re-exporta models/auditoria-tarifas.contracts.ts",
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0",
+        "ng test --include=\"**/peajes/auditoria-tarifas/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless → 14/14 SUCCESS (post F14-0 CATEGORIA)",
+        "npx --yes tsx src/app/components/peajes/auditoria-tarifas/clasificacion.verify.ts → ZARATE 5/5 OK (evidencia previa 706beee)",
+        "npm run build EXIT 0 (lazy chunk peajes-routes incluye auditoria-tarifas) — evidencia previa 706beee",
+        "2026-08-21 (agente 02 gap-fill §7.2): expand fila padre, POSIBLE_HORARIO en botones de catálogo, layout móvil at__. ng test auditoria-tarifas incluido en focused 90 SUCCESS. Ruta/permiso/home ya fusionados."
+      ]
+    },
+    {
+      "id": "F14-5",
+      "title": "Documentación F14: auditoría de pasadas por patrones",
+      "prd_refs": ["§20", "§22", "§25", "RF-26", "RN-15"],
+      "agent_owner": "04-documentador",
+      "depends_on": ["F14-1", "F14-2", "F14-3", "F14-4"],
+      "status": "passing",
+      "verification": [
+        "docs/06-tablas/peajes/ documenta tarifas_normalizadas, tarifas_parametros_peaje, tarifas_status_catalogo y las 3 columnas nuevas de pasadas, aclarando que pasadas.categoria es texto crudo del proveedor y no el enum patentes.categoria (RN-15)",
+        "docs/06-components/peajes/ documenta la pantalla /peajes/auditoria-tarifas y el destino CATEGORIA del Paso 5",
+        "docs/backend/peajes/index.md enlaza los 6 RPC peajes_* de F14 con firma y consumidor",
+        "docs/modulos/peajes.md e INDEX.md afectados actualizados; enlaces cruzados resuelven",
+        "Solo se documenta lo que está passing en feature_list.json (regla 4 del modelo de agentes)"
+      ],
+      "evidence": [
+        "2026-08-12: reconocimiento-columnas.md (§CATEGORIA F14-3) + reconocimiento-estaciones.md (familias) + auditoria-tarifas.md (UI) + tarifas-normalizadas.md + documentos-pasadas cols F14; wizard.md Paso 5 opcional; plantillas nota sin códigos nuevos; modulos/peajes.md + docs/INDEX.md; backend/peajes/auditoria-tarifas.md + index ya enlazaban 6 RPC."
+      ]
+    },
+    {
+      "id": "F14-6",
+      "title": "QA/E2E de auditoría tarifaria contra el dataset de referencia",
+      "prd_refs": ["RF-26", "RF-32", "RN-16", "RN-24", "§27"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F14-3", "F14-4"],
+      "status": "in_progress",
+      "verification": [
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0 y ng test --include=\"**/peajes/**\" --watch=false --browsers=ChromeHeadless sin fallos nuevos; npx --yes tsx src/app/components/peajes/plantillas/motor.verify.ts sin regresiones",
+        "Dataset cargado y conciliado: 1711 pasadas entre file_upload_name 'ConsumosResumen.xlsx' (1015, 26 estaciones) y 'ConsumosResumen-202607-1.xlsx' (696, 30 estaciones); no existe ningún file_upload_name con '202607-2'",
+        "Recálculo comparado contra tarifa_test_resumen_union.csv (delimitador ';', coma decimal, 119 filas, 34 estaciones, 4 concesiones, 22 niveles de importe)",
+        "Clasificación humana esperada del CSV contrastada: PICO 49 / NO_PICO 52 / PENDIENTE 18; las candidatas quedan en POSIBLE_HORARIO y son confirmables desde la pantalla",
+        "Dataset tratado como Patrón A (ningún libro fuente tiene columna de categoría) y la etiqueta PATRON = B del CSV confirmada o registrada como pendiente del product owner",
+        "Discrepancia 1040 filas RESULTADO_1 vs 1015 pasadas localizada en ZARATE precio=1500 (CSV 114 vs DB 89); hipótesis NC 0104-00077675 de resumen.txt registrada; MVP ignora NCs (no resta cases)",
+        "Extracción de hora pinneada con AT TIME ZONE 'UTC' (prueba empírica ZARATE: 4/5 niveles ±0,01 vs CSV; BA desplaza el pico a 7–8 a.m.)",
+        "E2E manual: carga → Paso 9 → hook crea tarifas_normalizadas → confirmación en pantalla → pasadas.tarifa_status actualizado → vistas pwbi_* responden"
+      ],
+      "evidence": [
+        "2026-08-12 (push-only, sin reconciliación dataset): DESARROLLO kfffigvyvtzyczeiadxh recibió migraciones F14 + FILTRAR_COLUMNA vía db push --linked tras CLI 144 PASS. F14-6 QA/E2E dataset 1711/119 sigue pendiente.",
+        "2026-08-13 DESARROLLO recalc + reconcile (MCP execute_sql, project-ref kfffigvyvtzyczeiadxh confirmado). peajes_recalcular_tarifas ejecutado para 9 peajes con pasadas → tarifas_normalizadas 0→281; 3465/3465 pasadas FC precio>0 con tarifa_normalizada_id. Recalc por peaje (pasadas vinculadas): CORREDORES VIALES 1394, AUSA 783, AUTOPISTA OESTE 410, AUBASA 233, RUTAS SUR 206, AUSOL 185, CORREDOR VIAL 5 172, UNIDAD EJECUTORA 80, CONEXION ALTO DELTA 2. ConsumosResumen 1015+696=1711; 0 file_upload_name con 202607-2. Patrón A: ConsumosResumen 1711 categoria NULL; Telepase 1750 con categoria. tarifas_status_catalogo: 18 filas PICO/NO_PICO × 9 peajes. diagnostico tarifas: MUESTRA_INSUFICIENTE 220, CATEGORIA 27, REVISAR 25, POSIBLE_HORARIO 6, TARIFA_UNICA 3. pasadas.tarifa_status: PENDIENTE 3273, POSIBLE_HORARIO 192. CSV 119 vs DB: 117/119 keys matched (2 csv-only por alias estación KM. 244 vs KM 244); cases 116/117 exact (único mismatch ZARATE 1500: CSV 114 vs DB 89); multiplicador 115/117 ±0.02. ZARATE 5 niveles CATEGORIA; desvío UTC 4/5 ±0.01 (1500: 7.02 vs CSV 7.49 por −25 cases). pwbi_pasadas expone Tarifa_Status. R1: CSV PATRON=B pendiente PO (dataset tratado como A). R2: NC 0104-00077675 hipótesis ZARATE gap. Pendiente: ng test local, E2E manual confirmación PICO/NO_PICO en UI.",
+        "2026-08-13 (local verify suite, agente 05): npx tsc --noEmit -p tsconfig.app.json EXIT 0; ng test auditoria-tarifas 14/14 SUCCESS; ng test peajes/** 178/178 SUCCESS; tsx clasificacion.verify.ts → ZARATE 5/5 NO_PICO,PICO,PICO,PICO,PICO; tsx motor.verify.ts PASS; tsx e2e-prd21.verify.ts PASS; npx supabase test db → 144 PASS (6 files). Sin db reset --linked."
+      ]
+    },
+    {
+      "id": "F14-7",
+      "title": "Plantillas Telepase: mapeo CATEGORIA activo (Patrón B)",
+      "prd_refs": ["RN-15", "F14-3", "§7 plantillas recurrentes"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-3"],
+      "status": "passing",
+      "verification": [
+        "Migración idempotente 20260813100000_peajes_plantillas_mapeo_categoria.sql activa CATEGORIA→CATEGORIA (excluida=false) en las 7 plantillas Telepase; MASIVOOO sin cambio",
+        "DESARROLLO kfffigvyvtzyczeiadxh: query §6.1 cat_activa=1 Telepase / 0 MASIVOOO; pasadas ConsumosResumen 1711 categoria NULL intacto; tarifas_normalizadas 281 sin cambio",
+        "ng test peajes-plantilla-apply.service.spec.ts → CATEGORIA restore 3/3 SUCCESS; ng test paso5-mapeo → 8/8 SUCCESS",
+        "supabase/tests/peajes_f14_plantillas_categoria_test.sql (pgTAP lógica UPDATE)"
+      ],
+      "evidence": [
+        "2026-08-13: migración 20260813100000_peajes_plantillas_mapeo_categoria.sql. DESARROLLO apply via MCP apply_migration peajes_plantillas_mapeo_categoria (project-ref kfffigvyvtzyczeiadxh). Pre: 7 Telepase cat_activa=0; post: cat_activa=1 (AUSA-8-2026, AUSA-V2, AUSA-V3, AUSOL-7-2026, AUBASA-7-2026, AU-OESTE-V1-08-26, CORRE-VIALES-V1); MASIVOOO=0. pasadas: consumos 1711 null, telepase 1750 con cat, tarifas 281. ng test plantilla-apply 3/3 + paso5 8/8 SUCCESS. Spec CATEGORIA restore en peajes-plantilla-apply.service.spec.ts."
+      ]
+    },
+    {
+      "id": "F16-0",
+      "title": "Contrato canónico para persistencia de relaciones y casos auditables de estaciones",
+      "prd_refs": ["RF-16", "RF-17", "§7.5", "docs/plan/auditoria-reconocimiento-estaciones/PLAN_auditoria-reconocimiento-estaciones.md"],
+      "agent_owner": "00-orquestador-setup",
+      "depends_on": ["F02-17"],
+      "status": "passing",
+      "verification": ["Contrato de filtros, hallazgos, paginación, estados, preview/corrección, token y clave canónica de relación publicado", "Criterios 0001=1, 3=0003, relación persistida válida, perfil de secuencia y estados de caso", "npx tsc --noEmit -p tsconfig.app.json y tsconfig.spec.json"],
+      "evidence": ["2026-08-21: models/auditoria-estaciones.contracts.ts + spec 4 SUCCESS. claveRelacionEstacion 0001=1 / 0003=3. ng test contracts + list + home 31 SUCCESS."]
+    },
+    {
+      "id": "F16-1",
+      "title": "Casos, estados y corrección transaccional en auditoría de estaciones",
+      "prd_refs": ["RF-16", "RF-17", "§7.5", "docs/plan/auditoria-reconocimiento-estaciones/backend_plan.md"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F16-0"],
+      "status": "passing",
+      "verification": ["pgTAP con UUID 67486ca3-6e88-49a8-b628-7f41e946da5a y 60014adb-62f4-4ad9-86a0-50bd36efd1e3, equivalencias, secuencia 1,2,3,5 y fingerprint", "Caso validado/descartado no vuelve a Pendientes; cambio de datos crea caso nuevo", "Preview y confirmación protegen correcciones de catálogo/alias y pasadas históricas; antes/después queda trazado", "npx supabase db reset --local --no-seed; npx supabase test db; tipado Angular; documentación SQL/RPC"],
+      "evidence": ["2026-08-21: migración 20260821151207_peajes_auditoria_estaciones.sql + peajes-auditoria-estaciones.service.ts. npx supabase test db → 210 PASS (11 files, incl. peajes_auditoria_estaciones_test). Sin db push --linked."]
+    },
+    {
+      "id": "F16-2",
+      "title": "Paso 6 conserva relaciones guardadas y bandeja de auditoría de estaciones",
+      "prd_refs": ["RF-16", "RF-17", "§7.5", "docs/plan/auditoria-reconocimiento-estaciones/frontend_plan.md"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F16-0"],
+      "status": "passing",
+      "verification": ["Paso 6 conserva una relación guardada tras recrearse y reconoce 0001/1 y 3/0003 para los fixtures UUID, respetando empresa/Concesión", "Solo una relación ausente o fuera de alcance exige seleccionar otra vez", "Bandeja filtra estados, no repite casos resueltos y exige preview/confirmación antes de corregir", "La auditoría no interviene directamente en Paso 6; las correcciones previenen cargas futuras a través de catálogo/alias", "Specs focalizadas Paso 6 y auditoría con ChromeHeadless"],
+      "evidence": ["2026-08-21: /peajes/auditoria-estaciones clona tarifas (ae__, Ver casos vía tarifa-casos-dialog). Paso 6 restore claveRelacionEstacion. Specs home/catalogos/F16/Paso 6 re-ejecutados tras evitar doble ngOnInit."]
+    },
+    {
+      "id": "F16-3",
+      "title": "Integración, documentación y QA de auditoría de estaciones",
+      "prd_refs": ["docs/06-components/peajes/reconocimiento-estaciones.md", "docs/plan/auditoria-reconocimiento-estaciones/testing_plan.md"],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F16-1", "F16-2"],
+      "status": "passing",
+      "verification": ["Ruta, tarjeta y permiso peajes:read integrados sin conflicto", "Docs actualizadas tras implementación", "pgTAP, specs focalizadas, tsc y build verdes", "Smoke opcional DESARROLLO solo lectura registrado"],
+      "evidence": ["2026-08-21: tarjeta home Auditoría de estaciones; /peajes/auditoria-estaciones = peajesOperational. Docs 06-components + backend. Catálogos: PEAJES_HOME_SECTION_IDS incluye catalogos; empresas en PEAJES_ROUTE_PERMISSIONS. pgTAP 210 PASS. Seed DESARROLLO empresas+peajes (dump --linked 403); pasadas siguen en seed_peajes_f14."]
+    },
+    {
+      "id": "F14-8",
+      "title": "Refactor UI auditoria: expansion inline y asignacion explicita de status",
+      "prd_refs": ["RF-26", "RF-32", "RN-24", "PLAN_Refactor_UI_UX_Auditoria_Tarifas.md"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F14-4"],
+      "status": "passing",
+      "verification": [
+        "La familia vuelve a desplegarse inline en una fila de detalle con un unico expandedId, como la tabla de pasadas-pendientes",
+        "Cada nivel desplegado permite elegir PICO o NO_PICO con app-search-select (plantillas appDataTableColumn=\"status\") y el boton Asignar status llama peajes_confirmar_status_tarifa",
+        "CONFIRMADO no aparece como opcion seleccionable: es diagnostico posterior; POSIBLE_HORARIO permanece como sugerencia",
+        "Franja horaria muestra HH:mm – HH:mm desde hora_min/hora_max (plantilla appDataTableColumn=\"franja\")",
+        "Acciones Ver casos abre peajes_listar_pasadas filtrado por tarifa_normalizada_id, misma tabla que /peajes/pasadas sin filtros ni acciones",
+        "npx tsc --noEmit -p tsconfig.app.json EXIT 0 y npx tsc --noEmit -p tsconfig.spec.json EXIT 0",
+        "ng test --include=\"**/peajes/auditoria-tarifas/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless"
+      ],
+      "evidence": [
+        "2026-08-13: restaurados expandedId, fila de detalle y app-tarifa-familia-panel inline; se elimino el dialogo de familia que deshabilitaba la seleccion en modo Ver.",
+        "2026-08-13: agregado boton Asignar status en el panel y filtro de CONFIRMADO en helpers/list/status-buttons.",
+        "2026-08-13: npx tsc --noEmit -p tsconfig.app.json EXIT 0; npx tsc --noEmit -p tsconfig.spec.json EXIT 0. Karma/ChromeHeadless pendiente de ejecucion por bloqueo GPU del entorno Windows.",
+        "2026-08-13: plantillas appDataTableColumn=\"clave\" (ya no key=); Clasificación = search-select; franja HH:mm – HH:mm; Acciones Ver casos + dialogo pasadas; filtro RPC tarifa_normalizada_id (20260813175138).",
+        "2026-08-13 DESARROLLO: peajes_listar_pasadas filtra tarifa_normalizada_id. Smoke PASEO DEL BAJO 9731.46 → total 6 (antes 3465).",
+        "2026-08-13: npx tsc --noEmit app+spec EXIT 0; ng test auditoria-tarifas **29/29 SUCCESS** (ChromeHeadless).",
+        "2026-08-18: bugfix selección PICO/NO_PICO y CAT. applySuggestion no pisa status guardado ni ediciones; Asignar status conserva NO_PICO; sello CAT filled vs Sin clase; search-select ranking exacto PICO. ng test auditoria-tarifas **49/49 SUCCESS** (ChromeHeadless); search-select **9/9 SUCCESS**."
+      ]
+    },
+    {
+      "id": "F14-9",
+      "title": "Patrón A: categoria_calculated opcional (0–10) en tarifas_normalizadas y sello CAT",
+      "prd_refs": ["RN-15", "RF-26", "§23 Patrón A"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-2", "F14-8"],
+      "status": "passing",
+      "verification": [
+        "tarifas_normalizadas.categoria_calculated smallint NULL CHECK 0–10; no cambia UNIQUE (peaje, estación, categoria, importe)",
+        "peajes_confirmar_status_tarifa acepta categoria_calculated opcional; sin la clave conserva el valor; confirmar status no la exige",
+        "peajes_listar_tarifas_normalizadas incluye categoria_calculated; peajes_recalcular_tarifas no la pisa",
+        "Panel familia: columna Categoría con sello CAT 0–10 en Patrón A; em dash en Patrón B",
+        "npx supabase db reset --local --no-seed && npx supabase test db",
+        "ng test --include=**/peajes/auditoria-tarifas/**/*.spec.ts --watch=false --browsers=ChromeHeadless"
+      ],
+      "evidence": [
+        "2026-08-14: migración 20260814204300_peajes_tarifas_categoria_calculated.sql. npx supabase db reset --local --no-seed OK. peajes_f14_test.sql 42/42 PASS. ng test auditoria-tarifas 45/45 SUCCESS. Campo opcional: confirmar sin clave no borra; 11 → CHECK 23514. DESARROLLO db push --linked kfffigvyvtzyczeiadxh aplicó la migración.",
+        "2026-08-18: CAT typed/saved sobrevive ngOnChanges y viaja en Asignar status; sello filled vs Sin clase. ng test auditoria-tarifas 49/49 SUCCESS (ChromeHeadless)."
+      ]
+    },
+    {
+      "id": "F14-10",
+      "title": "fecha_aparicion en tarifas_normalizadas: backfill histórico + trigger + pwbi_tarifas",
+      "prd_refs": ["RF-26", "§22"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-1", "F14-2"],
+      "status": "passing",
+      "verification": [
+        "tarifas_normalizadas.fecha_aparicion timestamptz NULL; primera pasadas.fecha_hora del nivel (MIN histórico)",
+        "Migración 20260902163000 backfill por GROUP BY tarifa_normalizada_id + trigger trg_pasadas_fecha_aparicion AFTER INSERT OR UPDATE OF tarifa_normalizada_id, fecha_hora",
+        "Trigger setea si NULL, adelanta si fecha_hora es más temprana, no pisa hacia fechas posteriores; no depende de confirmado_manual",
+        "pwbi_tarifas expone fecha_aparicion (snake_case, como created_at) al final del SELECT; Power Query M en powerbi-supabase.md con type datetimezone",
+        "npx supabase db reset --local --no-seed && npx supabase test db (peajes_f14_fecha_aparicion_test.sql + peajes_pwbi_views_test.sql)"
+      ],
+      "evidence": [
+        "2026-09-02: migración 20260902163000_peajes_tarifas_fecha_aparicion.sql. npx supabase db reset --local --no-seed OK. npx supabase test db → 232 PASS (Files=13). peajes_f14_fecha_aparicion_test.sql 11/11. pwbi_tarifas.fecha_aparicion en peajes_pwbi_views_test.sql.",
+        "2026-09-02 DESARROLLO: DROP+CREATE pwbi_tarifas con fecha_aparicion snake_case (MCP peajes_pwbi_tarifas_fecha_aparicion) + NOTIFY pgrst. 1142/1142 filas. Local test db 232 PASS."
+      ]
+    },
+    {
+      "id": "F14-11",
+      "title": "Fixtures CSV/Excel de tarifas y tarifa_importe + simetría has_pico (sin SQL)",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-10"],
+      "status": "passing",
+      "verification": [
+        "fixtures/tarifas.csv y fixtures/tarifas_importe.csv con todas las claves/importes PICO/NO_PICO del dump (sin crear tablas en Supabase)",
+        "out/tarifas-tarifas-importe.xlsx solo con hojas tarifas y tarifas_importe",
+        "cluster=has_pico: categorías PICO = categorías NO_PICO; ALBERTI/BRANDSEN fallan en el sample; HUDSON pasa; MAIPU flat no exige PICO",
+        "node --test scripts/peajes-catalogo-audit/*.test.mjs"
+      ],
+      "evidence": [
+        "2026-09-04 Wave 0: dump completo → tarifas.csv (520 claves) + tarifas_importe.csv (1079 importes) + Excel 2 pestañas. node --test scripts/peajes-catalogo-audit/*.test.mjs → 21 PASS. Sin SQL. No se sobreescribió auditoria-catalogo-20260904.xlsx."
+      ]
+    },
+    {
+      "id": "F14-12",
+      "title": "Tablas tarifas (catálogo) y tarifa_importe (línea de tiempo) sin borrar tarifas_normalizadas",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-11"],
+      "status": "not_started",
+      "verification": [
+        "Migración additive crea tarifas UNIQUE (peaje_id, estacion_id, status, categoria) y tarifa_importe UNIQUE (tarifa_id, importe)",
+        "status de tarifas solo PICO|NO_PICO; sin tarifa_importe_id obligatorio en tarifas",
+        "tarifas_normalizadas intacta; RLS plana como el resto del módulo",
+        "npx supabase db reset --local --no-seed && npx supabase test db (peajes_tarifas_catalogo_test.sql)"
+      ],
+      "evidence": [
+        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
+      ]
+    },
+    {
+      "id": "F14-13",
+      "title": "ETL Excel + tarifas_normalizadas hacia tarifas y tarifa_importe (CLI)",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-12"],
+      "status": "not_started",
+      "verification": [
+        "EXISTING se carga; SUSPECTED_GAP solo si ACTION=ADD e IMPORTE numérico; IGNORE se omite",
+        "ETL aborta si has_pico tiene categorías NO_PICO sin el mismo set en PICO (o al revés)",
+        "tarifa_importe.tarifas_normalizadas_id conserva linaje para remap de pasadas",
+        "pgTAP peajes_tarifas_etl_test.sql + conteo vs Catalogue EXISTING; sin write a DESARROLLO"
+      ],
+      "evidence": [
+        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
+      ]
+    },
+    {
+      "id": "F14-14",
+      "title": "Cutover CLI: pasadas.tarifa_importe_id, RPCs y pwbi_tarifas",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-13"],
+      "status": "not_started",
+      "verification": [
+        "pasadas.tarifa_importe_id nullable + backfill por linaje; tarifa_normalizada_id se conserva",
+        "peajes_normalizar_tarifas / recalcular / confirmar_status / listar apuntan al catálogo nuevo (CLI)",
+        "pwbi_tarifas una fila por tarifa_importe con Status/Categoria desde tarifas",
+        "npx supabase test db + ng test auditoria-tarifas; sin DROP de tarifas_normalizadas; sin DESARROLLO sin autorización"
+      ],
+      "evidence": [
+        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
+      ]
+    },
+    {
+      "id": "F14-15",
+      "title": "Docs del catálogo tarifas / tarifa_importe y Excel modificated",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md"
+      ],
+      "agent_owner": "04-documentador",
+      "depends_on": ["F14-14"],
+      "status": "not_started",
+      "verification": [
+        "docs/06-tablas y docs/backend describen 1:N y fecha_aparicion en tarifa_importe",
+        "catalogo-tarifas-audit.md documenta modificated, simetría de categorías PICO/NO_PICO si has_pico, y la ruta del xlsx 20260904",
+        "pwbi-views.md actualizado si cambió pwbi_tarifas"
+      ],
+      "evidence": [
+        "2026-09-07: superseded by F14-16, never implemented. El plan F14-16 agrega sentido, puntero current, datos Cross auditados, flag IVA e historia inmutable. tarifas_normalizadas permanece como camino de compatibilidad."
+      ]
+    },
+    {
+      "id": "F14-16",
+      "title": "Catálogo tarifas + tarifa_importe v2 (sentido, puntero current, historia inmutable, shadow matching)",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_refactor_tarifas_importe.md"
+      ],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F14-11"],
+      "status": "passing",
+      "verification": [
+        "Migración local 20260907100000_peajes_tarifas_v2_schema.sql: tablas tarifas / tarifa_importe, unique (peaje_id, estacion_id, status, categoria, sentido), pasadas.sentido default AMBAS, pasadas.tarifa_importe_id nullable; tarifas_normalizadas intacta (camino de compatibilidad; no se elimina, renombra ni reemplaza).",
+        "Migración 20260907101000_peajes_tarifas_v2_current_pointer.sql: historia append-only, puntero current_tarifa_id del mismo padre, promoción por (fecha_aparicion, created_at, id).",
+        "ETL migrate-tarifario-v2.mjs + tests Node: IDs del workbook, linaje 1:1, PRECIO_LAST canónico, tolerancia 1% (0.23% / 1% / >1%); sin write a DESARROLLO.",
+        "Adapter Angular tarifa-comparison-adapter: IVA solo vía pipeline existente; SQL sin / 1.21.",
+        "RPCs peajes_resolver_tarifas_actuales y peajes_validar_tarifas_actuales en batch; códigos AL_DIA / HISTORICA / DESFASADO / SIN_TARIFA / CATEGORIA_PENDIENTE / ESTADO_AMBIGUO; no mutan historia.",
+        "Paso 8: diagnósticos de tarifa no bloqueantes; no cambia dentroTolerancia ni puedeContinuar; asociación post-confirmación solo AL_DIA/HISTORICA.",
+        "Carga local + backfill de pasadas.tarifa_importe_id solo por linaje único; informe de paridad sin mismatches inexplicados.",
+        "Readers de compatibilidad / pwbi_tarifas_v2 solo tras paridad; pwbi_tarifas sin cambio no aprobado; sin DROP de legado; tarifas_normalizadas y pasadas.tarifa_normalizada_id se conservan.",
+        "npx supabase db reset --local --no-seed + npx supabase test db; Node ETL/matcher; ng test adapter + tarifa-validation + paso8; tsc --noEmit app+spec. Evidencia solo local."
+      ],
+      "evidence": [
+        "2026-09-07: F14-16 registrado in_progress (docs only). Additive/shadow: tarifas_normalizadas permanece como camino de compatibilidad (tabla, columnas, FKs, writers, firmas RPC existentes, vistas y pasadas.tarifa_normalizada_id). Sin SQL ni TypeScript aún. F14-12..F14-15 superseded, never implemented.",
+        "2026-09-08 Task 9 (local only). npx supabase start EXIT 0. npx supabase db reset --local --no-seed EXIT 0 (aplicó 20260907100000 / 07101000 / 07102000 / 07103000 / 20260908100000). npx supabase test db EXIT 0 Files=14 Tests=412 PASS. node --test scripts/peajes-catalogo-audit/*.test.mjs EXIT 0 tests 53 pass 53 fail 0 skipped 0 (unskip splitSentidoCollisions remaps the second sentido onto a new parent id → ok 42). ng test adapter+tarifa-validation+paso8 ChromeHeadless TOTAL 35 SUCCESS EXIT 0. ng test **/peajes/auditoria-tarifas/**/*.spec.ts TOTAL 52 SUCCESS EXIT 0. tsc --noEmit tsconfig.app.json EXIT 0. tsc --noEmit tsconfig.spec.json EXIT 0. Paridad Task 7 GREEN: unexplained pointer/lineage/price = 0; pasadas 0/0/0 tras --no-seed explicado (tabla vacía; backfill de volumen real no probado fuera de fixtures pgTAP). Sin DESARROLLO.",
+        "2026-09-08 Task 10: docs canónicos docs/06-tablas/peajes/tarifas-tarifa-importe.md + docs/backend/peajes/tarifas-tarifa-importe.md. Task 9 evidence copiada (local 2026-09-08: pgTAP 14/412, Node 53/53, ng 35+52, tsc app+spec EXIT 0). tarifas_normalizadas retenida. Diferidos documentados: asociarTrasConfirmacion no cableado post peajes_confirmar_carga; backfill volumen real no probado; pwbi_tarifas_v2 paralela no clon (LEFT JOIN Importe nullable); _stg_precio_last staging; sin DROP legado. Status passing. Sin DESARROLLO. Sin commit."
+      ]
+    },
+    {
+      "id": "F14-17",
+      "title": "Tarifario UI de precios actuales (RPCs CLI sobre tarifas + tarifa_importe)",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md",
+        "docs/06-components/peajes/tarifario.md",
+        "docs/backend/peajes/tarifario.md"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F14-16"],
+      "status": "passing",
+      "verification": [
+        "npx supabase test db incluye peajes_tarifario_rpc_test.sql",
+        "pnpm exec ng test --include=\"**/peajes-tarifario.service.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "pnpm exec ng test --include=\"**/peajes/tarifario/**/*.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "tarifario.routes.ts useClass: PeajesTarifarioSupabaseService",
+        "peajes:manage; sentido IDA|VUELTA|AMBAS exacto; New vacío omitido; faltante — no 0; importe > 0"
+      ],
+      "evidence": [
+        "2026-09-08: RPCs CLI + PeajesTarifarioSupabaseService. npx supabase db reset --local --no-seed EXIT 0 (aplicó 20260908140000). npx supabase test db EXIT 0 Files=15 Tests=427 PASS (peajes_tarifario_rpc_test.sql 15/15). ng test peajes-tarifario.service.spec.ts TOTAL 4 SUCCESS. ng test **/peajes/tarifario/**/*.spec.ts TOTAL 37 SUCCESS. pnpm seed:local EXIT 0 (migrate-tarifario-v2 --load-local: current_pointer_mismatches=0). Browser CLI: /peajes/tarifario listó precios vigentes; editor CORREDORES VIALES SA > 9 DE JULIO - RUTA 5 KM 244 > AMBAS; historial Cat.1 NO_PICO con sello Vigente; guardar 1600 actualizó ACTUAL a $1.600,00 y Última actualización 8/9/26. Provider vivo = PeajesTarifarioSupabaseService. Sin DESARROLLO. Sin commit.",
+        "2026-09-07: UI + mock stateful. ng test tarifario TOTAL 30 SUCCESS; home+permission TOTAL 12 SUCCESS. Provider vivo = TarifarioMockService. Sin peajes-tarifario.service.ts ni SQL RPC. Sin write DESARROLLO. Browser: /peajes/tarifario redirige a /login (sesión requerida; no se recorrió list→editor contra el mock en el browser de esta sesión)."
+      ]
+    },
+    {
+      "id": "F14-18",
+      "title": "Refresh Tarifas during Paso 9 pasadas import",
+      "prd_refs": [
+        "docs/plan/refactor-tarifas-importe/PLAN_refresh-tarifas-paso9.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_migracion-gradual-tarifas-tarifa-importe.md",
+        "docs/06-components/peajes/tarifario.md"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F14-16",
+        "F14-17"
+      ],
+      "status": "passing",
+      "verification": [
+        "Paso 9 extracts only distinct tariff candidates from included pasadas and preserves original row indexes for single and mass imports.",
+        "Current and historical matching uses tarifas.current_tarifa_id and tarifa_importe history, context peaje/estacion/categoria/status/sentido, and inclusive relative tolerance <= 1%.",
+        "A historical match is informational; a possible new tariff opens an in-place large dialog only after current and history fail; status is never inferred from hora_*.",
+        "The dialog reuses the full PICO/NO_PICO editor board, requires explicit save, supports missing identity creation, preserves requiere_normalizacion_iva, and never overwrites tarifa_importe history.",
+        "A successful refresh appends only new tarifa_importe records, updates the protected current pointer through its trigger, and shows the current-import update summary in Paso 9.",
+        "npx supabase test db; focused Angular refresh/Paso9/tarifario/dialog/adapter specs; tsc app+spec; three local detect cases vs AUSOL CAMPANA (557074.csv). Schema push to DESARROLLO only with explicit authorization."
+      ],
+      "evidence": [
+        "2026-09-08: implementado CLI. Migración 20260908150000_peajes_refresh_tarifas_paso9.sql (preparar/detectar/guardar + helper compartido F14-16 + peajes_confirmar_carga persiste sentido, misma firma). pgTAP peajes_refresh_tarifas_test.sql 40/40; npx supabase test db Files=16 Tests=467 PASS. tsc --noEmit app+spec EXIT 0. ng test focused board+editor+dialog+refresh+paso9+tarifario.service TOTAL 50 SUCCESS. pnpm seed:local EXIT 0. Tres casos SQL locales (no Dock Sud only): AUSOL CAMPANA 25bfd059… cat.6 NO_PICO AMBAS — CURRENT_TARIFF con PRECIO 3976.59 (557074.csv CAMPANA); HISTORICAL_TARIFF_MATCH con 2796.36 (historial inmutable, current 3976.59 intacto); NEW_TARIFF con 4771.95 forzado NO_PICO. Guardar transaccional: ti 2→3, current 3976.59→4771.95, fila 3976.59 sigue; ROLLBACK ti=2. Autopistas Urbanas VAR/KDT/PB2 no sembrados como códigos; proxy AUSA VARELA cat.9 19985.09 → NEW_TARIFF. Wizard Paso 9 no recorrido en browser esta sesión (evidencia RPC+specs). Docs: docs/backend/peajes/refresh-tarifas-paso9.md."
+      ]
+    },
+    {
+      "id": "F17-1",
+      "title": "Contratos, motor de confianza y proxy Netlify OpenRouter (invoice AI)",
+      "prd_refs": [
+        "docs/plan/invoice-ai/PLAN_invoice-ai.md",
+        "docs/plan/invoice-ai/plan_ai_invoice.md",
+        "PLAN Task 1–2 / planned label F16-1"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F02-9", "F11-1"],
+      "status": "passing",
+      "verification": [
+        "pnpm exec ng test --include=\"**/invoice-confidence.engine.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "node --test netlify/functions/peajes-invoice-ai.test.js",
+        "El proxy acepta solo POST/OPTIONS, body { invoiceText, expectedNetAmount }, y usa OPENROUTER_* solo en servidor",
+        "Ninguna clave OpenRouter en NG_APP_*, environment.values.ts, código Angular, logs ni respuestas HTTP"
+      ],
+      "evidence": [
+        "2026-08-24 QA: code sibling landed Task 1 files (models/schema/prompt/engine + spec). Combined ng test include services/ai + paso1 + paso7 → TOTAL: 20 SUCCESS (5 engine + 5 paso1 pre-AI + 10 paso7 pre-AI). node --test netlify/functions/peajes-invoice-ai.test.js → Could not find 'netlify/functions/peajes-invoice-ai.test.js' EXIT 1. F17-1 not passing: proxy Task 2 absent.",
+        "2026-08-24 catch-up: node --test netlify/functions/peajes-invoice-ai.test.js → tests 10 pass 10 fail 0 EXIT 0. pnpm exec ng test --include services/ai + paso1 + paso7 + peajes-wizard-state --watch=false --browsers=ChromeHeadless → TOTAL: 47 SUCCESS. Inspected peajes-invoice-ai.js: OPTIONS/POST only; body invoiceText + expectedNetAmount; OPENROUTER_* server-only; key 2 after recoverable key 1. .env.example names without NG_APP_OPENROUTER_*. Angular OpenRouterEngineService posts only those two fields."
+      ]
+    },
+    {
+      "id": "F17-2",
+      "title": "Extracción PDF y análisis post-plantilla (invoice AI)",
+      "prd_refs": [
+        "docs/plan/invoice-ai/PLAN_invoice-ai.md",
+        "docs/plan/invoice-ai/plan_ai_invoice.md",
+        "PLAN Task 3–4 / planned label F16-2"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F17-1"],
+      "status": "passing",
+      "verification": [
+        "pnpm exec ng test --include=\"**/invoice-pdf-text.service.spec.ts\" --include=\"**/invoice-ai.service.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "pnpm exec ng test --include=\"**/paso1-carga.component.spec.ts\" --include=\"**/peajes-wizard-state.service.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "PDF opcional en importación simple; análisis solo tras plantilla ok sin excepciones y neto positivo en centavos",
+        "No persiste PDF, texto ni sugerencias; no escribe en Supabase"
+      ],
+      "evidence": [
+        "2026-08-24 catch-up: combined ng test (services/ai + paso1 + paso7 + wizard-state) TOTAL: 47 SUCCESS. Inspected: Paso 1 PDF only if modoImportacion==='simple'; maybeAnalyzeInvoice after aplicarYEvaluar ok && excepcion===null; invoiceExpectedNetAmount sums IMPORTE_NETO via aCentavos then /100; fingerprint fileName|size|lastModified|plantillaId|netCents; setInvoicePdf stays in wizard state (no Supabase)."
+      ]
+    },
+    {
+      "id": "F17-3",
+      "title": "Candidatos clickeables en Paso 7 (invoice AI)",
+      "prd_refs": [
+        "docs/plan/invoice-ai/PLAN_invoice-ai.md",
+        "docs/plan/invoice-ai/plan_ai_invoice.md",
+        "PLAN Task 5 / planned label F16-3"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F17-2"],
+      "status": "in_progress",
+      "verification": [
+        "pnpm exec ng test --include=\"**/paso7-factura.component.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "Cada clic aplica un solo campo; edición manual permanece; sin auto-apply masivo",
+        "Retry solo en error; no renderiza controles IA en importación masiva",
+        "Smoke visual /peajes/carga-express (PDF opcional, candidatos, retry, sin PDF)"
+      ],
+      "evidence": [
+        "2026-08-24 catch-up: paso7 specs included in TOTAL: 47 SUCCESS. Inspected applyInvoiceSuggestion field map invoiceNumber→factura, invoiceDate→fecha_factura, vat→iva, perceptions→percepciones, total→importe_total; retry button only if status==='error'; showInvoiceAi=!esMasiva. Visual /peajes/carga-express NOT done — not passing."
+      ]
+    },
+    {
+      "id": "F17-4",
+      "title": "Regresión PDFs reales OpenRouter (invoice AI)",
+      "prd_refs": [
+        "docs/plan/invoice-ai/PLAN_invoice-ai.md",
+        "docs/plan/invoice-ai/plan_ai_invoice.md",
+        "PLAN Task 6 / planned label F16-4"
+      ],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F17-1", "F17-2"],
+      "status": "in_progress",
+      "verification": [
+        "node --test netlify/functions/peajes-invoice-ai.fixtures.test.js",
+        "node scripts/verify-invoice-ai-fixtures.mjs",
+        "$env:RUN_OPENROUTER_LIVE_TESTS='1'; node scripts/verify-invoice-ai-fixtures.mjs",
+        "PDFs inmutables: docs/plan/invoice-ai/testing/facturas_2026-07-22_1947769.pdf y facturas_2026-07-22_1947768.pdf",
+        "Live opt-in only; never in CI by default; amounts as integer cents; dates as ISO calendar strings"
+      ],
+      "evidence": [
+        "Target (seed CLI seed_peajes_pasadas_fks.sql, no write by this feature): documento c0b3cd76-205a-4d1a-ba51-10127870c8c8 factura 0041-01947769 fecha 2026-07-22 FC importe_sin_iva 173460 percepciones 0 iva 0 importe_total 173460; documento df8fbf3b-8725-4a6f-8d53-1310ddf3bae9 factura 0041-01947768 fecha 2026-07-22 FC 684180 / 0 / 0 / 684180; empresa d897928d-8a0c-42d6-b3e9-fffb66b9006c.",
+        "2026-08-24: created invoice-ai-fixtures.json exactly as PLAN Task 6; runner ibarra-app/scripts/verify-invoice-ai-fixtures.mjs refuses unless RUN_OPENROUTER_LIVE_TESTS=1 and exits 0 otherwise; fixtures Node test at netlify/functions/peajes-invoice-ai.fixtures.test.js. Live OpenRouter not authorized this session — skipped.",
+        "2026-08-24 catch-up: node --test peajes-invoice-ai.fixtures.test.js → tests 1 pass EXIT 0. node scripts/verify-invoice-ai-fixtures.mjs → skipped live EXIT 0. Live RUN_OPENROUTER_LIVE_TESTS=1 not run (unauthorized). F17-4 not passing."
+      ]
+    },
+    {
+      "id": "F17-5",
+      "title": "QA, docs wizard y evidencia invoice AI",
+      "prd_refs": [
+        "docs/plan/invoice-ai/PLAN_invoice-ai.md",
+        "docs/06-components/peajes/wizard.md",
+        "PLAN Task 7 / planned label F16-5"
+      ],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": ["F17-1", "F17-2", "F17-3", "F17-4"],
+      "status": "in_progress",
+      "verification": [
+        "node --test netlify/functions/peajes-invoice-ai.test.js",
+        "node scripts/verify-invoice-ai-fixtures.mjs",
+        "pnpm exec ng test --include=\"**/services/ai/**/*.spec.ts\" --include=\"**/paso1-carga.component.spec.ts\" --include=\"**/paso7-factura.component.spec.ts\" --include=\"**/peajes-wizard-state.service.spec.ts\" --watch=false --browsers=ChromeHeadless",
+        "npx tsc --noEmit -p tsconfig.app.json",
+        "npx tsc --noEmit -p tsconfig.spec.json",
+        "npx ng build --configuration=development",
+        "wizard.md documents optional PDF, post-template trigger, computed net, retry, privacy and click-to-apply only after behavior exists",
+        "Handoff: server owns credentials; frontend owns UI/state; feature makes no Supabase write"
+      ],
+      "evidence": [
+        "2026-08-24 catch-up: wizard.md + INDEX updated from real Paso 1/7/state/handler. node --test peajes-invoice-ai.test.js → 10 pass EXIT 0. fixtures.test.js 1 pass EXIT 0. verify-invoice-ai-fixtures.mjs skip EXIT 0. ng test ai+paso1+paso7+wizard-state TOTAL: 47 SUCCESS. tsc app EXIT 0; tsc spec EXIT 0; ng build development EXIT 0 (NG8107 paso9 preexistente). Visual /peajes/carga-express NOT done. Live OpenRouter NOT run. F17-5 not passing."
+      ]
+    },
+    {
+      "id": "F18-1",
+      "title": "AI factura en importación masiva (1→n PDFs)",
+      "prd_refs": ["RF-25", "RN-12", "docs/06-components/peajes/ia-factura.md"],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F13-1", "F17-2", "F02-6"],
+      "status": "passing",
+      "verification": [
+        "Paso 1 masiva acepta N PDF opcionales y relaciona nombre.pdf con columna FACTURA",
+        "Paso 7 analiza en cola cada documento con PDF; badges por panel; Reintentar solo idle/error",
+        "Modo simple no cambia",
+        "ng test paso1 + paso7 + wizard-state + documento.helpers + invoice-masiva-queue",
+        "npx tsc --noEmit -p tsconfig.app.json"
+      ],
+      "evidence": [
+        "2026-08-28: match FACTURA↔PDF (123.pdf), cola 1→n, badges, retry idle/error. ng test documento.helpers+wizard-state+invoice-masiva-queue+paso1+paso7+paso8+peajes-carga TOTAL: 75 SUCCESS. tsc app+spec EXIT 0. Visual /peajes/wizard NOT done (auth). Sin db push --linked."
+      ]
+    },
+    {
+      "id": "F18-2",
+      "title": "Duplicados permitidos con confirmación (DUPLICADO + Subir igualmente)",
+      "prd_refs": ["RN-16", "RNF-10", "RF-26"],
+      "agent_owner": "01-backend-supabase",
+      "depends_on": ["F01-6", "F02-7", "F01-9"],
+      "status": "passing",
+      "verification": [
+        "npx supabase db reset --local --no-seed",
+        "npx supabase test db (incluye peajes_duplicados_permitidos_test.sql)",
+        "peajes_detectar_duplicados sigue detectando la clave RN-16 y expone patente_nombre, pase_nombre, file_upload_name, duplicado",
+        "peajes_confirmar_carga sin p_permitir_duplicados bloquea; con true inserta duplicado=true",
+        "Paso 8 muestra nombres (no UUID), columna Archivo y botón Subir igualmente",
+        "ng test paso8 + peajes-carga"
+      ],
+      "evidence": [
+        "2026-08-28: migración 20260828120000_peajes_duplicados_permitidos.sql. db reset --local --no-seed OK; supabase test db 220 PASS. Índice único parcial WHERE duplicado=false. RPC p_permitir_duplicados default false. Paso 8 nombres+Archivo+DUPLICADO+Subir igualmente. ng test paso8+peajes-carga (suite F18 75 SUCCESS). tsc EXIT 0. DESARROLLO kfffigvyvtzyczeiadxh: apply_migration MCP (CLI db push --linked 403); historial 20260828120000; columna+índice+RPC verificados."
+      ]
+    }
+  ]
+}

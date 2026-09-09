@@ -1,0 +1,52 @@
+<div class="at tf">
+  <header class="at__header">
+    <div>
+      <p class="at__eyebrow">Módulo Peajes · Tarifario</p>
+      <h1>{{ breadcrumb || 'Editor de tarifas' }}</h1>
+      <p class="at__sub">
+        Actualizá NO_PICO y PICO juntas. Un campo NUEVO vacío no modifica esa tarifa.
+      </p>
+      <p class="tf__stamp" *ngIf="!loading && !error">
+        Última actualización: {{ ultimaActualizacion }}
+      </p>
+    </div>
+    <div class="at__header-actions">
+      <a routerLink="/peajes/tarifario" class="at__link">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Volver al listado
+      </a>
+    </div>
+  </header>
+
+  <p class="at__error" *ngIf="error" role="alert">{{ error }}</p>
+  <p class="at__empty" *ngIf="loading">Cargando tarifario…</p>
+
+  <app-tarifario-editor-board
+    *ngIf="!loading && !error"
+    [rows]="rows"
+    [drafts]="drafts"
+    [allowAddCategoria]="canAddCategoria"
+    [categoriaCount]="categoriaCount"
+    (draftChange)="onDraftChange($event)"
+    (historyRequest)="openHistory($event.row, $event.status)"
+    (addCategoria)="addCategoria()"
+  ></app-tarifario-editor-board>
+
+  <p class="at__error" *ngIf="saveError" role="alert">{{ saveError }}</p>
+
+  <footer class="tf__actions" *ngIf="!loading && !error">
+    <button type="button" class="at__btn" (click)="cancel()">Cancelar</button>
+    <button type="button" class="at__btn at__btn--primary" [disabled]="!canSave" (click)="save()">
+      {{ saving ? 'Guardando…' : 'Guardar cambios' }}
+    </button>
+  </footer>
+
+  <app-tarifario-historial-dialog
+    [open]="historyOpen"
+    [title]="historyTitle"
+    [loading]="historyLoading"
+    [error]="historyError"
+    [rows]="historyRows"
+    (closed)="historyOpen = false"
+  ></app-tarifario-historial-dialog>
+</div>

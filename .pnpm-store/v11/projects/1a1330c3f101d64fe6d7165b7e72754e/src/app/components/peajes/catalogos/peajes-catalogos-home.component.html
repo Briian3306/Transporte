@@ -1,0 +1,29 @@
+<div class="pc-home">
+  <header class="pc-home__header">
+    <div>
+      <p class="pc-home__eyebrow">Módulo Peajes</p>
+      <h1><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Catálogos</h1>
+      <p>Administrá empresas, peajes, estaciones, patentes y pases.</p>
+    </div>
+    <a routerLink="/peajes" class="pw__btn pw__btn--ghost">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      Volver
+    </a>
+  </header>
+
+  <section class="pc-home__grid" aria-label="Catálogos disponibles" *ngIf="hasVisibleCards">
+    <ng-container *ngFor="let card of cards">
+      <a
+        *ngIf="isSectionVisible(card.route)"
+        [routerLink]="card.route"
+        class="pc-home__card"
+      >
+        <div class="pc-home__icon">
+          <i class="fas" [ngClass]="card.icon" aria-hidden="true"></i>
+        </div>
+        <h2>{{ card.title }}</h2>
+        <p>{{ card.description }}</p>
+      </a>
+    </ng-container>
+  </section>
+</div>

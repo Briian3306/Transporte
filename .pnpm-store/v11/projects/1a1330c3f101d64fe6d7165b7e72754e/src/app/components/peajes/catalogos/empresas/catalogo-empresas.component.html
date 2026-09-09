@@ -1,0 +1,45 @@
+<div class="cat">
+  <header class="cat__header">
+    <h1><i class="fas fa-building" aria-hidden="true"></i> Catálogo de empresas</h1>
+    <a routerLink="/peajes/catalogos" class="cat__back">Volver a catálogos</a>
+  </header>
+
+  <div class="cat__layout">
+    <section class="cat__panel">
+      <h2>Nueva empresa</h2>
+      <form [formGroup]="form" class="cat__form" (ngSubmit)="guardar()">
+        <label>Nombre *<input formControlName="nombre" placeholder="Ej. ACCESO OESTE" /></label>
+        <label>Descripción<input formControlName="descripcion" placeholder="Proveedor / concesionaria" /></label>
+        <div class="cat__actions">
+          <button type="submit" [disabled]="guardando">
+            {{ guardando ? 'Guardando…' : 'Crear' }}
+          </button>
+        </div>
+      </form>
+      <p class="cat__error" *ngIf="error">{{ error }}</p>
+      <p class="cat__note">
+        La empresa es el contexto de peajes, plantillas y cargas del wizard.
+      </p>
+    </section>
+
+    <section class="cat__panel">
+      <h2 class="cat__list-title">Listado</h2>
+      <app-data-table
+        [columns]="columns"
+        [rows]="tableRows"
+        [page]="page"
+        [pageSize]="pageSize"
+        [clientFilter]="true"
+        [filterableColumnsInputs]="true"
+        [searchableInputMain]="['nombre']"
+        [exportLabel]="''"
+        emptyMessage="Sin resultados para el filtro."
+        (pageChange)="onPageChange($event)"
+      >
+        <ng-template appDataTableColumn="id" let-row>
+          <code class="cat__id">{{ row['id'] }}</code>
+        </ng-template>
+      </app-data-table>
+    </section>
+  </div>
+</div>

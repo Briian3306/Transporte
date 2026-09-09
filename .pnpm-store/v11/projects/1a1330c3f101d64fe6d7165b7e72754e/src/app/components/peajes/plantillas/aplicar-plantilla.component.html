@@ -1,0 +1,79 @@
+<div class="plt">
+  <header class="plt__header">
+    <div>
+      <p class="plt__eyebrow">Peajes · Plantillas</p>
+      <h1 class="plt__title">
+        <i class="fas fa-magic" aria-hidden="true"></i>
+        Aplicar plantilla
+      </h1>
+      <p class="plt__subtitle">
+        Validá compatibilidad de columnas y alcance por empresa antes de ejecutar el pipeline.
+      </p>
+    </div>
+  </header>
+
+  @if (errorAlcance) {
+    <div class="plt__alert plt__alert--error" role="alert">{{ errorAlcance }}</div>
+  }
+  @if (mensaje) {
+    <div
+      class="plt__alert"
+      [class.plt__alert--ok]="!bloqueada"
+      [class.plt__alert--warn]="bloqueada"
+    >
+      {{ mensaje }}
+    </div>
+  }
+
+  <section class="plt__panel">
+    <div class="plt__form">
+      <div class="plt__field">
+        <label for="empresaActiva">Empresa activa</label>
+        <input
+          id="empresaActiva"
+          name="empresaActiva"
+          [(ngModel)]="empresaActiva"
+          (ngModelChange)="onEmpresaChange()"
+        />
+      </div>
+      <div class="plt__field">
+        <label for="plantilla">Plantilla</label>
+        <select id="plantilla" name="plantilla" [(ngModel)]="plantillaId">
+          <option value="">— Seleccionar —</option>
+          @for (p of plantillas; track p.id) {
+            <option [value]="p.id">
+              {{ p.nombre }} ({{ p.empresa_id }}) · {{ p.estado }}
+            </option>
+          }
+        </select>
+      </div>
+      <div class="plt__field">
+        <label for="columnas">Columnas del archivo (separadas por coma)</label>
+        <textarea id="columnas" name="columnas" [(ngModel)]="columnasArchivo"></textarea>
+      </div>
+      <div class="plt__actions">
+        <button type="button" class="plt__btn plt__btn--primary" (click)="aplicar()">
+          Validar y aplicar
+        </button>
+      </div>
+    </div>
+  </section>
+
+  @if (erroresCompat.length) {
+    <section class="plt__panel">
+      <h2>Incompatibilidades</h2>
+      <ul>
+        @for (e of erroresCompat; track e.motivo) {
+          <li>{{ e.columna }}: {{ e.motivo }}</li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (resultado) {
+    <section class="plt__panel">
+      <h2>Resultado</h2>
+      <pre class="plt__muted">{{ resultado | json }}</pre>
+    </section>
+  }
+</div>

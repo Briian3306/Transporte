@@ -1,0 +1,154 @@
+<div class="at__familia" *ngIf="meta as m">
+  <div class="at__familia-note" aria-live="polite">
+    <span><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> {{ suggestionNote }}</span>
+    <span class="at__family-pending">{{ unconfirmedCount }} pendientes</span>
+  </div>
+
+  <div
+    class="at__reconocimiento"
+    *ngIf="showReconocimiento && picoNoPicoPair as pair"
+    role="region"
+    aria-label="Reconocimiento de pico y no pico"
+  >
+    <div class="at__reconocimiento-copy">
+      <p class="at__reconocimiento-kicker">Par de precios</p>
+      <div class="at__reconocimiento-pair">
+        <span class="at__reconocimiento-fare">
+          <strong>{{ pair.low.importe | number: '1.2-2' }}</strong>
+          <span>{{ pair.noPicoLabel }}</span>
+        </span>
+        <span class="at__reconocimiento-arrow" aria-hidden="true">→</span>
+        <span class="at__reconocimiento-fare at__reconocimiento-fare--pico">
+          <strong>{{ pair.high.importe | number: '1.2-2' }}</strong>
+          <span>{{ pair.picoLabel }}</span>
+        </span>
+      </div>
+      <p class="at__reconocimiento-hint">{{ reconocimientoHint }}</p>
+    </div>
+    <button
+      type="button"
+      class="at__btn at__btn--reconocimiento"
+      [disabled]="saving"
+      (click)="onReconocimientoDetectado()"
+    >
+      <i class="fas fa-check-double" aria-hidden="true"></i>
+      Reconocimiento detectado
+    </button>
+  </div>
+
+  <p class="at__error" *ngIf="confirmError" role="alert">{{ confirmError }}</p>
+
+  <app-data-table
+    [columns]="detailColumns"
+    [rows]="detailTableRows"
+    [total]="pagedNiveles.length"
+    [page]="1"
+    [pageSize]="pagedNiveles.length || 1"
+    [sort]="detailSort"
+    [clientFilter]="false"
+    [exportEnabled]="false"
+    (sortChange)="onDetailSort($event)"
+  >
+    <ng-template appDataTableColumn="importe" let-row>
+      <span class="at__price at__num">{{ row['importe'] | number: '1.2-2' }}</span>
+    </ng-template>
+    <ng-template appDataTableColumn="cases" let-row>
+      <span class="at__num">{{ row['cases'] | number }}</span>
+    </ng-template>
+    <ng-template appDataTableColumn="multiplicador" let-row>
+      <div class="at__mult-cell"><span class="at__num">{{ row['multiplicador'] | number: '1.2-3' }}×</span><span class="at__mult-bar" [style.width]="barWidth(row['multiplicador'])"></span></div>
+    </ng-template>
+    <ng-template appDataTableColumn="franja" let-row>
+      <div class="at__rail-wrap" *ngIf="hasHours(asNivel(row)); else noHours">
+        <span class="at__franja-range" [attr.title]="'Primer caso – último caso (UTC)'">
+          {{ franjaLabel(asNivel(row)) }}
+        </span>
+        <div class="at__rail" aria-hidden="true">
+          <span class="at__rail-segment" [ngStyle]="railStyle(asNivel(row))"></span>
+          <span
+            class="at__rail-mark"
+            *ngIf="row['hora_media'] != null"
+            [style.left.%]="hourPercent(asNivel(row).hora_media)"
+          ></span>
+        </div>
+        <span class="at__rail-meta">{{ mediaLabel(asNivel(row)) }}</span>
+      </div>
+      <ng-template #noHours>
+        <span class="at__no-hours">Sin datos horarios — usá Recalcular en el peaje</span>
+      </ng-template>
+    </ng-template>
+    <ng-template appDataTableColumn="diagnostico" let-row>
+      <span [class]="diagnosticoClass(row['diagnostico'])">{{ diagnosticoLabel(row['diagnostico']) }}</span>
+    </ng-template>
+    <ng-template appDataTableColumn="categoria_calculated" let-row>
+      <div *ngIf="isPatronA(asNivel(row)); else patronBCat" (click)="$event.stopPropagation()">
+        <label
+          class="at__clase-stamp"
+          [class.at__clase-stamp--filled]="claseValue(row['id']) != null"
+          [attr.title]="claseValue(row['id']) == null ? 'Sin clase' : 'Categoría ' + claseValue(row['id'])"
+          [attr.aria-label]="claseValue(row['id']) == null ? 'Categoría opcional, 0 a 10. Sin clase' : 'Categoría ' + claseValue(row['id'])"
+        >
+          <span class="at__clase-kicker">{{ claseValue(row['id']) == null ? 'Sin clase' : 'CAT' }}</span>
+          <input
+            class="at__clase-digit"
+            type="number"
+            min="0"
+            max="10"
+            step="1"
+            inputmode="numeric"
+            [ngModel]="claseValue(row['id'])"
+            (ngModelChange)="onClase(row['id'], $event)"
+            [disabled]="saving"
+            [attr.aria-label]="'Categoría opcional, 0 a 10'"
+            placeholder="—"
+          />
+        </label>
+      </div>
+      <ng-template #patronBCat>
+        <span class="at__clase-dash" title="Categoría del proveedor">—</span>
+      </ng-template>
+    </ng-template>
+    <ng-template appDataTableColumn="status" let-row>
+      <div (click)="$event.stopPropagation()">
+        <app-tarifa-status-buttons
+          [importe]="row['importe']"
+          [catalogo]="catalogo"
+          [selected]="selections.get(row['id']) ?? row['status']"
+          [disabled]="saving"
+          [autoFocus]="shouldFocus(asNivel(row))"
+          (selectedChange)="onSelect(row['id'], $event)"
+        ></app-tarifa-status-buttons>
+      </div>
+    </ng-template>
+    <ng-template appDataTableColumn="acciones" let-row>
+      <button
+        type="button"
+        class="at__casos-btn"
+        title="Ver casos"
+        aria-label="Ver casos"
+        (click)="$event.stopPropagation(); onVerCasos(asNivel(row))"
+      >
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <span>Ver casos</span>
+      </button>
+    </ng-template>
+  </app-data-table>
+
+  <div class="at__detail-pager" *ngIf="niveles.length > 10">
+    <label>Filas <select [ngModel]="detailPageSize" (ngModelChange)="onDetailPageSize(+$event)"><option *ngFor="let size of detailPageSizes" [ngValue]="size">{{ size }}</option></select></label>
+    <span>{{ detailRangeLabel }}</span>
+    <button type="button" class="at__btn" [disabled]="detailPage <= 1" (click)="goDetailPage(detailPage - 1)">Anterior</button>
+    <button type="button" class="at__btn" [disabled]="detailPage >= detailTotalPages" (click)="goDetailPage(detailPage + 1)">Siguiente</button>
+  </div>
+
+  <footer class="at__familia-actions">
+    <span class="at__confirm-count" aria-live="polite">{{ buildAsignaciones().length }} niveles listos para asignar</span>
+    <button type="button" class="at__btn" [disabled]="saving" (click)="marcarDiagnostico.emit('CATEGORIA')">Es variación por categoría</button>
+    <button type="button" class="at__btn" [disabled]="saving" (click)="marcarDiagnostico.emit('REVISAR')">Marcar para revisar</button>
+    <button type="button" class="at__btn" [disabled]="saving" (click)="comparar.emit()">Comparar</button>
+    <button type="button" class="at__btn at__btn--primary" [disabled]="saving || !buildAsignaciones().length" (click)="onConfirm()">
+      <i class="fas fa-tags" aria-hidden="true"></i>
+      {{ confirmLabel === 'Sin cambios' ? 'Sin cambios' : 'Asignar status' }}
+    </button>
+  </footer>
+</div>

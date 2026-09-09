@@ -1,0 +1,358 @@
+<div class="min-h-screen bg-gray-50 py-6">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <button
+            (click)="volverAHistorial()"
+            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Volver al Historial
+          </button>
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">
+              <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+              Detalles del Incidente
+            </h1>
+            <p class="mt-2 text-gray-600" *ngIf="incidente">
+              Incidente #{{ incidente.id.substring(0, 8) }} - {{ formatearFechaHora(incidente.fecha, incidente.hora) }}
+            </p>
+          </div>
+        </div>
+        <div class="flex space-x-3">
+          <button
+            (click)="irARegistro()"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+            <i class="fas fa-plus mr-2"></i>
+            Nuevo Incidente
+          </button>
+          <button
+            (click)="irAConfiguracion()"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <i class="fas fa-cog mr-2"></i>
+            Configuración
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensajes -->
+    <div *ngIf="error" class="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-red-800">{{ error }}</p>
+        </div>
+        <div class="ml-auto pl-3">
+          <button (click)="clearMessages()" class="text-red-400 hover:text-red-600">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="success" class="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-green-800">{{ success }}</p>
+        </div>
+        <div class="ml-auto pl-3">
+          <button (click)="clearMessages()" class="text-green-400 hover:text-green-600">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+
+    <!-- Contenido del incidente -->
+    <div *ngIf="!loading && incidente" class="space-y-6">
+      <!-- Información principal -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">
+            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+            Información Principal
+          </h2>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Fecha y hora -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Fecha y Hora</label>
+              <p class="text-sm text-gray-900">{{ formatearFechaHora(incidente.fecha, incidente.hora) }}</p>
+            </div>
+
+            <!-- Reportante -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Reportante</label>
+              <div class="flex items-center">
+                <i [class]="getCategoriaIcon(incidente.categoria_reportante)" class="text-gray-400 mr-2"></i>
+                <div>
+                  <p class="text-sm text-gray-900">{{ incidente.nombre_reportante }}</p>
+                  <p class="text-sm text-gray-500">{{ getCategoriaLabel(incidente.categoria_reportante) }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Teléfono -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+              <p class="text-sm text-gray-900">{{ incidente.telefono_reportante }}</p>
+            </div>
+
+            <!-- Patente -->
+            <div *ngIf="incidente.patente">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Patente del Vehículo</label>
+              <p class="text-sm text-gray-900">
+                <i class="fas fa-car mr-1"></i>{{ incidente.patente }}
+              </p>
+            </div>
+
+            <!-- Ubicación -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+              <p class="text-sm text-gray-900">{{ incidente.ubicacion }}</p>
+            </div>
+          </div>
+
+          <!-- Motivo -->
+          <div class="mt-6">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Motivo del Llamado</label>
+            <p class="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">{{ incidente.motivo }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clasificación del incidente -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">
+            <i class="fas fa-tags text-purple-600 mr-2"></i>
+            Clasificación del Incidente
+          </h2>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Tipo de incidente -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Incidente</label>
+              <div class="flex items-center">
+                <i [class]="tipoIncidente?.icono || 'fas fa-circle'" class="text-gray-400 mr-2"></i>
+                <p class="text-sm text-gray-900">{{ tipoIncidente?.nombre || incidente.tipo_incidente }}</p>
+              </div>
+            </div>
+
+            <!-- Subtipo de incidente -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Subtipo de Incidente</label>
+              <p class="text-sm text-gray-900">{{ subtipoIncidente?.nombre || incidente.subtipo_incidente }}</p>
+            </div>
+
+            <!-- Nivel de riesgo -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nivel de Riesgo</label>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border"
+                    [class]="getNivelRiesgoClass()">
+                <i [class]="nivelRiesgo?.icono || 'fas fa-circle'" class="mr-2"></i>
+                {{ nivelRiesgo?.nombre || incidente.nivel_riesgo }}
+              </span>
+            </div>
+
+            <!-- Puntaje total -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Puntaje Total</label>
+              <p class="text-2xl font-bold text-gray-900">{{ incidente.puntaje_total }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Indicaciones y Acciones -->
+      <div *ngIf="incidente.indicaciones_aplicadas.length > 0 || incidente.acciones_aplicadas.length > 0" 
+           class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">
+            <i class="fas fa-list-check text-green-600 mr-2"></i>
+            Indicaciones y Acciones Aplicadas
+          </h2>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Indicaciones -->
+            <div *ngIf="incidente.indicaciones_aplicadas.length > 0">
+              <h3 class="text-md font-medium text-blue-800 mb-3">
+                <i class="fas fa-clipboard-list mr-2"></i>
+                Indicaciones
+              </h3>
+              <div class="space-y-2">
+                <div *ngFor="let indicacion of incidente.indicaciones_aplicadas" 
+                     class="flex items-start space-x-2 p-3 bg-blue-50 rounded border border-blue-200">
+                  <span class="text-blue-600 font-medium mt-1">•</span>
+                  <p class="text-sm text-gray-700">{{ indicacion }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Acciones -->
+            <div *ngIf="incidente.acciones_aplicadas.length > 0">
+              <h3 class="text-md font-medium text-green-800 mb-3">
+                <i class="fas fa-tasks mr-2"></i>
+                Acciones
+              </h3>
+              <div class="space-y-2">
+                <div *ngFor="let accion of incidente.acciones_aplicadas" 
+                     class="flex items-start space-x-2 p-3 bg-green-50 rounded border border-green-200">
+                  <span class="text-green-600 font-medium mt-1">✓</span>
+                  <p class="text-sm text-gray-700">{{ accion }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado de seguimiento y comentarios -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">
+            <i class="fas fa-chart-line text-orange-600 mr-2"></i>
+            Seguimiento del Incidente
+          </h2>
+        </div>
+        <div class="p-6">
+          <!-- Estado actual -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Estado Actual</label>
+            <div class="flex items-center space-x-4">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                    [class]="getEstadoClass(incidente.estado_seguimiento)">
+                <i [class]="getEstadoIcon(incidente.estado_seguimiento)" class="mr-2"></i>
+                {{ incidente.estado_seguimiento | titlecase }}
+              </span>
+              
+              <!-- Cambiar estado -->
+              <div *ngIf="puedeCambiarEstado()" class="flex items-center space-x-2">
+                <label class="text-sm text-gray-700">Cambiar a:</label>
+                <select
+                  (change)="cambiarEstado($any($event.target).value)"
+                  class="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Seleccionar estado...</option>
+                  <option *ngFor="let estado of getEstadosDisponibles()" [value]="estado.value">
+                    {{ estado.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Agregar comentario -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Agregar Comentario</label>
+            <div class="flex space-x-2">
+              <textarea
+                [(ngModel)]="nuevoComentario"
+                placeholder="Escriba un comentario sobre el seguimiento del incidente..."
+                rows="3"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                [disabled]="agregandoComentario"></textarea>
+              <button
+                (click)="agregarComentario()"
+                [disabled]="!nuevoComentario.trim() || agregandoComentario"
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i *ngIf="!agregandoComentario" class="fas fa-paper-plane"></i>
+                <i *ngIf="agregandoComentario" class="fas fa-spinner fa-spin"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Timeline de comentarios -->
+          <div *ngIf="tieneComentarios()">
+            <h3 class="text-md font-medium text-gray-900 mb-4">
+              <i class="fas fa-comments mr-2"></i>
+              Historial de Comentarios
+            </h3>
+            <div class="space-y-4">
+              <div *ngFor="let comentario of getComentariosOrdenados()" 
+                   class="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+                <div class="flex-shrink-0">
+                  <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-blue-600 text-sm"></i>
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-gray-900">{{ comentario.usuario }}</p>
+                    <p class="text-xs text-gray-500">
+                      {{ formatearFechaHora(comentario.timestamp.split('T')[0], comentario.timestamp.split('T')[1].split('.')[0]) }}
+                    </p>
+                  </div>
+                  <p class="mt-1 text-sm text-gray-700">{{ comentario.texto }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mensaje cuando no hay comentarios -->
+          <div *ngIf="!tieneComentarios()" class="text-center py-8">
+            <i class="fas fa-comments text-gray-400 text-4xl mb-2"></i>
+            <p class="text-gray-500">No hay comentarios de seguimiento aún</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Información de auditoría -->
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-medium text-gray-900">
+            <i class="fas fa-info text-gray-600 mr-2"></i>
+            Información de Auditoría
+          </h2>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Creación</label>
+              <p class="text-sm text-gray-900">{{ formatearFechaHora(incidente.created_at.split('T')[0], incidente.created_at.split('T')[1].split('.')[0]) }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Última Actualización</label>
+              <p class="text-sm text-gray-900">{{ formatearFechaHora(incidente.updated_at.split('T')[0], incidente.updated_at.split('T')[1].split('.')[0]) }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje cuando no se encuentra el incidente -->
+    <div *ngIf="!loading && !incidente" class="text-center py-12">
+      <i class="fas fa-exclamation-triangle text-gray-400 text-6xl mb-4"></i>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Incidente no encontrado</h3>
+      <p class="text-gray-500 mb-6">El incidente solicitado no existe o no tienes permisos para verlo.</p>
+      <button
+        (click)="volverAHistorial()"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        <i class="fas fa-arrow-left mr-2"></i>
+        Volver al Historial
+      </button>
+    </div>
+  </div>
+</div>

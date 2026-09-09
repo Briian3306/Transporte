@@ -1,0 +1,7 @@
+<div class="shared-spinner" [class.shared-spinner--small]="size === 'sm'" role="status" aria-live="polite">
+  <span class="shared-spinner__ring" aria-hidden="true"></span>
+  <div class="shared-spinner__copy">
+    <strong>{{ label }}</strong>
+    <span *ngIf="detail">{{ detail }}</span>
+  </div>
+</div>

@@ -1,0 +1,3 @@
+display_name: Documentación de proyecto
+short_description: Metodología para organizar, refactorizar y mantener documentación técnica sin duplicados.
+default_prompt: Usa la skill documentacion-proyecto para reorganizar, crear o refactorizar documentación técnica del proyecto con una metodología canónica, índices y vínculos entre módulos y componentes.

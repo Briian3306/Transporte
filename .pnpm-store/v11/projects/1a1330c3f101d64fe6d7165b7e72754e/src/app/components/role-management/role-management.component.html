@@ -1,0 +1,293 @@
+<div class="role-management-container" *ngIf="isAdmin()">
+  <!-- Header -->
+  <div class="header-section">
+    <div class="header-content">
+      <h1 class="page-title">
+        <i class="fas fa-user-tag"></i>
+        Gestión de Roles
+      </h1>
+      <p class="page-subtitle">Administra los roles del sistema</p>
+    </div>
+    <div class="header-actions">
+      <button 
+        (click)="openCreateModal()"
+        class="btn btn-primary">
+        <i class="fas fa-plus"></i>
+        Crear Rol
+      </button>
+      
+      <a 
+        routerLink="/role-permissions"
+        class="btn btn-secondary">
+        <i class="fas fa-shield-alt"></i>
+        Gestionar Permisos
+      </a>
+    </div>
+  </div>
+
+  <!-- Mensajes -->
+  <div class="messages-section" *ngIf="errorMessage || successMessage">
+    <div class="alert alert-error" *ngIf="errorMessage">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ errorMessage }}
+    </div>
+    <div class="alert alert-success" *ngIf="successMessage">
+      <i class="fas fa-check-circle"></i>
+      {{ successMessage }}
+    </div>
+  </div>
+
+  <!-- Tabla de roles -->
+  <div class="table-section">
+    <div class="table-container">
+      <table class="roles-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Tipo</th>
+            <th>Fecha de Creación</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="loading" class="loading-row">
+            <td colspan="5" class="text-center">
+              <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                Cargando roles...
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngFor="let role of roles" class="role-row">
+            <td class="role-name">
+              <div class="role-info">
+                <i class="fas fa-user-tag"></i>
+                <span class="role-name-text">{{ role.name | titlecase }}</span>
+              </div>
+            </td>
+
+            <td class="role-description">
+              {{ role.description }}
+            </td>
+
+            <td class="role-type">
+              <span class="type-badge" [class]="getRoleBadgeClass(role.name)">
+                {{ role.isSystemRole ? 'Sistema' : 'Personalizado' }}
+              </span>
+            </td>
+
+            <td class="role-date">
+              {{ role.createdAt | date:'dd/MM/yyyy' }}
+            </td>
+
+            <td class="actions-cell">
+              <div class="action-buttons">
+                <a 
+                  [routerLink]="['/role-permissions', role.id]"
+                  class="btn btn-primary btn-sm"
+                  title="Gestionar permisos">
+                  <i class="fas fa-key"></i>
+                </a>
+
+                <button 
+                  (click)="openEditModal(role)"
+                  class="btn btn-info btn-sm"
+                  title="Editar rol">
+                  <i class="fas fa-edit"></i>
+                </button>
+
+                <button 
+                  (click)="deleteRole(role)"
+                  [disabled]="role.isSystemRole"
+                  class="btn btn-danger btn-sm"
+                  [title]="role.isSystemRole ? 'No se pueden eliminar roles del sistema' : 'Eliminar rol'">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="!loading && roles.length === 0" class="empty-row">
+            <td colspan="5" class="text-center">
+              <div class="empty-state">
+                <i class="fas fa-user-tag"></i>
+                <h3>No hay roles</h3>
+                <p>Crea el primer rol usando el botón de arriba</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal de Creación de Rol -->
+  <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fas fa-user-plus"></i>
+          Crear Nuevo Rol
+        </h3>
+        <button (click)="closeCreateModal()" class="btn-close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <form [formGroup]="roleForm" (ngSubmit)="createRole()" class="modal-body">
+        <div class="form-group">
+          <label for="name">Nombre del Rol *</label>
+          <input 
+            type="text" 
+            id="name"
+            formControlName="name"
+            class="form-control"
+            [class.error]="roleForm.get('name')?.invalid && roleForm.get('name')?.touched"
+            placeholder="ej: supervisor">
+          <div class="error-message" *ngIf="roleForm.get('name')?.invalid && roleForm.get('name')?.touched">
+            <span *ngIf="roleForm.get('name')?.errors?.['required']">Nombre es requerido</span>
+            <span *ngIf="roleForm.get('name')?.errors?.['minlength']">Mínimo 2 caracteres</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Descripción *</label>
+          <textarea 
+            id="description"
+            formControlName="description"
+            class="form-control"
+            [class.error]="roleForm.get('description')?.invalid && roleForm.get('description')?.touched"
+            placeholder="Descripción del rol y sus responsabilidades"
+            rows="3"></textarea>
+          <div class="error-message" *ngIf="roleForm.get('description')?.invalid && roleForm.get('description')?.touched">
+            <span *ngIf="roleForm.get('description')?.errors?.['required']">Descripción es requerida</span>
+            <span *ngIf="roleForm.get('description')?.errors?.['minlength']">Mínimo 5 caracteres</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              formControlName="isSystemRole"
+              class="checkbox-input">
+            <span class="checkbox-text">Rol del sistema</span>
+          </label>
+          <small class="help-text">Los roles del sistema no se pueden eliminar</small>
+        </div>
+      </form>
+
+      <div class="modal-footer">
+        <button 
+          type="button" 
+          (click)="closeCreateModal()" 
+          class="btn btn-secondary">
+          Cancelar
+        </button>
+        <button 
+          type="button" 
+          (click)="createRole()" 
+          [disabled]="roleForm.invalid || loading"
+          class="btn btn-primary">
+          <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+          <i class="fas fa-save" *ngIf="!loading"></i>
+          {{ loading ? 'Creando...' : 'Crear Rol' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Edición de Rol -->
+  <div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fas fa-edit"></i>
+          Editar Rol
+        </h3>
+        <button (click)="closeEditModal()" class="btn-close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <form [formGroup]="roleForm" (ngSubmit)="updateRole()" class="modal-body">
+        <div class="form-group">
+          <label for="editName">Nombre del Rol *</label>
+          <input 
+            type="text" 
+            id="editName"
+            formControlName="name"
+            class="form-control"
+            [class.error]="roleForm.get('name')?.invalid && roleForm.get('name')?.touched"
+            placeholder="ej: supervisor">
+          <div class="error-message" *ngIf="roleForm.get('name')?.invalid && roleForm.get('name')?.touched">
+            <span *ngIf="roleForm.get('name')?.errors?.['required']">Nombre es requerido</span>
+            <span *ngIf="roleForm.get('name')?.errors?.['minlength']">Mínimo 2 caracteres</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editDescription">Descripción *</label>
+          <textarea 
+            id="editDescription"
+            formControlName="description"
+            class="form-control"
+            [class.error]="roleForm.get('description')?.invalid && roleForm.get('description')?.touched"
+            placeholder="Descripción del rol y sus responsabilidades"
+            rows="3"></textarea>
+          <div class="error-message" *ngIf="roleForm.get('description')?.invalid && roleForm.get('description')?.touched">
+            <span *ngIf="roleForm.get('description')?.errors?.['required']">Descripción es requerida</span>
+            <span *ngIf="roleForm.get('description')?.errors?.['minlength']">Mínimo 5 caracteres</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              formControlName="isSystemRole"
+              class="checkbox-input"
+              [disabled]="selectedRole?.isSystemRole || false">
+            <span class="checkbox-text">Rol del sistema</span>
+          </label>
+          <small class="help-text" *ngIf="selectedRole?.isSystemRole === true">
+            Este rol del sistema no se puede modificar
+          </small>
+        </div>
+      </form>
+
+      <div class="modal-footer">
+        <button 
+          type="button" 
+          (click)="closeEditModal()" 
+          class="btn btn-secondary">
+          Cancelar
+        </button>
+        <button 
+          type="button" 
+          (click)="updateRole()" 
+          [disabled]="roleForm.invalid || loading"
+          class="btn btn-primary">
+          <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+          <i class="fas fa-save" *ngIf="!loading"></i>
+          {{ loading ? 'Guardando...' : 'Guardar Cambios' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Acceso Denegado -->
+<div class="access-denied" *ngIf="!isAdmin()">
+  <div class="access-denied-content">
+    <i class="fas fa-shield-alt"></i>
+    <h2>Acceso Restringido</h2>
+    <p>Solo los administradores pueden gestionar roles del sistema</p>
+    <button class="btn btn-primary" routerLink="/users">
+      <i class="fas fa-arrow-left"></i>
+      Volver a Gestión de Usuarios
+    </button>
+  </div>
+</div>

@@ -1,0 +1,206 @@
+<div class="paso9">
+  <div class="pw__head paso9__head">
+    <div>
+      <div class="pw__eyebrow">{{ expressMode ? 'Paso 4 · revisión' : 'Paso 09 · control final' }}</div>
+      <h2>Revisar y confirmar carga</h2>
+      <p>Todo está listo. Revisá el resultado estandarizado antes de guardarlo.</p>
+    </div>
+    <div class="head-actions">
+      <span class="pw__status pw__status--valid">
+        {{ resultado ? 'Carga confirmada' : 'Listo para confirmar' }}
+      </span>
+      <button type="button" class="pw__btn" (click)="atras.emit()" [disabled]="!!resultado">Volver</button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--success"
+        data-testid="confirmar-carga"
+        *ngIf="!resultado"
+        [disabled]="guardando || confirmationBlocked"
+        (click)="confirmar()"
+      >
+        Confirmar carga
+      </button>
+    </div>
+  </div>
+
+  <div class="pw__body">
+    <div class="pw__metrics">
+      <div class="pw__metric">
+        <div class="pw__metric-label">Registros procesados</div>
+        <div class="pw__metric-value pw__metric-value--blue">{{ pasadas.length }}</div>
+      </div>
+      <div class="pw__metric">
+        <div class="pw__metric-label">Registros válidos</div>
+        <div class="pw__metric-value pw__metric-value--green">{{ validas }}</div>
+      </div>
+      <div class="pw__metric">
+        <div class="pw__metric-label">Registros rechazados</div>
+        <div class="pw__metric-value pw__metric-value--red">{{ rechazados }}</div>
+      </div>
+      <div class="pw__metric">
+        <div class="pw__metric-label">Importe neto total</div>
+        <div class="pw__metric-value pw__metric-value--money">$ {{ sumaNetos | number: '1.2-2' }}</div>
+      </div>
+    </div>
+
+    <div class="pw__note">
+      <strong>Validación completa</strong>
+      <span style="margin-left: auto; font-family: var(--pw-mono, monospace); font-weight: 800">
+        {{ validas }}/{{ pasadas.length }} filas · {{ snap.relacionesEstacion.length }} estaciones ·
+        dif. factura $ {{ (snap.validacion?.diferenciaFactura ?? 0) | number: '1.2-2' }}
+      </span>
+    </div>
+
+    <div class="pw__note" *ngIf="resumenRefresco">
+      <strong>Tarifas</strong>
+      <span>
+        {{ resumenRefresco.filasVigentes }} vigentes ·
+        {{ resumenRefresco.filasHistoricas }} históricas ·
+        {{ resumenRefresco.pendientes }} pendientes
+      </span>
+    </div>
+    <p class="pw__alert" *ngIf="resumenRefresco?.filasHistoricas && !dialogNeeded">
+      Hay importes que coinciden con historial. No se abre el diálogo ni se inserta un precio nuevo.
+    </p>
+    <p class="pw__alert pw__alert--error" *ngIf="dialogNeeded && !canManageTarifas" role="alert">
+      Hay tarifas nuevas. Se requiere permiso peajes:manage para actualizarlas antes de confirmar.
+    </p>
+
+    <section class="paso9__resumen" *ngIf="esMasiva" aria-label="Resumen de importación masiva">
+      <h3 class="paso9__resumen-title">Resumen de documentos</h3>
+
+      <div class="paso9__resumen-block" *ngIf="documentosIncluidos.length">
+        <h4>A importar ({{ documentosIncluidos.length }})</h4>
+        <ul>
+          <li *ngFor="let d of documentosIncluidos">
+            <strong>{{ d.factura || '(sin número)' }}</strong>
+            · {{ d.rowIndexes?.length || 0 }} pasadas
+          </li>
+        </ul>
+      </div>
+
+      <div class="paso9__resumen-block paso9__resumen-block--omitidos" *ngIf="documentosOmitidos.length">
+        <h4>Omitidos ({{ documentosOmitidos.length }})</h4>
+        <ul>
+          <li *ngFor="let d of documentosOmitidos">
+            <strong>{{ d.factura || '(sin número)' }}</strong>
+            <ul class="paso9__errores" *ngIf="d.errores?.length">
+              <li *ngFor="let err of d.errores">{{ err }}</li>
+            </ul>
+            <span *ngIf="!d.errores?.length" class="paso9__sin-motivo">Sin detalle de error</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="paso9__resumen-block paso9__resumen-block--ok" *ngIf="tarifasActualizadas.length">
+        <h4>Tarifas actualizadas</h4>
+        <table class="pw__table">
+          <thead>
+            <tr>
+              <th>Estación</th>
+              <th>Categoría</th>
+              <th>Estado</th>
+              <th>Sentido</th>
+              <th>Anterior</th>
+              <th>Nueva</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of tarifasActualizadas">
+              <td>{{ t.estacion_id }}</td>
+              <td>{{ t.categoria }}</td>
+              <td>{{ t.status }}</td>
+              <td>{{ t.sentido }}</td>
+              <td>{{ t.anterior == null ? '—' : t.anterior }}</td>
+              <td>{{ t.nueva }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="paso9__resumen-block paso9__resumen-block--ok" *ngIf="importadosResumen.length">
+        <h4>Importados correctamente ({{ importadosResumen.length }})</h4>
+        <ul>
+          <li *ngFor="let d of importadosResumen">
+            <strong>{{ d.numero }}</strong> · {{ d.pasadas }} pasadas
+          </li>
+        </ul>
+      </div>
+
+      <div class="paso9__resumen-block paso9__resumen-block--error" *ngIf="erroresPorDocumento.length">
+        <h4>Errores de confirmación ({{ erroresPorDocumento.length }})</h4>
+        <ul>
+          <li *ngFor="let e of erroresPorDocumento">
+            <strong>{{ e.numero }}</strong>: {{ e.error }}
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="pw__table-wrap paso9__table-wrap">
+      <table class="pw__table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Fecha</th>
+            <th>Pase (ext)</th>
+            <th>Patente</th>
+            <th>Estación</th>
+            <th>PRECIO</th>
+            <th>BONIFICACION</th>
+            <th>QTY</th>
+            <th>IMPORTE_NETO</th>
+            <th>ESTADO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of pasadas; let i = index">
+            <td class="pw__mono">{{ i + 1 }}</td>
+            <td class="pw__mono">{{ p.FECHA_HORA }}</td>
+            <td class="pw__mono">{{ paseExt(p) }}</td>
+            <td class="pw__mono">{{ patenteTexto(p) }}</td>
+            <td class="pw__mono pw__selected">{{ estacionNombre(p) }}</td>
+            <td class="pw__mono">{{ p.PRECIO }}</td>
+            <td class="pw__mono">{{ p.BONIFICACION }}</td>
+            <td class="pw__mono">{{ p.QUANTITY }}</td>
+            <td class="pw__mono">{{ p.IMPORTE_NETO }}</td>
+            <td><span class="pw__status pw__status--valid">Válido</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pw__alert" *ngIf="avisoAsociacion" role="status">{{ avisoAsociacion }}</div>
+    <div class="pw__alert pw__alert--error" *ngIf="error" role="alert">{{ error }}</div>
+  </div>
+
+  <div class="pw__footer">
+    <div class="pw__footer-hint">
+      <strong>Importante:</strong> confirmar guardará las pasadas asociadas a cada documento incluido.
+      <span *ngIf="documentosOmitidos.length"> Los omitidos no se persisten.</span>
+    </div>
+  </div>
+
+  <app-tarifa-refresh-dialog
+    [open]="refreshOpen"
+    [resultados]="resumenRefresco?.resultados ?? []"
+    [candidatos]="resumenRefresco?.candidatos ?? []"
+    [canManage]="canManageTarifas"
+    (openChange)="refreshOpen = $event"
+    (cancelled)="onRefreshCancelled()"
+    (saved)="onRefreshSaved($event)"
+  ></app-tarifa-refresh-dialog>
+
+  <app-dialog
+    [open]="exitoAbierto"
+    eyebrow="Carga"
+    title="Carga confirmada"
+    [description]="mensajeExito"
+    (closed)="onExitoCerrado()"
+  >
+    <div appDialogActions class="pw__footer-actions">
+      <button type="button" class="pw__btn pw__btn--primary" (click)="onExitoCerrado()">
+        Cargar otro archivo
+      </button>
+    </div>
+  </app-dialog>
+</div>

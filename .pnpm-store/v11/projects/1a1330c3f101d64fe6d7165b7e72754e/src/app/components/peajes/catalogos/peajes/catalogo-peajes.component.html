@@ -1,0 +1,102 @@
+<div class="cat">
+  <header class="cat__header">
+    <h1><i class="fas fa-road" aria-hidden="true"></i> Catálogo de peajes</h1>
+    <a routerLink="/peajes/catalogos" class="cat__back">Volver a catálogos</a>
+  </header>
+
+  <div class="cat__layout">
+    <section class="cat__panel">
+      <h2>{{ editandoId ? 'Editar peaje' : 'Nuevo peaje' }}</h2>
+      <form [formGroup]="form" class="cat__form" (ngSubmit)="guardar()">
+        <label>Nombre *<input formControlName="nombre" /></label>
+        <label>Ubicación<input formControlName="ubicacion" /></label>
+        <label>Descripción<input formControlName="descripcion" /></label>
+        <div class="cat__empresa">
+          <label class="cat__empresa-select">
+            Empresa
+            <select formControlName="empresa_id">
+              <option value="">Sin empresa…</option>
+              <option *ngFor="let empresa of empresas" [value]="empresa.id">
+                {{ empresa.nombre }}
+              </option>
+            </select>
+          </label>
+          <button
+            type="button"
+            class="cat__btn-link"
+            (click)="crearEmpresaAbierto = true"
+          >
+            + Crear empresa
+          </button>
+        </div>
+        <div class="cat__actions">
+          <button type="button" (click)="nuevo()">Limpiar</button>
+          <button type="submit" [disabled]="guardando">Guardar</button>
+        </div>
+      </form>
+      <p class="cat__error" *ngIf="error">{{ error }}</p>
+    </section>
+
+    <section class="cat__panel">
+      <h2 class="cat__list-title">Listado</h2>
+      <app-data-table
+        [columns]="columns"
+        [rows]="tableRows"
+        [page]="page"
+        [pageSize]="pageSize"
+        [clientFilter]="true"
+        [filterableColumnsInputs]="true"
+        [searchableInputMain]="['nombre']"
+        [exportLabel]="''"
+        emptyMessage="Sin resultados para el filtro."
+        (pageChange)="onPageChange($event)"
+      >
+        <ng-template appDataTableColumn="acciones" let-row>
+          <button type="button" class="cat__row-btn" (click)="editar(row); $event.stopPropagation()">
+            Editar
+          </button>
+        </ng-template>
+      </app-data-table>
+    </section>
+  </div>
+
+  <div class="cat__dialog-backdrop" *ngIf="crearEmpresaAbierto">
+    <section
+      class="cat__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="nueva-empresa-peaje-titulo"
+    >
+      <div class="cat__dialog-head">
+        <div>
+          <p class="cat__eyebrow">Catálogo de empresas</p>
+          <h3 id="nueva-empresa-peaje-titulo">Crear empresa</h3>
+        </div>
+        <button type="button" class="cat__btn-ghost" (click)="crearEmpresaAbierto = false">
+          Cerrar
+        </button>
+      </div>
+      <p>La empresa agrupa peajes, plantillas y cargas del wizard.</p>
+      <div class="cat__dialog-form">
+        <label>
+          Nombre *
+          <input [(ngModel)]="nuevaEmpresaNombre" name="nuevaEmpresaNombre" autofocus />
+        </label>
+        <label>
+          Descripción
+          <input [(ngModel)]="nuevaEmpresaDescripcion" name="nuevaEmpresaDescripcion" />
+        </label>
+      </div>
+      <div class="cat__actions">
+        <button type="button" (click)="crearEmpresaAbierto = false">Cancelar</button>
+        <button
+          type="button"
+          [disabled]="!nuevaEmpresaNombre.trim()"
+          (click)="crearEmpresa()"
+        >
+          Crear y seleccionar
+        </button>
+      </div>
+    </section>
+  </div>
+</div>

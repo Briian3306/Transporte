@@ -1,0 +1,267 @@
+<div class="role-permission-management-container" *ngIf="isAdmin()">
+  <!-- Header -->
+  <div class="header-section">
+    <div class="header-content">
+      <h1 class="page-title">
+        <i class="fas fa-shield-alt"></i>
+        Gestión de Permisos de Roles
+      </h1>
+      <p class="page-subtitle">Solo administradores pueden modificar permisos del sistema</p>
+    </div>
+  </div>
+
+  <!-- Mensajes -->
+  <div class="messages-section" *ngIf="errorMessage || successMessage">
+    <div class="alert alert-error" *ngIf="errorMessage">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ errorMessage }}
+    </div>
+    <div class="alert alert-success" *ngIf="successMessage">
+      <i class="fas fa-check-circle"></i>
+      {{ successMessage }}
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-section">
+    <div class="tabs-container">
+      <button class="tab-button active" data-tab="module-permissions">
+        <i class="fas fa-cogs"></i>
+        Permisos de Módulos
+      </button>
+      <button class="tab-button" data-tab="role-permissions">
+        <i class="fas fa-users-cog"></i>
+        Permisos de Roles
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab: Module Permissions -->
+  <div class="tab-content active" id="module-permissions">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-cogs"></i>
+          Crear Nuevo Permiso de Módulo
+        </h3>
+      </div>
+      <div class="card-body">
+        <form [formGroup]="modulePermissionForm" (ngSubmit)="createModulePermission()" class="permission-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="moduleId">Módulo *</label>
+              <select 
+                id="moduleId"
+                formControlName="moduleId"
+                class="form-control"
+                [class.error]="modulePermissionForm.get('moduleId')?.invalid && modulePermissionForm.get('moduleId')?.touched">
+                <option value="">Seleccionar módulo</option>
+                <option *ngFor="let module of modules" [value]="module.id">
+                  {{ module.name | titlecase }}
+                </option>
+              </select>
+              <div class="error-message" *ngIf="modulePermissionForm.get('moduleId')?.invalid && modulePermissionForm.get('moduleId')?.touched">
+                <span>Módulo es requerido</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="actionId">Acción *</label>
+              <select 
+                id="actionId"
+                formControlName="actionId"
+                class="form-control"
+                [class.error]="modulePermissionForm.get('actionId')?.invalid && modulePermissionForm.get('actionId')?.touched">
+                <option value="">Seleccionar acción</option>
+                <option value="read">Leer</option>
+                <option value="create">Crear</option>
+                <option value="update">Actualizar</option>
+                <option value="delete">Eliminar</option>
+                <option value="manage">Gestionar</option>
+              </select>
+              <div class="error-message" *ngIf="modulePermissionForm.get('actionId')?.invalid && modulePermissionForm.get('actionId')?.touched">
+                <span>Acción es requerida</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <button 
+                type="submit" 
+                [disabled]="modulePermissionForm.invalid || loading"
+                class="btn btn-primary">
+                <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+                <i class="fas fa-plus" *ngIf="!loading"></i>
+                {{ loading ? 'Creando...' : 'Crear Permiso' }}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Lista de Permisos de Módulos -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-list"></i>
+          Permisos de Módulos Existentes
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="table-container">
+          <table class="permissions-table">
+            <thead>
+              <tr>
+                <th>Módulo</th>
+                <th>Acción</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="loading" class="loading-row">
+                <td colspan="4" class="text-center">
+                  <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Cargando permisos...
+                  </div>
+                </td>
+              </tr>
+
+              <tr *ngFor="let permission of getFilteredModulePermissions()" class="permission-row">
+                <td class="module-cell">
+                  <div class="module-info">
+                    <i class="fas fa-cube"></i>
+                    <span>{{ permission.module.name | titlecase }}</span>
+                  </div>
+                </td>
+                <td class="action-cell">
+                  <span class="action-badge">{{ permission.action.name | titlecase }}</span>
+                </td>
+                <td class="description-cell">
+                  {{ permission.action.description }}
+                </td>
+                <td class="actions-cell">
+                  <button 
+                    (click)="deleteModulePermission(permission.id)"
+                    class="btn btn-danger btn-sm"
+                    title="Eliminar permiso">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+
+              <tr *ngIf="!loading && getFilteredModulePermissions().length === 0" class="empty-row">
+                <td colspan="4" class="text-center">
+                  <div class="empty-state">
+                    <i class="fas fa-cogs"></i>
+                    <h3>No hay permisos de módulos</h3>
+                    <p>Crea el primer permiso usando el formulario de arriba</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Role Permissions -->
+  <div class="tab-content" id="role-permissions">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-users-cog"></i>
+          Asignar Permisos a Roles
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="roleSelect">Seleccionar Rol *</label>
+            <select 
+              id="roleSelect"
+              [(ngModel)]="selectedRoleId"
+              (change)="onRoleChange()"
+              class="form-control">
+              <option value="">Seleccionar rol</option>
+              <option *ngFor="let role of roles" [value]="role.id">
+                {{ role.name | titlecase }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="moduleFilter">Filtrar por Módulo</label>
+            <select 
+              id="moduleFilter"
+              [(ngModel)]="selectedModuleId"
+              (change)="onModuleFilterChange()"
+              class="form-control">
+              <option value="">Todos los módulos</option>
+              <option *ngFor="let module of modules" [value]="module.id">
+                {{ module.name | titlecase }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div *ngIf="selectedRoleId" class="permissions-assignment">
+          <form [formGroup]="rolePermissionForm" (ngSubmit)="saveRolePermissions()" class="permissions-form">
+            <div class="permissions-grid" formArrayName="permissions">
+              <div 
+                *ngFor="let permission of getPermissionControls(); let i = index"
+                class="permission-item"
+                [formGroupName]="i">
+                
+                <div class="permission-card">
+                  <div class="permission-header">
+                    <label class="permission-checkbox">
+                      <input type="checkbox" formControlName="isSelected">
+                      <span class="checkmark"></span>
+                    </label>
+                    <div class="permission-info">
+                      <h4 class="permission-title">{{ permission.get('moduleName')?.value | titlecase }}</h4>
+                      <p class="permission-action">{{ permission.get('actionName')?.value | titlecase }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button 
+                type="submit" 
+                [disabled]="rolePermissionForm.invalid || loading"
+                class="btn btn-primary">
+                <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+                <i class="fas fa-save" *ngIf="!loading"></i>
+                {{ loading ? 'Guardando...' : 'Guardar Permisos' }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div *ngIf="!selectedRoleId" class="empty-state">
+          <i class="fas fa-users-cog"></i>
+          <h3>Selecciona un rol</h3>
+          <p>Elige un rol de la lista para gestionar sus permisos</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Acceso Denegado -->
+<div class="access-denied" *ngIf="!isAdmin()">
+  <div class="access-denied-content">
+    <i class="fas fa-shield-alt"></i>
+    <h2>Acceso Restringido</h2>
+    <p>Solo los administradores pueden gestionar permisos del sistema</p>
+    <button class="btn btn-primary" routerLink="/users">
+      <i class="fas fa-arrow-left"></i>
+      Volver a Gestión de Usuarios
+    </button>
+  </div>
+</div>

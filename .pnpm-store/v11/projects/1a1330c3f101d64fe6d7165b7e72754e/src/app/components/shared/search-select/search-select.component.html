@@ -1,0 +1,54 @@
+<div class="ss" [class.ss--disabled]="disabled" [class.ss--searching]="!!query.trim()">
+  <label *ngIf="label" class="ss__label">{{ label }}</label>
+  <div
+    class="ss__field"
+    [class.ss__field--open]="open"
+    [class.ss__field--filled]="!!selectedOption && !query.trim()"
+    (click)="focusInput()"
+  >
+    <span *ngIf="selectedOption && !query.trim()" class="ss__value">{{ selectedOption.label }}</span>
+    <input
+      #inputEl
+      type="search"
+      class="ss__input"
+      [class.ss__input--ghost]="!!selectedOption && !query.trim()"
+      [placeholder]="selectedOption && !query.trim() ? '' : placeholder"
+      [disabled]="disabled"
+      [ngModel]="query"
+      (ngModelChange)="onQueryChange($event)"
+      (focus)="onFocus()"
+      (keydown)="onKeydown($event)"
+      autocomplete="off"
+      role="combobox"
+      [attr.aria-expanded]="open"
+      aria-autocomplete="list"
+      [attr.aria-label]="label || placeholder"
+    />
+    <button
+      *ngIf="showClear"
+      type="button"
+      class="ss__clear"
+      [attr.aria-label]="'Quitar ' + (selectedOption?.label || 'selección')"
+      (click)="clear($event)"
+    >
+      <i class="fas fa-times" aria-hidden="true"></i>
+    </button>
+    <i class="fas fa-search ss__icon" aria-hidden="true"></i>
+  </div>
+
+  <ul *ngIf="open" class="ss__dropdown" role="listbox">
+    <li
+      *ngFor="let opt of filteredOptions; let i = index"
+      class="ss__option"
+      [class.ss__option--active]="i === highlightedIndex"
+      role="option"
+      (mousedown)="$event.preventDefault(); selectOption(opt)"
+      (mouseenter)="highlightedIndex = i"
+    >
+      {{ opt.label }}
+    </li>
+    <li *ngIf="!filteredOptions.length" class="ss__empty" role="presentation">
+      {{ emptyMessage }}
+    </li>
+  </ul>
+</div>

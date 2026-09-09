@@ -1,0 +1,157 @@
+<div
+  class="cms"
+  [ngClass]="hostClasses"
+  [attr.data-badge-anim]="animationConfig.badgeAnimation || 'none'"
+  [attr.data-pop-anim]="animationConfig.popoverAnimation || 'none'"
+  [attr.data-hover-anim]="animationConfig.optionHoverAnimation || 'none'"
+  [style.--cms-anim-ms]="animMs"
+  [style.min-width]="minWidth || null"
+  [style.max-width]="maxWidth || null"
+>
+  <div *ngIf="label" class="cms__label-row" [id]="labelId">
+    <i *ngIf="labelIcon" class="cms__label-icon" [ngClass]="labelIcon" aria-hidden="true"></i>
+    <span class="cms__label">{{ label }}</span>
+    <span *ngIf="required" class="cms__required" aria-hidden="true">*</span>
+  </div>
+
+  <div
+    class="cms__field"
+    [class.cms__field--open]="open"
+    [class.cms__field--modal]="modalPopover"
+  >
+    <div
+      #triggerEl
+      class="cms__trigger"
+      role="combobox"
+      tabindex="0"
+      [attr.aria-expanded]="open"
+      [attr.aria-controls]="listboxId"
+      [attr.aria-labelledby]="label ? labelId : null"
+      [attr.aria-label]="label || placeholder"
+      [attr.aria-required]="required || null"
+      [attr.aria-disabled]="disabled"
+      (click)="onTriggerClick($event)"
+      (keydown)="onTriggerKeydown($event)"
+    >
+      <div class="cms__badges" [class.cms__badges--single]="singleLine">
+        <span
+          *ngFor="let opt of visibleBadges"
+          class="cms__badge"
+          [ngStyle]="badgeStyle(opt)"
+        >
+          <i
+            *ngIf="opt.icon"
+            class="cms__badge-icon"
+            [ngClass]="opt.icon"
+            [style.color]="opt.style?.iconColor || null"
+            aria-hidden="true"
+          ></i>
+          <span class="cms__badge-text">{{ opt.label }}</span>
+          <button
+            *ngIf="showClear"
+            type="button"
+            class="cms__badge-x"
+            [attr.aria-label]="'Quitar ' + opt.label"
+            (click)="removeValue(opt.value, $event)"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </span>
+        <span *ngIf="extraCount" class="cms__overflow" [attr.aria-label]="extraCount + ' más'">
+          +{{ extraCount }}
+        </span>
+        <span *ngIf="!selectedOptions.length" class="cms__placeholder">{{ placeholder }}</span>
+      </div>
+
+      <div class="cms__actions">
+        <button
+          *ngIf="showClear"
+          type="button"
+          class="cms__clear"
+          aria-label="Quitar todas las selecciones"
+          (click)="clear($event)"
+        >
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+        <i
+          class="fas fa-chevron-down cms__chevron"
+          [class.cms__chevron--open]="open"
+          aria-hidden="true"
+        ></i>
+      </div>
+    </div>
+
+    <div
+      *ngIf="open"
+      class="cms__popover"
+      [ngClass]="popoverClass"
+      (keydown)="onListKeydown($event)"
+    >
+      <div *ngIf="searchable" class="cms__search">
+        <i class="fas fa-search cms__search-icon" aria-hidden="true"></i>
+        <input
+          #searchEl
+          type="search"
+          class="cms__search-input"
+          [placeholder]="searchPlaceholder"
+          [ngModel]="query"
+          (ngModelChange)="onSearchChange($event)"
+          (keydown)="onListKeydown($event)"
+          autocomplete="off"
+          [attr.aria-controls]="listboxId"
+          [attr.aria-label]="searchPlaceholder"
+        />
+      </div>
+
+      <button
+        *ngIf="!hideSelectAll && visibleOptions.length"
+        type="button"
+        class="cms__option cms__option--all"
+        (click)="toggleSelectAll()"
+      >
+        <span class="cms__box" [class.cms__box--on]="allVisibleSelected">
+          <i *ngIf="allVisibleSelected" class="fas fa-check" aria-hidden="true"></i>
+        </span>
+        <span class="cms__option-label">{{ selectAllLabel }}</span>
+      </button>
+
+      <div
+        class="cms__list"
+        [id]="listboxId"
+        role="listbox"
+        aria-multiselectable="true"
+      >
+        <ng-container *ngFor="let group of visibleGroups">
+          <div *ngIf="group.heading" class="cms__heading">{{ group.heading }}</div>
+          <div
+            *ngFor="let opt of group.options; let i = index"
+            class="cms__option"
+            role="option"
+            [class.cms__option--active]="opt === visibleOptions[highlightedIndex]"
+            [class.cms__option--disabled]="opt.disabled"
+            [attr.aria-selected]="isSelected(opt.value)"
+            [attr.aria-disabled]="opt.disabled || null"
+            (mousedown)="$event.preventDefault(); toggleOption(opt)"
+            (mouseenter)="highlightedIndex = visibleOptions.indexOf(opt)"
+          >
+            <span class="cms__box" [class.cms__box--on]="isSelected(opt.value)">
+              <i *ngIf="isSelected(opt.value)" class="fas fa-check" aria-hidden="true"></i>
+            </span>
+            <i
+              *ngIf="opt.icon"
+              class="cms__option-icon"
+              [ngClass]="opt.icon"
+              [style.color]="opt.style?.iconColor || null"
+              aria-hidden="true"
+            ></i>
+            <span class="cms__option-label">{{ opt.label }}</span>
+          </div>
+        </ng-container>
+        <div *ngIf="!visibleOptions.length" class="cms__empty">{{ emptyMessage }}</div>
+      </div>
+    </div>
+  </div>
+
+  <p *ngIf="hint" class="cms__hint">{{ hint }}</p>
+  <div class="cms__live" aria-live="polite">{{ liveMessage }}</div>
+</div>

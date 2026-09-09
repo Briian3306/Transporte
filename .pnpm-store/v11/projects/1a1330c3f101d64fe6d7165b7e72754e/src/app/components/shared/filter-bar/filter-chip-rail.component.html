@@ -1,0 +1,16 @@
+<div class="fcr" *ngIf="hasChips" role="list" aria-label="Filtros activos">
+  <button
+    type="button"
+    class="fcr__chip"
+    *ngFor="let chip of chips"
+    role="listitem"
+    (click)="remove.emit(chip.id)"
+  >
+    <span>{{ chip.label }}</span>
+    <i class="fas fa-times" aria-hidden="true"></i>
+    <span class="visually-hidden">Quitar {{ chip.label }}</span>
+  </button>
+  <button type="button" class="fcr__clear" (click)="clear.emit()">
+    {{ clearLabel }}
+  </button>
+</div>

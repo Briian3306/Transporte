@@ -1,0 +1,208 @@
+<div class="pp">
+  <header class="pp__header">
+    <div>
+      <p class="pp__eyebrow">Módulo Peajes</p>
+      <h1>Ubicaciones pendientes</h1>
+      <p class="pp__sub">
+        Estaciones sin coordenadas asociadas a pasadas. Completá latitud y longitud para pasar a OK.
+      </p>
+    </div>
+    <div class="pp__header-actions">
+      <a routerLink="/peajes" class="pp__link">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Volver
+      </a>
+      <a routerLink="/peajes/pasadas" class="pp__link">Pasadas</a>
+    </div>
+  </header>
+
+  <section class="pp__filters" aria-label="Filtros">
+    <label class="pp__field">
+      <span>Rango de fechas</span>
+      <app-date-range-picker [value]="dateRange" (valueChange)="onDateRange($event)"></app-date-range-picker>
+    </label>
+    <label class="pp__field">
+      <span>Empresa</span>
+      <app-search-multi-select
+        [options]="empresaOptions"
+        [value]="filters.empresa_ids ?? []"
+        placeholder="Todas"
+        (valueChange)="onEmpresas($event)"
+      ></app-search-multi-select>
+    </label>
+    <label class="pp__field">
+      <span>Estación</span>
+      <input
+        type="search"
+        [ngModel]="filters.q_estacion ?? ''"
+        (ngModelChange)="onQEstacion($event)"
+        placeholder="Buscar por nombre…"
+      />
+    </label>
+  </section>
+
+  <app-filter-chip-rail
+    [chips]="chips"
+    (remove)="removeChip($event)"
+    (clear)="clearFilters()"
+  ></app-filter-chip-rail>
+
+  <p class="pp__error" *ngIf="error" role="alert">{{ error }}</p>
+
+  <div class="pp__table-wrap" [attr.aria-busy]="loading">
+    <table class="pp__table">
+      <thead>
+        <tr>
+          <th class="pp__th-expand" scope="col"><span class="pp__sr">Expandir</span></th>
+          <th scope="col">
+            <button type="button" class="pp__sort" (click)="onSort('fecha_desde')">Fecha</button>
+          </th>
+          <th scope="col">
+            <button type="button" class="pp__sort" (click)="onSort('estacion_nombre')">Estación</button>
+          </th>
+          <th scope="col">
+            <button type="button" class="pp__sort" (click)="onSort('empresa_nombre')">Empresa</button>
+          </th>
+          <th scope="col" class="pp__num">
+            <button type="button" class="pp__sort" (click)="onSort('cantidad_pasadas')">Cantidad</button>
+          </th>
+          <th scope="col" class="pp__num">
+            <button type="button" class="pp__sort" (click)="onSort('total_importe')">Total</button>
+          </th>
+          <th scope="col" class="pp__th-actions"><span class="pp__sr">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody *ngIf="!loading && rows.length; else emptyOrLoading">
+        <ng-container *ngFor="let group of rows">
+          <tr
+            class="pp__row"
+            [class.pp__row--open]="expandedId === group.estacion_id"
+            (click)="toggleExpand(group)"
+          >
+            <td>
+              <button
+                type="button"
+                class="pp__expand"
+                [attr.aria-expanded]="expandedId === group.estacion_id"
+                [attr.aria-label]="expandedId === group.estacion_id ? 'Ocultar pasadas' : 'Ver pasadas'"
+                (click)="$event.stopPropagation(); toggleExpand(group)"
+              >
+                <i
+                  class="fas"
+                  [class.fa-chevron-right]="expandedId !== group.estacion_id"
+                  [class.fa-chevron-down]="expandedId === group.estacion_id"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            </td>
+            <td class="pp__mono">{{ formatRange(group) }}</td>
+            <td>
+              <div class="pp__estacion">
+                <span>{{ group.estacion_nombre }}</span>
+                <span
+                  class="pp__badge"
+                  [class.pp__badge--ok]="badge(group) === 'OK'"
+                  [class.pp__badge--pending]="badge(group) === 'PENDING'"
+                >
+                  {{ badge(group) }}
+                </span>
+              </div>
+            </td>
+            <td>{{ group.empresa_nombre || '—' }}</td>
+            <td class="pp__num">{{ group.cantidad_pasadas | number }}</td>
+            <td class="pp__num pp__price">{{ group.total_importe | number: '1.2-2' }}</td>
+            <td class="pp__actions" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                class="pp__btn pp__btn--primary"
+                (click)="openLocation(group, $event)"
+              >
+                Completar ubicación
+              </button>
+            </td>
+          </tr>
+          <tr class="pp__detail" *ngIf="expandedId === group.estacion_id">
+            <td colspan="7">
+              <div class="pp__detail-inner">
+                <p class="pp__detail-title">Pasadas de {{ group.estacion_nombre }}</p>
+                <p class="pp__error" *ngIf="detailError" role="alert">{{ detailError }}</p>
+                <app-data-table
+                  [columns]="detailColumns"
+                  [rows]="detailTableRows"
+                  [loading]="detailLoading"
+                  [sort]="detailSort"
+                  [page]="detailPage"
+                  [pageSize]="detailPageSize"
+                  [total]="detailTotal"
+                  emptyMessage="No hay pasadas para esta estación."
+                  [exportEnabled]="false"
+                  (sortChange)="onDetailSort($event)"
+                  (pageChange)="onDetailPage($event)"
+                >
+                  <ng-template appDataTableColumn="fecha_hora" let-row>
+                    <span class="pp__mono">{{ formatFechaHora(asPasada(row).fecha_hora) }}</span>
+                  </ng-template>
+                  <ng-template appDataTableColumn="patente_codigo" let-row>
+                    <span class="pp__plate">{{ asPasada(row).patente_codigo }}</span>
+                  </ng-template>
+                  <ng-template appDataTableColumn="pase_codigo" let-row>
+                    {{ asPasada(row).pase_codigo }}
+                  </ng-template>
+                  <ng-template appDataTableColumn="precio" let-row>
+                    <strong class="pp__price">{{ asPasada(row).precio | number: '1.2-2' }}</strong>
+                  </ng-template>
+                  <ng-template appDataTableColumn="importe_neto" let-row>
+                    <strong class="pp__price">{{ asPasada(row).importe_neto | number: '1.2-2' }}</strong>
+                  </ng-template>
+                  <ng-template appDataTableColumn="documento_numero" let-row>
+                    {{ asPasada(row).documento_numero || asPasada(row).factura_numero || '—' }}
+                  </ng-template>
+                </app-data-table>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+
+    <ng-template #emptyOrLoading>
+      <tbody>
+        <tr>
+          <td colspan="7" class="pp__empty">
+            <span *ngIf="loading">Cargando…</span>
+            <span *ngIf="!loading">No hay estaciones pendientes con estos filtros.</span>
+          </td>
+        </tr>
+      </tbody>
+    </ng-template>
+  </div>
+
+  <footer class="pp__pager" *ngIf="total > 0">
+    <label class="pp__pager-size">
+      Filas
+      <select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange(+$event)">
+        <option [ngValue]="25">25</option>
+        <option [ngValue]="50">50</option>
+        <option [ngValue]="100">100</option>
+      </select>
+    </label>
+    <span class="pp__pager-info">
+      {{ (page - 1) * pageSize + 1 }}–{{ page * pageSize > total ? total : page * pageSize }} de {{ total }}
+    </span>
+    <div class="pp__pager-btns">
+      <button type="button" class="pp__btn" [disabled]="page <= 1" (click)="goPage(page - 1)">Anterior</button>
+      <button type="button" class="pp__btn" [disabled]="page >= totalPages" (click)="goPage(page + 1)">
+        Siguiente
+      </button>
+    </div>
+  </footer>
+
+  <app-estacion-ubicacion-drawer
+    [open]="drawerOpen"
+    [group]="selectedGroup"
+    [saving]="saving"
+    [error]="drawerError"
+    (closed)="closeDrawer()"
+    (save)="saveLocation($event)"
+  ></app-estacion-ubicacion-drawer>
+</div>

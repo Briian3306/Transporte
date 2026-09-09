@@ -1,0 +1,53 @@
+.fcr {
+  --fcr-signal: #004ac6;
+  --fcr-rail: #f2f4f6;
+  --fcr-line: #e2e8f0;
+  --fcr-ink: #0f172a;
+  --fcr-muted: #434655;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.fcr__chip {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--fcr-signal) 28%, var(--fcr-line));
+  background: color-mix(in srgb, var(--fcr-signal) 8%, #fff);
+  color: var(--fcr-ink);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.fcr__chip:hover {
+  border-color: var(--fcr-signal);
+}
+
+.fcr__clear {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--fcr-signal);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -1,0 +1,227 @@
+<div class="flota-container">
+  <!-- Header -->
+  <div class="flota-header">
+    <div class="header-content">
+      <div class="title-section">
+        <div>
+          <h1 class="flota-title">
+            <i class="fas fa-truck"></i>
+            Gestión de Flota
+          </h1>
+          <p class="flota-subtitle">Administración de choferes y unidades logísticas</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flota-main">
+    <!-- Status Banner -->
+    <div *ngIf="showStatus" class="status-banner" [ngClass]="getStatusClasses()">
+      <i [ngClass]="getStatusIcon()"></i>
+      <p class="status-message">{{ statusMessage }}</p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-info">
+            <p class="stat-label">Total Choferes</p>
+            <p class="stat-value">{{ totalChoferes }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card" *ngIf="activeTab === 'choferes'">
+        <div class="stat-content">
+          <div class="stat-icon">
+            <i class="fas fa-eye"></i>
+          </div>
+          <div class="stat-info">
+            <p class="stat-label">Choferes Visibles</p>
+            <p class="stat-value">{{ choferesVisibles }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card" *ngIf="activeTab === 'logistica'">
+        <div class="stat-content">
+          <div class="stat-icon">
+            <i class="fas fa-truck-loading"></i>
+          </div>
+          <div class="stat-info">
+            <p class="stat-label">Unidades Logísticas</p>
+            <p class="stat-value">{{ totalLogistica }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <div class="tabs-nav">
+        <button 
+          class="tab-button" 
+          [class.active]="activeTab === 'choferes'"
+          (click)="switchTab('choferes')">
+          Choferes
+        </button>
+        <button 
+          class="tab-button" 
+          [class.active]="activeTab === 'logistica'"
+          (click)="switchTab('logistica')">
+          Logística
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Panels -->
+    <div class="content-panel">
+      <div class="panel-content">
+        <!-- Choferes Tab -->
+        <div *ngIf="activeTab === 'choferes'">
+          <div class="panel-header">
+            <h2 class="panel-title">Lista de Choferes</h2>
+            <button 
+              class="btn-primary" 
+              (click)="loadChoferes()"
+              [disabled]="isLoading">
+              <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+              Actualizar
+            </button>
+          </div>
+
+          <!-- Filter Section -->
+          <div class="filter-section">
+            <div class="filter-grid">
+              <div class="filter-input">
+                <label class="filter-label">Buscar Chofer</label>
+                <input 
+                  type="text" 
+                  class="input-field" 
+                  [(ngModel)]="filtroChoferes"
+                  (input)="filtrarChoferes()"
+                  placeholder="Nombre o apellido...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading State -->
+          <div *ngIf="isLoading" class="loading-state">
+            <div class="spinner"></div>
+            <p class="loading-text">Cargando choferes...</p>
+          </div>
+
+          <!-- Table -->
+          <div *ngIf="!isLoading" class="table-container">
+            <table class="data-table">
+              <thead class="table-header">
+                <tr>
+                  <th class="table-header-cell">ID</th>
+                  <th class="table-header-cell">Nombre</th>
+                  <th class="table-header-cell">Apellido</th>
+                  <th class="table-header-cell">DNI</th>
+                </tr>
+              </thead>
+              <tbody class="table-body">
+                <tr *ngFor="let chofer of choferesFiltrados" class="table-row">
+                  <td class="table-cell">{{ chofer.id }}</td>
+                  <td class="table-cell name-cell">{{ chofer.nombre }}</td>
+                  <td class="table-cell name-cell">{{ chofer.apellido }}</td>
+                  <td class="table-cell">{{ chofer.dni }}</td>
+                </tr>
+                <tr *ngIf="choferesFiltrados.length === 0" class="table-row">
+                  <td colspan="4" class="table-cell no-data">No se encontraron choferes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Logística Tab -->
+        <div *ngIf="activeTab === 'logistica'">
+          <div class="panel-header">
+            <h2 class="panel-title">Unidades Logísticas</h2>
+            <button 
+              class="btn-primary" 
+              (click)="loadLogistica()"
+              [disabled]="isLoading">
+              <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+              Actualizar
+            </button>
+          </div>
+
+          <!-- Filter Section -->
+          <div class="filter-section">
+            <div class="filter-grid">
+              <div class="filter-input">
+                <label class="filter-label">Buscar por Chofer</label>
+                <input 
+                  type="text" 
+                  class="input-field" 
+                  [(ngModel)]="filtroChoferLogistica"
+                  placeholder="Apellido del chofer...">
+              </div>
+              <div class="filter-input">
+                <label class="filter-label">Buscar por Patente</label>
+                <input 
+                  type="text" 
+                  class="input-field" 
+                  [(ngModel)]="filtroPatente"
+                  placeholder="Patente del camión...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading State -->
+          <div *ngIf="isLoading" class="loading-state">
+            <div class="spinner"></div>
+            <p class="loading-text">Cargando logística...</p>
+          </div>
+
+          <!-- Table -->
+          <div *ngIf="!isLoading" class="table-container">
+            <table class="data-table">
+              <thead class="table-header">
+                <tr>
+                  <th class="table-header-cell">ID</th>
+                  <th class="table-header-cell">Chofer</th>
+                  <th class="table-header-cell">Patente Camión</th>
+                  <th class="table-header-cell">Patente Semi</th>
+                  <th class="table-header-cell">Categoría</th>
+                  <th class="table-header-cell">Estado</th>
+                </tr>
+              </thead>
+              <tbody class="table-body">
+                <tr *ngFor="let logistica of logisticaFiltrada" class="table-row">
+                  <td class="table-cell">{{ logistica.id }}</td>
+                  <td class="table-cell name-cell">
+                    {{ logistica.chofer.apellido }}, {{ logistica.chofer.nombre }}
+                  </td>
+                  <td class="table-cell">{{ logistica.conjunto_veh.camiones.patente }}</td>
+                  <td class="table-cell">{{ logistica.conjunto_veh.semi1.patente || '-' }}</td>
+                  <td class="table-cell">{{ logistica.conjunto_veh.categoria.nombre }}</td>
+                  <td class="table-cell">
+                    <span [class]="logistica.disponible ? 'text-green-600' : 'text-red-600'">
+                      {{ logistica.disponible ? 'Disponible' : 'No Disponible' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="logisticaFiltrada.length === 0" class="table-row">
+                  <td colspan="6" class="table-cell no-data">No se encontraron unidades logísticas</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+

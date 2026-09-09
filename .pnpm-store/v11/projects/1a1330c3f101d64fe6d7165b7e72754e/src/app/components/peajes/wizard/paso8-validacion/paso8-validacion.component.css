@@ -1,0 +1,48 @@
+.paso8__summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--pw-line, #dce5ee); border-radius: 14px; overflow: hidden; margin-bottom: 1rem; }
+.paso8__summary div { padding: .9rem 1rem; border-right: 1px solid var(--pw-line, #dce5ee); }
+.paso8__summary div:last-child { border-right: 0; }
+.paso8__summary span { display: block; color: var(--pw-muted, #62758a); font-size: .75rem; margin-bottom: .25rem; }
+.paso8__summary strong { font-family: var(--pw-mono, monospace); font-size: .9rem; }
+.paso8__omitidos { margin: 0.35rem 0 0; color: #8a5a00; font-size: 0.86rem; }
+.paso8__money-error { color: var(--pw-red, #bd4b4b); }
+.paso8__checklist { display: grid; gap: .75rem; }
+.paso8__check { display: grid; grid-template-columns: 2.4rem 1fr; gap: .8rem; padding: 1rem; border: 1px solid var(--pw-line, #dce5ee); border-left: 4px solid #a7b5c3; border-radius: 12px; background: #fff; }
+.paso8__check--ok { border-left-color: var(--pw-green, #238657); background: #f8fcfa; }
+.paso8__check--error { border-left-color: var(--pw-red, #bd4b4b); background: #fffafa; }
+.paso8__check--warning { border-left-color: #c9a227; background: #fff9eb; }
+.paso8__check-icon { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; color: #fff; background: #8a9bad; font-size: 1.2rem; font-weight: 700; }
+.paso8__check--ok .paso8__check-icon { background: var(--pw-green, #238657); }
+.paso8__check--error .paso8__check-icon { background: var(--pw-red, #bd4b4b); }
+.paso8__check--warning .paso8__check-icon { background: #c9a227; }
+.paso8__check-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
+.paso8__check h3 { margin: 0; font-size: .96rem; }
+.paso8__check p { margin: .4rem 0; font-size: .86rem; line-height: 1.45; }
+.paso8__recommendation { margin-top: .6rem; padding: .65rem .75rem; border-radius: 8px; background: rgba(56, 94, 130, .07); font-size: .82rem; line-height: 1.4; }
+.paso8__actions { margin-top: .65rem; }
+.paso8__technical { margin-top: .75rem; padding-top: .75rem; border-top: 1px dashed var(--pw-line, #dce5ee); font-size: .8rem; }
+.paso8__technical summary { cursor: pointer; color: var(--pw-blue, #2866a2); font-weight: 700; }
+.paso8__technical dl { display: grid; grid-template-columns: 7rem 1fr; gap: .3rem .65rem; margin: .7rem 0; }
+.paso8__technical dt { color: var(--pw-muted, #62758a); }
+.paso8__technical dd { margin: 0; }
+.paso8__technical-label { color: var(--pw-muted, #62758a); margin: .65rem 0 .25rem !important; }
+.paso8__technical pre { max-height: 14rem; overflow: auto; margin: 0; padding: .65rem; border-radius: 7px; background: #17212b; color: #e8eef4; font: .72rem/1.4 var(--pw-mono, monospace); white-space: pre-wrap; }
+.paso8__duplicate-comparison { grid-column: 2; margin-top: .95rem; padding: 1rem; border: 1px solid rgba(189, 75, 75, .24); border-radius: 10px; background: #fff; box-shadow: 0 8px 20px rgba(80, 35, 35, .06); }
+.paso8__duplicate-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+.paso8__duplicate-kicker { display: block; color: var(--pw-red, #bd4b4b); font: 700 .68rem/1.2 var(--pw-mono, monospace); letter-spacing: .08em; text-transform: uppercase; }
+.paso8__duplicate-heading h4 { margin: .25rem 0 0; font-size: .92rem; }
+.paso8__duplicate-count { flex: 0 0 auto; padding: .3rem .5rem; border-radius: 999px; color: #8e3636; background: #fff0f0; font: 700 .72rem var(--pw-mono, monospace); }
+.paso8__duplicate-note { margin: .55rem 0 .8rem !important; color: var(--pw-muted, #62758a); font-size: .8rem !important; }
+.paso8__duplicate-comparison .dt { border: 1px solid var(--pw-line, #dce5ee); border-radius: 8px; overflow: hidden; }
+.paso8__duplicate-consent { margin-top: .85rem; display: flex; justify-content: flex-end; }
+.paso8__tarifas-table-wrap { grid-column: 2; margin-top: .85rem; overflow-x: auto; border: 1px solid var(--pw-line, #dce5ee); border-radius: 10px; background: #fff; }
+.paso8__tarifas-table { margin: 0; }
+.paso8__tarifas-table th { white-space: nowrap; font-size: .72rem; }
+.paso8__tarifas-table td { font-size: .8rem; white-space: nowrap; }
+@media (max-width: 720px) {
+  .paso8__tarifas-table-wrap { grid-column: 1 / -1; margin-left: -.25rem; margin-right: -.25rem; }
+}
+@media (max-width: 720px) {
+  .paso8__duplicate-comparison { grid-column: 1 / -1; margin-left: -.25rem; margin-right: -.25rem; padding: .75rem; }
+  .paso8__duplicate-heading { flex-direction: column; }
+}
+@media (max-width: 720px) { .paso8__summary { grid-template-columns: 1fr 1fr; } .paso8__summary div:nth-child(2) { border-right: 0; } .paso8__summary div:nth-child(-n+2) { border-bottom: 1px solid var(--pw-line, #dce5ee); } }
