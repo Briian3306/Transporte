@@ -8,7 +8,7 @@ Workspace: `C:\Users\FRANCIS\Documents\progamacion\Transporte` on `codex/tarifa-
 
 **Baseline HEAD:** `95033bd` — branch up to date with `origin/codex/tarifa-importe-cases`.
 
-**Last refresh:** 2026-09-10 (Task 11 complete, review Approved. Dispatching Task 12.)
+**Last refresh:** 2026-09-10 (Task 13 complete. F14-19 `passing`.)
 
 | Task | Status | Owner | Notes |
 | --- | --- | --- | --- |
@@ -23,8 +23,8 @@ Workspace: `C:\Users\FRANCIS\Documents\progamacion\Transporte` on `codex/tarifa-
 | 9 Fan-out independent history saves | complete | Frontend | Uncommitted. Controller skipped re-review per user (do not chase the 1-test RED). Implementer: dialog 28/28 after Confirm-category fix; helpers 28/28; tsc 0. Flat `TarifaRefreshDecision[]`, Dock Sud+Hudson distinct ids, CONFIRM_NEW date+New. **Minors for final review:** reviewCovers sentido no dedicated spec; synthetic duplicate-identity test; relatedCandidate no amount match. |
 | 10 Paso 9 summary + review gate | complete | Frontend | Uncommitted. Controller skipped re-review per user. Implementer after Critical/Important fix: Paso 9 21/21; dialog 28/28; tsc 0. Six sections, REVISAR overlay, Revisar tarifas reopen, contextIncomplete from overlaid results. **Minors for final review:** vigencia can overlap nuevas; detect still overlay-only; no browser pass. |
 | 11 Standalone Tarifario validity | complete | Tarifario | Uncommitted. Review Approved. Editor 15/15; Tarifario 59/59; service 14/14; tsc 0. Shared Vigente desde; blank New no-op; history Desde/Hasta/Diagnóstico/Categoría calculada/Vigente. **Minors:** live `peajes_listar_tarifa_historial` still F14-17 shape (Sin fecha conocida until SQL emits fields); mock list/editor omit vigencia; canSave ignores date; extra Importe column. |
-| 12 Full gates | pending | QA | — |
-| 13 Docs + close F14-19 | pending | Documentation | `passing` only with evidence. No commits. |
+| 12 Full gates | complete | QA | pgTAP 589 PASS; Angular focused 172 SUCCESS; tsc 0. Browser/a11y deferido documentado. |
+| 13 Docs + close F14-19 | complete | Documentation | Docs actualizados; F14-19 `passing` en feature_list.json; handoff + claude-progress. |
 
 ---
 

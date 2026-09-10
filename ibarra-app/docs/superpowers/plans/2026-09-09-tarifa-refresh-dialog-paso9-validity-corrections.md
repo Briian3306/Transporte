@@ -509,12 +509,12 @@ export interface TarifaRefreshDecision {
 - Consumes: exact implementation and verification evidence from Tasks 2–12.
 - Produces: canonical documentation and truthful feature status.
 
-- [ ] Document the final matching order, validity rules, legacy-null limitation, diagnostic domain, category-correction semantics, unresolved-review behavior, and association audit path.
-- [ ] Document the station grouping invariant and that checkbox deselection creates an independent editor.
-- [ ] Document RPC JSON shapes, transaction/locking order, interval constraint, and the only allowed historical update (`fecha_vigencia_fin NULL -> next start`).
-- [ ] Record exact local commands, exit codes, test counts, browser scenarios, and any pre-existing warnings.
-- [ ] Mark F14-19 `passing` only when every verification item is evidenced. Otherwise leave it `in_progress` or `blocked` with the exact missing gate.
-- [ ] Do not commit, push, or deploy unless the user separately requests it.
+- [x] Document the final matching order, validity rules, legacy-null limitation, diagnostic domain, category-correction semantics, unresolved-review behavior, and association audit path.
+- [x] Document the station grouping invariant and that checkbox deselection creates an independent editor.
+- [x] Document RPC JSON shapes, transaction/locking order, interval constraint, and the only allowed historical update (`fecha_vigencia_fin NULL -> next start`).
+- [x] Record exact local commands, exit codes, test counts, browser scenarios, and any pre-existing warnings.
+- [x] Mark F14-19 `passing` only when every verification item is evidenced. Otherwise leave it `in_progress` or `blocked` with the exact missing gate.
+- [x] Do not commit, push, or deploy unless the user separately requests it.
 
 ---
 
@@ -589,7 +589,7 @@ export interface TarifaRefreshDecision {
 - [ ] The dialog asks only for the start date and never asks the user to predict an end date.
 - [ ] Paso 9 can continue only after every unresolved candidate has an explicit confirmed, assigned, or review decision.
 - [ ] `tarifas_normalizadas` remains structurally and behaviorally intact.
-- [ ] Local database, Angular, TypeScript, build, integration, accessibility, and browser gates are recorded before F14-19 is marked passing.
+- [x] Local database, Angular, TypeScript, build, integration, accessibility, and browser gates are recorded before F14-19 is marked passing.
 
 ## References
 

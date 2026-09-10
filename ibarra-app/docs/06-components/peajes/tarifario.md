@@ -1,10 +1,10 @@
-# Tarifario — precios actuales (F14-17)
+# Tarifario — precios actuales (F14-17 + F14-19 vigencia)
 
 ## Resumen
 
-Pantalla `/peajes/tarifario` para **consultar el precio vigente** de cada identidad `tarifas` y **editar en lote** NO_PICO + PICO de un contexto exacto `peaje + estación + sentido`. El guardado **no pisa** filas históricas de `tarifa_importe`: agrega un importe nuevo y mueve `current_tarifa_id`.
+Pantalla `/peajes/tarifario` para **consultar el precio vigente** de cada identidad `tarifas` y **editar en lote** NO_PICO + PICO de un contexto exacto `peaje + estación + sentido`. El guardado **no pisa** filas históricas: append `CONFIRMADO` con **Vigente desde** obligatorio; el backend cierra el periodo anterior en esa fecha de inicio.
 
-Feature: **F14-17**. Schema F14-16. Owner UI: `02-frontend-wizard-tablas`. Provider vivo: `PeajesTarifarioSupabaseService` (RPCs INVOKER). Los componentes inyectan solo `PEAJES_TARIFARIO_SERVICE`. El mock queda para specs. No escribe DESARROLLO.
+Features: **F14-17** (RPCs + UI), **F14-19** (campo Vigente desde, historial con vigencia/diagnóstico). Schema F14-16+. Owner UI: `02-frontend-wizard-tablas`. Provider: `PeajesTarifarioSupabaseService`. Mock solo en specs.
 
 ## Índice
 
@@ -82,17 +82,20 @@ Filtro Sentido: Todos / IDA / VUELTA / AMBAS (match exacto). Debounce 300 ms. Pa
 
 Tablero dual (no pestañas), breadcrumb `PEAJE > ESTACION > SENTIDO`. Encabezado con **Última actualización** (la fecha más reciente del contexto). Cada celda Actual muestra importe + fecha.
 
+- **Vigente desde** (F14-19): date picker compartido del contexto; obligatorio para guardar cambios con importe Nuevo. El operador **no** ingresa fecha fin; el RPC cierra el vigente abierto en el nuevo inicio.
 - Tab: NUEVO NO_PICO → NUEVO PICO; el último NUEVO va a **Agregar categoría**. **Historial** queda fuera del Tab (`tabindex="-1"`). Tab / Shift+Tab / Enter mueven y seleccionan el campo NUEVO.
-- NUEVO vacío se omite del payload.
+- NUEVO vacío se omite del payload (no-op).
 - NUEVO inválido: error inline y no se guarda.
 - Contexto sin identidades: éxito; tablero vacío y **Agregar categoría**. Agregar suma hasta 10.
 - IDA no carga VUELTA ni AMBAS. AMBAS es un sentido real.
+
+El mismo tablero (`TarifarioEditorBoardComponent`) se reutiliza en el diálogo de refresh Paso 9 con columnas Actual / Detectado / Nuevo. En Detectado el monto sale `$20.792,47 (3)` (clic copia a Nuevo). Candidatos sin PICO/NO_PICO o sentido van a filas finales del tablero con selectores y checkbox IVA solo para identidades nuevas. El tarifario standalone no usa Detectado ni esas filas. Ver [refresh-tarifas-paso9.md](../../backend/peajes/refresh-tarifas-paso9.md).
 
 ---
 
 ## Historial
 
-`app-dialog` `lg` por celda (categoría + status). Columnas Fecha / Importe / Actual (sello Vigente). Deshabilitado si `tarifa_id` es null.
+`app-dialog` `lg` por celda (categoría + status). Columnas: Fecha aparición, Importe, **Desde**, **Hasta**, **Diagnóstico**, **Categoría calculada**, sello **Vigente**. Filas legadas sin vigencia en SQL muestran **Sin fecha conocida** en Desde/Hasta hasta que el RPC de historial exponga `fecha_vigencia_*` (shape F14-17 aún vigente en remoto). Deshabilitado si `tarifa_id` es null.
 
 ---
 
@@ -130,9 +133,9 @@ guardar(peajeId, estacionId, sentido, cambios) → { actualizadas }
 listarHistorial(tarifaId) → TarifarioHistorialItem[]
 ```
 
-`cambios`: `{ categoria, status: 'PICO' | 'NO_PICO', importe }[]`.
+`cambios`: `{ categoria, status: 'PICO' | 'NO_PICO', importe, fecha_vigencia_inicio }[]` (F14-19).
 
-Guardar: append `tarifa_importe`; el trigger promociona `current_tarifa_id` y `fecha_actualizacion`; identidad ausente se crea. Historia previa intacta. `importe > 0`.
+Guardar: append `CONFIRMADO` con vigencia; cierra el periodo abierto anterior; el trigger promociona `current_tarifa_id` si el inicio es posterior; identidad ausente se crea. Historia previa intacta. `importe > 0`. Superposición de vigencia → error de negocio sin filas parciales.
 
 ---
 
@@ -158,7 +161,7 @@ pnpm exec ng test --include="**/peajes/tarifario/**/*.spec.ts" --watch=false --b
 pnpm seed:local
 ```
 
-Specs de UI siguen usando `TarifarioMockService`. Catálogo local: `seed:tarifario-v2`.
+**2026-09-10 (precio final Paso 9):** Detectado `$importe (casos)`; filas de revisión con selectores status/sentido y checkbox IVA. Specs tablero + diálogo de refresh. pgTAP global **589 PASS**. Tarifario de ruta sin cambios de schema.
 
 ---
 

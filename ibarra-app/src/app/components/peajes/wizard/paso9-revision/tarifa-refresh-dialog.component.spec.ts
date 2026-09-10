@@ -246,8 +246,26 @@ describe('TarifaRefreshDialogComponent', () => {
 
   it('marca requiereNormalizacionIva=false cuando una estación no tiene esa identidad', async () => {
     await open(
-      [pendiente(ESTACION_HUDSON, { categoria: 7, candidatePrice: 25500 })],
-      [candidato(ESTACION_HUDSON, { categoria: 7, candidatePrice: 25500, precioDirecto: 25500 })],
+      [
+        pendiente(ESTACION_HUDSON, {
+          categoria: 7,
+          categoriaProveedor: 7,
+          candidatePrice: 25500,
+          sentidoAplicado: 'IDA',
+          sentidoSolicitado: 'IDA',
+          directionConfidence: 'EXPLICIT',
+        }),
+      ],
+      [
+        candidato(ESTACION_HUDSON, {
+          categoria: 7,
+          categoriaProveedor: 7,
+          candidatePrice: 25500,
+          precioDirecto: 25500,
+          sentidoSolicitado: 'IDA',
+          directionConfidence: 'EXPLICIT',
+        }),
+      ],
     );
     const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE) as TarifaRefreshMockService;
     const spy = spyOn(refresh, 'guardar').and.callThrough();
@@ -426,15 +444,11 @@ describe('TarifaRefreshDialogComponent', () => {
       ],
     );
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('.trd__rail')).toBeTruthy();
+    expect(root.querySelector('.trd__rail')).toBeNull();
     expect(root.textContent).toContain('HUDSON');
-    expect(root.textContent).toContain('Categoría proveedor 3');
-    expect(root.textContent).toContain('posibles 2, 4');
-    expect(root.textContent).toContain('5300');
-    expect(root.textContent).toContain('4 casos');
+    expect(root.textContent).toContain('$5.300,00 (4)');
     expect(root.textContent).toContain('NO_PICO');
-    expect(root.textContent).toContain('2026-03-10');
-    expect(root.textContent).toContain('Hay más de una tarifa compatible');
+    expect(root.textContent).toContain('La categoría es ambigua');
   });
 
   it('asigna un candidato a una celda permitida y no deja que otro pise el mismo Nuevo', async () => {
@@ -531,9 +545,10 @@ describe('TarifaRefreshDialogComponent', () => {
     );
     expect(drafts.every((value) => value === '')).toBeTrue();
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.textContent).toContain('1000');
-    expect(root.textContent).toContain('2000');
-    expect(root.textContent).toContain('3000');
+    expect(root.textContent).toContain('$1.000,00 (1)');
+    expect(root.textContent).toContain('$2.000,00 (1)');
+    expect(root.textContent).toContain('$3.000,00 (1)');
+    expect(root.querySelector('[data-role="revision"]')).toBeTruthy();
     expect(root.querySelector('[data-warn="precios"]')).toBeTruthy();
   });
 
@@ -580,7 +595,8 @@ describe('TarifaRefreshDialogComponent', () => {
     const spy = spyOn(refresh, 'guardar').and.callThrough();
     const grupo = component.grupos[0];
     const ida = grupo.editors[0].tablas.find((tabla) => tabla.sentido === 'IDA');
-    expect(ida?.drafts[2].no_pico).toBe('25500');
+    expect(ida?.drafts[2].no_pico).toBe('');
+    expect(JSON.stringify(ida?.detected)).toContain('25500');
     await component.onSeleccionChange(grupo, []);
     expect(spy).not.toHaveBeenCalled();
     fixture.componentRef.setInput('open', false);
@@ -723,20 +739,13 @@ describe('TarifaRefreshDialogComponent', () => {
       ],
     );
     const root = fixture.nativeElement as HTMLElement;
-    const confirmBtn = Array.from(root.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
-      (btn.textContent ?? '').includes('Confirmar'),
-    ) as HTMLButtonElement | undefined;
-    const revisarBtn = Array.from(root.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
-      (btn.textContent ?? '').includes('revisar'),
-    ) as HTMLButtonElement | undefined;
-    expect(confirmBtn?.disabled).toBeTrue();
-    expect(revisarBtn?.disabled).toBeTrue();
+    expect(root.querySelector('.trd__rail')).toBeNull();
+    expect(root.querySelector('[data-role="revision"]')).toBeTruthy();
 
     const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE) as TarifaRefreshMockService;
     const spy = spyOn(refresh, 'guardar').and.callThrough();
     const grupo = component.grupos[0];
     component.onVigenteDesde(grupo, { from: new Date(2026, 2, 10), to: null });
-    component.confirmCandidate(grupo, 'estacion-hudson-7', 'CONFIRM_NEW');
     await component.guardar();
     expect(spy).not.toHaveBeenCalled();
     expect(component.error).toContain('sentido');
@@ -787,35 +796,12 @@ describe('TarifaRefreshDialogComponent', () => {
     expect(component.warnings.some((warn) => warn.code === 'precios')).toBeFalse();
   });
 
-  it('marca Confirmar o Revisar como seleccionados con aria-pressed', async () => {
+  it('no muestra el rail de candidatos y deja las acciones en el tablero', async () => {
     await open([pendiente(ESTACION_HUDSON)], [candidato(ESTACION_HUDSON)]);
-    const grupo = component.grupos[0];
-    const candidateId = component.candidatesFor(grupo)[0].candidateId;
-    component.confirmCandidate(grupo, candidateId, 'CONFIRM_NEW');
-    fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
-    const confirmBtn = Array.from(root.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
-      (btn.textContent ?? '').includes('Confirmar'),
-    ) as HTMLButtonElement;
-    const revisarBtn = Array.from(root.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
-      (btn.textContent ?? '').includes('revisar'),
-    ) as HTMLButtonElement;
-    expect(confirmBtn.getAttribute('aria-pressed')).toBe('true');
-    expect(revisarBtn.getAttribute('aria-pressed')).toBe('false');
-    expect(confirmBtn.classList.contains('trd__btn--pressed')).toBeTrue();
-
-    component.confirmCandidate(grupo, candidateId, 'MARK_REVIEW');
-    fixture.detectChanges();
-    const after = fixture.nativeElement as HTMLElement;
-    const confirmAfter = Array.from(after.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
-      (btn.textContent ?? '').includes('Confirmar'),
-    ) as HTMLButtonElement;
-    const revisarAfter = Array.from(after.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
-      (btn.textContent ?? '').includes('revisar'),
-    ) as HTMLButtonElement;
-    expect(confirmAfter.getAttribute('aria-pressed')).toBe('false');
-    expect(revisarAfter.getAttribute('aria-pressed')).toBe('true');
-    expect(revisarAfter.classList.contains('trd__btn--pressed')).toBeTrue();
+    expect(root.querySelector('.trd__rail')).toBeNull();
+    expect(root.querySelectorAll('.trd__candidate-actions button').length).toBe(0);
+    expect(root.querySelector('app-tarifario-editor-board')).toBeTruthy();
   });
 
   it('emite TarifaRefreshDecision al confirmar con fecha y deja vigencia nula en Revisar', async () => {
@@ -838,6 +824,8 @@ describe('TarifaRefreshDialogComponent', () => {
     const spy = spyOn(refresh, 'guardar').and.callThrough();
     const grupo = component.grupos[0];
     const candidateId = component.candidatesFor(grupo)[0].candidateId;
+    const tabla = grupo.editors[0].tablas.find((item) => item.sentido === 'IDA') ?? grupo.tablas[0];
+    component.onDraft(grupo, tabla, { categoria: 2, status: 'NO_PICO', value: '7000' });
     component.onVigenteDesde(grupo, { from: new Date(2026, 2, 10), to: null });
     component.confirmCandidate(grupo, candidateId, 'CONFIRM_NEW');
     await component.guardar();
@@ -925,7 +913,7 @@ describe('TarifaRefreshDialogComponent', () => {
     expect(component.error).toContain('Nuevo');
   });
 
-  it('omite celdas Nuevo vacías y no llama al RPC sin cambios', async () => {
+  it('omite celdas Nuevo vacías y guarda los no coincidentes como REVISAR', async () => {
     await open(
       [
         pendiente(ESTACION_HUDSON, {
@@ -948,7 +936,12 @@ describe('TarifaRefreshDialogComponent', () => {
     tabla.drafts = { ...tabla.drafts, 2: { no_pico: '', pico: '' } };
     component.onVigenteDesde(grupo, { from: new Date(2026, 2, 10), to: null });
     await component.guardar();
-    expect(spy).not.toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledTimes(1);
+    const payload = spy.calls.mostRecent().args[0] as unknown as TarifaRefreshDecision[];
+    expect(payload.length).toBe(1);
+    expect(payload[0].action).toBe('MARK_REVIEW');
+    expect(payload[0].fechaVigenciaInicio).toBeNull();
+    expect(payload[0].importe).toBe(7000);
   });
 
   it('emite IDA y VUELTA en una sola llamada atómica', async () => {
@@ -1093,5 +1086,39 @@ describe('TarifaRefreshDialogComponent', () => {
     expect(confirmed).toBeTruthy();
     expect(confirmed!.categoriaProveedor).toBe(3);
     expect(confirmed!.categoriaCalculada).toBe(2);
+  });
+
+  it('sugiere IVA desde el tarifario y permite override en identidades nuevas', async () => {
+    await open(
+      [
+        pendiente(ESTACION_HUDSON, {
+          id: 'cand-iva',
+          categoria: 9,
+          categoriaProveedor: 9,
+          sentidoAplicado: 'IDA',
+          sentidoSolicitado: 'IDA',
+          directionConfidence: 'EXPLICIT',
+        }),
+      ],
+      [
+        candidato(ESTACION_HUDSON, {
+          id: 'cand-iva',
+          categoria: 9,
+          categoriaProveedor: 9,
+          sentidoSolicitado: 'IDA',
+          directionConfidence: 'EXPLICIT',
+        }),
+      ],
+    );
+    const grupo = component.grupos[0];
+    const candidateId = 'cand-iva';
+    component.onIvaChange(grupo, { candidateId, value: true });
+    const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE) as TarifaRefreshMockService;
+    const spy = spyOn(refresh, 'guardar').and.callThrough();
+    await component.guardar();
+    const payload = spy.calls.mostRecent().args[0] as unknown as TarifaRefreshDecision[];
+    expect(payload[0].action).toBe('MARK_REVIEW');
+    expect(payload[0].categoriaProveedor).toBe(9);
+    expect(payload[0].requiereNormalizacionIva).toBeTrue();
   });
 });

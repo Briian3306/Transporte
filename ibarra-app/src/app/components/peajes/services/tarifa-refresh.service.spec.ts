@@ -32,6 +32,56 @@ describe('extraerCandidatosRefresco', () => {
     expect(candidatos[0].precioDirecto).toBe(14968.96);
   });
 
+  it('prefers preserved TARIFA_PESOS as the AUSA final price over transformed PRECIO', () => {
+    const fila = Object.assign(
+      pasada({
+        PRECIO: 15872.114503816794,
+        IMPORTE_NETO: 12116.88,
+        CATEGORIA: '8',
+        SENTIDO: 'AMBAS',
+        TARIFA_STATUS: 'NO_PICO',
+      }),
+      { TARIFA_PESOS: 20792.47 },
+    );
+    const candidatos = extraerCandidatosRefresco([fila]);
+
+    expect(candidatos.length).toBe(1);
+    expect(candidatos[0].precioDirecto).toBe(20792.47);
+    expect(candidatos[0].candidatePrice).toBe(20792.47);
+    expect(candidatos[0].cases).toBe(1);
+  });
+
+  it('groups AUSA cases by the preserved final price instead of the transformed PRECIO', () => {
+    const filas = [0, 1, 2].map((index) =>
+      Object.assign(
+        pasada({
+          PRECIO: 15872.114503816794,
+          IMPORTE_NETO: 12116.88 + index,
+          CATEGORIA: '8',
+          SENTIDO: 'AMBAS',
+          TARIFA_STATUS: 'NO_PICO',
+        }),
+        { TARIFA_PESOS: 20792.47 },
+      ),
+    );
+    const candidatos = extraerCandidatosRefresco(filas);
+
+    expect(candidatos.length).toBe(1);
+    expect(candidatos[0].precioDirecto).toBe(20792.47);
+    expect(candidatos[0].cases).toBe(3);
+    expect(candidatos[0].rowIndexes).toEqual([0, 1, 2]);
+  });
+
+  it('does not parse raw TARIFA ARS strings when TARIFA_PESOS is absent', () => {
+    const fila = Object.assign(
+      pasada({ PRECIO: 3550, IMPORTE_NETO: 3000 }),
+      { TARIFA: '3.550,00' },
+    );
+    const candidatos = extraerCandidatosRefresco([fila]);
+
+    expect(candidatos[0].precioDirecto).toBe(3550);
+  });
+
   it('keeps PRECIO as the tariff candidate when the line has invoice bonification', () => {
     const candidatos = extraerCandidatosRefresco([
       pasada({ PRECIO: 10000, BONIFICACION: 500, IMPORTE_NETO: 9500 }),
@@ -463,6 +513,83 @@ describe('TarifaRefreshServiceImpl', () => {
     expect(detectArg.precioDirecto).toBe(11975.15);
     expect(detectArg.precioNormalizado).toBe(9900);
     expect(detectArg.precioNormalizado).not.toBe(Math.round((11975.15 / 1.21) * 100) / 100);
+  });
+
+  it('sends precio_directo from TARIFA_PESOS for AUSA-V3 even when PRECIO is divided', async () => {
+    const { TestBed } = await import('@angular/core/testing');
+    const { of } = await import('rxjs');
+    const { TarifaRefreshServiceImpl } = await import('./tarifa-refresh.service');
+    const { PEAJES_TARIFARIO_SERVICE } = await import('../models/tarifario.contracts');
+    const { TarifaComparisonAdapterService } = await import('./tarifa-comparison-adapter.service');
+
+    const preparar = jasmine.createSpy('prepararRefresco').and.returnValue(
+      of([
+        {
+          id: 'ctx',
+          peajeId: 'p',
+          estacionId: ESTACION_DOCK,
+          categoria: 8,
+          status: 'NO_PICO',
+          sentido: 'AMBAS',
+          tarifaId: 't',
+          importe: 20792.47,
+          requiereNormalizacionIva: false,
+        },
+      ]),
+    );
+    const detectar = jasmine.createSpy('detectarRefresco').and.returnValue(
+      of([
+        {
+          id: 'detect-ausa',
+          codigo: 'NEW_TARIFF',
+          peajeId: 'p',
+          estacionId: ESTACION_DOCK,
+          categoria: 8,
+          status: 'NO_PICO',
+          sentidoSolicitado: 'AMBAS',
+          sentidoAplicado: 'AMBAS',
+          importeActual: 20792.47,
+          tarifaId: 't',
+          tarifaImporteId: 'ti',
+          requiereNormalizacionIva: false,
+        },
+      ]),
+    );
+    TestBed.configureTestingModule({
+      providers: [
+        TarifaRefreshServiceImpl,
+        { provide: PEAJES_TARIFARIO_SERVICE, useValue: { prepararRefresco: preparar, detectarRefresco: detectar } },
+        {
+          provide: TarifaComparisonAdapterService,
+          useValue: jasmine.createSpyObj('TarifaComparisonAdapterService', ['obtenerPrecioComparable']),
+        },
+      ],
+    });
+    const service = TestBed.inject(TarifaRefreshServiceImpl);
+    const fila = Object.assign(
+      pasada({
+        PRECIO: 15872.114503816794,
+        IMPORTE_NETO: 12116.88,
+        CATEGORIA: '8',
+        SENTIDO: 'AMBAS',
+        TARIFA_STATUS: 'NO_PICO',
+      }),
+      { TARIFA_PESOS: 20792.47 },
+    );
+    const resumen = await service.analizar({
+      pasadas: [fila, fila, fila],
+      documentos: [{ tipo: 'FC', rowIndexes: [0, 1, 2] }],
+      configuraciones: [],
+    });
+    const detectArg = detectar.calls.mostRecent().args[0][0] as {
+      precioDirecto: number;
+      precioNormalizado: number | null;
+    };
+    expect(resumen.candidatos.length).toBe(1);
+    expect(resumen.candidatos[0].precioDirecto).toBe(20792.47);
+    expect(resumen.candidatos[0].cases).toBe(3);
+    expect(detectArg.precioDirecto).toBe(20792.47);
+    expect(detectArg.precioNormalizado).toBeNull();
   });
 
   it('counts current, historical, category-correction, confirmed-new, unresolved and validity-change rows', async () => {

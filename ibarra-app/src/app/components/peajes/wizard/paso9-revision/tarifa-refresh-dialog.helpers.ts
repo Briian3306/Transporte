@@ -1,4 +1,5 @@
 import { CandidatoRefrescoTarifa, ResultadoDetectarRefresco } from '../../models/tarifa-refresh.contracts';
+import { ConfiguracionPlantilla } from '../../models/peajes.models';
 import { TarifaSentido, TarifaStatusPico } from '../../models/tarifario.contracts';
 
 export type SentidoFamily = 'AMBAS' | 'DIRECCIONAL' | 'SIN_TARIFARIO';
@@ -23,6 +24,12 @@ export interface IdentidadTarifaExistente {
   categoria: number;
   status: TarifaStatusPico;
   sentido: TarifaSentido;
+  requiereNormalizacionIva?: boolean | null;
+}
+
+export interface ResolverIvaOpciones {
+  override?: boolean | null;
+  plantillaSugiere?: boolean;
 }
 
 export interface GrupoPendienteRefresco {
@@ -209,6 +216,7 @@ export function resolverRequiereNormalizacionIva(
   status: TarifaStatusPico,
   sentido: TarifaSentido,
   catalogoExistentes: readonly IdentidadTarifaExistente[],
+  opciones: ResolverIvaOpciones = {},
 ): boolean | null {
   const exists = catalogoExistentes.some(
     (row) =>
@@ -217,7 +225,31 @@ export function resolverRequiereNormalizacionIva(
       row.status === status &&
       row.sentido === sentido,
   );
-  return exists ? null : false;
+  if (exists) return null;
+  if (typeof opciones.override === 'boolean') return opciones.override;
+  const sameStation = catalogoExistentes.filter(
+    (row) => row.estacionId === estacionId && typeof row.requiereNormalizacionIva === 'boolean',
+  );
+  if (sameStation.length) return sameStation.some((row) => row.requiereNormalizacionIva === true);
+  const known = catalogoExistentes.filter((row) => typeof row.requiereNormalizacionIva === 'boolean');
+  if (known.length) return known.some((row) => row.requiereNormalizacionIva === true);
+  if (catalogoExistentes.length) return false;
+  return opciones.plantillaSugiere === true;
+}
+
+const IVA_DIVISORES = new Set([1.21, 1.31]);
+
+export function plantillaSugiereNormalizacionIva(
+  configs: readonly ConfiguracionPlantilla[] | null | undefined,
+): boolean {
+  return (configs ?? []).some((cfg) => {
+    const code = cfg.configuracion?.['algoritmo_codigo'];
+    if (code === 'ELIMINAR_IVA') return true;
+    if (code !== 'OPERAR_NUMERO') return false;
+    const operacion = String(cfg.configuracion?.['operacion'] ?? '').toLowerCase();
+    const valor = Number(cfg.configuracion?.['valor']);
+    return operacion === 'dividir' && IVA_DIVISORES.has(valor);
+  });
 }
 
 function precioDeCandidato(

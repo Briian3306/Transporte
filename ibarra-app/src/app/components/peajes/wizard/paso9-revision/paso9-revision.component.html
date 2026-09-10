@@ -246,6 +246,7 @@
     [open]="refreshOpen"
     [resultados]="resumenRefresco?.resultados ?? []"
     [candidatos]="resumenRefresco?.candidatos ?? []"
+    [configuraciones]="state.toConfiguracionesPlantilla()"
     [canManage]="canManageTarifas"
     (openChange)="refreshOpen = $event"
     (cancelled)="onRefreshCancelled()"

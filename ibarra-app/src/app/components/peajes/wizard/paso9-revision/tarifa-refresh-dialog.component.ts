@@ -8,6 +8,7 @@ import {
   SearchSelectComponent,
 } from '../../../shared';
 import type { CheckboxMultiSelectOption, DateRangeValue, SearchSelectOption } from '../../../shared';
+import { ConfiguracionPlantilla } from '../../models/peajes.models';
 import {
   CandidatoRefrescoTarifa,
   ResultadoDetectarRefresco,
@@ -33,6 +34,9 @@ import {
   TarifarioDraftChange,
   TarifarioEditorBoardComponent,
   TarifarioHistoryRequest,
+  TarifarioIvaChange,
+  TarifarioReviewIdentityChange,
+  TarifarioReviewRow,
   detectedCellKey,
 } from '../../tarifario/tarifario-editor-board.component';
 import { TarifarioHistorialDialogComponent } from '../../tarifario/tarifario-historial-dialog.component';
@@ -45,15 +49,14 @@ import {
 } from '../../tarifario/tarifario.helpers';
 import {
   agruparPendientesPorPeajeYFamilia,
-  assignSafeAutocomplete,
   buildDetectedStations,
   deriveEditorGroups,
   familySentidos,
   heuristicaSeleccionInicial,
   interseccionSentidos,
+  plantillaSugiereNormalizacionIva,
   resolverRequiereNormalizacionIva,
   stationTraceViewModel,
-  type AutocompleteCandidate,
   type DetectedStation,
   type EditorGroup,
   type EstacionCatalogoRefresco,
@@ -112,6 +115,8 @@ export interface GrupoTarifaRefresco {
   vigenteDesde: DateRangeValue;
   pendingActions: Record<string, 'CONFIRM_NEW' | 'MARK_REVIEW'>;
   assignedByCell: Record<string, string>;
+  ivaOverrides: Record<string, boolean>;
+  reviewOverrides: Record<string, { status: TarifaStatusPico | null; sentido: TarifaSentido | null }>;
 }
 
 export interface CandidateRailItem {
@@ -170,6 +175,7 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
   @Input() open = false;
   @Input() resultados: ResultadoDetectarRefresco[] = [];
   @Input() candidatos: CandidatoRefrescoTarifa[] = [];
+  @Input() configuraciones: ConfiguracionPlantilla[] = [];
   @Input() canManage = true;
   @Input() saving = false;
 
@@ -199,7 +205,7 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['open'] || changes['resultados'] || changes['candidatos']) {
+    if (changes['open'] || changes['resultados'] || changes['candidatos'] || changes['configuraciones']) {
       this.reloadIfOpen();
     }
   }
@@ -246,6 +252,7 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
           result.fechaVigenciaInicio || result.fechaVigenciaFin
             ? [result.fechaVigenciaInicio, result.fechaVigenciaFin].filter(Boolean).join(' → ')
             : null;
+        const override = grupo.reviewOverrides?.[result.id];
         items.push({
           candidateId: result.id,
           estacionId: station.estacionId,
@@ -255,8 +262,13 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
           possibleCategorias: possible,
           amount,
           cases: related?.cases ?? result.rowIndexes.length,
-          status: result.status ?? related?.statusSolicitado ?? null,
-          sentido: result.sentidoAplicado ?? result.sentidoSolicitado ?? related?.sentidoSolicitado ?? null,
+          status: override?.status ?? result.status ?? related?.statusSolicitado ?? null,
+          sentido:
+            override?.sentido ??
+            result.sentidoAplicado ??
+            result.sentidoSolicitado ??
+            related?.sentidoSolicitado ??
+            null,
           fechaPasada: result.fechaPasada ?? related?.fechaPasada ?? null,
           vigencia: vigencia ?? null,
           reason: reasonFor(result.codigo),
@@ -333,6 +345,51 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
       status: event.status,
       value: String(event.candidate.valor),
     });
+  }
+
+  onReviewIdentityChange(grupo: GrupoTarifaRefresco, event: TarifarioReviewIdentityChange): void {
+    grupo.reviewOverrides = {
+      ...grupo.reviewOverrides,
+      [event.candidateId]: { status: event.status, sentido: event.sentido },
+    };
+  }
+
+  onIvaChange(grupo: GrupoTarifaRefresco, event: TarifarioIvaChange): void {
+    grupo.ivaOverrides = { ...grupo.ivaOverrides, [event.candidateId]: event.value };
+    for (const editor of grupo.editors) {
+      for (const tabla of editor.tablas) {
+        for (const amounts of Object.values(tabla.detected)) {
+          for (const amount of amounts) {
+            if (amount.candidateId === event.candidateId) amount.ivaChecked = event.value;
+          }
+        }
+      }
+    }
+  }
+
+  isLastTabla(editor: EditorViewRefresco, tabla: TablaSentidoRefresco): boolean {
+    return editor.tablas[editor.tablas.length - 1] === tabla;
+  }
+
+  reviewRowsFor(grupo: GrupoTarifaRefresco, editor: EditorViewRefresco): TarifarioReviewRow[] {
+    return this.candidatesFor(grupo)
+      .filter(
+        (item) =>
+          editor.stationIds.includes(item.estacionId) && !this.candidateShownInDetected(editor, item),
+      )
+      .map((item) => ({
+        candidateId: item.candidateId,
+        valor: item.amount,
+        count: item.cases,
+        categoria: item.categoriaProveedor,
+        status: item.status,
+        sentido: item.sentido ?? this.editorSentidoFor(grupo, item.estacionId),
+        estacionId: item.estacionId,
+        estacionNombre: item.station.estacionNombre,
+        color: item.station.color,
+        showIva: this.showIvaFor(grupo, item),
+        ivaChecked: this.ivaCheckedFor(grupo, item),
+      }));
   }
 
   confirmCandidate(
@@ -430,6 +487,7 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
           categoria: row.categoria,
           status: row.status,
           sentido: row.sentido,
+          requiereNormalizacionIva: this.ivaHintFor(row.estacion_id, row.categoria, row.status, row.sentido),
         }));
         const detectedAll = buildDetectedStations(items, catalogo);
         for (const pending of agruparPendientesPorPeajeYFamilia(items, catalogo)) {
@@ -458,6 +516,8 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
             vigenteDesde: { from: null, to: null },
             pendingActions: {},
             assignedByCell: {},
+            ivaOverrides: {},
+            reviewOverrides: {},
           };
           await this.rebuildEditors(grupo);
           grupos.push(grupo);
@@ -563,7 +623,6 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
       tablas.push(await this.buildTabla(grupo, editor, group, sentido, previous));
     }
     editor.tablas = tablas;
-    this.applySafeAutocomplete(grupo, editor, group);
     return editor;
   }
 
@@ -611,52 +670,20 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
     }
     for (const item of items) {
       if (item.categoria == null) continue;
-      const itemSentido = item.sentidoAplicado ?? item.sentidoSolicitado;
-      if (itemSentido && itemSentido !== sentido) continue;
-      if (!item.status) continue;
+      const override = grupo.reviewOverrides?.[item.id];
+      const status = override?.status ?? item.status;
+      if (!status) continue;
+      const itemSentido =
+        override?.sentido ?? item.sentidoAplicado ?? item.sentidoSolicitado ?? editor.sentidoSeleccionado;
+      if (!itemSentido || itemSentido !== sentido) continue;
       const station = group.stations.find((row) => row.estacionId === item.estacionId);
-      const amounts = this.detectedAmounts(item, station);
-      const key = detectedCellKey(item.categoria, item.status);
+      const amounts = this.detectedAmounts(item, station).map((amount) =>
+        this.decorateDetectedAmount(grupo, amount, item, status, itemSentido),
+      );
+      const key = detectedCellKey(item.categoria, status);
       detected[key] = [...(detected[key] ?? []), ...amounts];
     }
     return { sentido, rows, drafts, detected, currentStations };
-  }
-
-  private applySafeAutocomplete(
-    grupo: GrupoTarifaRefresco,
-    editor: EditorViewRefresco,
-    group: EditorGroup,
-  ): void {
-    const candidates: AutocompleteCandidate[] = [];
-    for (const station of group.stations) {
-      for (const item of grupo.itemsPorEstacion.get(station.estacionId) ?? []) {
-        const related = this.candidatos.find((c) =>
-          c.rowIndexes.some((idx) => item.rowIndexes.includes(idx)),
-        );
-        const sentido = item.sentidoAplicado ?? item.sentidoSolicitado ?? related?.sentidoSolicitado ?? null;
-        const status = item.status ?? related?.statusSolicitado ?? null;
-        candidates.push({
-          id: item.id,
-          estacionId: station.estacionId,
-          estacionNombre: station.estacionNombre,
-          amount: related?.candidatePrice ?? item.candidatePrice ?? 0,
-          categoria: item.categoria,
-          status,
-          sentido,
-        });
-      }
-    }
-    const assignment = assignSafeAutocomplete(group, candidates);
-    for (const prefill of assignment.prefills) {
-      const tabla = editor.tablas.find((item) => item.sentido === prefill.sentido);
-      if (!tabla) continue;
-      const current = tabla.drafts[prefill.categoria] ?? { no_pico: '', pico: '' };
-      if (prefill.status === 'NO_PICO' && !current.no_pico.trim()) {
-        tabla.drafts = { ...tabla.drafts, [prefill.categoria]: { ...current, no_pico: String(prefill.amount) } };
-      } else if (prefill.status === 'PICO' && !current.pico.trim()) {
-        tabla.drafts = { ...tabla.drafts, [prefill.categoria]: { ...current, pico: String(prefill.amount) } };
-      }
-    }
   }
 
   private previousDrafts(
@@ -709,13 +736,16 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
       : item.candidatePrice != null
         ? [{ valor: item.candidatePrice, count: item.rowIndexes.length }]
         : [];
-    return entries.map((entry) => ({
-      ...entry,
-      estacionId: station?.estacionId ?? item.estacionId,
-      estacionNombre: station?.estacionNombre,
-      color: station?.color,
-      candidateId: item.id,
-    }));
+    return entries.map((entry) => {
+      const amount: TarifarioDetectedAmount = {
+        ...entry,
+        estacionId: station?.estacionId ?? item.estacionId,
+        estacionNombre: station?.estacionNombre,
+        color: station?.color,
+        candidateId: item.id,
+      };
+      return amount;
+    });
   }
 
   private casesFor(
@@ -766,6 +796,91 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
     return { categoria: cand.categoriaProveedor, status: cand.status, sentido };
   }
 
+  private candidateShownInDetected(editor: EditorViewRefresco, item: CandidateRailItem): boolean {
+    return editor.tablas.some((tabla) =>
+      Object.values(tabla.detected).some((amounts) =>
+        amounts.some((amount) => amount.candidateId === item.candidateId),
+      ),
+    );
+  }
+
+  private decorateDetectedAmount(
+    grupo: GrupoTarifaRefresco,
+    amount: TarifarioDetectedAmount,
+    item: ResultadoDetectarRefresco,
+    status: TarifaStatusPico,
+    sentido: TarifaSentido,
+  ): TarifarioDetectedAmount {
+    const estacionId = amount.estacionId ?? item.estacionId;
+    const categoria = item.categoriaProveedor ?? item.categoria;
+    const candidateId = item.id;
+    const iva =
+      categoria == null
+        ? plantillaSugiereNormalizacionIva(this.configuraciones)
+        : this.ivaFor(grupo, estacionId, categoria, status, sentido, candidateId);
+    return {
+      ...amount,
+      showIva: iva != null,
+      ivaChecked:
+        typeof grupo.ivaOverrides?.[candidateId] === 'boolean'
+          ? grupo.ivaOverrides[candidateId]
+          : iva === true,
+    };
+  }
+
+  private showIvaFor(grupo: GrupoTarifaRefresco, item: CandidateRailItem): boolean {
+    const identity = this.candidateIdentity(grupo, item);
+    if (!identity) return true;
+    return (
+      this.ivaFor(grupo, item.estacionId, identity.categoria, identity.status, identity.sentido, item.candidateId) !=
+      null
+    );
+  }
+
+  private ivaCheckedFor(grupo: GrupoTarifaRefresco, item: CandidateRailItem): boolean {
+    if (typeof grupo.ivaOverrides?.[item.candidateId] === 'boolean') {
+      return grupo.ivaOverrides[item.candidateId];
+    }
+    const identity = this.candidateIdentity(grupo, item);
+    if (!identity) return plantillaSugiereNormalizacionIva(this.configuraciones);
+    return (
+      this.ivaFor(grupo, item.estacionId, identity.categoria, identity.status, identity.sentido, item.candidateId) ===
+      true
+    );
+  }
+
+  private ivaFor(
+    grupo: GrupoTarifaRefresco,
+    estacionId: string,
+    categoria: number,
+    status: TarifaStatusPico,
+    sentido: TarifaSentido,
+    candidateId?: string,
+  ): boolean | null {
+    const hasOverride = candidateId != null && Object.prototype.hasOwnProperty.call(grupo.ivaOverrides ?? {}, candidateId);
+    return resolverRequiereNormalizacionIva(estacionId, categoria, status, sentido, grupo.existentes, {
+      override: hasOverride ? grupo.ivaOverrides![candidateId!] : undefined,
+      plantillaSugiere: plantillaSugiereNormalizacionIva(this.configuraciones),
+    });
+  }
+
+  private ivaHintFor(
+    estacionId: string,
+    categoria: number,
+    status: TarifaStatusPico,
+    sentido: TarifaSentido,
+  ): boolean | null {
+    const match = this.resultados.find(
+      (row) =>
+        row.estacionId === estacionId &&
+        row.categoria === categoria &&
+        row.status === status &&
+        (row.sentidoAplicado === sentido || row.sentidoSolicitado === sentido) &&
+        typeof row.requiereNormalizacionIva === 'boolean',
+    );
+    return match?.requiereNormalizacionIva ?? null;
+  }
+
   private incompleteIdentityError(grupo: GrupoTarifaRefresco, item: CandidateRailItem): string {
     const sentido = item.sentido ?? this.editorSentidoFor(grupo, item.estacionId);
     if (sentido == null) {
@@ -813,9 +928,7 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
         this.error = 'Indicá la fecha de Vigente desde para confirmar tarifas nuevas.';
         return [];
       }
-      const incomplete = this.candidatesFor(grupo).find(
-        (item) => grupo.pendingActions[item.candidateId] && !this.candidateCanArm(grupo, item),
-      );
+      const incomplete = this.candidatesFor(grupo).find((item) => !this.candidateCanArm(grupo, item));
       if (incomplete) {
         this.error = this.incompleteIdentityError(grupo, incomplete);
         return [];
@@ -924,12 +1037,13 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
               related?.estacionId === estacionId
                 ? related.cases
                 : this.casesFor(grupo, estacionId, cell.categoria, cell.status, cell.tabla.sentido),
-            requiereNormalizacionIva: resolverRequiereNormalizacionIva(
+            requiereNormalizacionIva: this.ivaFor(
+              grupo,
               estacionId,
               cell.categoria,
               cell.status,
               cell.tabla.sentido,
-              grupo.existentes,
+              related?.candidateId,
             ),
           })
         ) {
@@ -953,12 +1067,45 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
             importe: item.amount,
             fechaVigenciaInicio: null,
             cases: item.cases,
-            requiereNormalizacionIva: resolverRequiereNormalizacionIva(
+            requiereNormalizacionIva: this.ivaFor(
+              grupo,
               item.estacionId,
               identity.categoria,
               identity.status,
               identity.sentido,
-              grupo.existentes,
+              item.candidateId,
+            ),
+          })
+        ) {
+          return [];
+        }
+      }
+
+      for (const item of this.candidatesFor(grupo)) {
+        if (seenCandidates.has(item.candidateId)) continue;
+        if (grupo.pendingActions[item.candidateId] === 'CONFIRM_NEW') continue;
+        const identity = this.candidateIdentity(grupo, item);
+        if (!identity) continue;
+        if (
+          !push({
+            candidateId: item.candidateId,
+            action: 'MARK_REVIEW',
+            peajeId: grupo.peajeId,
+            estacionId: item.estacionId,
+            categoriaProveedor: identity.categoria,
+            categoriaCalculada: item.categoriaCalculada,
+            status: identity.status,
+            sentido: identity.sentido,
+            importe: item.amount,
+            fechaVigenciaInicio: null,
+            cases: item.cases,
+            requiereNormalizacionIva: this.ivaFor(
+              grupo,
+              item.estacionId,
+              identity.categoria,
+              identity.status,
+              identity.sentido,
+              item.candidateId,
             ),
           })
         ) {

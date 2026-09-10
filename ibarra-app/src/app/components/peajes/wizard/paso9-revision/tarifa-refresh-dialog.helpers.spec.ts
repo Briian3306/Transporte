@@ -10,6 +10,7 @@ import {
   interseccionSentidos,
   preserveIdentityDrafts,
   resolverRequiereNormalizacionIva,
+  plantillaSugiereNormalizacionIva,
   sentidoFamilyOf,
   stationTraceViewModel,
   type AutocompleteCandidate,
@@ -218,6 +219,52 @@ describe('resolverRequiereNormalizacionIva', () => {
   it('devuelve false cuando hay que crear la identidad en esa estación', () => {
     expect(resolverRequiereNormalizacionIva(HUDSON, 7, 'NO_PICO', 'IDA', existentes)).toBeFalse();
     expect(resolverRequiereNormalizacionIva(DOCK, 7, 'PICO', 'IDA', existentes)).toBeFalse();
+  });
+
+  it('hereda el flag IVA de identidades compatibles de la misma estación', () => {
+    const catalogo = [
+      { estacionId: DOCK, categoria: 2, status: 'NO_PICO' as TarifaStatusPico, sentido: 'IDA' as TarifaSentido, requiereNormalizacionIva: true },
+    ];
+    expect(resolverRequiereNormalizacionIva(DOCK, 7, 'NO_PICO', 'IDA', catalogo)).toBeTrue();
+  });
+
+  it('usa la plantilla como fallback y permite override manual', () => {
+    expect(resolverRequiereNormalizacionIva(HUDSON, 7, 'NO_PICO', 'IDA', [], { plantillaSugiere: true })).toBeTrue();
+    expect(
+      resolverRequiereNormalizacionIva(HUDSON, 7, 'NO_PICO', 'IDA', [], { plantillaSugiere: true, override: false }),
+    ).toBeFalse();
+  });
+});
+
+describe('plantillaSugiereNormalizacionIva', () => {
+  it('detecta ELIMINAR_IVA y OPERAR_NUMERO /1.21 o /1.31', () => {
+    expect(
+      plantillaSugiereNormalizacionIva([
+        {
+          id: 'cfg-iva',
+          plantilla_id: 'plt',
+          nombre_columna: 'IMPORTE_NETO',
+          orden: 1,
+          tipo: 'transformacion',
+          configuracion: { algoritmo_codigo: 'ELIMINAR_IVA' },
+          obligatoria: true,
+        },
+      ]),
+    ).toBeTrue();
+    expect(
+      plantillaSugiereNormalizacionIva([
+        {
+          id: 'cfg-ausa',
+          plantilla_id: 'plt',
+          nombre_columna: 'PRECIO',
+          orden: 1,
+          tipo: 'transformacion',
+          configuracion: { algoritmo_codigo: 'OPERAR_NUMERO', operacion: 'dividir', valor: 1.31 },
+          obligatoria: true,
+        },
+      ]),
+    ).toBeTrue();
+    expect(plantillaSugiereNormalizacionIva([])).toBeFalse();
   });
 });
 

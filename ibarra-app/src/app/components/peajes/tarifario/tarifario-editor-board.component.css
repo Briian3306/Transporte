@@ -217,6 +217,56 @@
   opacity: 0.75;
 }
 
+.tf__iva {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  margin-top: 0.2rem;
+  color: var(--at-muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.tf__iva input {
+  margin: 0;
+}
+
+.tf__review-row .tf__review-cell {
+  text-align: left;
+  background: #f8fafc;
+}
+
+.tf__review {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.9rem;
+}
+
+.tf__review-field {
+  display: grid;
+  gap: 0.15rem;
+  color: var(--at-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tf__review-field select {
+  min-width: 7.5rem;
+  padding: 0.28rem 0.4rem;
+  border: 1px solid var(--at-line);
+  border-radius: 0.4rem;
+  background: #fff;
+  color: var(--at-ink);
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .tf__add-row {
   display: flex;
   flex-wrap: wrap;

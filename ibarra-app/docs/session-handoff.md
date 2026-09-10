@@ -1,4 +1,27 @@
-# Handoff del proyecto — 2026-09-08
+# Handoff del proyecto — 2026-09-10
+
+## Handoff Paso 9 — Precio final + REVISAR automático (follow-up F14-19)
+
+Refresh UI only: no schema/RPC. Extractor `TARIFA_PESOS` → `PRECIO` → `IMPORTE_NETO`. AUSA-V3 shows/compares `20792.47`, not `/1.31` `PRECIO`. Rail removed; Detectado `$20.792,47 (n)`; incomplete status/sentido in board footer; IVA checkbox for new identities; empty Nuevo → `MARK_REVIEW`; typed/clicked Nuevo → `CONFIRM_NEW`.
+
+- Branch: `feat/paso9-precio-final` from `main` @ `b2b126d`. No commit.
+- Verify: `npx supabase test db` Files=18 Tests=589 PASS (no DESARROLLO); `tsc` app+spec EXIT 0; `ng build --configuration=development` EXIT 0 (NG8107 Paso 9 preexistente); ng test refresh/dialog/helpers/board 103 SUCCESS; Paso 9 21 SUCCESS.
+- Browser CSV AUSA: not walked (auth/wizard; format covered by specs).
+- Docs: `refresh-tarifas-paso9.md`, `tarifario.md`, `claude-progress.md`, `feature_list.json` F14-19 append only.
+
+## Handoff F14-19 — Refresh validity, category correction, REVISAR gate (`passing`)
+
+Paso 9 refresh extendido: vigencia calendario, matching histórico/vigente con `fecha_pasada`, corrección de categoría (`categoria_calculada`), agrupación multi-estación, fan-out a historiales independientes, acciones `CONFIRM_NEW` / `MARK_REVIEW`, resumen en seis secciones y gate explícito antes de continuar.
+
+- Migraciones: `20260909181737_peajes_tarifa_vigencia_diagnostico.sql`, `20260909192938_peajes_tarifa_matching_correcciones.sql`
+- pgTAP: `peajes_tarifa_vigencia_test.sql` + refresh/cases extendidos; suite **Files=18 Tests=589 PASS**
+- Angular: dialog/helpers/Paso9/tarifario/refresh focused **172 SUCCESS**; `tsc` app+spec **EXIT 0**
+- Tarifario standalone: **Vigente desde** obligatorio en guardar; historial muestra Desde/Hasta/Diagnóstico (RPC historial aún F14-17 en remoto → «Sin fecha conocida»)
+- DESARROLLO (`kfffigvyvtzyczeiadxh`): migraciones aplicadas MCP; `schema_migrations` alineado a filenames locales
+- Git: merge `codex/tarifa-importe-cases` → `main` @ `b2b126d`; chore untrack `.pnpm-store`
+- **Browser / a11y visual:** no verificado en sesión (deferido)
+- Docs: `docs/backend/peajes/refresh-tarifas-paso9.md`, `docs/06-components/peajes/tarifario.md`, `docs/backend/peajes/tarifas-tarifa-importe.md`, `docs/06-tablas/peajes/tarifas-tarifa-importe.md`
+- `tarifas_normalizadas` y firmas F14-16/F14-18 se retienen
 
 ## Handoff F14-18 — Refresh Tarifas Paso 9 (`passing` CLI)
 

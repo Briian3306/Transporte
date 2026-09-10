@@ -63,6 +63,23 @@ describe('precioComparable', () => {
     expect(precioComparable(input)).toBe(100);
   });
 
+  it('no modifica el precio final visible; el flag IVA solo cambia el comparable', () => {
+    const input: TarifaComparisonInput = {
+      precioDirecto: 20792.47,
+      precioNormalizado: 15872.114503816794,
+      requiereNormalizacionIva: true,
+    };
+
+    expect(precioComparable(input)).toBe(15872.114503816794);
+    expect(input.precioDirecto).toBe(20792.47);
+    expect(
+      precioComparable({
+        ...input,
+        requiereNormalizacionIva: false,
+      }),
+    ).toBe(20792.47);
+  });
+
   it('lanza error controlado si el flag es true y falta el precio normalizado', () => {
     const input: TarifaComparisonInput = {
       precioDirecto: 121,

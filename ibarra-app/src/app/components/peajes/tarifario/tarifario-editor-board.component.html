@@ -80,9 +80,16 @@
                     <span class="tf__trace-swatch" aria-hidden="true"></span>
                     <span class="tf__trace-name">{{ item.estacionNombre }}</span>
                   </span>
-                  <span class="tf__detected-amount">{{ formatDetected(item.valor) }}</span>
-                  <span class="tf__detected-count">×{{ item.count }}</span>
+                  <span class="tf__detected-amount">{{ formatDetected(item) }}</span>
                 </button>
+                <label class="tf__iva" *ngIf="item.showIva && item.candidateId">
+                  <input
+                    type="checkbox"
+                    [checked]="item.ivaChecked === true"
+                    (change)="onIvaInput(item.candidateId, $event)"
+                  />
+                  Normalizar IVA
+                </label>
               </li>
             </ul>
           </td>
@@ -111,6 +118,52 @@
             />
           </td>
         </ng-container>
+      </tr>
+      <tr *ngFor="let review of reviewRows" class="tf__review-row" data-role="revision">
+        <th class="tf__cat-cell" scope="row">{{ review.categoria ?? '—' }}</th>
+        <td class="tf__review-cell" colspan="6">
+          <div class="tf__review">
+            <span
+              class="tf__trace"
+              *ngIf="review.estacionNombre"
+              [style.--tf-trace-color]="review.color"
+            >
+              <span class="tf__trace-swatch" aria-hidden="true"></span>
+              <span class="tf__trace-name">{{ review.estacionNombre }}</span>
+            </span>
+            <span class="tf__detected-amount">{{ formatDetected(review) }}</span>
+            <label class="tf__review-field">
+              <span>Status</span>
+              <select
+                aria-label="Status de revisión"
+                [ngModel]="review.status ?? ''"
+                (ngModelChange)="onReviewStatus(review, $event)"
+              >
+                <option value="">Elegir</option>
+                <option *ngFor="let status of statusOptions" [value]="status">{{ status }}</option>
+              </select>
+            </label>
+            <label class="tf__review-field">
+              <span>Sentido</span>
+              <select
+                aria-label="Sentido de revisión"
+                [ngModel]="review.sentido ?? ''"
+                (ngModelChange)="onReviewSentido(review, $event)"
+              >
+                <option value="">Elegir</option>
+                <option *ngFor="let sentido of sentidoOptions" [value]="sentido">{{ sentido }}</option>
+              </select>
+            </label>
+            <label class="tf__iva" *ngIf="review.showIva">
+              <input
+                type="checkbox"
+                [checked]="review.ivaChecked === true"
+                (change)="onIvaInput(review.candidateId, $event)"
+              />
+              Normalizar IVA
+            </label>
+          </div>
+        </td>
       </tr>
     </tbody>
   </table>

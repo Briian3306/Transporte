@@ -89,10 +89,10 @@ describe('TarifarioEditorBoardComponent', () => {
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
     const text = root.textContent ?? '';
-    expect(text).toContain('12.500');
-    expect(text).toContain('×12');
-    expect(text).toContain('15.500');
-    expect(text).toContain('16.000');
+    expect(text).toContain('$12.500,00 (12)');
+    expect(text).toContain('$15.500,00 (3)');
+    expect(text).toContain('$16.000,00 (2)');
+    expect(text).not.toContain('×12');
   });
 
   it('Tab recorre solo inputs Nuevo y omite Historial', () => {
@@ -163,8 +163,8 @@ describe('TarifarioEditorBoardComponent', () => {
     const item = (fixture.nativeElement as HTMLElement).querySelector('.tf__detected-item') as HTMLElement;
     expect(item).toBeTruthy();
     expect(item.textContent).toContain('Dock Sud');
-    expect(item.textContent).toContain('12.500');
-    expect(item.textContent).toContain('×12');
+    expect(item.textContent).toContain('$12.500,00 (12)');
+    expect(item.textContent).not.toContain('×12');
     expect(item.querySelector('.tf__trace-swatch')).toBeTruthy();
     expect(item.querySelector('.tf__trace-name')?.textContent?.trim()).toBe('Dock Sud');
   });
@@ -267,6 +267,34 @@ describe('TarifarioEditorBoardComponent', () => {
     inputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
     fixture.detectChanges();
     expect(document.activeElement).toBe(inputs[1]);
+  });
+
+  it('muestra filas finales de revisión con selectores de status/sentido y checkbox IVA', () => {
+    component.reviewRows = [
+      {
+        candidateId: 'cand-rev',
+        valor: 20792.47,
+        count: 3,
+        categoria: 8,
+        status: null,
+        sentido: null,
+        estacionNombre: 'Varela',
+        color: '#6D28D9',
+        showIva: true,
+        ivaChecked: false,
+      },
+    ];
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const review = root.querySelector('[data-role="revision"]') as HTMLElement;
+    expect(review).toBeTruthy();
+    expect(review.textContent).toContain('$20.792,47 (3)');
+    expect(review.textContent).toContain('Varela');
+    expect(review.querySelector('select[aria-label="Status de revisión"]')).toBeTruthy();
+    expect(review.querySelector('select[aria-label="Sentido de revisión"]')).toBeTruthy();
+    const iva = review.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    expect(iva).toBeTruthy();
+    expect(iva.checked).toBeFalse();
   });
 });
 

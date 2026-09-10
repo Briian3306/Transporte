@@ -1,8 +1,8 @@
-# Tarifas v2 — `tarifas` / `tarifa_importe` (F14-16)
+# Tarifas v2 — `tarifas` / `tarifa_importe` (F14-16 + F14-19)
 
 ## Summary
 
-Matching en sombra y readers de compatibilidad para el catálogo v2: configuración vigente (`tarifas`), historial inmutable (`tarifa_importe`) y RPCs batch. No sustituye el motor legado `peajes_normalizar_tarifas` ni borra `tarifas_normalizadas`. Esquema: [tarifas-tarifa-importe.md](../../06-tablas/peajes/tarifas-tarifa-importe.md).
+Matching en sombra y readers de compatibilidad para el catálogo v2: configuración vigente (`tarifas`), historial inmutable (`tarifa_importe`) con **vigencia calendario** y **diagnóstico**, y RPCs batch. F14-19 extiende triggers, exclusion constraint y guardados atómicos `CONFIRMADO` / `REVISAR`. No sustituye `peajes_normalizar_tarifas` ni borra `tarifas_normalizadas`. Esquema: [tarifas-tarifa-importe.md](../../06-tablas/peajes/tarifas-tarifa-importe.md).
 
 ## Index
 
@@ -67,6 +67,21 @@ RPC `peajes_asociar_pasadas_tarifa_importe`: escribe `pasadas.tarifa_importe_id`
 
 `peajes_backfill_pasadas_tarifa_importe()` actualiza `tarifa_importe_id` solo con linaje 1:1. Pasadas sin linaje o con linaje no único quedan `NULL`. Tras `db reset --local --no-seed`, `pasadas` está vacía (conteos 0/0/0). El volumen real no está verificado fuera de pgTAP.
 
+### Vigencia y diagnóstico (F14-19)
+
+Migraciones `20260909181737_peajes_tarifa_vigencia_diagnostico.sql`, `20260909192938_peajes_tarifa_matching_correcciones.sql`.
+
+| Concepto | Regla |
+|----------|--------|
+| Intervalo confirmado | `[fecha_vigencia_inicio, fecha_vigencia_fin)`; fin exclusivo; `NULL` fin = abierto |
+| Solapamiento | EXCLUDE GiST por `tarifa_id` entre filas `CONFIRMADO` con inicio conocido |
+| Cierre de periodo | Único UPDATE permitido: `fecha_vigencia_fin` `NULL` → fecha del nuevo inicio |
+| Promoción de puntero | Solo `CONFIRMADO` + inicio no null; orden por `fecha_vigencia_inicio` |
+| `REVISAR` | Append evidencia; sin vigencia; **no** cierra ni promueve |
+| Legado | Fechas null permanecen null; UI «vigencia desconocida»; backfill de `diagnostico` solo desde `tarifas_normalizadas` |
+
+Helper `_peajes_aplicar_importe_guardado` centraliza cierre + insert. Refresh Paso 9 y editor de ruta lo usan (firmas públicas intactas). Detalle UX: [refresh-tarifas-paso9.md](./refresh-tarifas-paso9.md).
+
 ## Relations
 
 | Consumidor | Operación |
@@ -94,13 +109,15 @@ Detalle de columnas: [06-tablas/peajes/tarifas-tarifa-importe.md](../../06-tabla
 
 | Función | Tipo | Parámetros | Retorno | Descripción |
 |---------|------|------------|---------|-------------|
-| `_peajes_tarifas_montos_candidatos` | helper STABLE | estación, categoría, status, sentido | relation | Montos vigente+historial con precedencia de sentido. Usado por F14-16 y F14-18. No es API. |
+| `_peajes_tarifas_montos_candidatos` | helper STABLE | estación, categoría, status, sentido | relation | Montos vigente+historial (F14-16/18 Paso 8). |
+| `_peajes_tarifas_matching_candidatos` | helper STABLE | estación, categoría, sentido, status, **fecha_pasada**, precios | relation | Candidatos vigentes+historial **todas las categorías** con rank de vigencia (F14-19 refresh). |
+| `_peajes_aplicar_importe_guardado` | helper VOLATILE | tarifa, importe, cases, diagnostico, inicio, cat_calc | table | Cierre + append CONFIRMADO o append REVISAR (F14-19). |
 | `peajes_resolver_tarifas_actuales` | RPC STABLE | `p_pasadas jsonb` (arreglo) | jsonb arreglo | Resuelve config + puntero + `importe` + flag IVA. Conserva `idx` / orden. No muta. Firma pública intacta. |
 | `peajes_validar_tarifas_actuales` | RPC STABLE | `p_pasadas jsonb` | jsonb arreglo | Elige precio según flag; aplica 1% inclusivo. No divide por 1,21. Firma pública intacta. |
 | `peajes_asociar_pasadas_tarifa_importe` | RPC VOLATILE | `p_asociaciones jsonb` | void | Asocia solo `AL_DIA`/`HISTORICA`. Idempotente. |
 | `peajes_backfill_pasadas_tarifa_importe` | RPC VOLATILE | — | void | Backfill por linaje único. |
-| `peajes_trg_tarifa_importe_immutable` | trigger | — | trigger | Bloquea DELETE y UPDATE de negocio. |
-| `peajes_trg_tarifa_importe_promote` | trigger | — | trigger | Promociona puntero si la tupla es estrictamente posterior. |
+| `peajes_trg_tarifa_importe_immutable` | trigger | — | trigger | Bloquea DELETE y UPDATE de negocio; permite un cierre de `fecha_vigencia_fin` (F14-19). |
+| `peajes_trg_tarifa_importe_promote` | trigger | — | trigger | Promociona puntero solo CONFIRMADO con inicio; REVISAR/legado no promueven (F14-19). |
 
 ### Detalle: `peajes_resolver_tarifas_actuales`
 
@@ -146,21 +163,22 @@ Detalle de columnas: [06-tablas/peajes/tarifas-tarifa-importe.md](../../06-tabla
 | Tipo | Archivo / comando | Escenario |
 |------|-------------------|-----------|
 | `supabase_db_test` | `supabase/tests/peajes_f14_tarifas_importe_test.sql` | Schema, puntero, matching, linaje, cutover, backfill |
+| `supabase_db_test` | **`supabase/tests/peajes_tarifa_vigencia_test.sql`** | Vigencia, REVISAR, overlap, promote, legado null (F14-19) |
 | `supabase_db_test` | `supabase/tests/peajes_pwbi_views_test.sql` | `pwbi_tarifas` intacta + `pwbi_tarifas_v2` |
 | Node | `scripts/peajes-catalogo-audit/*.test.mjs` | ETL, linaje, tolerancia 0,23% / 1% / >1% |
 | `angular_spec` | adapter + `tarifa-validation.service` + `paso8-validacion` | Flag IVA, batch, no bloqueo |
 
-**Estado:** verificado en CLI local (Task 9, 2026-09-08). No DESARROLLO.
+**Estado:** verificado en CLI local (Task 12 / F14-19 close-out, 2026-09-10). DESARROLLO: migraciones F14-19 aplicadas vía MCP con ids locales.
 
-**Comando ejecutado:** desde `ibarra-app/`: `npx supabase start`; `npx supabase db reset --local --no-seed`; `npx supabase test db`; `node --test scripts/peajes-catalogo-audit/*.test.mjs`; `pnpm.cmd exec ng test` adapter+validation+paso8 y `**/peajes/auditoria-tarifas/**/*.spec.ts`; `tsc --noEmit` app+spec.
+**Comando ejecutado:** desde `ibarra-app/`: `npx supabase test db`; focused `ng test` refresh/Paso9/tarifario/dialog/helpers; `tsc --noEmit` app+spec.
 
-**Resultado:** pgTAP Files=14 Tests=412 EXIT 0; Node 53/53 skipped 0; Angular 35 + 52 SUCCESS; tsc EXIT 0.
+**Resultado:** pgTAP **Files=18 Tests=589 EXIT 0**; Angular focused **172 SUCCESS**; tsc **EXIT 0**. Browser Paso 9 no recorrido (deferido).
 
-**Evidencia:** `feature_list.json` → F14-16; `.superpowers/sdd/task-9-report.md`.
+**Evidencia:** `feature_list.json` → F14-19; `docs/claude-progress.md`; [refresh-tarifas-paso9.md](./refresh-tarifas-paso9.md).
 
 ## Notes
 
-- Código: `supabase/migrations/20260907*_peajes_tarifas_v2_*.sql`, `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`, helper reescrito en `20260908150000_peajes_refresh_tarifas_paso9.sql`
+- Código: `supabase/migrations/20260907*_peajes_tarifas_v2_*.sql`, `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`, **`20260909181737_peajes_tarifa_vigencia_diagnostico.sql`**, **`20260909192938_peajes_tarifa_matching_correcciones.sql`**, helper refresh en `20260908150000_peajes_refresh_tarifas_paso9.sql` (reemplazado en F14-19)
 - Refresh Paso 9: [refresh-tarifas-paso9.md](./refresh-tarifas-paso9.md)
 - Angular: `src/app/components/peajes/services/tarifa-comparison-adapter.service.ts`, `tarifa-validation.service.ts`, `wizard/paso8-validacion/`
 - Legado: [auditoria-tarifas.md](./auditoria-tarifas.md)
@@ -178,4 +196,4 @@ Detalle de columnas: [06-tablas/peajes/tarifas-tarifa-importe.md](../../06-tabla
 
 ---
 
-> Última actualización: 2026-09-08
+> Última actualización: 2026-09-10 (F14-19)

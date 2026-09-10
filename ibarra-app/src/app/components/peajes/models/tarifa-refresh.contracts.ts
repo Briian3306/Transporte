@@ -213,6 +213,9 @@ function parseStatus(value: unknown): TarifaStatusPico | null {
 }
 
 function precioBrutoCandidato(pasada: PasadaEstandarizada): number | null {
+  const extra = pasada as Record<string, unknown>;
+  const tarifaPesos = parseFiniteNumber(extra['TARIFA_PESOS']);
+  if (tarifaPesos != null) return tarifaPesos;
   const precio = parseFiniteNumber(pasada.PRECIO);
   if (precio != null) return precio;
   return parseFiniteNumber(pasada.IMPORTE_NETO);

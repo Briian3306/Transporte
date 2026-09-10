@@ -72,6 +72,9 @@ Historial de importes auditados de una configuración. `status` / `categoria` no
 | `categoria_calculated` | smallint | Sí | Metadato legado 0–10. |
 | `cases` | integer | No | Snapshot inmutable de pasadas que evidenciaron el importe. Default `0` para catálogo/manual sin evidencia de pasadas. |
 | `fecha_aparicion` | timestamptz | No | Primera aparición de este registro de precio. |
+| `fecha_vigencia_inicio` | date | Sí | Inicio calendario **inclusivo** de vigencia confirmada. `NULL` = desconocida o fila `REVISAR`. **No** se backfill desde `fecha_aparicion`. |
+| `fecha_vigencia_fin` | date | Sí | Fin calendario **exclusivo**. `NULL` = intervalo abierto o desconocido. Solo puede cerrarse una vez vía UPDATE permitido por trigger. |
+| `diagnostico` | text | Sí | Snapshot: `MUESTRA_INSUFICIENTE` \| `TARIFA_UNICA` \| `CATEGORIA` \| `POSIBLE_HORARIO` \| `REVISAR` \| `CONFIRMADO`. Backfill único desde `tarifas_normalizadas.diagnostico` en migración F14-19. |
 | `tarifas_normalizadas_id` | uuid FK | Sí | Linaje 1:1 hacia `tarifas_normalizadas`. `NULL` = monto solo en el tarifario cruzado o detectado después. `ON DELETE SET NULL`. Unique parcial cuando no es NULL. |
 | `created_at` / `updated_at` | timestamptz | No | Auditoría de insert. `updated_at` permanece escribible; columnas de negocio no. |
 
@@ -79,6 +82,8 @@ Constraints / índices:
 
 - Unique `(tarifa_id, id)` — destino del FK compuesto del puntero.
 - Unique parcial `tarifas_normalizadas_id WHERE tarifas_normalizadas_id IS NOT NULL`.
+- CHECK `diagnostico` ∈ dominio F14-19; CHECK fechas (`fin` null o `inicio < fin`).
+- EXCLUDE GiST `tarifa_importe_vigencia_confirmada_excl` (F14-19): periodos `CONFIRMADO` con inicio conocido no se solapan por `tarifa_id`.
 - Índice de historia `(tarifa_id, fecha_aparicion DESC, created_at DESC, id DESC)`.
 
 RLS: `tarifa_importe_authenticated_all` (mismo patrón plano que el legado).
@@ -107,13 +112,14 @@ FK compuesto `tarifas_current_pointer_fkey`: `(tarifas.id, current_tarifa_id) �
 Trigger `trg_tarifa_importe_immutable` (`BEFORE UPDATE OR DELETE`):
 
 - Prohíbe `DELETE`.
-- Prohíbe `UPDATE` de columnas de negocio (`id`, `tarifa_id`, `importe`, estadísticas incluido `cases`, `fecha_aparicion`, linaje, `created_at`).
-- Correcciones: insertar una fila nueva.
+- Prohíbe `UPDATE` de columnas de negocio (`id`, `tarifa_id`, `importe`, estadísticas incluido `cases`, `fecha_aparicion`, `diagnostico`, `fecha_vigencia_inicio`, linaje, `created_at`).
+- **Permite** un único cierre: `fecha_vigencia_fin` de `NULL` a fecha (F14-19). Cualquier otro cambio de fin → excepción.
 
 Trigger `trg_tarifa_importe_promote` (`AFTER INSERT`):
 
+- Promociona puntero **solo** si `diagnostico = 'CONFIRMADO'` **y** `fecha_vigencia_inicio IS NOT NULL`.
 - Si `current_tarifa_id` es NULL, lo rellena con el INSERT y copia `fecha_aparicion` a `tarifas.fecha_actualizacion`.
-- Si ya hay puntero, promociona solo si `(fecha_aparicion, created_at, id)` es **estrictamente posterior**. Un INSERT anterior no degrada el puntero.
+- Si ya hay puntero, promociona solo si el nuevo `fecha_vigencia_inicio` es **estrictamente posterior** al vigente (F14-19). Filas `REVISAR` o legado sin inicio **nunca** mueven el puntero.
 
 ---
 
@@ -139,12 +145,12 @@ El backfill `peajes_backfill_pasadas_tarifa_importe()` escribe `pasadas.tarifa_i
 
 ## Referencias
 
-- Migraciones: `supabase/migrations/20260907100000_peajes_tarifas_v2_schema.sql`, `20260907101000_peajes_tarifas_v2_current_pointer.sql`, `20260907102000_peajes_tarifas_v2_shadow_matching.sql`, `20260907103000_peajes_tarifas_v2_compat_cutover.sql`, `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`
+- Migraciones: `supabase/migrations/20260907100000_peajes_tarifas_v2_schema.sql`, …, `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`, **`20260909181737_peajes_tarifa_vigencia_diagnostico.sql`**, **`20260909192938_peajes_tarifa_matching_correcciones.sql`**
 - Compatibilidad legado: [tarifas-normalizadas.md](./tarifas-normalizadas.md)
 - RPCs y Paso 8: [backend/peajes/tarifas-tarifa-importe.md](../../backend/peajes/tarifas-tarifa-importe.md)
 - Vista Power BI paralela: [pwbi-views.md](../../backend/peajes/pwbi-views.md)
-- Tests: `supabase/tests/peajes_f14_tarifas_importe_test.sql`
+- Tests: `supabase/tests/peajes_f14_tarifas_importe_test.sql`, **`peajes_tarifa_vigencia_test.sql`**
 
 ---
 
-> Última actualización: 2026-09-08
+> Última actualización: 2026-09-10 (F14-19 vigencia/diagnóstico)

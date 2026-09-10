@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  TarifaSentido,
   TarifaStatusPico,
   TarifarioEditorCell,
   TarifarioEditorDrafts,
@@ -32,6 +33,33 @@ export interface TarifarioDetectedAmount {
   estacionNombre?: string;
   color?: string;
   candidateId?: string;
+  showIva?: boolean;
+  ivaChecked?: boolean;
+}
+
+export interface TarifarioReviewRow {
+  candidateId: string;
+  valor: number;
+  count: number;
+  categoria: number | null;
+  status: TarifaStatusPico | null;
+  sentido: TarifaSentido | null;
+  estacionId?: string;
+  estacionNombre?: string;
+  color?: string;
+  showIva?: boolean;
+  ivaChecked?: boolean;
+}
+
+export interface TarifarioReviewIdentityChange {
+  candidateId: string;
+  status: TarifaStatusPico | null;
+  sentido: TarifaSentido | null;
+}
+
+export interface TarifarioIvaChange {
+  candidateId: string;
+  value: boolean;
 }
 
 export type TarifarioDetectedMap = Record<string, TarifarioDetectedAmount[]>;
@@ -119,6 +147,7 @@ export class TarifarioEditorBoardComponent {
   @Input() drafts: TarifarioEditorDrafts = {};
   @Input() detected: TarifarioDetectedMap = {};
   @Input() currentStations: TarifarioCurrentStationMap = {};
+  @Input() reviewRows: TarifarioReviewRow[] = [];
   @Input() allowAddCategoria = true;
   @Input() categoriaCount = 0;
   @Input() showAddCategoria = true;
@@ -127,6 +156,11 @@ export class TarifarioEditorBoardComponent {
   @Output() readonly candidateSelected = new EventEmitter<TarifarioCandidateSelected>();
   @Output() readonly historyRequest = new EventEmitter<TarifarioHistoryRequest>();
   @Output() readonly addCategoria = new EventEmitter<void>();
+  @Output() readonly reviewIdentityChange = new EventEmitter<TarifarioReviewIdentityChange>();
+  @Output() readonly ivaChange = new EventEmitter<TarifarioIvaChange>();
+
+  readonly statusOptions: ReadonlyArray<TarifaStatusPico> = ['NO_PICO', 'PICO'];
+  readonly sentidoOptions: ReadonlyArray<TarifaSentido> = ['IDA', 'VUELTA', 'AMBAS'];
 
   displayActual(value: number | null): string {
     return formatTarifaImporteDisplay(value);
@@ -160,8 +194,27 @@ export class TarifarioEditorBoardComponent {
     return this.detected[detectedCellKey(categoria, status)] ?? [];
   }
 
-  formatDetected(valor: number): string {
-    return formatTarifaImporte(valor);
+  formatDetected(item: TarifarioDetectedAmount | TarifarioReviewRow): string {
+    return `${formatTarifaImporte(item.valor)} (${item.count})`;
+  }
+
+  onReviewStatus(row: TarifarioReviewRow, raw: string): void {
+    const status = raw === 'PICO' || raw === 'NO_PICO' ? raw : null;
+    this.reviewIdentityChange.emit({ candidateId: row.candidateId, status, sentido: row.sentido });
+  }
+
+  onReviewSentido(row: TarifarioReviewRow, raw: string): void {
+    const sentido = raw === 'IDA' || raw === 'VUELTA' || raw === 'AMBAS' ? raw : null;
+    this.reviewIdentityChange.emit({ candidateId: row.candidateId, status: row.status, sentido });
+  }
+
+  onIvaInput(candidateId: string | undefined, event: Event): void {
+    this.onIvaToggle(candidateId, (event.target as HTMLInputElement).checked);
+  }
+
+  onIvaToggle(candidateId: string | undefined, checked: boolean): void {
+    if (!candidateId) return;
+    this.ivaChange.emit({ candidateId, value: checked });
   }
 
   isDirty(categoria: number, status: TarifaStatusPico): boolean {
