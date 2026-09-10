@@ -47,6 +47,8 @@ Get-Content supabase\.temp\project-ref
 # Esperado para DESARROLLO: kfffigvyvtzyczeiadxh
 ```
 
+Si `db push` falla por timestamps distintos (MCP vs archivo local) o hay que restaurar el CLI tras el push: [historial-migraciones.md](historial-migraciones.md).
+
 ## Flujo obligatorio para agentes 01+
 
 ```text
@@ -63,4 +65,5 @@ Get-Content supabase\.temp\project-ref
 - Reutilizar refs de OrdenCompra
 - Hardcodear `service_role`, Bearer tokens o secrets en migraciones/docs
 - `db reset --linked` contra el remoto DESARROLLO
+- `apply_migration` MCP cuando el SQL ya existe en `supabase/migrations/` (segundo timestamp)
 - Asumir staging/prod separados

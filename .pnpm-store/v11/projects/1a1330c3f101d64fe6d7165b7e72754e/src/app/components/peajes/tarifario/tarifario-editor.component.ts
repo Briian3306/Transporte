@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { DateRangePickerComponent, toDateInputValue, type DateRangeValue } from '../../shared';
 import {
   PEAJES_TARIFARIO_SERVICE,
   PeajesTarifarioService,
@@ -34,7 +35,13 @@ import {
 @Component({
   selector: 'app-tarifario-editor',
   standalone: true,
-  imports: [CommonModule, RouterLink, TarifarioEditorBoardComponent, TarifarioHistorialDialogComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    DateRangePickerComponent,
+    TarifarioEditorBoardComponent,
+    TarifarioHistorialDialogComponent,
+  ],
   templateUrl: './tarifario-editor.component.html',
   styleUrls: ['../shared/peajes-list-shell.css', './tarifario-editor.component.css'],
 })
@@ -61,6 +68,7 @@ export class TarifarioEditorComponent implements OnInit {
   historyLoading = false;
   historyError: string | null = null;
   historyRows: TarifarioHistorialItem[] = [];
+  vigenteDesde: DateRangeValue = { from: null, to: null };
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -180,6 +188,10 @@ export class TarifarioEditorComponent implements OnInit {
     void this.router.navigate(['/peajes/tarifario']);
   }
 
+  onVigenteDesde(value: DateRangeValue): void {
+    this.vigenteDesde = { from: value.from, to: null };
+  }
+
   async save(): Promise<void> {
     if (!this.sentido) return;
     const errores = collectDraftErrores(this.rows, this.drafts);
@@ -189,11 +201,21 @@ export class TarifarioEditorComponent implements OnInit {
     }
     const cambios = collectCambios(this.rows, this.drafts);
     if (!cambios.length) return;
+    const fechaIso = toDateInputValue(this.vigenteDesde.from);
+    if (!fechaIso) {
+      this.saveError = 'Indicá la fecha de Vigente desde para confirmar tarifas nuevas.';
+      return;
+    }
     this.saving = true;
     this.saveError = null;
     try {
       await firstValueFrom(
-        this.tarifario.guardar(this.peajeId, this.estacionId, this.sentido, cambios),
+        this.tarifario.guardar(
+          this.peajeId,
+          this.estacionId,
+          this.sentido,
+          cambios.map((cambio) => ({ ...cambio, fechaVigenciaInicio: fechaIso })),
+        ),
       );
       this.drafts = {};
       this.applyEditorPayload(

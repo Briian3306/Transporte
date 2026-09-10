@@ -3,17 +3,617 @@
     "legacy_links": 8406,
     "v2_links": 7533,
     "unmapped": 873,
-    "current_pointer_mismatches": 0,
+    "current_pointer_mismatches": 27,
     "price_comparison_mismatches": 0,
-    "null_current_pointers": 0,
+    "null_current_pointers": 27,
     "lineage_1n_mismatches": 0,
     "lineage_id_mismatches": 0,
     "pointer_parent_mismatches": 0,
-    "tarifas_without_staged_precio_last": 50,
+    "tarifas_without_staged_precio_last": 77,
     "sentido_id_collisions_remapped": 27,
+    "sentido_id_collisions_unresolved": 27,
     "tn_unique_key_lineage_skipped": 8,
     "precio_last_current_mismatches": 0
   },
-  "unexplained": [],
-  "remapped": 27
+  "unexplained": [
+    "null_current_pointers=27",
+    "directional_history_collisions=27"
+  ],
+  "remapped": 27,
+  "unresolved": [
+    {
+      "from": "28437846-7524-4de5-8ff5-ef5383eb0f16",
+      "to": "7a619510-2150-49d3-868c-bbb15c3648d7",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "BERAZATEGUI",
+          "ESTACION_MATCH": "BERAZATEGUI",
+          "CATEGORIA": "3",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$4.713,30",
+          "PRECIO_LAST": "$12.214,67",
+          "TARIFA_ID": "28437846-7524-4de5-8ff5-ef5383eb0f16",
+          "LAST_UPDATED": "2026-04-17 13:53:12+00"
+        }
+      ]
+    },
+    {
+      "from": "f5e8c23e-14be-468d-82da-548bcd932f42",
+      "to": "cdde4d66-0cae-429f-82d1-99a8fc197e29",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "BERAZATEGUI",
+          "ESTACION_MATCH": "BERAZATEGUI",
+          "CATEGORIA": "6",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "PICO",
+          "PRECIO": "$23.847,03",
+          "PRECIO_LAST": "$25.447,22",
+          "TARIFA_ID": "f5e8c23e-14be-468d-82da-548bcd932f42",
+          "LAST_UPDATED": "2026-05-04 09:38:57+00"
+        }
+      ]
+    },
+    {
+      "from": "134cc71f-1415-40ff-8647-a15a0ea2d002",
+      "to": "0f2f42d3-b950-4362-81ee-25f2fb96a30e",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "BERAZATEGUI",
+          "ESTACION_MATCH": "BERAZATEGUI",
+          "CATEGORIA": "6",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$19.077,62",
+          "PRECIO_LAST": "$20.357,78",
+          "TARIFA_ID": "134cc71f-1415-40ff-8647-a15a0ea2d002",
+          "LAST_UPDATED": "2026-04-29 11:30:12+00"
+        }
+      ]
+    },
+    {
+      "from": "87c2c035-07fb-4c20-8770-98af7e1990ae",
+      "to": "1294986c-04b2-4e96-80d9-604a8a9ac80f",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "BERAZATEGUI",
+          "ESTACION_MATCH": "BERAZATEGUI",
+          "CATEGORIA": "7",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "PICO",
+          "PRECIO": "$9.426,58",
+          "PRECIO_LAST": "$30.536,67",
+          "TARIFA_ID": "87c2c035-07fb-4c20-8770-98af7e1990ae",
+          "LAST_UPDATED": "2026-05-24 11:19:37+00"
+        }
+      ]
+    },
+    {
+      "from": "f4172d81-d74a-47c3-8b81-ca69b13af330",
+      "to": "bb1355d4-cc15-47bf-8ab0-f820e43410dc",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "BERAZATEGUI",
+          "ESTACION_MATCH": "BERAZATEGUI",
+          "CATEGORIA": "7",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$22.893,15",
+          "PRECIO_LAST": "$24.429,34",
+          "TARIFA_ID": "f4172d81-d74a-47c3-8b81-ca69b13af330",
+          "LAST_UPDATED": "2026-05-24 11:22:46+00"
+        }
+      ]
+    },
+    {
+      "from": "67c151af-2af3-4311-8ac4-cd9b48ca6094",
+      "to": "6b2ba09e-8193-4ebe-8286-b10879586f95",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "BERNAL",
+          "ESTACION_MATCH": "BERNAL",
+          "CATEGORIA": "6",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "PICO",
+          "PRECIO": "$14.968,96",
+          "PRECIO_LAST": "$25.447,22",
+          "TARIFA_ID": "67c151af-2af3-4311-8ac4-cd9b48ca6094",
+          "LAST_UPDATED": "2026-07-10 07:52:30+00"
+        }
+      ]
+    },
+    {
+      "from": "d268dcf0-86f5-49b7-8861-6ea294e20c40",
+      "to": "e6965114-f7d7-4499-88e4-bfff40b0bdd4",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "BERNAL",
+          "ESTACION_MATCH": "BERNAL",
+          "CATEGORIA": "6",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$11.975,15",
+          "PRECIO_LAST": "$20.357,78",
+          "TARIFA_ID": "d268dcf0-86f5-49b7-8861-6ea294e20c40",
+          "LAST_UPDATED": "2026-07-10 11:13:35+00"
+        }
+      ]
+    },
+    {
+      "from": "b07884e3-eeec-4846-86e6-3fed7073f9ef",
+      "to": "4b5b98b0-0fd2-41a5-889d-75385d6aa034",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "BERNAL",
+          "ESTACION_MATCH": "BERNAL",
+          "CATEGORIA": "7",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "PICO",
+          "PRECIO": "$17.962,75",
+          "PRECIO_LAST": "$30.536,67",
+          "TARIFA_ID": "b07884e3-eeec-4846-86e6-3fed7073f9ef",
+          "LAST_UPDATED": "2026-07-15 18:30:43+00"
+        }
+      ]
+    },
+    {
+      "from": "6449bbbd-308b-4264-85ba-aaaeefc2a0aa",
+      "to": "84de08d6-9614-4b75-8b4f-5582fa63957c",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "BERNAL",
+          "ESTACION_MATCH": "BERNAL",
+          "CATEGORIA": "7",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$14.370,19",
+          "PRECIO_LAST": "$24.429,34",
+          "TARIFA_ID": "6449bbbd-308b-4264-85ba-aaaeefc2a0aa",
+          "LAST_UPDATED": "2026-07-10 00:25:51+00"
+        }
+      ]
+    },
+    {
+      "from": "feb4ff56-0ad6-4e1c-80e4-fb017d63b400",
+      "to": "9914123c-8bb2-4eb4-8ab2-07a16c09765d",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "DOCK SUD",
+          "ESTACION_MATCH": "DOCK SUD ACC. SUDESTE",
+          "CATEGORIA": "2",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "PICO",
+          "PRECIO": "$2.395,04",
+          "PRECIO_LAST": "$2.993,80",
+          "TARIFA_ID": "feb4ff56-0ad6-4e1c-80e4-fb017d63b400",
+          "LAST_UPDATED": "2026-07-12 21:37:15+00"
+        }
+      ]
+    },
+    {
+      "from": "621f4d8b-48b4-487b-8834-448e027b0247",
+      "to": "9214352c-8254-460b-8a4d-5ba54e590de5",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "DOCK SUD",
+          "ESTACION_MATCH": "DOCK SUD ACC. SUDESTE",
+          "CATEGORIA": "2",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$2.244,43",
+          "PRECIO_LAST": "$2.395,04",
+          "TARIFA_ID": "621f4d8b-48b4-487b-8834-448e027b0247",
+          "LAST_UPDATED": "2026-04-09 16:13:47+00"
+        }
+      ]
+    },
+    {
+      "from": "7f35f73d-3288-4c90-82e0-28aba43ca70c",
+      "to": "9bdc952e-24b2-4abe-8b63-9e73ea916258",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "DOCK SUD",
+          "ESTACION_MATCH": "DOCK SUD ACC. SUDESTE",
+          "CATEGORIA": "3",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "PICO",
+          "PRECIO": "$8.416,60",
+          "PRECIO_LAST": "$8.981,37",
+          "TARIFA_ID": "7f35f73d-3288-4c90-82e0-28aba43ca70c",
+          "LAST_UPDATED": "2026-05-07 17:25:17+00"
+        }
+      ]
+    },
+    {
+      "from": "2cf1f1e4-0679-460e-85e8-f3ae20ac86f3",
+      "to": "634ea823-780c-43ad-8551-afddd6d813f8",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "DOCK SUD",
+          "ESTACION_MATCH": "DOCK SUD ACC. SUDESTE",
+          "CATEGORIA": "3",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$6.733,28",
+          "PRECIO_LAST": "$7.185,10",
+          "TARIFA_ID": "2cf1f1e4-0679-460e-85e8-f3ae20ac86f3",
+          "LAST_UPDATED": "2026-04-17 13:45:00+00"
+        }
+      ]
+    },
+    {
+      "from": "36e7a21d-59d0-4194-8a5b-541793e7a33d",
+      "to": "00f9f21a-7930-4e51-8f60-d937f562b9af",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "DOCK SUD",
+          "ESTACION_MATCH": "DOCK SUD ACC. SUDESTE",
+          "CATEGORIA": "5",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$11.222,12",
+          "PRECIO_LAST": "$9.580,14",
+          "TARIFA_ID": "36e7a21d-59d0-4194-8a5b-541793e7a33d",
+          "LAST_UPDATED": "2026-06-09 18:08:48+00"
+        }
+      ]
+    },
+    {
+      "from": "805aaea1-ca69-437d-803c-406e6a4e354d",
+      "to": "302e9eaf-bfd1-4c68-8a41-3b2c75804227",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "DOCK SUD",
+          "ESTACION_MATCH": "DOCK SUD ACC. SUDESTE",
+          "CATEGORIA": "6",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "PICO",
+          "PRECIO": "$12.380,37",
+          "PRECIO_LAST": "$14.968,96",
+          "TARIFA_ID": "805aaea1-ca69-437d-803c-406e6a4e354d",
+          "LAST_UPDATED": "2026-01-02 07:45:59+00"
+        }
+      ]
+    },
+    {
+      "from": "90e0cdf8-824c-4993-8052-43a626633f5e",
+      "to": "23b18959-27fa-4a86-8f12-cebff8519b60",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "DOCK SUD",
+          "ESTACION_MATCH": "DOCK SUD ACC. SUDESTE",
+          "CATEGORIA": "6",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$14.370,19",
+          "PRECIO_LAST": "$11.975,15",
+          "TARIFA_ID": "90e0cdf8-824c-4993-8052-43a626633f5e",
+          "LAST_UPDATED": "2026-07-14 00:10:23+00"
+        }
+      ]
+    },
+    {
+      "from": "c6225cf6-fb25-4fc2-868e-bfdbdd37f9da",
+      "to": "640e1192-2e1f-452b-86ae-acd28f0b0d21",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "DOCK SUD",
+          "ESTACION_MATCH": "DOCK SUD ACC. SUDESTE",
+          "CATEGORIA": "7",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "PICO",
+          "PRECIO": "$16.833,20",
+          "PRECIO_LAST": "$17.962,75",
+          "TARIFA_ID": "c6225cf6-fb25-4fc2-868e-bfdbdd37f9da",
+          "LAST_UPDATED": "2026-04-09 07:08:46+00"
+        }
+      ]
+    },
+    {
+      "from": "6b483839-1fd6-46c4-8bb9-79b5ea3bf0fd",
+      "to": "d8c5a1d5-f92c-476c-8e4d-5bbee5a2bcb2",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "DOCK SUD",
+          "ESTACION_MATCH": "DOCK SUD ACC. SUDESTE",
+          "CATEGORIA": "7",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "AL_DIA",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$14.370,19",
+          "PRECIO_LAST": "$14.370,19",
+          "TARIFA_ID": "6b483839-1fd6-46c4-8bb9-79b5ea3bf0fd",
+          "LAST_UPDATED": "2026-07-13 05:42:45+00"
+        }
+      ]
+    },
+    {
+      "from": "70c15d15-3752-4774-836e-09cc1949ecad",
+      "to": "876e236d-3b62-4ca6-8e25-7ec80a380c7f",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "HUDSON",
+          "ESTACION_MATCH": "HUDSON",
+          "CATEGORIA": "2",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "PICO",
+          "PRECIO": "$5.611,06",
+          "PRECIO_LAST": "$5.987,57",
+          "TARIFA_ID": "70c15d15-3752-4774-836e-09cc1949ecad",
+          "LAST_UPDATED": "2026-07-08 18:29:53+00"
+        }
+      ]
+    },
+    {
+      "from": "2b0cd95b-8f5d-4a05-8a7e-04952ec94219",
+      "to": "71684f92-e349-4e29-89ba-78752184bd91",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "HUDSON",
+          "ESTACION_MATCH": "HUDSON",
+          "CATEGORIA": "2",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$2.395,04",
+          "PRECIO_LAST": "$4.790,06",
+          "TARIFA_ID": "2b0cd95b-8f5d-4a05-8a7e-04952ec94219",
+          "LAST_UPDATED": "2026-07-12 21:55:48+00"
+        }
+      ]
+    },
+    {
+      "from": "1d1b3565-d83e-4cd8-8fe7-cf4920ad2fcc",
+      "to": "63e50ed0-0dee-4460-8724-4ab6c8979dce",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "HUDSON",
+          "ESTACION_MATCH": "HUDSON",
+          "CATEGORIA": "3",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$13.466,55",
+          "PRECIO_LAST": "$14.370,19",
+          "TARIFA_ID": "1d1b3565-d83e-4cd8-8fe7-cf4920ad2fcc",
+          "LAST_UPDATED": "2026-06-02 15:48:24+00"
+        }
+      ]
+    },
+    {
+      "from": "d149e099-6edd-4df1-8ce9-23ecd11e579f",
+      "to": "774b0bcc-7bd0-4a84-8c94-28ea5e2f5840",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "HUDSON",
+          "ESTACION_MATCH": "HUDSON",
+          "CATEGORIA": "5",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$11.222,12",
+          "PRECIO_LAST": "$19.160,25",
+          "TARIFA_ID": "d149e099-6edd-4df1-8ce9-23ecd11e579f",
+          "LAST_UPDATED": "2026-06-09 18:27:20+00"
+        }
+      ]
+    },
+    {
+      "from": "a9c2eda3-78c7-4f51-84fc-c335464885ff",
+      "to": "7a1749c7-5abf-4e23-8a37-10ca47e25fb6",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "HUDSON",
+          "ESTACION_MATCH": "HUDSON",
+          "CATEGORIA": "6",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "PICO",
+          "PRECIO": "$28.055,32",
+          "PRECIO_LAST": "$29.937,90",
+          "TARIFA_ID": "a9c2eda3-78c7-4f51-84fc-c335464885ff",
+          "LAST_UPDATED": "2026-04-09 17:36:23+00"
+        }
+      ]
+    },
+    {
+      "from": "8122a4df-4223-4fe5-8776-127d2fdcd9b3",
+      "to": "a9987a22-2bba-430b-8b4b-d75dd76d708b",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "HUDSON",
+          "ESTACION_MATCH": "HUDSON",
+          "CATEGORIA": "6",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "AL_DIA",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$23.950,33",
+          "PRECIO_LAST": "$23.950,33",
+          "TARIFA_ID": "8122a4df-4223-4fe5-8776-127d2fdcd9b3",
+          "LAST_UPDATED": "2026-07-14 14:25:50+00"
+        }
+      ]
+    },
+    {
+      "from": "9c4bf6d2-1d53-4e61-881e-24dbb0b336a4",
+      "to": "4885f1c9-91b6-4ab0-81bb-3996c88f2574",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "HUDSON",
+          "ESTACION_MATCH": "HUDSON",
+          "CATEGORIA": "7",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "PICO",
+          "PRECIO": "$33.666,39",
+          "PRECIO_LAST": "$35.925,48",
+          "TARIFA_ID": "9c4bf6d2-1d53-4e61-881e-24dbb0b336a4",
+          "LAST_UPDATED": "2026-04-10 07:42:39+00"
+        }
+      ]
+    },
+    {
+      "from": "99825b96-90f3-4a7b-8210-af08b71b0d6b",
+      "to": "9b51f61f-4bfd-4021-84c4-a2d349f82d1f",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "HUDSON",
+          "ESTACION_MATCH": "HUDSON",
+          "CATEGORIA": "7",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "DESFASADO",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$14.370,19",
+          "PRECIO_LAST": "$28.740,39",
+          "TARIFA_ID": "99825b96-90f3-4a7b-8210-af08b71b0d6b",
+          "LAST_UPDATED": "2026-07-14 00:29:33+00"
+        }
+      ]
+    },
+    {
+      "from": "75ad2d6b-4148-4813-8a81-ec9e06f19bd6",
+      "to": "ea0c52ae-410f-462e-805a-25697cf96735",
+      "sentido": "VUELTA",
+      "reason": "DIRECTIONAL_HISTORY_COLLISION",
+      "sourceRows": [
+        {
+          "PEAJE": "AUBASA",
+          "ESTACION_QUERY": "SAMBOROMBON",
+          "ESTACION_MATCH": "SAMBOROMBÓN",
+          "CATEGORIA": "5",
+          "ESTADO_MATCH": "CON_TARIFA",
+          "MOTIVO": "AL_DIA",
+          "MATCH_LAST": "TRUE",
+          "STATUS": "NO_PICO",
+          "PRECIO": "$31.427,15",
+          "PRECIO_LAST": "31500",
+          "TARIFA_ID": "75ad2d6b-4148-4813-8a81-ec9e06f19bd6",
+          "LAST_UPDATED": "2026-07-15 09:46:50+00"
+        }
+      ]
+    }
+  ]
 }

@@ -1,0 +1,1260 @@
+﻿# Review package — Task 10 F14-19 (uncommitted Paso 9 summary + review gate)
+Base: 95033bda8434b21473aa51937dfa8831acf0d3b9
+Head: WORKING TREE
+
+## Commit list
+(none)
+
+## Files changed
+
+ .../peajes/wizard/mocks/tarifa-refresh.mock.ts     | 136 +++++--
+ .../paso9-revision/paso9-revision.component.css    |  35 ++
+ .../paso9-revision/paso9-revision.component.html   | 105 +++--
+ .../paso9-revision.component.spec.ts               | 452 ++++++++++++++++++++-
+ .../paso9-revision/paso9-revision.component.ts     | 180 +++++++-
+ 5 files changed, 822 insertions(+), 86 deletions(-)
+
+## Diff -U10
+
+diff --git a/ibarra-app/src/app/components/peajes/wizard/mocks/tarifa-refresh.mock.ts b/ibarra-app/src/app/components/peajes/wizard/mocks/tarifa-refresh.mock.ts
+index 6dff3b1..a5e7806 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/mocks/tarifa-refresh.mock.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/mocks/tarifa-refresh.mock.ts
+@@ -1,21 +1,26 @@
+ import { Injectable } from '@angular/core';
+ import {
+   AnalisisRefrescoInput,
+   CandidatoRefrescoTarifa,
+   RefreshTarifaCodigo,
+   ResultadoDetectarRefresco,
+   ResumenRefrescoTarifas,
+   TarifaRefreshService,
+   extraerCandidatosRefresco,
++  resumirFilasRefresco,
+ } from '../../models/tarifa-refresh.contracts';
+-import { CambioRefrescoTarifa, TarifaRefrescoGuardada } from '../../models/tarifario.contracts';
++import {
++  CambioRefrescoTarifa,
++  TarifaRefreshDecision,
++  TarifaRefrescoGuardada,
++} from '../../models/tarifario.contracts';
+ 
+ export const ESTACION_DOCK_SUD = 'est-dock-sud';
+ export const SHARED_PRICE_NO_PICO = 25500;
+ export const SHARED_PRICE_PICO = 28740.39;
+ export const OUTLIER_PRICE_NO_PICO = 18000;
+ 
+ const CURRENT_NO_PICO = 11975.15;
+ const CURRENT_PICO = 14968.96;
+ const HISTORICAL_NO_PICO = 12000;
+ 
+@@ -49,71 +54,114 @@ function classify(c: CandidatoRefrescoTarifa): RefreshTarifaCodigo {
+     if (hits > 1) return 'STATUS_AMBIGUOUS';
+     if (hits === 0) return 'STATUS_REQUIRED';
+   }
+   return 'NEW_TARIFF';
+ }
+ 
+ @Injectable()
+ export class TarifaRefreshMockService implements TarifaRefreshService {
+   failNextSave = false;
+   lastGuardado: TarifaRefrescoGuardada[] = [];
++  private decisiones: TarifaRefreshDecision[] = [];
+ 
+   async analizar(input: AnalisisRefrescoInput): Promise<ResumenRefrescoTarifas> {
+     const candidatos = extraerCandidatosRefresco(input.pasadas, {
+       estacionesViasSentido: input.estacionesViasSentido,
++      documentos: input.documentos,
++      estacionesCatalogo: input.estacionesCatalogo,
++    });
++    const resultados: ResultadoDetectarRefresco[] = candidatos.map((c) => {
++      const decision = this.decisionPara(c);
++      const codigo = codigoTrasDecision(classify(c), decision);
++      const saved = this.lastGuardado.find(
++        (row) => row.candidate_id === c.id || row.estacion_id === c.estacionId,
++      );
++      return {
++        id: c.id,
++        codigo,
++        peajeId: c.peajeId ?? 'peaje-aubasa',
++        estacionId: c.estacionId || ESTACION_DOCK_SUD,
++        categoria: c.categoria,
++        categoriaProveedor: c.categoriaProveedor,
++        categoriaCalculada: decision?.categoriaCalculada ?? c.categoriaCalculada,
++        status: c.statusSolicitado,
++        sentidoSolicitado: c.sentidoSolicitado,
++        sentidoAplicado: c.sentidoSolicitado,
++        importeActual:
++          c.statusSolicitado === 'PICO'
++            ? CURRENT_PICO
++            : c.statusSolicitado === 'NO_PICO'
++              ? CURRENT_NO_PICO
++              : CURRENT_NO_PICO,
++        tarifaId: saved?.tarifa_id ?? 'tarifa-dock',
++        tarifaImporteId: saved?.tarifa_importe_id ?? 'ti-current',
++        requiereNormalizacionIva: false,
++        diagnostico: decision?.action === 'MARK_REVIEW' ? 'REVISAR' : decision ? 'CONFIRMADO' : null,
++        fechaVigenciaInicio: decision?.fechaVigenciaInicio ?? null,
++        fechaPasada: c.fechaPasada,
++        possibleMatches: [],
++        rowIndexes: c.rowIndexes,
++      };
+     });
+-    const resultados: ResultadoDetectarRefresco[] = candidatos.map((c) => ({
+-      id: c.id,
+-      codigo: classify(c),
+-      peajeId: 'peaje-aubasa',
+-      estacionId: c.estacionId || ESTACION_DOCK_SUD,
+-      categoria: c.categoria,
+-      status: c.statusSolicitado,
+-      sentidoSolicitado: c.sentidoSolicitado,
+-      sentidoAplicado: c.sentidoSolicitado,
+-      importeActual:
+-        c.statusSolicitado === 'PICO'
+-          ? CURRENT_PICO
+-          : c.statusSolicitado === 'NO_PICO'
+-            ? CURRENT_NO_PICO
+-            : CURRENT_NO_PICO,
+-      tarifaId: 'tarifa-dock',
+-      tarifaImporteId: 'ti-current',
+-      requiereNormalizacionIva: false,
+-      rowIndexes: c.rowIndexes,
+-    }));
+     return {
+       candidatos,
+       resultados,
+-      filasVigentes: resultados.filter((r) => r.codigo === 'CURRENT_TARIFF').reduce((n, r) => n + r.rowIndexes.length, 0),
+-      filasHistoricas: resultados
+-        .filter((r) => r.codigo === 'HISTORICAL_TARIFF_MATCH')
+-        .reduce((n, r) => n + r.rowIndexes.length, 0),
+-      pendientes: resultados
+-        .filter((r) =>
+-          ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo),
+-        )
+-        .reduce((n, r) => n + r.rowIndexes.length, 0),
+-      contextIncomplete: resultados.some((r) => ['CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo)),
++      ...resumirFilasRefresco(resultados),
+     };
+   }
+ 
+-  async guardar(cambios: CambioRefrescoTarifa[]): Promise<TarifaRefrescoGuardada[]> {
++  async guardar(
++    cambios: Array<CambioRefrescoTarifa | TarifaRefreshDecision>,
++  ): Promise<TarifaRefrescoGuardada[]> {
+     if (this.failNextSave) {
+       this.failNextSave = false;
+       throw new Error('No se pudieron guardar las tarifas.');
+     }
+-    this.lastGuardado = cambios.map((c) => ({
+-      peaje_id: c.peajeId,
+-      estacion_id: c.estacionId,
+-      sentido: c.sentido,
+-      categoria: c.categoria,
+-      status: c.status,
+-      tarifa_id: `tarifa-${c.categoria}-${c.status}`,
+-      anterior: c.status === 'PICO' ? CURRENT_PICO : CURRENT_NO_PICO,
+-      nueva: c.importe,
+-      tarifa_importe_id: `ti-new-${c.categoria}-${c.status}`,
+-      accion: 'ACTUALIZADA' as const,
+-    }));
++    this.decisiones = cambios.filter(isRefreshDecision);
++    this.lastGuardado = cambios.map((c) => {
++      const categoria = isRefreshDecision(c) ? (c.categoriaCalculada ?? c.categoriaProveedor) : c.categoria;
++      const review = isRefreshDecision(c) && c.action === 'MARK_REVIEW';
++      return {
++        peaje_id: c.peajeId,
++        estacion_id: c.estacionId,
++        sentido: c.sentido,
++        categoria,
++        status: c.status,
++        tarifa_id: `tarifa-${c.estacionId}-${c.sentido}-${categoria}-${c.status}`,
++        anterior: c.status === 'PICO' ? CURRENT_PICO : CURRENT_NO_PICO,
++        nueva: c.importe,
++        tarifa_importe_id: `ti-new-${c.estacionId}-${c.sentido}-${categoria}-${c.status}`,
++        accion: 'ACTUALIZADA' as const,
++        candidate_id: isRefreshDecision(c) ? c.candidateId : null,
++        fecha_vigencia_inicio: isRefreshDecision(c) ? c.fechaVigenciaInicio : null,
++        fechaVigenciaInicio: isRefreshDecision(c) ? c.fechaVigenciaInicio : null,
++        diagnostico: review ? 'REVISAR' : 'CONFIRMADO',
++      };
++    });
+     return this.lastGuardado;
+   }
++
++  private decisionPara(c: CandidatoRefrescoTarifa): TarifaRefreshDecision | undefined {
++    return this.decisiones.find(
++      (item) =>
++        item.candidateId === c.id ||
++        (item.estacionId === c.estacionId &&
++          item.importe === c.precioDirecto &&
++          (c.statusSolicitado == null || item.status === c.statusSolicitado) &&
++          (c.sentidoSolicitado == null || item.sentido === c.sentidoSolicitado)),
++    );
++  }
++}
++
++function codigoTrasDecision(
++  base: RefreshTarifaCodigo,
++  decision: TarifaRefreshDecision | undefined,
++): RefreshTarifaCodigo {
++  if (!decision) return base;
++  return decision.action === 'MARK_REVIEW' ? 'REVIEW_RECORDED' : 'CURRENT_TARIFF';
++}
++
++function isRefreshDecision(
++  c: CambioRefrescoTarifa | TarifaRefreshDecision,
++): c is TarifaRefreshDecision {
++  return 'action' in c && (c.action === 'CONFIRM_NEW' || c.action === 'MARK_REVIEW');
+ }
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.css b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.css
+index d82a7a2..03e901f 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.css
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.css
+@@ -83,10 +83,45 @@
+ .paso9__errores {
+   margin-top: 0.2rem;
+   color: #8a5a00;
+   font-size: 0.85rem;
+ }
+ 
+ .paso9__sin-motivo {
+   color: var(--pw-muted, #6f8197);
+   font-size: 0.85rem;
+ }
++
++.paso9__tarifas {
++  display: grid;
++  gap: 0.75rem;
++  margin-top: 1.1rem;
++}
++
++.paso9__tarifa-seccion {
++  padding: 0.75rem 0.85rem;
++  border: 1px solid var(--pw-line, #dce5ee);
++  border-radius: 12px;
++  background: #fff;
++}
++
++.paso9__tarifa-seccion h3 {
++  margin: 0 0 0.4rem;
++  font-size: 0.86rem;
++  color: var(--pw-muted, #6f8197);
++  text-transform: uppercase;
++  letter-spacing: 0.04em;
++}
++
++.paso9__tarifa-seccion ul {
++  margin: 0;
++  padding-left: 1.1rem;
++}
++
++.paso9__tarifa-seccion li {
++  margin: 0.25rem 0;
++  font-size: 0.92rem;
++}
++
++.paso9__tarifa-seccion .pw__table {
++  margin-top: 0.35rem;
++}
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.html b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.html
+index 1336bad..82fe4e9 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.html
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.html
+@@ -49,30 +49,108 @@
+         {{ validas }}/{{ pasadas.length }} filas ┬À {{ snap.relacionesEstacion.length }} estaciones ┬À
+         dif. factura $ {{ (snap.validacion?.diferenciaFactura ?? 0) | number: '1.2-2' }}
+       </span>
+     </div>
+ 
+     <div class="pw__note" *ngIf="resumenRefresco">
+       <strong>Tarifas</strong>
+       <span>
+         {{ resumenRefresco.filasVigentes }} vigentes ┬À
+         {{ resumenRefresco.filasHistoricas }} hist├│ricas ┬À
+-        {{ resumenRefresco.pendientes }} pendientes
++        {{ resumenRefresco.filasCorreccionCategoria }} correcciones ┬À
++        {{ resumenRefresco.filasNuevasConfirmadas }} nuevas ┬À
++        {{ seccionRevisar.length }} REVISAR
+       </span>
+     </div>
+     <p class="pw__alert" *ngIf="resumenRefresco?.filasHistoricas && !dialogNeeded">
+       Hay importes que coinciden con historial. No se abre el di├ílogo ni se inserta un precio nuevo.
+     </p>
+     <p class="pw__alert pw__alert--error" *ngIf="dialogNeeded && !canManageTarifas" role="alert">
+       Hay tarifas nuevas. Se requiere permiso peajes:manage para actualizarlas antes de confirmar.
+     </p>
+ 
++    <section class="paso9__tarifas" *ngIf="resumenRefresco" aria-label="Resumen de tarifas">
++      <article class="paso9__tarifa-seccion" *ngIf="seccionVigentes.length" data-testid="tarifa-resumen-vigentes">
++        <h3>Coincidencias vigentes</h3>
++        <ul>
++          <li *ngFor="let fila of seccionVigentes">
++            <strong>{{ fila.estacionNombre }}</strong>
++            ┬À {{ fila.lineaCategoria }} ┬À {{ fila.status }} ┬À {{ fila.sentido }}
++          </li>
++        </ul>
++      </article>
++      <article class="paso9__tarifa-seccion" *ngIf="seccionHistoricas.length" data-testid="tarifa-resumen-historicas">
++        <h3>Coincidencias hist├│ricas</h3>
++        <ul>
++          <li *ngFor="let fila of seccionHistoricas">
++            <strong>{{ fila.estacionNombre }}</strong>
++            ┬À {{ fila.lineaCategoria }} ┬À {{ fila.status }} ┬À {{ fila.sentido }}
++          </li>
++        </ul>
++      </article>
++      <article class="paso9__tarifa-seccion" *ngIf="seccionCorrecciones.length" data-testid="tarifa-resumen-correcciones">
++        <h3>Correcciones de categor├¡a</h3>
++        <ul>
++          <li *ngFor="let fila of seccionCorrecciones">
++            <strong>{{ fila.estacionNombre }}</strong>
++            ┬À {{ fila.lineaCategoria }}
++          </li>
++        </ul>
++      </article>
++      <article class="paso9__tarifa-seccion" *ngIf="seccionNuevasConfirmadas.length" data-testid="tarifa-resumen-nuevas">
++        <h3>Tarifas nuevas confirmadas</h3>
++        <ul>
++          <li *ngFor="let fila of seccionNuevasConfirmadas">
++            <strong>{{ fila.estacionNombre }}</strong>
++            ┬À {{ fila.lineaCategoria }} ┬À {{ fila.status }} ┬À {{ fila.sentido }}
++            ┬À {{ fila.precioNuevo }}
++          </li>
++        </ul>
++      </article>
++      <article class="paso9__tarifa-seccion" *ngIf="seccionRevisar.length" data-testid="tarifa-resumen-revisar">
++        <h3>Marcadas REVISAR</h3>
++        <ul>
++          <li *ngFor="let fila of seccionRevisar">
++            <strong>{{ fila.estacionNombre }}</strong>
++            ┬À {{ fila.lineaCategoria }} ┬À {{ fila.status }} ┬À {{ fila.sentido }}
++          </li>
++        </ul>
++      </article>
++      <article class="paso9__tarifa-seccion" *ngIf="seccionCambiosVigencia.length" data-testid="tarifa-resumen-vigencia">
++        <h3>Cambios de vigencia</h3>
++        <table class="pw__table">
++          <thead>
++            <tr>
++              <th>Estaci├│n</th>
++              <th>Categor├¡a</th>
++              <th>Estado</th>
++              <th>Sentido</th>
++              <th>Anterior</th>
++              <th>Nueva</th>
++              <th>Vigente desde</th>
++            </tr>
++          </thead>
++          <tbody>
++            <tr *ngFor="let fila of seccionCambiosVigencia">
++              <td>{{ fila.estacionNombre }}</td>
++              <td>{{ fila.lineaCategoria }}</td>
++              <td>{{ fila.status }}</td>
++              <td>{{ fila.sentido }}</td>
++              <td>{{ fila.precioAnterior }}</td>
++              <td>{{ fila.precioNuevo }}</td>
++              <td>{{ fila.vigenteDesde || 'ÔÇö' }}</td>
++            </tr>
++          </tbody>
++        </table>
++      </article>
++    </section>
++
+     <section class="paso9__resumen" *ngIf="esMasiva" aria-label="Resumen de importaci├│n masiva">
+       <h3 class="paso9__resumen-title">Resumen de documentos</h3>
+ 
+       <div class="paso9__resumen-block" *ngIf="documentosIncluidos.length">
+         <h4>A importar ({{ documentosIncluidos.length }})</h4>
+         <ul>
+           <li *ngFor="let d of documentosIncluidos">
+             <strong>{{ d.factura || '(sin n├║mero)' }}</strong>
+             ┬À {{ d.rowIndexes?.length || 0 }} pasadas
+           </li>
+@@ -85,45 +163,20 @@
+           <li *ngFor="let d of documentosOmitidos">
+             <strong>{{ d.factura || '(sin n├║mero)' }}</strong>
+             <ul class="paso9__errores" *ngIf="d.errores?.length">
+               <li *ngFor="let err of d.errores">{{ err }}</li>
+             </ul>
+             <span *ngIf="!d.errores?.length" class="paso9__sin-motivo">Sin detalle de error</span>
+           </li>
+         </ul>
+       </div>
+ 
+-      <div class="paso9__resumen-block paso9__resumen-block--ok" *ngIf="tarifasActualizadas.length">
+-        <h4>Tarifas actualizadas</h4>
+-        <table class="pw__table">
+-          <thead>
+-            <tr>
+-              <th>Estaci├│n</th>
+-              <th>Categor├¡a</th>
+-              <th>Estado</th>
+-              <th>Sentido</th>
+-              <th>Anterior</th>
+-              <th>Nueva</th>
+-            </tr>
+-          </thead>
+-          <tbody>
+-            <tr *ngFor="let t of tarifasActualizadas">
+-              <td>{{ t.estacion_id }}</td>
+-              <td>{{ t.categoria }}</td>
+-              <td>{{ t.status }}</td>
+-              <td>{{ t.sentido }}</td>
+-              <td>{{ t.anterior == null ? 'ÔÇö' : t.anterior }}</td>
+-              <td>{{ t.nueva }}</td>
+-            </tr>
+-          </tbody>
+-        </table>
+-      </div>
+       <div class="paso9__resumen-block paso9__resumen-block--ok" *ngIf="importadosResumen.length">
+         <h4>Importados correctamente ({{ importadosResumen.length }})</h4>
+         <ul>
+           <li *ngFor="let d of importadosResumen">
+             <strong>{{ d.numero }}</strong> ┬À {{ d.pasadas }} pasadas
+           </li>
+         </ul>
+       </div>
+ 
+       <div class="paso9__resumen-block paso9__resumen-block--error" *ngIf="erroresPorDocumento.length">
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.spec.ts b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.spec.ts
+index c44adef..10e226b 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.spec.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.spec.ts
+@@ -1,22 +1,110 @@
+ import { ComponentFixture, TestBed } from '@angular/core/testing';
++import { throwError } from 'rxjs';
+ import { Paso9RevisionComponent } from './paso9-revision.component';
+-import { PEAJES_CARGA_SERVICE, PEAJES_CATALOGO_SERVICE, TARIFA_REFRESH_SERVICE } from '../../models';
+-import { PEAJES_TARIFARIO_SERVICE } from '../../models/tarifario.contracts';
++import {
++  PEAJES_CARGA_SERVICE,
++  PEAJES_CATALOGO_SERVICE,
++  TARIFA_REFRESH_SERVICE,
++} from '../../models';
++import {
++  PEAJES_TARIFARIO_SERVICE,
++  TarifaRefrescoGuardada,
++} from '../../models/tarifario.contracts';
++import {
++  CandidatoRefrescoTarifa,
++  ResultadoDetectarRefresco,
++  ResumenRefrescoTarifas,
++} from '../../models/tarifa-refresh.contracts';
+ import { PeajesCargaMockService } from '../mocks/peajes-carga.mock';
+ import { PeajesCatalogoMockService } from '../mocks/peajes-catalogo.mock';
+-import { TarifaRefreshMockService } from '../mocks/tarifa-refresh.mock';
++import { ESTACION_DOCK_SUD, TarifaRefreshMockService } from '../mocks/tarifa-refresh.mock';
+ import { TarifarioMockService } from '../../tarifario/mocks/tarifario.mock';
+ import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
+ import { GranularPermissionService } from '../../../../services/granular-permission.service';
+ import { TarifaValidationService } from '../../services/tarifa-validation.service';
+ 
++const ESTACION_UUID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
++
++function candidatoResumen(
++  partial: Partial<CandidatoRefrescoTarifa> & { estacionId: string },
++): CandidatoRefrescoTarifa {
++  return {
++    id: partial.id ?? partial.estacionId,
++    categoria: 2,
++    categoriaProveedor: 2,
++    categoriaCalculada: null,
++    statusSolicitado: 'NO_PICO',
++    sentidoSolicitado: 'AMBAS',
++    directionConfidence: 'EXPLICIT',
++    sourceStationCode: null,
++    sourceLane: null,
++    fechaPasada: '2026-06-25',
++    estacionNombre: null,
++    peajeId: 'PEA-001',
++    peajeNombre: 'Peaje',
++    candidatePrice: 12500,
++    precioDirecto: 12500,
++    cases: 1,
++    filaRepresentativa: {},
++    rowIndexes: [0],
++    ...partial,
++  };
++}
++
++function resultadoResumen(
++  partial: Partial<ResultadoDetectarRefresco> & { codigo: ResultadoDetectarRefresco['codigo'] },
++): ResultadoDetectarRefresco {
++  return {
++    id: partial.id ?? partial.codigo,
++    peajeId: 'peaje-aubasa',
++    estacionId: 'EST-096',
++    categoria: 2,
++    categoriaProveedor: 2,
++    categoriaCalculada: null,
++    status: 'NO_PICO',
++    sentidoSolicitado: 'AMBAS',
++    sentidoAplicado: 'AMBAS',
++    importeActual: 11975.15,
++    tarifaId: 'tarifa-1',
++    tarifaImporteId: 'ti-1',
++    requiereNormalizacionIva: false,
++    diagnostico: null,
++    fechaVigenciaInicio: null,
++    fechaVigenciaFin: null,
++    fechaPasada: '2026-06-25',
++    possibleMatches: [],
++    rowIndexes: [0],
++    ...partial,
++  };
++}
++
++function resumenTarifas(
++  resultados: ResultadoDetectarRefresco[],
++  candidatos: CandidatoRefrescoTarifa[] = [],
++): ResumenRefrescoTarifas {
++  return {
++    candidatos,
++    resultados,
++    filasVigentes: resultados.filter((r) => r.codigo === 'CURRENT_TARIFF').length,
++    filasHistoricas: resultados.filter((r) => r.codigo === 'HISTORICAL_TARIFF_MATCH').length,
++    filasCorreccionCategoria: resultados.filter((r) =>
++      r.codigo.includes('CATEGORY_CORRECTION'),
++    ).length,
++    filasNuevasConfirmadas: 0,
++    filasSinResolver: resultados.filter((r) => r.codigo === 'NEW_TARIFF').length,
++    filasCambioVigencia: resultados.filter((r) => !!r.fechaVigenciaFin).length,
++    pendientes: resultados.filter((r) => r.codigo === 'NEW_TARIFF').length,
++    contextIncomplete: false,
++  };
++}
++
+ describe('Paso9RevisionComponent', () => {
+   let fixture: ComponentFixture<Paso9RevisionComponent>;
+   let component: Paso9RevisionComponent;
+   let state: PeajesWizardStateService;
+ 
+   beforeEach(async () => {
+     await TestBed.configureTestingModule({
+       imports: [Paso9RevisionComponent],
+       providers: [
+         PeajesWizardStateService,
+@@ -59,20 +147,21 @@ describe('Paso9RevisionComponent', () => {
+         PASADA_ID: null,
+         FECHA_HORA: '2026-06-25 20:50:05',
+         PASE_ID: 'PAS-001',
+         PATENTE_ID: 'PAT-001',
+         ESTACION_ID: 'EST-096',
+         PRECIO: 17400,
+         BONIFICACION: 5220,
+         QUANTITY: 1,
+         IMPORTE_NETO: 12180,
+         CATEGORIA: null,
++        SENTIDO: 'AMBAS',
+       },
+     ]);
+     state.setValidacion({
+       validas: state.snapshot().pasadasEstandarizadas,
+       errores: [],
+       diferenciaFactura: 0,
+       dentroTolerancia: true,
+     });
+ 
+     fixture = TestBed.createComponent(Paso9RevisionComponent);
+@@ -260,49 +349,406 @@ describe('Paso9RevisionComponent', () => {
+   it('abre el di├ílogo y bloquea confirmar ante una tarifa nueva de Dock Sud', async () => {
+     const { ESTACION_DOCK_SUD } = await import('../mocks/tarifa-refresh.mock');
+     state.setPasadasEstandarizadas([
+       {
+         ...state.snapshot().pasadasEstandarizadas[0],
+         ESTACION_ID: ESTACION_DOCK_SUD,
+         PRECIO: 12500,
+         IMPORTE_NETO: 12500,
+         CATEGORIA: '2',
+         TARIFA_STATUS: 'NO_PICO',
++        SENTIDO: 'AMBAS',
+       },
+     ]);
+     await component.analizarTarifas();
+     fixture.detectChanges();
++    expect(component.resumenRefresco?.resultados.some((r) => r.codigo === 'NEW_TARIFF')).toBeTrue();
+     expect(component.dialogNeeded).toBeTrue();
+     expect(component.confirmationBlocked).toBeTrue();
+     expect(component.refreshOpen).toBeTrue();
+     const carga = TestBed.inject(PEAJES_CARGA_SERVICE as never) as PeajesCargaMockService;
+     const spy = spyOn(carga, 'confirmarCarga').and.callThrough();
+     await component.confirmar();
+     expect(spy).not.toHaveBeenCalled();
+   });
+ 
+   it('marca coincidencia hist├│rica como informativa sin di├ílogo', async () => {
+     const { ESTACION_DOCK_SUD } = await import('../mocks/tarifa-refresh.mock');
+     state.setPasadasEstandarizadas([
+       {
+         ...state.snapshot().pasadasEstandarizadas[0],
+         ESTACION_ID: ESTACION_DOCK_SUD,
+         PRECIO: 12100,
+         IMPORTE_NETO: 12100,
+         CATEGORIA: '2',
+         TARIFA_STATUS: 'NO_PICO',
++        SENTIDO: 'AMBAS',
+       },
+     ]);
+     await component.analizarTarifas();
+     fixture.detectChanges();
+     expect(component.resumenRefresco?.filasHistoricas).toBeGreaterThan(0);
+     expect(component.dialogNeeded).toBeFalse();
+     expect(component.refreshOpen).toBeFalse();
+   });
+ 
+   it('incluye sentido AMBAS por defecto en el payload de confirmaci├│n', async () => {
+     const carga = TestBed.inject(PEAJES_CARGA_SERVICE as never) as PeajesCargaMockService;
+     const spy = spyOn(carga, 'confirmarCarga').and.callThrough();
+     await component.confirmar();
+     expect(spy.calls.mostRecent().args[0].pasadas[0].SENTIDO).toBe('AMBAS');
+   });
++
++  it('renderiza las seis secciones de tarifas con nombres, correcci├│n y vigencia dd/MM/yyyy', () => {
++    const guardada: TarifaRefrescoGuardada = {
++      peaje_id: 'PEA-001',
++      estacion_id: 'EST-096',
++      sentido: 'AMBAS',
++      categoria: 2,
++      status: 'NO_PICO',
++      tarifa_id: 'tarifa-nueva',
++      anterior: 11975.15,
++      nueva: 12500,
++      tarifa_importe_id: 'ti-nueva',
++      accion: 'ACTUALIZADA',
++      diagnostico: 'CONFIRMADO',
++      fecha_vigencia_inicio: '2026-09-01',
++      candidate_id: 'cand-nueva',
++    };
++    component.tarifasActualizadas = [guardada];
++    component.resumenRefresco = resumenTarifas(
++      [
++        resultadoResumen({ codigo: 'CURRENT_TARIFF', estacionId: 'EST-096', rowIndexes: [0] }),
++        resultadoResumen({
++          codigo: 'HISTORICAL_TARIFF_MATCH',
++          estacionId: ESTACION_UUID,
++          rowIndexes: [1],
++          tarifaImporteId: 'ti-hist',
++        }),
++        resultadoResumen({
++          codigo: 'CURRENT_CATEGORY_CORRECTION',
++          estacionId: 'EST-096',
++          categoriaProveedor: 3,
++          categoriaCalculada: 2,
++          rowIndexes: [2],
++          tarifaImporteId: 'ti-corr',
++        }),
++        resultadoResumen({
++          codigo: 'REVIEW_RECORDED',
++          estacionId: ESTACION_DOCK_SUD,
++          diagnostico: 'REVISAR',
++          rowIndexes: [3],
++          tarifaImporteId: 'ti-rev',
++        }),
++      ],
++      [
++        candidatoResumen({ estacionId: 'EST-096', estacionNombre: 'Monte Grande' }),
++        candidatoResumen({
++          estacionId: ESTACION_UUID,
++          estacionNombre: 'Hudson',
++          rowIndexes: [1],
++        }),
++        candidatoResumen({
++          estacionId: ESTACION_DOCK_SUD,
++          estacionNombre: 'Dock Sud',
++          rowIndexes: [3],
++        }),
++      ],
++    );
++    fixture.detectChanges();
++    const text = fixture.nativeElement.textContent as string;
++    expect(text).toContain('Coincidencias vigentes');
++    expect(text).toContain('Coincidencias hist├│ricas');
++    expect(text).toContain('Correcciones de categor├¡a');
++    expect(text).toContain('Tarifas nuevas confirmadas');
++    expect(text).toContain('Marcadas REVISAR');
++    expect(text).toContain('Cambios de vigencia');
++    expect(text).toContain('Monte Grande');
++    expect(text).toContain('Hudson');
++    expect(text).toContain('Dock Sud');
++    expect(text).toContain('Categor├¡a proveedor 3 -> calculada 2');
++    expect(text).toContain('Vigente desde');
++    expect(text).toContain('01/09/2026');
++    expect(text).not.toContain(ESTACION_UUID);
++    expect(text).not.toContain(ESTACION_DOCK_SUD);
++  });
++
++  it('bloquea un candidato sin resolver y habilita confirmar solo tras persistir REVISAR', async () => {
++    const { ESTACION_DOCK_SUD: dock } = await import('../mocks/tarifa-refresh.mock');
++    state.setPasadasEstandarizadas([
++      {
++        ...state.snapshot().pasadasEstandarizadas[0],
++        ESTACION_ID: dock,
++        PRECIO: 12500,
++        IMPORTE_NETO: 12500,
++        CATEGORIA: '2',
++        TARIFA_STATUS: 'NO_PICO',
++        SENTIDO: 'AMBAS',
++      },
++    ]);
++    await component.analizarTarifas();
++    fixture.detectChanges();
++    expect(component.resumenRefresco?.resultados.some((r) => r.codigo === 'NEW_TARIFF')).toBeTrue();
++    expect(component.confirmationBlocked).toBeTrue();
++
++    component.onRefreshCancelled();
++    fixture.detectChanges();
++    expect(component.refreshOpen).toBeFalse();
++    expect(component.confirmationBlocked).toBeTrue();
++    const carga = TestBed.inject(PEAJES_CARGA_SERVICE as never) as PeajesCargaMockService;
++    const spy = spyOn(carga, 'confirmarCarga').and.callThrough();
++    await component.confirmar();
++    expect(spy).not.toHaveBeenCalled();
++    expect(component.refreshOpen).toBeTrue();
++
++    component.refreshOpen = false;
++    fixture.detectChanges();
++    expect(component.confirmationBlocked).toBeTrue();
++
++    const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE as never) as TarifaRefreshMockService;
++    const candidato = component.resumenRefresco!.candidatos[0];
++    const saved = await refresh.guardar([
++      {
++        candidateId: candidato.id,
++        action: 'MARK_REVIEW',
++        peajeId: 'peaje-aubasa',
++        estacionId: dock,
++        categoriaProveedor: 2,
++        categoriaCalculada: 2,
++        status: 'NO_PICO',
++        sentido: 'AMBAS',
++        importe: 12500,
++        fechaVigenciaInicio: null,
++        cases: 1,
++        requiereNormalizacionIva: false,
++      },
++    ]);
++    await component.onRefreshSaved(saved);
++    fixture.detectChanges();
++    expect(component.resumenRefresco?.resultados.some((r) => r.codigo === 'REVIEW_RECORDED')).toBeTrue();
++    expect(component.resumenRefresco?.resultados.some((r) => r.codigo === 'NEW_TARIFF')).toBeFalse();
++    expect(component.confirmationBlocked).toBeFalse();
++    expect(component.refreshOpen).toBeFalse();
++    await component.confirmar();
++    expect(spy).toHaveBeenCalled();
++  });
++
++  it('habilita confirmar tras REVISAR persistido aunque re-analizar siga en NEW_TARIFF', async () => {
++    const { ESTACION_DOCK_SUD: dock } = await import('../mocks/tarifa-refresh.mock');
++    state.setPasadasEstandarizadas([
++      {
++        ...state.snapshot().pasadasEstandarizadas[0],
++        ESTACION_ID: dock,
++        PRECIO: 12500,
++        IMPORTE_NETO: 12500,
++        CATEGORIA: '2',
++        TARIFA_STATUS: 'NO_PICO',
++        SENTIDO: 'AMBAS',
++      },
++    ]);
++    await component.analizarTarifas();
++    const candidato = component.resumenRefresco!.candidatos[0];
++    const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE as never) as TarifaRefreshMockService;
++    spyOn(refresh, 'analizar').and.callFake(async () => ({
++      ...component.resumenRefresco!,
++      resultados: component.resumenRefresco!.resultados.map((row) => ({
++        ...row,
++        codigo: 'NEW_TARIFF' as const,
++      })),
++    }));
++    await component.onRefreshSaved([
++      {
++        peaje_id: 'peaje-aubasa',
++        estacion_id: dock,
++        sentido: 'AMBAS',
++        categoria: 2,
++        status: 'NO_PICO',
++        tarifa_id: 'tarifa-rev',
++        anterior: 11975.15,
++        nueva: 12500,
++        tarifa_importe_id: 'ti-rev',
++        accion: 'ACTUALIZADA',
++        candidate_id: candidato.id,
++        diagnostico: 'REVISAR',
++        fecha_vigencia_inicio: null,
++      },
++    ]);
++    fixture.detectChanges();
++    expect(component.resumenRefresco?.resultados.some((r) => r.codigo === 'REVIEW_RECORDED')).toBeTrue();
++    expect(component.confirmationBlocked).toBeFalse();
++  });
++
++  it('sin peajes:manage puede inspeccionar pero no sortea la puerta de decisi├│n', async () => {
++    const perms = TestBed.inject(GranularPermissionService);
++    spyOn(perms, 'hasPermission').and.returnValue(false);
++    const { ESTACION_DOCK_SUD: dock } = await import('../mocks/tarifa-refresh.mock');
++    state.setPasadasEstandarizadas([
++      {
++        ...state.snapshot().pasadasEstandarizadas[0],
++        ESTACION_ID: dock,
++        PRECIO: 12500,
++        IMPORTE_NETO: 12500,
++        CATEGORIA: '2',
++        TARIFA_STATUS: 'NO_PICO',
++        SENTIDO: 'AMBAS',
++      },
++    ]);
++    await component.analizarTarifas();
++    fixture.detectChanges();
++    expect(component.canManageTarifas).toBeFalse();
++    expect(component.dialogNeeded).toBeTrue();
++    expect(component.confirmationBlocked).toBeTrue();
++    expect(fixture.nativeElement.textContent).toContain('peajes:manage');
++    component.onRefreshCancelled();
++    fixture.detectChanges();
++    const carga = TestBed.inject(PEAJES_CARGA_SERVICE as never) as PeajesCargaMockService;
++    const spy = spyOn(carga, 'confirmarCarga').and.callThrough();
++    await component.confirmar();
++    expect(spy).not.toHaveBeenCalled();
++    expect(component.confirmationBlocked).toBeTrue();
++  });
++
++  it('asocia vigentes, hist├│ricas, correcciones, nuevas y REVISAR sin tocar pasadas.categoria', async () => {
++    const tarifaValidation = TestBed.inject(TarifaValidationService);
++    const assocSpy = spyOn(tarifaValidation, 'asociarTrasConfirmacion').and.resolveTo();
++    const base = state.snapshot().pasadasEstandarizadas[0];
++    state.setModoImportacion('masiva');
++    state.setPasadasEstandarizadas([
++      { ...base, IMPORTE_NETO: 10 },
++      { ...base, IMPORTE_NETO: 20 },
++      { ...base, IMPORTE_NETO: 30 },
++      { ...base, IMPORTE_NETO: 40 },
++      { ...base, IMPORTE_NETO: 50 },
++    ] as never);
++    state.setDocumentos([
++      {
++        factura: 'A-1',
++        tipo: 'FC',
++        cuenta: '',
++        empresa_id: 'E-1',
++        fecha_factura: '2026-06-30',
++        bonificacion: 0,
++        importe_sin_iva: 150,
++        percepciones: 0,
++        iva: 0,
++        importe_total: 150,
++        rowIndexes: [0, 1, 2, 3, 4],
++        status: 'ok',
++        errores: [],
++        omitido: false,
++      },
++    ]);
++    component.resumenRefresco = resumenTarifas([
++      resultadoResumen({ codigo: 'CURRENT_TARIFF', rowIndexes: [0], tarifaImporteId: 'ti-cur' }),
++      resultadoResumen({
++        codigo: 'HISTORICAL_TARIFF_MATCH',
++        rowIndexes: [1],
++        tarifaImporteId: 'ti-hist',
++      }),
++      resultadoResumen({
++        codigo: 'CURRENT_CATEGORY_CORRECTION',
++        rowIndexes: [2],
++        tarifaImporteId: 'ti-corr',
++        categoriaProveedor: 3,
++        categoriaCalculada: 2,
++      }),
++      resultadoResumen({
++        codigo: 'HISTORICAL_CATEGORY_CORRECTION',
++        rowIndexes: [3],
++        tarifaImporteId: 'ti-hcorr',
++      }),
++      resultadoResumen({
++        codigo: 'REVIEW_RECORDED',
++        rowIndexes: [4],
++        tarifaImporteId: 'ti-rev',
++        diagnostico: 'REVISAR',
++      }),
++    ]);
++    await component.confirmar();
++    expect(assocSpy).toHaveBeenCalled();
++    const asociaciones = assocSpy.calls.mostRecent().args[0];
++    expect(asociaciones).toEqual([
++      { pasada_id: 'PSD-1', tarifa_importe_id: 'ti-cur', codigo: 'AL_DIA' },
++      { pasada_id: 'PSD-2', tarifa_importe_id: 'ti-hist', codigo: 'HISTORICA' },
++      { pasada_id: 'PSD-3', tarifa_importe_id: 'ti-corr', codigo: 'AL_DIA' },
++      { pasada_id: 'PSD-4', tarifa_importe_id: 'ti-hcorr', codigo: 'HISTORICA' },
++      { pasada_id: 'PSD-5', tarifa_importe_id: 'ti-rev', codigo: 'HISTORICA' },
++    ]);
++    expect(JSON.stringify(asociaciones)).not.toContain('categoria');
++  });
++
++  it('conserva aviso de asociaci├│n, documentos omitidos y fallo parcial masivo', async () => {
++    const tarifaValidation = TestBed.inject(TarifaValidationService);
++    spyOn(tarifaValidation, 'asociarTrasConfirmacion').and.rejectWith(new Error('rpc'));
++    const carga = TestBed.inject(PEAJES_CARGA_SERVICE as never) as PeajesCargaMockService;
++    spyOn(carga, 'confirmarCarga').and.callFake((input) => {
++      if (input.documento.factura === 'FAIL-2') {
++        return throwError(() => new Error('fallo parcial'));
++      }
++      return PeajesCargaMockService.prototype.confirmarCarga.call(carga, input);
++    });
++    const base = state.snapshot().pasadasEstandarizadas[0];
++    state.setModoImportacion('masiva');
++    state.setPasadasEstandarizadas([base, { ...base, IMPORTE_NETO: 50 }, { ...base, IMPORTE_NETO: 70 }] as never);
++    state.setDocumentos([
++      {
++        factura: 'OK-1',
++        tipo: 'FC',
++        cuenta: '',
++        empresa_id: 'E-1',
++        fecha_factura: '2026-06-30',
++        bonificacion: 0,
++        importe_sin_iva: 12180,
++        percepciones: 0,
++        iva: 0,
++        importe_total: 12180,
++        rowIndexes: [0],
++        status: 'ok',
++        errores: [],
++        omitido: false,
++      },
++      {
++        factura: 'FAIL-2',
++        tipo: 'NC',
++        cuenta: '',
++        empresa_id: 'E-1',
++        fecha_factura: '2026-06-30',
++        bonificacion: 0,
++        importe_sin_iva: -50,
++        percepciones: 0,
++        iva: 0,
++        importe_total: -50,
++        rowIndexes: [1],
++        status: 'ok',
++        errores: [],
++        omitido: false,
++      },
++      {
++        factura: 'SKIP-3',
++        tipo: 'FC',
++        cuenta: '',
++        empresa_id: '',
++        fecha_factura: '',
++        bonificacion: null,
++        importe_sin_iva: null,
++        percepciones: null,
++        iva: null,
++        importe_total: null,
++        rowIndexes: [2],
++        status: 'warn',
++        errores: ['Empresa obligatoria'],
++        omitido: true,
++      },
++    ]);
++    component.resumenRefresco = resumenTarifas([
++      resultadoResumen({ codigo: 'CURRENT_TARIFF', rowIndexes: [0], tarifaImporteId: 'ti-cur' }),
++    ]);
++    fixture.detectChanges();
++    await component.confirmar();
++    fixture.detectChanges();
++    expect(component.importadosResumen.map((d) => d.numero)).toEqual(['OK-1']);
++    expect(component.erroresPorDocumento.map((e) => e.numero)).toEqual(['FAIL-2']);
++    expect(fixture.nativeElement.textContent).toContain('SKIP-3');
++    expect(component.avisoAsociacion).toContain('no se pudieron asociar las tarifas');
++  });
+ });
++
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.ts b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.ts
+index 5641863..5e59453 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/paso9-revision.component.ts
+@@ -8,47 +8,64 @@ import {
+   PasadaEstandarizada,
+   Pase,
+   Patente,
+   PEAJES_CARGA_SERVICE,
+   PEAJES_CATALOGO_SERVICE,
+   PeajesCargaService,
+   PeajesCatalogoService,
+   TARIFA_REFRESH_SERVICE,
+   TarifaRefreshService,
+   TarifaRefrescoGuardada,
++  asociacionDesdeResultadoRefresco,
+   normalizarImportesPasada,
+ } from '../../models';
+ import {
+   PeajesWizardStateService,
+   WizardDocumentoGrupo,
+ } from '../services/peajes-wizard-state.service';
+ import { DialogComponent } from '../../../shared';
+ import { TarifaRefreshDialogComponent } from './tarifa-refresh-dialog.component';
+ import { TarifaValidationService, AsociacionTarifaImporte } from '../../services/tarifa-validation.service';
+ import { GranularPermissionService } from '../../../../services/granular-permission.service';
+-import { ResumenRefrescoTarifas } from '../../models/tarifa-refresh.contracts';
++import { ResultadoDetectarRefresco, ResumenRefrescoTarifas } from '../../models/tarifa-refresh.contracts';
+ 
+ const BLOQUEANTES = new Set([
+   'NEW_TARIFF',
++  'AMBIGUOUS_TARIFF_MATCH',
+   'STATUS_REQUIRED',
+   'STATUS_AMBIGUOUS',
+   'CONTEXT_INCOMPLETE',
+   'DIRECTION_REQUIRED',
+   'DIRECTION_CONFLICT',
+ ]);
+ 
+ function sentidoPasada(pasada: PasadaEstandarizada): 'IDA' | 'VUELTA' | 'AMBAS' | null {
+   const raw = String(pasada.SENTIDO ?? '').trim().toUpperCase();
+   if (raw === 'IDA' || raw === 'VUELTA' || raw === 'AMBAS') return raw;
+   return null;
+ }
+ 
++function formatearVigencia(iso: string | null | undefined): string | null {
++  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? '').trim());
++  return match ? `${match[3]}/${match[2]}/${match[1]}` : null;
++}
++
++export interface FilaResumenTarifa {
++  estacionNombre: string;
++  lineaCategoria: string;
++  status: string;
++  sentido: string;
++  precioAnterior: string;
++  precioNuevo: string;
++  vigenteDesde: string | null;
++}
++
+ @Component({
+   selector: 'app-paso9-revision',
+   standalone: true,
+   imports: [CommonModule, DialogComponent, TarifaRefreshDialogComponent],
+   templateUrl: './paso9-revision.component.html',
+   styleUrl: './paso9-revision.component.css',
+ })
+ export class Paso9RevisionComponent implements OnInit {
+   @Input() expressMode = false;
+   @Output() atras = new EventEmitter<void>();
+@@ -175,46 +192,88 @@ export class Paso9RevisionComponent implements OnInit {
+ 
+   get confirmationBlocked(): boolean {
+     if (this.analizando || this.guardando || this.refreshOpen) return true;
+     if (!this.resumenRefresco) return true;
+     if (this.resumenRefresco.contextIncomplete) return true;
+     return this.resumenRefresco.resultados.some((r) => BLOQUEANTES.has(r.codigo));
+   }
+ 
+   get dialogNeeded(): boolean {
+     return (this.resumenRefresco?.resultados ?? []).some((r) =>
+-      ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo),
++      ['NEW_TARIFF', 'AMBIGUOUS_TARIFF_MATCH', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo),
++    );
++  }
++
++  get seccionVigentes(): FilaResumenTarifa[] {
++    return this.filasDesdeResultados((r) => r.codigo === 'CURRENT_TARIFF');
++  }
++
++  get seccionHistoricas(): FilaResumenTarifa[] {
++    return this.filasDesdeResultados((r) => r.codigo === 'HISTORICAL_TARIFF_MATCH');
++  }
++
++  get seccionCorrecciones(): FilaResumenTarifa[] {
++    return this.filasDesdeResultados((r) =>
++      r.codigo === 'CURRENT_CATEGORY_CORRECTION' || r.codigo === 'HISTORICAL_CATEGORY_CORRECTION',
+     );
+   }
+ 
++  get seccionRevisar(): FilaResumenTarifa[] {
++    return this.filasDesdeResultados((r) => r.codigo === 'REVIEW_RECORDED');
++  }
++
++  get seccionNuevasConfirmadas(): FilaResumenTarifa[] {
++    return this.tarifasActualizadas
++      .filter((row) => row.diagnostico !== 'REVISAR')
++      .map((row) => this.filaDesdeGuardada(row));
++  }
++
++  get seccionCambiosVigencia(): FilaResumenTarifa[] {
++    return this.tarifasActualizadas
++      .filter((row) => !!(row.fecha_vigencia_inicio ?? row.fechaVigenciaInicio))
++      .map((row) => this.filaDesdeGuardada(row));
++  }
++
++  nombreEstacionTarifa(estacionId: string): string {
++    const catalogo = this.estaciones.find((estacion) => estacion.id === estacionId);
++    if (catalogo?.nombre) return catalogo.nombre;
++    const candidato = this.resumenRefresco?.candidatos.find((row) => row.estacionId === estacionId);
++    if (candidato?.estacionNombre) return candidato.estacionNombre;
++    return 'ÔÇö';
++  }
++
+   async analizarTarifas(): Promise<void> {
+     this.analizando = true;
+     try {
+       const resumen = await this.refresh.analizar({
+         pasadas: this.pasadas,
+         documentos: this.documentosIncluidos,
+         configuraciones: this.state.toConfiguracionesPlantilla(),
+         estacionesViasSentido: this.estacionesViasSentido.map((row) => ({
+           codigoEstacion: row.codigo_estacion,
+           via: row.via,
+           sentido: row.sentido,
+         })),
++        estacionesCatalogo: this.estaciones.map((estacion) => ({
++          estacionId: estacion.id,
++          estacionNombre: estacion.nombre,
++          peajeId: estacion.peaje_id,
++          peajeNombre: estacion.nombre,
++        })),
+       });
+       // The extractor intentionally does not invent a peaje identity. Once the
+       // station catalogue is loaded, enrich unresolved candidates so an
+       // explicit Paso 9 assignment can still be persisted safely.
+       this.resumenRefresco = {
+         ...resumen,
+-        resultados: resumen.resultados.map((row) => ({
+-          ...row,
+-          peajeId: row.peajeId ?? this.estaciones.find((estacion) => estacion.id === row.estacionId)?.peaje_id ?? null,
+-        })),
++        filasNuevasConfirmadas: this.contarFilasNuevasConfirmadas(resumen.candidatos),
++        resultados: resumen.resultados.map((row) => this.aplicarDecisionPersistida(row, resumen.candidatos)),
+       };
+       // Operators may review unresolved direction candidates even though only
+       // peajes:manage can persist tariff changes.
+       this.refreshOpen = this.dialogNeeded;
+       if (this.resumenRefresco.contextIncomplete) {
+         this.error =
+           'Hay pasadas sin estaci├│n o categor├¡a num├®rica. Complet├í el contexto antes de confirmar.';
+       }
+     } catch (e) {
+       this.error = e instanceof Error ? e.message : 'No se pudo analizar las tarifas.';
+@@ -352,28 +411,123 @@ export class Paso9RevisionComponent implements OnInit {
+     }
+   }
+ 
+   private async asociarTrasConfirmacion(
+     res: ConfirmacionCargaResultado,
+     rowIndexes: number[],
+   ): Promise<void> {
+     const resultados = this.resumenRefresco?.resultados ?? [];
+     const asociaciones: AsociacionTarifaImporte[] = [];
+     (res.pasadas ?? []).forEach((pasada, i) => {
+-      const sourceIndex = rowIndexes[i];
++      const sourceIndex = rowIndexes[i] ?? i;
+       const hit = resultados.find((r) => r.rowIndexes.includes(sourceIndex));
+-      if (!hit?.tarifaImporteId) return;
+-      if (hit.codigo === 'CURRENT_TARIFF') {
+-        asociaciones.push({ pasada_id: pasada.id, tarifa_importe_id: hit.tarifaImporteId, codigo: 'AL_DIA' });
+-      } else if (hit.codigo === 'HISTORICAL_TARIFF_MATCH') {
+-        asociaciones.push({ pasada_id: pasada.id, tarifa_importe_id: hit.tarifaImporteId, codigo: 'HISTORICA' });
+-      }
++      if (!hit) return;
++      const mapped = asociacionDesdeResultadoRefresco({
++        codigo: hit.codigo,
++        tarifaImporteId: hit.tarifaImporteId,
++        categoriaProveedor: hit.categoriaProveedor,
++        categoriaCalculada: hit.categoriaCalculada,
++      });
++      if (!mapped) return;
++      asociaciones.push({
++        pasada_id: pasada.id,
++        tarifa_importe_id: mapped.tarifa_importe_id,
++        codigo: mapped.codigo,
++      });
+     });
+     if (!asociaciones.length) return;
+     try {
+       await this.tarifaValidation.asociarTrasConfirmacion(asociaciones);
+     } catch {
+       this.avisoAsociacion =
+         'La carga se guard├│, pero no se pudieron asociar las tarifas. Pod├®s reintentar la asociaci├│n.';
+     }
+   }
++
++  private aplicarDecisionPersistida(
++    row: ResultadoDetectarRefresco,
++    candidatos: ResumenRefrescoTarifas['candidatos'],
++  ): ResultadoDetectarRefresco {
++    const peajeId = row.peajeId ?? this.estaciones.find((estacion) => estacion.id === row.estacionId)?.peaje_id ?? null;
++    const saved = this.tarifasActualizadas.find((item) => this.guardaCubreResultado(item, row, candidatos));
++    if (saved?.diagnostico === 'REVISAR' && BLOQUEANTES.has(row.codigo)) {
++      return {
++        ...row,
++        peajeId,
++        codigo: 'REVIEW_RECORDED',
++        tarifaImporteId: saved.tarifa_importe_id ?? row.tarifaImporteId,
++        diagnostico: 'REVISAR',
++      };
++    }
++    if (saved?.diagnostico === 'CONFIRMADO' && row.codigo === 'NEW_TARIFF') {
++      return {
++        ...row,
++        peajeId,
++        codigo: 'CURRENT_TARIFF',
++        tarifaImporteId: saved.tarifa_importe_id ?? row.tarifaImporteId,
++        fechaVigenciaInicio: saved.fecha_vigencia_inicio ?? saved.fechaVigenciaInicio ?? row.fechaVigenciaInicio,
++      };
++    }
++    return { ...row, peajeId };
++  }
++
++  private guardaCubreResultado(
++    saved: TarifaRefrescoGuardada,
++    row: ResultadoDetectarRefresco,
++    candidatos: ResumenRefrescoTarifas['candidatos'],
++  ): boolean {
++    if (saved.candidate_id && saved.candidate_id === row.id) return true;
++    const candidato = candidatos.find((item) => item.id === saved.candidate_id);
++    if (candidato && candidato.rowIndexes.some((idx) => row.rowIndexes.includes(idx))) return true;
++    return saved.estacion_id === row.estacionId && saved.nueva === (row.candidatePrice ?? null);
++  }
++
++  private contarFilasNuevasConfirmadas(
++    candidatos: ResumenRefrescoTarifas['candidatos'],
++  ): number {
++    return this.tarifasActualizadas
++      .filter((row) => row.diagnostico !== 'REVISAR')
++      .reduce((n, row) => {
++        const candidato = candidatos.find((item) => item.id === row.candidate_id);
++        return n + (candidato?.rowIndexes.length ?? 1);
++      }, 0);
++  }
++
++  private filasDesdeResultados(
++    pred: (r: ResultadoDetectarRefresco) => boolean,
++  ): FilaResumenTarifa[] {
++    return (this.resumenRefresco?.resultados ?? []).filter(pred).map((row) => ({
++      estacionNombre: this.nombreEstacionTarifa(row.estacionId),
++      lineaCategoria: this.lineaCategoria(row.categoriaProveedor, row.categoriaCalculada, row.categoria),
++      status: row.status ?? 'ÔÇö',
++      sentido: row.sentidoAplicado ?? row.sentidoSolicitado ?? 'ÔÇö',
++      precioAnterior: row.importeActual == null ? 'ÔÇö' : String(row.importeActual),
++      precioNuevo: row.candidatePrice == null ? 'ÔÇö' : String(row.candidatePrice),
++      vigenteDesde: formatearVigencia(row.fechaVigenciaInicio),
++    }));
++  }
++
++  private filaDesdeGuardada(row: TarifaRefrescoGuardada): FilaResumenTarifa {
++    return {
++      estacionNombre: this.nombreEstacionTarifa(row.estacion_id),
++      lineaCategoria: this.lineaCategoria(null, row.categoria_calculada ?? row.categoriaCalculada, row.categoria),
++      status: row.status,
++      sentido: row.sentido,
++      precioAnterior: row.anterior == null ? 'ÔÇö' : String(row.anterior),
++      precioNuevo: String(row.nueva),
++      vigenteDesde: formatearVigencia(row.fecha_vigencia_inicio ?? row.fechaVigenciaInicio),
++    };
++  }
++
++  private lineaCategoria(
++    proveedor: number | null | undefined,
++    calculada: number | null | undefined,
++    fallback: number | null | undefined,
++  ): string {
++    if (proveedor != null && calculada != null) {
++      return `Categor├¡a proveedor ${proveedor} -> calculada ${calculada}`;
++    }
++    if (proveedor != null) return `Categor├¡a ${proveedor}`;
++    if (fallback != null) return `Categor├¡a ${fallback}`;
++    return 'Categor├¡a ÔÇö';
++  }
+ }

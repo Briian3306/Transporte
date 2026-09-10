@@ -579,6 +579,17 @@ describe('Paso8ValidacionComponent shadow tariff diagnostics', () => {
     expect(configuraciones.some((c) => c.nombre_columna === 'IMPORTE_NETO')).toBeTrue();
   });
 
+  it('usa PRECIO para tarifario aunque IMPORTE_NETO tenga la bonificación de factura', async () => {
+    await setup(resultadoTarifa([filaTarifa({ codigo: 'AL_DIA' })]));
+    state.setPasadasEstandarizadas([
+      { ...pasadaBase, PRECIO: 10000, BONIFICACION: 500, IMPORTE_NETO: 9500 },
+    ] as never);
+    await component.validar();
+    const { pasadas } = argsValidarLote(tarifaValidation.validarLote);
+    expect(pasadas.map((p) => p.precio_directo)).toEqual([10000]);
+    expect(component.sumaNetos).toBe(9500);
+  });
+
   const advertencias: CodigoResultadoTarifa[] = [
     'HISTORICA',
     'DESFASADO',

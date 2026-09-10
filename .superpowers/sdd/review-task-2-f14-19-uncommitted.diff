@@ -1,0 +1,1953 @@
+﻿# Review package — Task 2 F14-19 (uncommitted; no commits by design)
+Base: 95033bda8434b21473aa51937dfa8831acf0d3b9
+Head: WORKING TREE (no Task 2 commit)
+Branch: codex/tarifa-importe-cases
+
+## Commit list
+(none — controller forbids commits)
+
+## Files changed
+
+ .../tests/peajes_f14_tarifas_importe_test.sql      | 182 +++++++++++++++------
+ .../supabase/tests/peajes_refresh_tarifas_test.sql |  61 +++++--
+ .../tests/peajes_tarifa_importe_cases_test.sql     |  24 ++-
+ .../supabase/tests/peajes_tarifario_rpc_test.sql   |  24 ++-
+ 4 files changed, 215 insertions(+), 76 deletions(-)
+
+Untracked new files:
+ ibarra-app/supabase/migrations/20260909181737_peajes_tarifa_vigencia_diagnostico.sql (new)
+ ibarra-app/supabase/tests/peajes_tarifa_vigencia_test.sql (new)
+
+## Diff (tracked, -U10)
+
+diff --git a/ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql b/ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
+index 7d4706a..44c6579 100644
+--- a/ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
++++ b/ibarra-app/supabase/tests/peajes_f14_tarifas_importe_test.sql
+@@ -1,17 +1,17 @@
+ -- pgTAP: F14-16 Task 2 schema + Task 3 current-pointer / immutable history
+ -- + Task 6 shadow resolver / 1% validator / association RPCs
+ -- + Task 7 unique-lineage backfill
+ -- + Task 8 compatibility readers (RED: pwbi_tarifas_v2 absent; legacy RPCs stay).
+ -- Empty tables; fixture inserts only. Do not load the Cruzado workbook.
+ BEGIN;
+-SELECT plan(176);
++SELECT plan(185);
+ 
+ -- -----------------------------------------------------------------------------
+ -- Hard constraint: tarifas_normalizadas stays as compatibility path
+ -- -----------------------------------------------------------------------------
+ SELECT has_table(
+   'public',
+   'tarifas_normalizadas',
+   'F14-16 tarifas_normalizadas sigue existiendo'
+ );
+ 
+@@ -318,20 +318,80 @@ SELECT col_not_null(
+   'F14-16 tarifa_importe.fecha_aparicion NOT NULL'
+ );
+ SELECT col_type_is(
+   'public',
+   'tarifa_importe',
+   'fecha_aparicion',
+   'timestamp with time zone',
+   'F14-16 tarifa_importe.fecha_aparicion timestamptz'
+ );
+ 
++SELECT has_column(
++  'public',
++  'tarifa_importe',
++  'fecha_vigencia_inicio',
++  'F14-19 tarifa_importe.fecha_vigencia_inicio'
++);
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'fecha_vigencia_inicio',
++  'date',
++  'F14-19 tarifa_importe.fecha_vigencia_inicio date'
++);
++SELECT col_is_null(
++  'public',
++  'tarifa_importe',
++  'fecha_vigencia_inicio',
++  'F14-19 tarifa_importe.fecha_vigencia_inicio nullable'
++);
++
++SELECT has_column(
++  'public',
++  'tarifa_importe',
++  'fecha_vigencia_fin',
++  'F14-19 tarifa_importe.fecha_vigencia_fin'
++);
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'fecha_vigencia_fin',
++  'date',
++  'F14-19 tarifa_importe.fecha_vigencia_fin date'
++);
++SELECT col_is_null(
++  'public',
++  'tarifa_importe',
++  'fecha_vigencia_fin',
++  'F14-19 tarifa_importe.fecha_vigencia_fin nullable'
++);
++
++SELECT has_column(
++  'public',
++  'tarifa_importe',
++  'diagnostico',
++  'F14-19 tarifa_importe.diagnostico'
++);
++SELECT col_type_is(
++  'public',
++  'tarifa_importe',
++  'diagnostico',
++  'text',
++  'F14-19 tarifa_importe.diagnostico text'
++);
++SELECT col_is_null(
++  'public',
++  'tarifa_importe',
++  'diagnostico',
++  'F14-19 tarifa_importe.diagnostico nullable'
++);
++
+ SELECT has_column(
+   'public',
+   'tarifa_importe',
+   'tarifas_normalizadas_id',
+   'F14-16 tarifa_importe.tarifas_normalizadas_id'
+ );
+ SELECT col_is_null(
+   'public',
+   'tarifa_importe',
+   'tarifas_normalizadas_id',
+@@ -1025,127 +1085,138 @@ SELECT ok(
+         SELECT array_agg(a.attname::text ORDER BY x.ordinality)
+         FROM unnest(c.confkey) WITH ORDINALITY AS x(attnum, ordinality)
+         JOIN pg_attribute a ON a.attrelid = ft.oid AND a.attnum = x.attnum
+       ) = ARRAY['tarifa_id', 'id']::text[]
+   ),
+   'F14-16 FK compuesto (tarifas.id, current_tarifa_id) ÔåÆ tarifa_importe(tarifa_id, id)'
+ );
+ 
+ -- First insert promotes bootstrap NULL pointer and copies fecha_aparicion.
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES (
+   '16200000-aaaa-4aa1-8aa1-000000000060',
+   '16200000-aaaa-4aa1-8aa1-000000000050',
+   1000.00,
+   timestamptz '2026-07-01 00:00:00+00',
+-  timestamptz '2026-07-01 12:00:00+00'
++  timestamptz '2026-07-01 12:00:00+00',
++  'CONFIRMADO', DATE '2026-07-01', DATE '2026-08-01'
+ );
+ 
+ SELECT is(
+   (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+   '16200000-aaaa-4aa1-8aa1-000000000060'::uuid,
+   'F14-16 primer INSERT en tarifa_importe promociona current_tarifa_id'
+ );
+ 
+ SELECT is(
+   (SELECT fecha_actualizacion FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+   timestamptz '2026-07-01 00:00:00+00',
+   'F14-16 primer INSERT copia fecha_aparicion a tarifas.fecha_actualizacion'
+ );
+ 
+--- Strictly later (fecha_aparicion, created_at, id) promotes.
++-- Strictly later fecha_vigencia_inicio promotes (CONFIRMADO + start).
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES (
+   '16200000-aaaa-4aa1-8aa1-000000000061',
+   '16200000-aaaa-4aa1-8aa1-000000000050',
+   2000.00,
+   timestamptz '2026-08-01 00:00:00+00',
+-  timestamptz '2026-08-01 12:00:00+00'
++  timestamptz '2026-08-01 12:00:00+00',
++  'CONFIRMADO', DATE '2026-08-01', NULL
+ );
+ 
+ SELECT is(
+   (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+   '16200000-aaaa-4aa1-8aa1-000000000061'::uuid,
+   'F14-16 INSERT posterior promociona current_tarifa_id'
+ );
+ 
+ SELECT is(
+   (SELECT fecha_actualizacion FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+   timestamptz '2026-08-01 00:00:00+00',
+   'F14-16 promoci├│n posterior copia fecha_aparicion a fecha_actualizacion'
+ );
+ 
+--- Earlier tuple never demotes.
++-- Earlier validity never demotes.
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES (
+   '16200000-aaaa-4aa1-8aa1-000000000062',
+   '16200000-aaaa-4aa1-8aa1-000000000050',
+   500.00,
+   timestamptz '2026-06-01 00:00:00+00',
+-  timestamptz '2026-06-01 12:00:00+00'
++  timestamptz '2026-06-01 12:00:00+00',
++  'CONFIRMADO', DATE '2026-06-01', DATE '2026-07-01'
+ );
+ 
+ SELECT is(
+   (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+   '16200000-aaaa-4aa1-8aa1-000000000061'::uuid,
+   'F14-16 INSERT anterior no degrada current_tarifa_id'
+ );
+ 
+ SELECT is(
+   (SELECT fecha_actualizacion FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000050'),
+   timestamptz '2026-08-01 00:00:00+00',
+   'F14-16 INSERT anterior no cambia fecha_actualizacion'
+ );
+ 
+ -- Cross-parent pointer: 051 cannot point at 050's amount (composite FK).
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio
+ ) VALUES (
+   '16200000-aaaa-4aa1-8aa1-000000000070',
+   '16200000-aaaa-4aa1-8aa1-000000000051',
+   1500.00,
+   timestamptz '2026-07-01 00:00:00+00',
+-  timestamptz '2026-07-01 12:00:00+00'
++  timestamptz '2026-07-01 12:00:00+00',
++  'CONFIRMADO', DATE '2026-07-01'
+ );
+ 
+ SELECT throws_ok(
+   $$
+   UPDATE public.tarifas
+      SET current_tarifa_id = '16200000-aaaa-4aa1-8aa1-000000000061'
+    WHERE id = '16200000-aaaa-4aa1-8aa1-000000000051'
+   $$,
+   '23503',
+   NULL,
+   'F14-16 rechaza current_tarifa_id de otra tarifa (FK compuesto)'
+ );
+ 
+ -- Immutable history: reject business UPDATE and DELETE of a non-current row
+ -- (DELETE of the current pointer could be blocked by the composite FK alone).
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES
+   (
+     '16200000-aaaa-4aa1-8aa1-000000000080',
+     '16200000-aaaa-4aa1-8aa1-000000000052',
+     800.00,
+     timestamptz '2026-07-01 00:00:00+00',
+-    timestamptz '2026-07-01 12:00:00+00'
++    timestamptz '2026-07-01 12:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01', DATE '2026-08-01'
+   ),
+   (
+     '16200000-aaaa-4aa1-8aa1-000000000081',
+     '16200000-aaaa-4aa1-8aa1-000000000052',
+     900.00,
+     timestamptz '2026-08-01 00:00:00+00',
+-    timestamptz '2026-08-01 12:00:00+00'
++    timestamptz '2026-08-01 12:00:00+00',
++    'CONFIRMADO', DATE '2026-08-01', NULL
+   );
+ 
+ SELECT throws_ok(
+   $$
+   UPDATE public.tarifa_importe
+      SET importe = 9999.00
+    WHERE id = '16200000-aaaa-4aa1-8aa1-000000000080'
+   $$,
+   NULL,
+   NULL,
+@@ -1155,98 +1226,110 @@ SELECT throws_ok(
+ SELECT throws_ok(
+   $$
+   DELETE FROM public.tarifa_importe
+    WHERE id = '16200000-aaaa-4aa1-8aa1-000000000080'
+   $$,
+   NULL,
+   NULL,
+   'F14-16 tarifa_importe rechaza DELETE (historial inmutable)'
+ );
+ 
+--- Equal fecha_aparicion: later created_at wins even with a smaller id.
++-- Equal fecha_aparicion: later fecha_vigencia_inicio wins even with a smaller id.
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES (
+   '16200000-aaaa-4aa1-8aa1-000000000091',
+   '16200000-aaaa-4aa1-8aa1-000000000053',
+   1100.00,
+   timestamptz '2026-07-10 00:00:00+00',
+-  timestamptz '2026-07-15 10:00:00+00'
++  timestamptz '2026-07-15 10:00:00+00',
++  'CONFIRMADO', DATE '2026-07-10', DATE '2026-07-11'
+ );
+ 
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES (
+   '16200000-aaaa-4aa1-8aa1-000000000090',
+   '16200000-aaaa-4aa1-8aa1-000000000053',
+   1200.00,
+   timestamptz '2026-07-10 00:00:00+00',
+-  timestamptz '2026-07-15 11:00:00+00'
++  timestamptz '2026-07-15 11:00:00+00',
++  'CONFIRMADO', DATE '2026-07-11', NULL
+ );
+ 
+ SELECT is(
+   (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000053'),
+   '16200000-aaaa-4aa1-8aa1-000000000090'::uuid,
+   'F14-16 misma fecha_aparicion: created_at posterior promociona (id menor no gana)'
+ );
+ 
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES (
+   '16200000-aaaa-4aa1-8aa1-000000000092',
+   '16200000-aaaa-4aa1-8aa1-000000000053',
+   1300.00,
+   timestamptz '2026-07-10 00:00:00+00',
+-  timestamptz '2026-07-15 09:00:00+00'
++  timestamptz '2026-07-15 09:00:00+00',
++  'CONFIRMADO', DATE '2026-07-09', DATE '2026-07-10'
+ );
+ 
+ SELECT is(
+   (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000053'),
+   '16200000-aaaa-4aa1-8aa1-000000000090'::uuid,
+   'F14-16 misma fecha_aparicion: created_at anterior no degrada el puntero'
+ );
+ 
+--- Equal fecha_aparicion + equal created_at: later id promotes; earlier id does not.
++-- Equal fecha_aparicion + equal created_at: later fecha_vigencia_inicio promotes.
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES (
+   '16200000-aaaa-4aa1-8aa1-0000000000a0',
+   '16200000-aaaa-4aa1-8aa1-000000000054',
+   1400.00,
+   timestamptz '2026-07-10 00:00:00+00',
+-  timestamptz '2026-07-15 12:00:00+00'
++  timestamptz '2026-07-15 12:00:00+00',
++  'CONFIRMADO', DATE '2026-07-10', DATE '2026-07-11'
+ );
+ 
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES (
+   '16200000-aaaa-4aa1-8aa1-0000000000a1',
+   '16200000-aaaa-4aa1-8aa1-000000000054',
+   1500.00,
+   timestamptz '2026-07-10 00:00:00+00',
+-  timestamptz '2026-07-15 12:00:00+00'
++  timestamptz '2026-07-15 12:00:00+00',
++  'CONFIRMADO', DATE '2026-07-11', NULL
+ );
+ 
+ SELECT is(
+   (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000054'),
+   '16200000-aaaa-4aa1-8aa1-0000000000a1'::uuid,
+   'F14-16 misma fecha y created_at: id posterior promociona'
+ );
+ 
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES (
+   '16200000-aaaa-4aa1-8aa1-00000000009f',
+   '16200000-aaaa-4aa1-8aa1-000000000054',
+   1600.00,
+   timestamptz '2026-07-10 00:00:00+00',
+-  timestamptz '2026-07-15 12:00:00+00'
++  timestamptz '2026-07-15 12:00:00+00',
++  'CONFIRMADO', DATE '2026-07-09', DATE '2026-07-10'
+ );
+ 
+ SELECT is(
+   (SELECT current_tarifa_id FROM public.tarifas WHERE id = '16200000-aaaa-4aa1-8aa1-000000000054'),
+   '16200000-aaaa-4aa1-8aa1-0000000000a1'::uuid,
+   'F14-16 misma fecha y created_at: id anterior no degrada el puntero'
+ );
+ 
+ -- -----------------------------------------------------------------------------
+ -- Task 6: shadow resolver / 1% validator / post-confirmation association
+@@ -1388,117 +1471,117 @@ INSERT INTO public.tarifas (
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000090',
+     '16200000-aaaa-4aa1-8aa1-000000000001',
+     '16600000-aaaa-4aa1-8aa1-000000000002',
+     'NO_PICO', 9, 'AMBAS', true,
+     timestamptz '2026-01-01 00:00:00+00'
+   );
+ 
+ INSERT INTO public.tarifa_importe (
+   id, tarifa_id, importe, fecha_aparicion, created_at,
+-  hora_min, hora_max
++  hora_min, hora_max, diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000110',
+     '16600000-aaaa-4aa1-8aa1-000000000010',
+     1111.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    NULL, NULL
++    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
+   ),
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000111',
+     '16600000-aaaa-4aa1-8aa1-000000000011',
+     1999.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    NULL, NULL
++    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
+   ),
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000120',
+     '16600000-aaaa-4aa1-8aa1-000000000020',
+     2222.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    NULL, NULL
++    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
+   ),
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000130',
+     '16600000-aaaa-4aa1-8aa1-000000000030',
+     3001.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    NULL, NULL
++    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
+   ),
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000131',
+     '16600000-aaaa-4aa1-8aa1-000000000031',
+     3002.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    NULL, NULL
++    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
+   ),
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000150',
+     '16600000-aaaa-4aa1-8aa1-000000000050',
+     5001.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    7, 9
++    7, 9, 'CONFIRMADO', DATE '2026-07-01', NULL
+   ),
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000151',
+     '16600000-aaaa-4aa1-8aa1-000000000051',
+     5002.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    10, 18
++    10, 18, 'CONFIRMADO', DATE '2026-07-01', NULL
+   ),
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000160',
+     '16600000-aaaa-4aa1-8aa1-000000000060',
+     6000.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    NULL, NULL
++    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
+   ),
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000170',
+     '16600000-aaaa-4aa1-8aa1-000000000070',
+     1000.00,
+     timestamptz '2026-06-01 00:00:00+00',
+     timestamptz '2026-06-01 12:00:00+00',
+-    NULL, NULL
++    NULL, NULL, 'CONFIRMADO', DATE '2026-06-01', DATE '2026-08-01'
+   ),
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000171',
+     '16600000-aaaa-4aa1-8aa1-000000000070',
+     2000.00,
+     timestamptz '2026-08-01 00:00:00+00',
+     timestamptz '2026-08-01 12:00:00+00',
+-    NULL, NULL
++    NULL, NULL, 'CONFIRMADO', DATE '2026-08-01', NULL
+   ),
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000180',
+     '16600000-aaaa-4aa1-8aa1-000000000080',
+     1000.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    NULL, NULL
++    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
+   ),
+   (
+     '16600000-aaaa-4aa1-8aa1-000000000190',
+     '16600000-aaaa-4aa1-8aa1-000000000090',
+     1000.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    NULL, NULL
++    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
+   );
+ 
+ INSERT INTO public.pasadas (
+   id, fecha_hora, pase_id, patente_id, estacion_id, documento_id,
+   precio, bonificacion, quantity, importe_neto, sentido, tarifa_normalizada_id
+ ) VALUES
+   (
+     '16600000-aaaa-4aa1-8aa1-0000000000c1',
+     timestamptz '2026-09-07 10:00:00+00',
+     '16200000-aaaa-4aa1-8aa1-000000000004',
+@@ -2077,37 +2160,39 @@ INSERT INTO public.tarifas (
+   (
+     '16700000-aaaa-4aa1-8aa1-000000000011',
+     '16200000-aaaa-4aa1-8aa1-000000000001',
+     '16700000-aaaa-4aa1-8aa1-000000000002',
+     'NO_PICO', 2, 'AMBAS', false,
+     timestamptz '2026-01-01 00:00:00+00'
+   );
+ 
+ INSERT INTO public.tarifa_importe (
+   id, tarifa_id, importe, fecha_aparicion, created_at,
+-  tarifas_normalizadas_id
++  tarifas_normalizadas_id, diagnostico, fecha_vigencia_inicio
+ ) VALUES
+   (
+     '16700000-aaaa-4aa1-8aa1-0000000000b1',
+     '16700000-aaaa-4aa1-8aa1-000000000010',
+     1111.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    '16700000-aaaa-4aa1-8aa1-0000000000b1'
++    '16700000-aaaa-4aa1-8aa1-0000000000b1',
++    'CONFIRMADO', DATE '2026-07-01'
+   ),
+   (
+     '16700000-aaaa-4aa1-8aa1-0000000000b3',
+     '16700000-aaaa-4aa1-8aa1-000000000011',
+     3333.00,
+     timestamptz '2026-07-01 00:00:00+00',
+     timestamptz '2026-07-01 12:00:00+00',
+-    NULL
++    NULL,
++    'CONFIRMADO', DATE '2026-07-01'
+   );
+ 
+ INSERT INTO public.pasadas (
+   id, fecha_hora, pase_id, patente_id, estacion_id, documento_id,
+   precio, bonificacion, quantity, importe_neto, sentido, tarifa_normalizada_id
+ ) VALUES
+   (
+     '16700000-aaaa-4aa1-8aa1-0000000000c1',
+     timestamptz '2026-09-07 14:00:00+00',
+     '16200000-aaaa-4aa1-8aa1-000000000004',
+@@ -2341,35 +2426,38 @@ INSERT INTO public.tarifas (
+   requiere_normalizacion_iva, fecha_actualizacion
+ ) VALUES (
+   '16800000-aaaa-4aa1-8aa1-000000000010',
+   '16200000-aaaa-4aa1-8aa1-000000000001',
+   '16800000-aaaa-4aa1-8aa1-000000000002',
+   'PICO', 4, 'IDA', false,
+   timestamptz '2026-01-01 00:00:00+00'
+ );
+ 
+ INSERT INTO public.tarifa_importe (
+-  id, tarifa_id, importe, fecha_aparicion, created_at
++  id, tarifa_id, importe, fecha_aparicion, created_at,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+ ) VALUES
+   (
+     '16800000-aaaa-4aa1-8aa1-000000000100',
+     '16800000-aaaa-4aa1-8aa1-000000000010',
+     1111.00,
+     timestamptz '2026-06-01 00:00:00+00',
+-    timestamptz '2026-06-01 12:00:00+00'
++    timestamptz '2026-06-01 12:00:00+00',
++    'CONFIRMADO', DATE '2026-06-01', DATE '2026-08-01'
+   ),
+   (
+     '16800000-aaaa-4aa1-8aa1-000000000200',
+     '16800000-aaaa-4aa1-8aa1-000000000010',
+     9999.00,
+     timestamptz '2026-08-01 00:00:00+00',
+-    timestamptz '2026-08-01 12:00:00+00'
++    timestamptz '2026-08-01 12:00:00+00',
++    'CONFIRMADO', DATE '2026-08-01', NULL
+   );
+ 
+ SELECT has_function(
+   'public',
+   'peajes_normalizar_tarifas',
+   ARRAY['uuid'],
+   'F14-16 peajes_normalizar_tarifas(uuid) sigue disponible'
+ );
+ 
+ SELECT has_function(
+diff --git a/ibarra-app/supabase/tests/peajes_refresh_tarifas_test.sql b/ibarra-app/supabase/tests/peajes_refresh_tarifas_test.sql
+index 50bda43..f84bb81 100644
+--- a/ibarra-app/supabase/tests/peajes_refresh_tarifas_test.sql
++++ b/ibarra-app/supabase/tests/peajes_refresh_tarifas_test.sql
+@@ -77,63 +77,74 @@ INSERT INTO public.tarifas (
+     '18180000-aaaa-4aa1-8aa1-000000000010',
+     'NO_PICO', 2, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000051',
+     '18180000-aaaa-4aa1-8aa1-000000000001',
+     '18180000-aaaa-4aa1-8aa1-000000000010',
+     'PICO', 2, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+   );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000150',
+     '18180000-aaaa-4aa1-8aa1-000000000050',
+     12000.00,
+-    timestamptz '2025-01-01 00:00:00+00'
++    timestamptz '2025-01-01 00:00:00+00',
++    'CONFIRMADO', DATE '2025-01-01', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000151',
+     '18180000-aaaa-4aa1-8aa1-000000000050',
+     11975.15,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01', NULL
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000161',
+     '18180000-aaaa-4aa1-8aa1-000000000051',
+     14968.96,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01', NULL
+   );
+ 
+ -- Cat 5: current 14500, historical 12000 (historical-only match for 12010)
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   requiere_normalizacion_iva, fecha_actualizacion
+ ) VALUES (
+   '18180000-aaaa-4aa1-8aa1-000000000052',
+   '18180000-aaaa-4aa1-8aa1-000000000001',
+   '18180000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 5, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000170',
+     '18180000-aaaa-4aa1-8aa1-000000000052',
+     12000.00,
+-    timestamptz '2025-06-01 00:00:00+00'
++    timestamptz '2025-06-01 00:00:00+00',
++    'CONFIRMADO', DATE '2025-06-01', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000171',
+     '18180000-aaaa-4aa1-8aa1-000000000052',
+     14500.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01', NULL
+   );
+ 
+ -- Direction fixtures on SENTIDO MIXTO cat 1
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   requiere_normalizacion_iva, fecha_actualizacion
+ ) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000060',
+     '18180000-aaaa-4aa1-8aa1-000000000001',
+@@ -152,95 +163,111 @@ INSERT INTO public.tarifas (
+     '18180000-aaaa-4aa1-8aa1-000000000011',
+     'NO_PICO', 2, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000063',
+     '18180000-aaaa-4aa1-8aa1-000000000001',
+     '18180000-aaaa-4aa1-8aa1-000000000011',
+     'NO_PICO', 3, 'IDA', false, timestamptz '2026-07-01 00:00:00+00'
+   );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000180',
+     '18180000-aaaa-4aa1-8aa1-000000000060',
+     1000.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000181',
+     '18180000-aaaa-4aa1-8aa1-000000000061',
+     2000.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000182',
+     '18180000-aaaa-4aa1-8aa1-000000000062',
+     3333.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000183',
+     '18180000-aaaa-4aa1-8aa1-000000000063',
+     4444.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   );
+ 
+ -- Ambiguous status-less: both PICO and NO_PICO share 10000
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   requiere_normalizacion_iva, fecha_actualizacion
+ ) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000070',
+     '18180000-aaaa-4aa1-8aa1-000000000001',
+     '18180000-aaaa-4aa1-8aa1-000000000010',
+     'NO_PICO', 7, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000071',
+     '18180000-aaaa-4aa1-8aa1-000000000001',
+     '18180000-aaaa-4aa1-8aa1-000000000010',
+     'PICO', 7, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+   );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000190',
+     '18180000-aaaa-4aa1-8aa1-000000000070',
+     10000.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000191',
+     '18180000-aaaa-4aa1-8aa1-000000000071',
+     10000.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   );
+ 
+ -- IVA flag identity: current 100, flag true
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   requiere_normalizacion_iva, fecha_actualizacion
+ ) VALUES (
+   '18180000-aaaa-4aa1-8aa1-000000000080',
+   '18180000-aaaa-4aa1-8aa1-000000000001',
+   '18180000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 8, 'AMBAS', true, timestamptz '2026-07-01 00:00:00+00'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000200',
+     '18180000-aaaa-4aa1-8aa1-000000000080',
+     100.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   );
+ 
+ SELECT ok(
+   (
+     SELECT
+       count(*) FILTER (WHERE e->>'status' = 'NO_PICO') = 1
+       AND count(*) FILTER (WHERE e->>'status' = 'PICO') = 1
+       AND bool_or((e->>'importe')::numeric = 11975.15)
+       AND bool_or((e->>'importe')::numeric = 14968.96)
+       AND bool_and(e->>'peaje_id' = '18180000-aaaa-4aa1-8aa1-000000000001')
+diff --git a/ibarra-app/supabase/tests/peajes_tarifa_importe_cases_test.sql b/ibarra-app/supabase/tests/peajes_tarifa_importe_cases_test.sql
+index bee056d..93f95c1 100644
+--- a/ibarra-app/supabase/tests/peajes_tarifa_importe_cases_test.sql
++++ b/ibarra-app/supabase/tests/peajes_tarifa_importe_cases_test.sql
+@@ -20,35 +20,43 @@ INSERT INTO public.estaciones (id, peaje_id, nombre) VALUES
+   ('19990000-aaaa-4aa1-8aa1-000000000010', '19990000-aaaa-4aa1-8aa1-000000000001', 'Cases test station');
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido, fecha_actualizacion
+ ) VALUES (
+   '19990000-aaaa-4aa1-8aa1-000000000020',
+   '19990000-aaaa-4aa1-8aa1-000000000001',
+   '19990000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 1, 'IDA', timestamptz '2026-01-01 00:00:00+00'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES (
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES (
+   '19990000-aaaa-4aa1-8aa1-000000000100',
+   '19990000-aaaa-4aa1-8aa1-000000000020',
+-  1000, timestamptz '2026-01-01 00:00:00+00'
++  1000, timestamptz '2026-01-01 00:00:00+00',
++  'CONFIRMADO', DATE '2026-01-01', DATE '2026-01-02'
+ );
+ SELECT is(
+   (SELECT cases FROM public.tarifa_importe WHERE id = '19990000-aaaa-4aa1-8aa1-000000000100'),
+   0,
+   'manual or catalogue history defaults to zero cases'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, cases, fecha_aparicion) VALUES (
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, cases, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES (
+   '19990000-aaaa-4aa1-8aa1-000000000101',
+   '19990000-aaaa-4aa1-8aa1-000000000020',
+-  1100, 7, timestamptz '2026-01-02 00:00:00+00'
++  1100, 7, timestamptz '2026-01-02 00:00:00+00',
++  'CONFIRMADO', DATE '2026-01-02'
+ );
+ SELECT is(
+   (SELECT cases FROM public.tarifa_importe WHERE id = '19990000-aaaa-4aa1-8aa1-000000000101'),
+   7,
+   'explicit detected case count is retained'
+ );
+ 
+ SELECT throws_ok(
+   $$INSERT INTO public.tarifa_importe (tarifa_id, importe, cases, fecha_aparicion)
+     VALUES ('19990000-aaaa-4aa1-8aa1-000000000020', 1200, -1, now())$$,
+@@ -89,24 +97,28 @@ SELECT is(
+ );
+ 
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido, fecha_actualizacion
+ ) VALUES (
+   '19990000-aaaa-4aa1-8aa1-000000000021',
+   '19990000-aaaa-4aa1-8aa1-000000000001',
+   '19990000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 1, 'VUELTA', timestamptz '2026-01-01 00:00:00+00'
+ );
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES (
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES (
+   '19990000-aaaa-4aa1-8aa1-000000000102',
+   '19990000-aaaa-4aa1-8aa1-000000000021',
+-  2000, timestamptz '2026-01-01 00:00:00+00'
++  2000, timestamptz '2026-01-01 00:00:00+00',
++  'CONFIRMADO', DATE '2026-01-01'
+ );
+ 
+ SELECT lives_ok(
+   $$SELECT public.peajes_guardar_refresco_tarifas(
+     '[
+       {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"IDA","categoria":1,"status":"NO_PICO","importe":1300,"cases":3},
+       {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"VUELTA","categoria":1,"status":"NO_PICO","importe":2100,"cases":5}
+     ]'::jsonb
+   )$$,
+   'Paso 9 saves independent directional case snapshots'
+diff --git a/ibarra-app/supabase/tests/peajes_tarifario_rpc_test.sql b/ibarra-app/supabase/tests/peajes_tarifario_rpc_test.sql
+index 40dff61..8549994 100644
+--- a/ibarra-app/supabase/tests/peajes_tarifario_rpc_test.sql
++++ b/ibarra-app/supabase/tests/peajes_tarifario_rpc_test.sql
+@@ -39,53 +39,65 @@ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   fecha_actualizacion
+ ) VALUES (
+   '17400000-aaaa-4aa1-8aa1-000000000050',
+   '17400000-aaaa-4aa1-8aa1-000000000001',
+   '17400000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 1, 'IDA',
+   '2026-03-10T00:00:00Z'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES
+   (
+     '17400000-aaaa-4aa1-8aa1-000000000099',
+     '17400000-aaaa-4aa1-8aa1-000000000050',
+     5000,
+-    '2025-08-21T00:00:00Z'
++    '2025-08-21T00:00:00Z',
++    'CONFIRMADO', DATE '2025-08-21', DATE '2026-03-10'
+   );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES
+   (
+     '17400000-aaaa-4aa1-8aa1-000000000100',
+     '17400000-aaaa-4aa1-8aa1-000000000050',
+     5500,
+-    '2026-03-10T00:00:00Z'
++    '2026-03-10T00:00:00Z',
++    'CONFIRMADO', DATE '2026-03-10'
+   );
+ 
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   fecha_actualizacion
+ ) VALUES (
+   '17400000-aaaa-4aa1-8aa1-000000000051',
+   '17400000-aaaa-4aa1-8aa1-000000000001',
+   '17400000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 1, 'VUELTA',
+   '2026-03-10T00:00:00Z'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES
+   (
+     '17400000-aaaa-4aa1-8aa1-000000000110',
+     '17400000-aaaa-4aa1-8aa1-000000000051',
+     5700,
+-    '2026-03-10T00:00:00Z'
++    '2026-03-10T00:00:00Z',
++    'CONFIRMADO', DATE '2026-03-10'
+   );
+ 
+ SELECT ok(
+   (
+     SELECT (r -> 0 ->> 'importe')::numeric = 5500
+        AND (r -> 0 ->> 'current_tarifa_importe_id')
+            = '17400000-aaaa-4aa1-8aa1-000000000100'
+     FROM (
+       SELECT public.peajes_listar_tarifas_actuales(
+         jsonb_build_object(
+
+## New file: ibarra-app/supabase/migrations/20260909181737_peajes_tarifa_vigencia_diagnostico.sql
+
+diff --git a/ibarra-app/supabase/migrations/20260909181737_peajes_tarifa_vigencia_diagnostico.sql b/ibarra-app/supabase/migrations/20260909181737_peajes_tarifa_vigencia_diagnostico.sql
+new file mode 100644
+index 0000000..3081a9d
+--- /dev/null
++++ b/ibarra-app/supabase/migrations/20260909181737_peajes_tarifa_vigencia_diagnostico.sql
+@@ -0,0 +1,488 @@
++-- F14-19 Task 2: nullable validity/diagnostic metadata, safe legacy backfill,
++-- non-overlapping confirmed periods, immutable history close, and pointer gates.
++-- tarifas_normalizadas and its compatibility relationships remain unchanged.
++
++CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA extensions;
++
++ALTER TABLE public.tarifa_importe
++  ADD COLUMN fecha_vigencia_inicio date NULL,
++  ADD COLUMN fecha_vigencia_fin date NULL,
++  ADD COLUMN diagnostico text NULL;
++
++ALTER TABLE public.tarifa_importe
++  ADD CONSTRAINT tarifa_importe_diagnostico_chk CHECK (
++    diagnostico IN (
++      'MUESTRA_INSUFICIENTE',
++      'TARIFA_UNICA',
++      'CATEGORIA',
++      'POSIBLE_HORARIO',
++      'REVISAR',
++      'CONFIRMADO'
++    )
++  ),
++  ADD CONSTRAINT tarifa_importe_vigencia_fechas_chk CHECK (
++    fecha_vigencia_fin IS NULL
++    OR fecha_vigencia_inicio IS NULL
++    OR fecha_vigencia_inicio < fecha_vigencia_fin
++  );
++
++-- This is intentionally the only legacy backfill. Exact lineage is trustworthy
++-- for diagnostics; fecha_aparicion is not evidence of an effective start date.
++UPDATE public.tarifa_importe AS ti
++SET diagnostico = tn.diagnostico
++FROM public.tarifas_normalizadas AS tn
++WHERE tn.id = ti.tarifas_normalizadas_id
++  AND ti.diagnostico IS NULL;
++
++SET search_path = public, extensions;
++
++ALTER TABLE public.tarifa_importe
++  ADD CONSTRAINT tarifa_importe_vigencia_confirmada_excl
++  EXCLUDE USING gist (
++    tarifa_id WITH =,
++    daterange(
++      fecha_vigencia_inicio,
++      COALESCE(fecha_vigencia_fin, 'infinity'::date),
++      '[)'
++    ) WITH &&
++  )
++  WHERE (
++    diagnostico = 'CONFIRMADO'
++    AND fecha_vigencia_inicio IS NOT NULL
++  );
++
++RESET search_path;
++
++COMMENT ON COLUMN public.tarifa_importe.fecha_vigencia_inicio IS
++  'Inicio calendario inclusivo de la vigencia confirmada. NULL = vigencia desconocida o fila de revisi├│n.';
++COMMENT ON COLUMN public.tarifa_importe.fecha_vigencia_fin IS
++  'Fin calendario exclusivo de la vigencia confirmada. NULL = intervalo abierto o vigencia desconocida.';
++COMMENT ON COLUMN public.tarifa_importe.diagnostico IS
++  'Snapshot diagn├│stico: MUESTRA_INSUFICIENTE | TARIFA_UNICA | CATEGORIA | POSIBLE_HORARIO | REVISAR | CONFIRMADO.';
++
++CREATE OR REPLACE FUNCTION public.peajes_trg_tarifa_importe_immutable()
++RETURNS trigger
++LANGUAGE plpgsql
++SECURITY INVOKER
++SET search_path = public
++AS $$
++BEGIN
++  IF TG_OP = 'DELETE' THEN
++    RAISE EXCEPTION
++      'tarifa_importe es historial inmutable: DELETE est├í prohibido. Corregir insertando una fila nueva (F14-16).'
++      USING ERRCODE = '23514';
++  END IF;
++
++  IF (
++       NEW.id,
++       NEW.tarifa_id,
++       NEW.importe,
++       NEW.importe_base,
++       NEW.desvio,
++       NEW.hora_min,
++       NEW.hora_max,
++       NEW.hora_media,
++       NEW.categoria_calculated,
++       NEW.cases,
++       NEW.fecha_aparicion,
++       NEW.diagnostico,
++       NEW.fecha_vigencia_inicio,
++       NEW.tarifas_normalizadas_id,
++       NEW.created_at
++     ) IS DISTINCT FROM (
++       OLD.id,
++       OLD.tarifa_id,
++       OLD.importe,
++       OLD.importe_base,
++       OLD.desvio,
++       OLD.hora_min,
++       OLD.hora_max,
++       OLD.hora_media,
++       OLD.categoria_calculated,
++       OLD.cases,
++       OLD.fecha_aparicion,
++       OLD.diagnostico,
++       OLD.fecha_vigencia_inicio,
++       OLD.tarifas_normalizadas_id,
++       OLD.created_at
++     )
++  THEN
++    RAISE EXCEPTION
++      'tarifa_importe es historial inmutable: no se permite UPDATE de columnas de negocio. Corregir insertando una fila nueva (F14-19).'
++      USING ERRCODE = '23514';
++  END IF;
++
++  IF NEW.fecha_vigencia_fin IS DISTINCT FROM OLD.fecha_vigencia_fin
++     AND NOT (
++       OLD.fecha_vigencia_fin IS NULL
++       AND NEW.fecha_vigencia_fin IS NOT NULL
++     )
++  THEN
++    RAISE EXCEPTION
++      'tarifa_importe es historial inmutable: fecha_vigencia_fin solo puede cerrarse una vez (NULL a fecha).'
++      USING ERRCODE = '23514';
++  END IF;
++
++  RETURN NEW;
++END;
++$$;
++
++COMMENT ON FUNCTION public.peajes_trg_tarifa_importe_immutable() IS
++  'F14-19 ┬À Mantiene inmutable tarifa_importe y permite solo cerrar una vigencia una vez.';
++
++CREATE OR REPLACE FUNCTION public.peajes_trg_tarifa_importe_promote()
++RETURNS trigger
++LANGUAGE plpgsql
++SECURITY INVOKER
++SET search_path = public
++AS $$
++DECLARE
++  v_current_id uuid;
++  v_current_inicio date;
++BEGIN
++  IF NEW.diagnostico IS DISTINCT FROM 'CONFIRMADO'
++     OR NEW.fecha_vigencia_inicio IS NULL
++  THEN
++    RETURN NEW;
++  END IF;
++
++  SELECT t.current_tarifa_id
++    INTO v_current_id
++    FROM public.tarifas t
++   WHERE t.id = NEW.tarifa_id
++   FOR UPDATE;
++
++  IF NOT FOUND THEN
++    RAISE EXCEPTION
++      'tarifa_importe.tarifa_id % no existe en tarifas (F14-19).',
++      NEW.tarifa_id
++      USING ERRCODE = '23503';
++  END IF;
++
++  IF v_current_id IS NULL THEN
++    UPDATE public.tarifas
++       SET current_tarifa_id = NEW.id,
++           fecha_actualizacion = NEW.fecha_aparicion
++     WHERE id = NEW.tarifa_id;
++    RETURN NEW;
++  END IF;
++
++  SELECT ti.fecha_vigencia_inicio
++    INTO v_current_inicio
++    FROM public.tarifa_importe ti
++   WHERE ti.id = v_current_id
++     AND ti.tarifa_id = NEW.tarifa_id;
++
++  IF NOT FOUND THEN
++    RAISE EXCEPTION
++      'tarifas.current_tarifa_id % no existe para tarifa % (F14-19).',
++      v_current_id,
++      NEW.tarifa_id
++      USING ERRCODE = '23503';
++  END IF;
++
++  IF v_current_inicio IS NULL
++     OR NEW.fecha_vigencia_inicio > v_current_inicio
++  THEN
++    UPDATE public.tarifas
++       SET current_tarifa_id = NEW.id,
++           fecha_actualizacion = NEW.fecha_aparicion
++     WHERE id = NEW.tarifa_id;
++  END IF;
++
++  RETURN NEW;
++END;
++$$;
++
++COMMENT ON FUNCTION public.peajes_trg_tarifa_importe_promote() IS
++  'F14-19 ┬À Promociona solo CONFIRMADO con inicio, ordenado por fecha_vigencia_inicio; REVISAR y legado nunca mueven el puntero.';
++
++-- Compatibility for existing F14-17/F14-18 writers until Task 3 replaces their
++-- payloads. Close the prior open current (if any) and append CONFIRMADO with a
++-- non-overlapping [inicio, infinity) so the promote trigger can move the pointer.
++CREATE OR REPLACE FUNCTION public._peajes_append_tarifa_importe_confirmado(
++  p_tarifa_id uuid,
++  p_importe numeric,
++  p_cases integer
++)
++RETURNS uuid
++LANGUAGE plpgsql
++SECURITY INVOKER
++SET search_path = public
++AS $$
++DECLARE
++  v_current_id uuid;
++  v_prev_inicio date;
++  v_new_inicio date := CURRENT_DATE;
++  v_new_id uuid;
++BEGIN
++  SELECT t.current_tarifa_id
++    INTO v_current_id
++    FROM public.tarifas t
++   WHERE t.id = p_tarifa_id;
++
++  IF v_current_id IS NOT NULL THEN
++    SELECT ti.fecha_vigencia_inicio
++      INTO v_prev_inicio
++      FROM public.tarifa_importe ti
++     WHERE ti.id = v_current_id;
++
++    IF v_prev_inicio IS NOT NULL AND v_new_inicio <= v_prev_inicio THEN
++      v_new_inicio := v_prev_inicio + 1;
++    END IF;
++
++    UPDATE public.tarifa_importe
++       SET fecha_vigencia_fin = v_new_inicio
++     WHERE id = v_current_id
++       AND fecha_vigencia_fin IS NULL;
++  END IF;
++
++  INSERT INTO public.tarifa_importe (
++    tarifa_id, importe, cases, fecha_aparicion,
++    diagnostico, fecha_vigencia_inicio
++  ) VALUES (
++    p_tarifa_id, p_importe, p_cases, now(),
++    'CONFIRMADO', v_new_inicio
++  )
++  RETURNING id INTO v_new_id;
++
++  RETURN v_new_id;
++END;
++$$;
++
++COMMENT ON FUNCTION public._peajes_append_tarifa_importe_confirmado(uuid, numeric, integer) IS
++  'F14-19 ┬À Puente de compatibilidad: cierra el vigente abierto y appendea CONFIRMADO. Task 3 reemplaza los writers.';
++
++REVOKE ALL ON FUNCTION public._peajes_append_tarifa_importe_confirmado(uuid, numeric, integer) FROM PUBLIC;
++GRANT EXECUTE ON FUNCTION public._peajes_append_tarifa_importe_confirmado(uuid, numeric, integer)
++  TO authenticated, service_role;
++
++CREATE OR REPLACE FUNCTION public.peajes_guardar_tarifas_actuales(
++  p_peaje_id uuid,
++  p_estacion_id uuid,
++  p_sentido text,
++  p_cambios jsonb
++)
++RETURNS jsonb
++LANGUAGE plpgsql
++SECURITY INVOKER
++SET search_path = public
++AS $$
++DECLARE
++  v_sentido text := upper(btrim(p_sentido));
++  v_cambio jsonb;
++  v_categoria smallint;
++  v_status text;
++  v_importe numeric;
++  v_tarifa_id uuid;
++  v_n integer := 0;
++BEGIN
++  IF v_sentido NOT IN ('IDA', 'VUELTA', 'AMBAS') THEN
++    RAISE EXCEPTION 'sentido invalido: %', p_sentido USING ERRCODE = '22023';
++  END IF;
++  IF p_cambios IS NULL OR jsonb_typeof(p_cambios) <> 'array' THEN
++    RAISE EXCEPTION 'p_cambios debe ser un array JSON' USING ERRCODE = '22023';
++  END IF;
++
++  FOR v_cambio IN SELECT value FROM jsonb_array_elements(p_cambios)
++  LOOP
++    v_categoria := (v_cambio->>'categoria')::smallint;
++    v_status := upper(btrim(v_cambio->>'status'));
++    v_importe := (v_cambio->>'importe')::numeric;
++
++    IF v_categoria IS NULL OR v_categoria < 0 OR v_categoria > 10 THEN
++      RAISE EXCEPTION 'categoria invalida: %', v_cambio->>'categoria' USING ERRCODE = '22023';
++    END IF;
++    IF v_status NOT IN ('PICO', 'NO_PICO') THEN
++      RAISE EXCEPTION 'status invalido: %', v_cambio->>'status' USING ERRCODE = '22023';
++    END IF;
++    IF v_importe IS NULL OR v_importe <= 0 THEN
++      RAISE EXCEPTION 'importe debe ser > 0 (F14-16 tarifa_importe_importe_chk)'
++        USING ERRCODE = '23514';
++    END IF;
++
++    SELECT t.id INTO v_tarifa_id
++    FROM public.tarifas t
++    WHERE t.peaje_id = p_peaje_id
++      AND t.estacion_id = p_estacion_id
++      AND t.status = v_status
++      AND t.categoria = v_categoria
++      AND t.sentido = v_sentido
++    FOR UPDATE;
++
++    IF v_tarifa_id IS NULL THEN
++      INSERT INTO public.tarifas (
++        peaje_id, estacion_id, status, categoria, sentido,
++        requiere_normalizacion_iva, current_tarifa_id, fecha_actualizacion
++      ) VALUES (
++        p_peaje_id, p_estacion_id, v_status, v_categoria, v_sentido,
++        false, NULL, now()
++      )
++      RETURNING id INTO v_tarifa_id;
++    END IF;
++
++    PERFORM public._peajes_append_tarifa_importe_confirmado(v_tarifa_id, v_importe, 0);
++
++    v_n := v_n + 1;
++  END LOOP;
++
++  RETURN jsonb_build_object('actualizadas', v_n);
++END;
++$$;
++
++CREATE OR REPLACE FUNCTION public.peajes_guardar_refresco_tarifas(
++  p_cambios jsonb
++)
++RETURNS jsonb
++LANGUAGE plpgsql
++VOLATILE
++SECURITY INVOKER
++SET search_path = public
++AS $$
++DECLARE
++  v_elem jsonb;
++  v_ord integer;
++  v_peaje uuid;
++  v_estacion uuid;
++  v_sentido text;
++  v_categoria smallint;
++  v_status text;
++  v_importe numeric;
++  v_cases integer;
++  v_iva boolean;
++  v_iva_present boolean;
++  v_key text;
++  v_keys text[] := '{}';
++  v_est_peaje uuid;
++  v_tarifa_id uuid;
++  v_current_id uuid;
++  v_current_importe numeric;
++  v_flag boolean;
++  v_was_new boolean;
++  v_accion text;
++  v_new_ti uuid;
++  v_rows jsonb := '[]'::jsonb;
++BEGIN
++  IF p_cambios IS NULL OR jsonb_typeof(p_cambios) <> 'array' THEN
++    RAISE EXCEPTION 'p_cambios debe ser un arreglo JSON';
++  END IF;
++
++  FOR v_elem, v_ord IN
++    SELECT t.elem, t.ord
++    FROM jsonb_array_elements(p_cambios) WITH ORDINALITY AS t(elem, ord)
++  LOOP
++    BEGIN
++      v_peaje := NULLIF(btrim(COALESCE(v_elem->>'peaje_id', v_elem->>'peajeId')), '')::uuid;
++      v_estacion := NULLIF(btrim(COALESCE(v_elem->>'estacion_id', v_elem->>'estacionId')), '')::uuid;
++    EXCEPTION WHEN invalid_text_representation THEN
++      RAISE EXCEPTION 'p_cambios contiene UUID invalido';
++    END;
++    v_sentido := upper(btrim(COALESCE(v_elem->>'sentido', '')));
++    v_status := upper(btrim(COALESCE(v_elem->>'status', '')));
++    BEGIN
++      v_categoria := (v_elem->>'categoria')::smallint;
++      v_importe := (COALESCE(v_elem->>'importe', ''))::numeric;
++    EXCEPTION WHEN invalid_text_representation THEN
++      RAISE EXCEPTION 'p_cambios incompleto o tipos invalidos';
++    END;
++    IF COALESCE(btrim(v_elem->>'cases'), '') = '' THEN
++      v_cases := 0;
++    ELSIF btrim(v_elem->>'cases') !~ '^[0-9]+$' THEN
++      RAISE EXCEPTION 'cases invalido: %', v_elem->>'cases' USING ERRCODE = '23514';
++    ELSE
++      v_cases := (v_elem->>'cases')::integer;
++    END IF;
++    v_iva_present := COALESCE(jsonb_typeof(COALESCE(v_elem->'requiere_normalizacion_iva', v_elem->'requiereNormalizacionIva')) = 'boolean', false);
++    v_iva := COALESCE((v_elem->>'requiere_normalizacion_iva')::boolean, (v_elem->>'requiereNormalizacionIva')::boolean);
++
++    IF v_peaje IS NULL OR v_estacion IS NULL OR v_categoria IS NULL OR v_importe IS NULL THEN
++      RAISE EXCEPTION 'p_cambios incompleto o tipos invalidos';
++    END IF;
++    IF v_sentido NOT IN ('IDA', 'VUELTA', 'AMBAS') THEN
++      RAISE EXCEPTION 'sentido invalido: %', COALESCE(v_elem->>'sentido', '');
++    END IF;
++    IF v_status NOT IN ('PICO', 'NO_PICO') THEN
++      RAISE EXCEPTION 'status invalido: %', COALESCE(v_elem->>'status', '');
++    END IF;
++    IF v_categoria < 0 OR v_categoria > 10 THEN
++      RAISE EXCEPTION 'categoria invalida: %', v_elem->>'categoria';
++    END IF;
++    IF v_importe <= 0 THEN
++      RAISE EXCEPTION 'importe debe ser > 0';
++    END IF;
++
++    v_key := v_peaje::text || '|' || v_estacion::text || '|' || v_sentido || '|'
++      || v_categoria::text || '|' || v_status;
++    IF v_key = ANY (v_keys) THEN
++      RAISE EXCEPTION 'p_cambios contiene celdas duplicadas';
++    END IF;
++    v_keys := array_append(v_keys, v_key);
++
++    SELECT e.peaje_id INTO v_est_peaje FROM public.estaciones e WHERE e.id = v_estacion;
++    IF v_est_peaje IS NULL OR v_est_peaje IS DISTINCT FROM v_peaje THEN
++      RAISE EXCEPTION 'la estacion no pertenece al peaje indicado';
++    END IF;
++    IF NOT EXISTS (
++      SELECT 1 FROM public.tarifas t
++      WHERE t.peaje_id = v_peaje AND t.estacion_id = v_estacion
++        AND t.sentido = v_sentido AND t.categoria = v_categoria AND t.status = v_status
++    ) AND v_iva_present IS NOT TRUE THEN
++      RAISE EXCEPTION 'requiere_normalizacion_iva es obligatorio para una identidad nueva';
++    END IF;
++  END LOOP;
++
++  FOR v_elem, v_ord IN
++    SELECT t.elem, t.ord
++    FROM jsonb_array_elements(p_cambios) WITH ORDINALITY AS t(elem, ord)
++  LOOP
++    v_peaje := NULLIF(btrim(COALESCE(v_elem->>'peaje_id', v_elem->>'peajeId')), '')::uuid;
++    v_estacion := NULLIF(btrim(COALESCE(v_elem->>'estacion_id', v_elem->>'estacionId')), '')::uuid;
++    v_sentido := upper(btrim(COALESCE(v_elem->>'sentido', '')));
++    v_status := upper(btrim(COALESCE(v_elem->>'status', '')));
++    v_categoria := (v_elem->>'categoria')::smallint;
++    v_importe := (v_elem->>'importe')::numeric;
++    v_cases := COALESCE((v_elem->>'cases')::integer, 0);
++    v_iva_present := COALESCE(jsonb_typeof(COALESCE(v_elem->'requiere_normalizacion_iva', v_elem->'requiereNormalizacionIva')) = 'boolean', false);
++    v_iva := COALESCE((v_elem->>'requiere_normalizacion_iva')::boolean, (v_elem->>'requiereNormalizacionIva')::boolean);
++    v_tarifa_id := NULL; v_current_id := NULL; v_flag := NULL; v_new_ti := NULL; v_current_importe := NULL;
++
++    SELECT t.id, t.current_tarifa_id, t.requiere_normalizacion_iva
++    INTO v_tarifa_id, v_current_id, v_flag
++    FROM public.tarifas t
++    WHERE t.peaje_id = v_peaje AND t.estacion_id = v_estacion AND t.sentido = v_sentido
++      AND t.categoria = v_categoria AND t.status = v_status
++    FOR UPDATE;
++
++    v_was_new := v_tarifa_id IS NULL;
++    IF v_was_new THEN
++      INSERT INTO public.tarifas (
++        peaje_id, estacion_id, status, categoria, sentido,
++        requiere_normalizacion_iva, current_tarifa_id, fecha_actualizacion
++      ) VALUES (
++        v_peaje, v_estacion, v_status, v_categoria, v_sentido, v_iva, NULL, now()
++      ) RETURNING id INTO v_tarifa_id;
++      v_current_id := NULL;
++    END IF;
++
++    IF v_current_id IS NOT NULL THEN
++      SELECT ti.importe INTO v_current_importe FROM public.tarifa_importe ti WHERE ti.id = v_current_id;
++    END IF;
++    IF v_current_importe IS NOT NULL AND v_current_importe = v_importe THEN
++      v_accion := 'SIN_CAMBIO'; v_new_ti := NULL;
++    ELSE
++      v_new_ti := public._peajes_append_tarifa_importe_confirmado(v_tarifa_id, v_importe, v_cases);
++      v_accion := CASE WHEN v_was_new THEN 'IDENTIDAD_CREADA' ELSE 'ACTUALIZADA' END;
++    END IF;
++
++    v_rows := v_rows || jsonb_build_array(
++      jsonb_build_object(
++        'peaje_id', v_peaje, 'estacion_id', v_estacion, 'sentido', v_sentido,
++        'categoria', v_categoria, 'status', v_status, 'tarifa_id', v_tarifa_id,
++        'nueva', v_importe, 'accion', v_accion,
++        'anterior', v_current_importe, 'tarifa_importe_id', v_new_ti
++      )
++    );
++  END LOOP;
++  RETURN v_rows;
++END;
++$$;
+
+## New file: ibarra-app/supabase/tests/peajes_tarifa_vigencia_test.sql
+
+diff --git a/ibarra-app/supabase/tests/peajes_tarifa_vigencia_test.sql b/ibarra-app/supabase/tests/peajes_tarifa_vigencia_test.sql
+new file mode 100644
+index 0000000..0e0f5c0
+--- /dev/null
++++ b/ibarra-app/supabase/tests/peajes_tarifa_vigencia_test.sql
+@@ -0,0 +1,461 @@
++-- pgTAP: F14-19 validity, diagnostics, safe lineage backfill and pointer gates.
++BEGIN;
++SELECT plan(51);
++
++-- Legacy compatibility remains intact.
++SELECT has_table('public', 'tarifa_importe', 'F14-19 tarifa_importe sigue existiendo');
++SELECT has_table('public', 'tarifas_normalizadas', 'F14-19 tarifas_normalizadas sigue existiendo');
++SELECT has_column(
++  'public', 'pasadas', 'tarifa_normalizada_id',
++  'F14-19 pasadas.tarifa_normalizada_id sigue existiendo'
++);
++SELECT fk_ok(
++  'pasadas', 'tarifa_normalizada_id', 'tarifas_normalizadas', 'id',
++  'F14-19 FK legado pasadas.tarifa_normalizada_id sigue intacta'
++);
++SELECT fk_ok(
++  'tarifa_importe', 'tarifas_normalizadas_id', 'tarifas_normalizadas', 'id',
++  'F14-19 FK de linaje tarifa_importe.tarifas_normalizadas_id sigue intacta'
++);
++
++SELECT has_column(
++  'public', 'tarifa_importe', 'fecha_vigencia_inicio',
++  'F14-19 tarifa_importe.fecha_vigencia_inicio'
++);
++SELECT col_type_is(
++  'public', 'tarifa_importe', 'fecha_vigencia_inicio', 'date',
++  'F14-19 tarifa_importe.fecha_vigencia_inicio date'
++);
++SELECT col_is_null(
++  'public', 'tarifa_importe', 'fecha_vigencia_inicio',
++  'F14-19 tarifa_importe.fecha_vigencia_inicio nullable'
++);
++
++SELECT has_column(
++  'public', 'tarifa_importe', 'fecha_vigencia_fin',
++  'F14-19 tarifa_importe.fecha_vigencia_fin'
++);
++SELECT col_type_is(
++  'public', 'tarifa_importe', 'fecha_vigencia_fin', 'date',
++  'F14-19 tarifa_importe.fecha_vigencia_fin date'
++);
++SELECT col_is_null(
++  'public', 'tarifa_importe', 'fecha_vigencia_fin',
++  'F14-19 tarifa_importe.fecha_vigencia_fin nullable'
++);
++
++SELECT has_column(
++  'public', 'tarifa_importe', 'diagnostico',
++  'F14-19 tarifa_importe.diagnostico'
++);
++SELECT col_type_is(
++  'public', 'tarifa_importe', 'diagnostico', 'text',
++  'F14-19 tarifa_importe.diagnostico text'
++);
++SELECT col_is_null(
++  'public', 'tarifa_importe', 'diagnostico',
++  'F14-19 tarifa_importe.diagnostico nullable'
++);
++
++SELECT ok(
++  EXISTS (
++    SELECT 1
++    FROM pg_extension e
++    JOIN pg_namespace n ON n.oid = e.extnamespace
++    WHERE e.extname = 'btree_gist'
++      AND n.nspname = 'extensions'
++  ),
++  'F14-19 btree_gist est├í habilitada en extensions'
++);
++
++SELECT ok(
++  (
++    SELECT pg_get_constraintdef(c.oid)
++    FROM pg_constraint c
++    WHERE c.conrelid = 'public.tarifa_importe'::regclass
++      AND c.conname = 'tarifa_importe_diagnostico_chk'
++      AND c.contype = 'c'
++  ) ILIKE ALL (ARRAY[
++    '%MUESTRA_INSUFICIENTE%',
++    '%TARIFA_UNICA%',
++    '%CATEGORIA%',
++    '%POSIBLE_HORARIO%',
++    '%REVISAR%',
++    '%CONFIRMADO%'
++  ]),
++  'F14-19 diagnostico usa los seis valores de tarifas_normalizadas'
++);
++
++SELECT ok(
++  regexp_replace(
++    COALESCE((
++      SELECT pg_get_expr(c.conbin, c.conrelid)
++      FROM pg_constraint c
++      WHERE c.conrelid = 'public.tarifa_importe'::regclass
++        AND c.conname = 'tarifa_importe_vigencia_fechas_chk'
++        AND c.contype = 'c'
++    ), ''),
++    '\s+', '', 'g'
++  ) = '((fecha_vigencia_finISNULL)OR(fecha_vigencia_inicioISNULL)OR(fecha_vigencia_inicio<fecha_vigencia_fin))',
++  'F14-19 check de fechas conserva la expresi├│n acordada'
++);
++
++SELECT ok(
++  (
++    SELECT pg_get_constraintdef(c.oid)
++    FROM pg_constraint c
++    WHERE c.conrelid = 'public.tarifa_importe'::regclass
++      AND c.conname = 'tarifa_importe_vigencia_confirmada_excl'
++      AND c.contype = 'x'
++  ) ILIKE '%EXCLUDE USING gist%'
++  AND (
++    SELECT pg_get_constraintdef(c.oid)
++    FROM pg_constraint c
++    WHERE c.conrelid = 'public.tarifa_importe'::regclass
++      AND c.conname = 'tarifa_importe_vigencia_confirmada_excl'
++      AND c.contype = 'x'
++  ) ILIKE '%tarifa_id WITH =%'
++  AND (
++    SELECT pg_get_constraintdef(c.oid)
++    FROM pg_constraint c
++    WHERE c.conrelid = 'public.tarifa_importe'::regclass
++      AND c.conname = 'tarifa_importe_vigencia_confirmada_excl'
++      AND c.contype = 'x'
++  ) ILIKE '%daterange(fecha_vigencia_inicio, COALESCE(fecha_vigencia_fin, ''infinity''::date), ''[)''::text) WITH &&%'
++  AND (
++    SELECT pg_get_constraintdef(c.oid)
++    FROM pg_constraint c
++    WHERE c.conrelid = 'public.tarifa_importe'::regclass
++      AND c.conname = 'tarifa_importe_vigencia_confirmada_excl'
++      AND c.contype = 'x'
++  ) ILIKE '%diagnostico = ''CONFIRMADO''%'
++  AND (
++    SELECT pg_get_constraintdef(c.oid)
++    FROM pg_constraint c
++    WHERE c.conrelid = 'public.tarifa_importe'::regclass
++      AND c.conname = 'tarifa_importe_vigencia_confirmada_excl'
++      AND c.contype = 'x'
++  ) ILIKE '%fecha_vigencia_inicio IS NOT NULL%',
++  'F14-19 exclusi├│n GiST parcial cubre intervalos CONFIRMADO por tarifa_id'
++);
++
++INSERT INTO public.peajes (id, nombre) VALUES
++  ('21900000-aaaa-4aa1-8aa1-000000000001', 'Vigencia F14-19');
++
++INSERT INTO public.estaciones (id, peaje_id, nombre) VALUES
++  (
++    '21900000-aaaa-4aa1-8aa1-000000000002',
++    '21900000-aaaa-4aa1-8aa1-000000000001',
++    'ESTACION VIGENCIA F14-19'
++  );
++
++INSERT INTO public.tarifas (
++  id, peaje_id, estacion_id, status, categoria, sentido, fecha_actualizacion
++) VALUES
++  ('21900000-aaaa-4aa1-8aa1-000000000010', '21900000-aaaa-4aa1-8aa1-000000000001', '21900000-aaaa-4aa1-8aa1-000000000002', 'NO_PICO', 0, 'AMBAS', '2026-01-01'),
++  ('21900000-aaaa-4aa1-8aa1-000000000011', '21900000-aaaa-4aa1-8aa1-000000000001', '21900000-aaaa-4aa1-8aa1-000000000002', 'NO_PICO', 1, 'AMBAS', '2026-01-01'),
++  ('21900000-aaaa-4aa1-8aa1-000000000012', '21900000-aaaa-4aa1-8aa1-000000000001', '21900000-aaaa-4aa1-8aa1-000000000002', 'NO_PICO', 2, 'AMBAS', '2026-01-01'),
++  ('21900000-aaaa-4aa1-8aa1-000000000013', '21900000-aaaa-4aa1-8aa1-000000000001', '21900000-aaaa-4aa1-8aa1-000000000002', 'NO_PICO', 3, 'AMBAS', '2026-01-01'),
++  ('21900000-aaaa-4aa1-8aa1-000000000014', '21900000-aaaa-4aa1-8aa1-000000000001', '21900000-aaaa-4aa1-8aa1-000000000002', 'PICO', 3, 'AMBAS', '2026-01-01'),
++  ('21900000-aaaa-4aa1-8aa1-000000000015', '21900000-aaaa-4aa1-8aa1-000000000001', '21900000-aaaa-4aa1-8aa1-000000000002', 'NO_PICO', 4, 'AMBAS', '2026-01-01'),
++  ('21900000-aaaa-4aa1-8aa1-000000000016', '21900000-aaaa-4aa1-8aa1-000000000001', '21900000-aaaa-4aa1-8aa1-000000000002', 'NO_PICO', 5, 'AMBAS', '2026-01-01');
++
++-- Complete six-value diagnostic domain.
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion, diagnostico)
++    VALUES ('21900000-aaaa-4aa1-8aa1-000000000100', '21900000-aaaa-4aa1-8aa1-000000000010', 100, now(), 'MUESTRA_INSUFICIENTE')$$,
++  'F14-19 acepta diagnostico MUESTRA_INSUFICIENTE'
++);
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion, diagnostico)
++    VALUES ('21900000-aaaa-4aa1-8aa1-000000000101', '21900000-aaaa-4aa1-8aa1-000000000010', 101, now(), 'TARIFA_UNICA')$$,
++  'F14-19 acepta diagnostico TARIFA_UNICA'
++);
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion, diagnostico)
++    VALUES ('21900000-aaaa-4aa1-8aa1-000000000102', '21900000-aaaa-4aa1-8aa1-000000000010', 102, now(), 'CATEGORIA')$$,
++  'F14-19 acepta diagnostico CATEGORIA'
++);
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion, diagnostico)
++    VALUES ('21900000-aaaa-4aa1-8aa1-000000000103', '21900000-aaaa-4aa1-8aa1-000000000010', 103, now(), 'POSIBLE_HORARIO')$$,
++  'F14-19 acepta diagnostico POSIBLE_HORARIO'
++);
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion, diagnostico)
++    VALUES ('21900000-aaaa-4aa1-8aa1-000000000104', '21900000-aaaa-4aa1-8aa1-000000000010', 104, now(), 'REVISAR')$$,
++  'F14-19 acepta diagnostico REVISAR'
++);
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion, diagnostico)
++    VALUES ('21900000-aaaa-4aa1-8aa1-000000000105', '21900000-aaaa-4aa1-8aa1-000000000010', 105, now(), 'CONFIRMADO')$$,
++  'F14-19 acepta diagnostico CONFIRMADO'
++);
++SELECT throws_ok(
++  $$INSERT INTO public.tarifa_importe (tarifa_id, importe, fecha_aparicion, diagnostico)
++    VALUES ('21900000-aaaa-4aa1-8aa1-000000000010', 106, now(), 'OTRO')$$,
++  '23514', NULL,
++  'F14-19 rechaza diagnostico fuera del dominio de seis valores'
++);
++
++-- Reapply the one-time migration UPDATE against synthetic legacy rows.
++INSERT INTO public.tarifas_normalizadas (
++  id, peaje_id, estacion_id, categoria, importe, importe_base,
++  cases, patron, diagnostico, status
++) VALUES (
++  '21900000-aaaa-4aa1-8aa1-000000000200',
++  '21900000-aaaa-4aa1-8aa1-000000000001',
++  '21900000-aaaa-4aa1-8aa1-000000000002',
++  NULL, 200, 200, 1, 'A', 'CATEGORIA', 'PENDIENTE'
++);
++
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion, tarifas_normalizadas_id
++) VALUES
++  (
++    '21900000-aaaa-4aa1-8aa1-000000000201',
++    '21900000-aaaa-4aa1-8aa1-000000000011',
++    200, '2026-02-01',
++    '21900000-aaaa-4aa1-8aa1-000000000200'
++  ),
++  (
++    '21900000-aaaa-4aa1-8aa1-000000000202',
++    '21900000-aaaa-4aa1-8aa1-000000000011',
++    201, '2026-02-02',
++    NULL
++  );
++
++ALTER TABLE public.tarifa_importe DISABLE TRIGGER trg_tarifa_importe_immutable;
++UPDATE public.tarifa_importe AS ti
++SET diagnostico = tn.diagnostico
++FROM public.tarifas_normalizadas AS tn
++WHERE tn.id = ti.tarifas_normalizadas_id
++  AND ti.diagnostico IS NULL;
++ALTER TABLE public.tarifa_importe ENABLE TRIGGER trg_tarifa_importe_immutable;
++
++SELECT is(
++  (SELECT diagnostico FROM public.tarifa_importe WHERE id = '21900000-aaaa-4aa1-8aa1-000000000201'),
++  'CATEGORIA',
++  'F14-19 backfill copia diagnostico solo por tarifas_normalizadas_id exacto'
++);
++SELECT is(
++  (SELECT diagnostico FROM public.tarifa_importe WHERE id = '21900000-aaaa-4aa1-8aa1-000000000202'),
++  NULL,
++  'F14-19 backfill deja diagnostico NULL cuando no hay linaje'
++);
++SELECT ok(
++  NOT EXISTS (
++    SELECT 1
++    FROM public.tarifa_importe
++    WHERE id IN (
++      '21900000-aaaa-4aa1-8aa1-000000000201',
++      '21900000-aaaa-4aa1-8aa1-000000000202'
++    )
++      AND (fecha_vigencia_inicio IS NOT NULL OR fecha_vigencia_fin IS NOT NULL)
++  ),
++  'F14-19 backfill no deriva vigencia desde fecha_aparicion'
++);
++SELECT ok(
++  NOT EXISTS (
++    SELECT 1
++    FROM public.tarifa_importe
++    WHERE fecha_vigencia_inicio IS NOT NULL
++       OR fecha_vigencia_fin IS NOT NULL
++  ),
++  'F14-19 la migraci├│n deja toda vigencia preexistente en NULL'
++);
++
++-- Exact date ordering: either NULL is accepted; known intervals are [start, end).
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe
++      (id, tarifa_id, importe, fecha_aparicion, diagnostico, fecha_vigencia_fin)
++    VALUES
++      ('21900000-aaaa-4aa1-8aa1-000000000300', '21900000-aaaa-4aa1-8aa1-000000000012', 300, now(), 'REVISAR', '2026-03-01')$$,
++  'F14-19 permite fin conocido con inicio NULL'
++);
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe
++      (id, tarifa_id, importe, fecha_aparicion, diagnostico, fecha_vigencia_inicio)
++    VALUES
++      ('21900000-aaaa-4aa1-8aa1-000000000301', '21900000-aaaa-4aa1-8aa1-000000000012', 301, now(), 'REVISAR', '2026-03-01')$$,
++  'F14-19 permite inicio conocido con fin NULL'
++);
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe
++      (id, tarifa_id, importe, fecha_aparicion, diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin)
++    VALUES
++      ('21900000-aaaa-4aa1-8aa1-000000000302', '21900000-aaaa-4aa1-8aa1-000000000012', 302, now(), 'REVISAR', '2026-03-01', '2026-04-01')$$,
++  'F14-19 permite inicio anterior al fin'
++);
++SELECT throws_ok(
++  $$INSERT INTO public.tarifa_importe
++      (tarifa_id, importe, fecha_aparicion, diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin)
++    VALUES
++      ('21900000-aaaa-4aa1-8aa1-000000000012', 303, now(), 'REVISAR', '2026-03-01', '2026-03-01')$$,
++  '23514', NULL,
++  'F14-19 rechaza inicio igual al fin'
++);
++SELECT throws_ok(
++  $$INSERT INTO public.tarifa_importe
++      (tarifa_id, importe, fecha_aparicion, diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin)
++    VALUES
++      ('21900000-aaaa-4aa1-8aa1-000000000012', 304, now(), 'REVISAR', '2026-04-01', '2026-03-01')$$,
++  '23514', NULL,
++  'F14-19 rechaza inicio posterior al fin'
++);
++
++-- Confirmed half-open periods: adjacency is valid and overlap is rejected.
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe
++      (id, tarifa_id, importe, fecha_aparicion, diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin)
++    VALUES
++      ('21900000-aaaa-4aa1-8aa1-000000000400', '21900000-aaaa-4aa1-8aa1-000000000013', 400, now(), 'CONFIRMADO', '2026-06-01', '2026-09-01')$$,
++  'F14-19 acepta primer intervalo confirmado'
++);
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe
++      (id, tarifa_id, importe, fecha_aparicion, diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin)
++    VALUES
++      ('21900000-aaaa-4aa1-8aa1-000000000401', '21900000-aaaa-4aa1-8aa1-000000000013', 401, now(), 'CONFIRMADO', '2026-09-01', '2026-12-01')$$,
++  'F14-19 acepta intervalos confirmados adyacentes [inicio, fin)'
++);
++SELECT throws_ok(
++  $$INSERT INTO public.tarifa_importe
++      (tarifa_id, importe, fecha_aparicion, diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin)
++    VALUES
++      ('21900000-aaaa-4aa1-8aa1-000000000013', 402, now(), 'CONFIRMADO', '2026-08-01', '2026-10-01')$$,
++  '23P01', NULL,
++  'F14-19 rechaza intervalos CONFIRMADO superpuestos para la misma tarifa'
++);
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe
++      (id, tarifa_id, importe, fecha_aparicion, diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin)
++    VALUES
++      ('21900000-aaaa-4aa1-8aa1-000000000403', '21900000-aaaa-4aa1-8aa1-000000000013', 403, now(), 'REVISAR', '2026-08-01', '2026-10-01')$$,
++  'F14-19 REVISAR queda fuera de la exclusi├│n temporal'
++);
++SELECT lives_ok(
++  $$INSERT INTO public.tarifa_importe
++      (id, tarifa_id, importe, fecha_aparicion, diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin)
++    VALUES
++      ('21900000-aaaa-4aa1-8aa1-000000000404', '21900000-aaaa-4aa1-8aa1-000000000014', 404, now(), 'CONFIRMADO', '2026-08-01', '2026-10-01')$$,
++  'F14-19 permite el mismo intervalo en otra tarifa_id'
++);
++
++-- Immutable history permits only one valid NULL -> non-NULL end transition.
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, cases, fecha_aparicion, diagnostico,
++  fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES (
++  '21900000-aaaa-4aa1-8aa1-000000000500',
++  '21900000-aaaa-4aa1-8aa1-000000000015',
++  500, 7, '2026-01-15', 'CONFIRMADO', '2026-01-01', NULL
++);
++
++SELECT throws_ok(
++  $$UPDATE public.tarifa_importe SET importe = 999
++    WHERE id = '21900000-aaaa-4aa1-8aa1-000000000500'$$,
++  '23514', NULL,
++  'F14-19 importe permanece inmutable'
++);
++SELECT throws_ok(
++  $$UPDATE public.tarifa_importe SET diagnostico = 'REVISAR'
++    WHERE id = '21900000-aaaa-4aa1-8aa1-000000000500'$$,
++  '23514', NULL,
++  'F14-19 diagnostico permanece inmutable'
++);
++SELECT throws_ok(
++  $$UPDATE public.tarifa_importe SET fecha_vigencia_inicio = '2025-12-01'
++    WHERE id = '21900000-aaaa-4aa1-8aa1-000000000500'$$,
++  '23514', NULL,
++  'F14-19 fecha_vigencia_inicio permanece inmutable'
++);
++SELECT throws_ok(
++  $$UPDATE public.tarifa_importe SET fecha_vigencia_fin = '2025-12-31'
++    WHERE id = '21900000-aaaa-4aa1-8aa1-000000000500'$$,
++  '23514', NULL,
++  'F14-19 no permite cerrar antes del inicio'
++);
++SELECT lives_ok(
++  $$UPDATE public.tarifa_importe SET fecha_vigencia_fin = '2026-06-01'
++    WHERE id = '21900000-aaaa-4aa1-8aa1-000000000500'$$,
++  'F14-19 permite cerrar una vez un intervalo abierto'
++);
++SELECT throws_ok(
++  $$UPDATE public.tarifa_importe SET fecha_vigencia_fin = '2026-07-01'
++    WHERE id = '21900000-aaaa-4aa1-8aa1-000000000500'$$,
++  '23514', NULL,
++  'F14-19 no permite cambiar un fin ya cerrado'
++);
++SELECT throws_ok(
++  $$UPDATE public.tarifa_importe SET fecha_vigencia_fin = NULL
++    WHERE id = '21900000-aaaa-4aa1-8aa1-000000000500'$$,
++  '23514', NULL,
++  'F14-19 no permite reabrir un intervalo cerrado'
++);
++SELECT lives_ok(
++  $$UPDATE public.tarifa_importe SET updated_at = updated_at + interval '1 second'
++    WHERE id = '21900000-aaaa-4aa1-8aa1-000000000500'$$,
++  'F14-19 updated_at conserva su actualizaci├│n de auditor├¡a permitida'
++);
++
++-- Pointer promotion requires CONFIRMADO + non-null start and orders by effective date.
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion, diagnostico, fecha_vigencia_inicio
++) VALUES
++  ('21900000-aaaa-4aa1-8aa1-000000000600', '21900000-aaaa-4aa1-8aa1-000000000016', 600, '2026-12-01', NULL, NULL),
++  ('21900000-aaaa-4aa1-8aa1-000000000601', '21900000-aaaa-4aa1-8aa1-000000000016', 601, '2026-12-02', 'REVISAR', NULL),
++  ('21900000-aaaa-4aa1-8aa1-000000000602', '21900000-aaaa-4aa1-8aa1-000000000016', 602, '2026-12-03', 'CONFIRMADO', NULL);
++
++SELECT is(
++  (SELECT current_tarifa_id FROM public.tarifas WHERE id = '21900000-aaaa-4aa1-8aa1-000000000016'),
++  NULL,
++  'F14-19 legado, REVISAR y CONFIRMADO sin inicio no promocionan'
++);
++
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion, diagnostico,
++  fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES (
++  '21900000-aaaa-4aa1-8aa1-000000000603',
++  '21900000-aaaa-4aa1-8aa1-000000000016',
++  603, '2026-10-01', 'CONFIRMADO', '2026-06-01', '2026-09-01'
++);
++
++SELECT is(
++  (SELECT current_tarifa_id FROM public.tarifas WHERE id = '21900000-aaaa-4aa1-8aa1-000000000016'),
++  '21900000-aaaa-4aa1-8aa1-000000000603'::uuid,
++  'F14-19 primer CONFIRMADO con inicio promociona'
++);
++
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion, diagnostico,
++  fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES (
++  '21900000-aaaa-4aa1-8aa1-000000000604',
++  '21900000-aaaa-4aa1-8aa1-000000000016',
++  604, '2026-01-01', 'CONFIRMADO', '2026-09-01', NULL
++);
++
++SELECT is(
++  (SELECT current_tarifa_id FROM public.tarifas WHERE id = '21900000-aaaa-4aa1-8aa1-000000000016'),
++  '21900000-aaaa-4aa1-8aa1-000000000604'::uuid,
++  'F14-19 inicio efectivo posterior promociona aunque fecha_aparicion sea anterior'
++);
++
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion, diagnostico
++) VALUES (
++  '21900000-aaaa-4aa1-8aa1-000000000605',
++  '21900000-aaaa-4aa1-8aa1-000000000016',
++  605, '2027-01-01', 'REVISAR'
++);
++
++SELECT is(
++  (SELECT current_tarifa_id FROM public.tarifas WHERE id = '21900000-aaaa-4aa1-8aa1-000000000016'),
++  '21900000-aaaa-4aa1-8aa1-000000000604'::uuid,
++  'F14-19 REVISAR posterior nunca mueve un puntero vigente'
++);
++
++SELECT * FROM finish();
++ROLLBACK;

@@ -23,7 +23,12 @@ export function matchDownloadedFile(concesionario, kind, periodo, numero, files)
   return fileName ? buildDownloadPath(concesionario, kind, periodo, numero, path.extname(fileName)) : null;
 }
 
-export function updateRowsWithDownloadPath(rows, { rowId, kind, path: filePath, periodo, numero }) {
+export function formatLocalDateTime(date = new Date()) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+export function updateRowsWithDownloadPath(rows, { rowId, kind, path: filePath, periodo, numero, downloadedAt }) {
   return rows.map((row) => {
     const sameRow =
       (rowId && (row.rowId === rowId || `${row.rowId}|${row.numero}` === rowId)) ||
@@ -36,6 +41,7 @@ export function updateRowsWithDownloadPath(rows, { rowId, kind, path: filePath, 
       filePasadasPath: row.filePasadasPath ?? null,
       ...(kind === 'facturas' ? { fileFacturaPath: filePath } : {}),
       ...(kind === 'pasadas' ? { filePasadasPath: filePath } : {}),
+      ...(downloadedAt ? { downloadedAt } : {}),
     };
   });
 }
@@ -48,8 +54,67 @@ export function ensureDownloadPathFields(rows) {
   }));
 }
 
-export function writeRowsJson(rows) {
-  fs.writeFileSync(ROWS_JSON_PATH, JSON.stringify(ensureDownloadPathFields(rows), null, 2), 'utf8');
+function isRetryableWriteError(error) {
+  const code = String(error?.code || '');
+  return code === 'UNKNOWN' || code === 'EBUSY' || code === 'EPERM' || code === 'EACCES';
+}
+
+function sleepSync(ms) {
+  const until = Date.now() + ms;
+  while (Date.now() < until) {
+    /* busy wait for short lock retries */
+  }
+}
+
+function replaceFileAtomically(filePath, content, options = {}) {
+  const fsImpl = options.fs || fs;
+  const retries = options.retries ?? 5;
+  const sleep = options.sleep || sleepSync;
+  let lastError;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    const temporaryPath = `${filePath}.tmp-${process.pid}-${Date.now()}-${attempt}`;
+    try {
+      fsImpl.writeFileSync(temporaryPath, content, 'utf8');
+      try {
+        fsImpl.renameSync(temporaryPath, filePath);
+      } catch (renameError) {
+        fsImpl.copyFileSync(temporaryPath, filePath);
+        try {
+          fsImpl.unlinkSync(temporaryPath);
+        } catch {
+          /* ignore leftover temp */
+        }
+      }
+      return;
+    } catch (error) {
+      lastError = error;
+      try {
+        fsImpl.unlinkSync(temporaryPath);
+      } catch {
+        /* ignore leftover temp */
+      }
+      if (!isRetryableWriteError(error) || attempt === retries) throw error;
+      sleep(50 * attempt);
+    }
+  }
+
+  throw lastError;
+}
+
+export function writeRowsJson(rows, filePath = ROWS_JSON_PATH, options = {}) {
+  const content = JSON.stringify(ensureDownloadPathFields(rows), null, 2);
+  replaceFileAtomically(filePath, content, options);
+}
+
+export function persistRowsJson(rows, filePath = ROWS_JSON_PATH, options = {}) {
+  try {
+    writeRowsJson(rows, filePath, options);
+    return true;
+  } catch (error) {
+    console.warn(`Could not write ${filePath}: ${error instanceof Error ? error.message : error}`);
+    return false;
+  }
 }
 
 export function loadRowsJson() {
@@ -60,4 +125,19 @@ export function loadRowsJson() {
 export function relativeDownloadPath(absolutePath) {
   const repoRoot = path.resolve(TELEPASE_DIR, '..', '..');
   return path.relative(repoRoot, absolutePath).split(path.sep).join('/');
+}
+
+export function periodoMonth(periodo) {
+  const match = String(periodo || '').match(/^\d{4}-(\d{2})/);
+  return match ? Number(match[1]) : null;
+}
+
+export function filterRowsByPeriodMonth(rows, { monthInit, monthFinish } = {}) {
+  if (monthInit == null && monthFinish == null) return rows;
+  const start = monthInit ?? monthFinish;
+  const end = monthFinish ?? monthInit;
+  return rows.filter((row) => {
+    const month = periodoMonth(row.periodo);
+    return month != null && month >= start && month <= end;
+  });
 }

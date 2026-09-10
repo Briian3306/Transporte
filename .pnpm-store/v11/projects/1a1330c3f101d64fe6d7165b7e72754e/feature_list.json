@@ -1866,6 +1866,62 @@
       ]
     },
     {
+      "id": "F14-19",
+      "title": "Tarifa Refresh Dialog validity, category correction and unresolved review",
+      "prd_refs": [
+        "docs/superpowers/plans/2026-09-09-tarifa-refresh-dialog-paso9-validity-corrections.md",
+        "docs/plan/refactor-tarifas-importe/PLAN_refresh-tarifas-paso9.md"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": [
+        "F14-16",
+        "F14-17",
+        "F14-18"
+      ],
+      "status": "in_progress",
+      "verification": [
+        "Task 1: F14-19 is registered immediately after F14-18 and before F17-1 with title Tarifa Refresh Dialog validity, category correction and unresolved review, agent_owner 02-frontend-wizard-tablas, depends_on F14-16/F14-17/F14-18, and status in_progress; F14-16/F14-17/F14-18 status, verification, and evidence are unchanged.",
+        "Task 1: docs/claude-progress.md prepends a dated F14-19 baseline entry with starting commit SHA and git status --short; prior feature evidence is not rewritten.",
+        "Task 1: from ibarra-app, focused Angular suites (tarifa-refresh.service, paso9-revision including helpers/dialog, tarifario, peajes-tarifario.service) and npx supabase test db are run before product changes; existing failures are recorded as baseline and not attributed to F14-19.",
+        "Three stations grouped: one editor containing all three station identities (tarifa-refresh-dialog.helpers.spec.ts).",
+        "Two grouped + one independent: two editors; shared pair plus singleton (tarifa-refresh-dialog.helpers.spec.ts).",
+        "Three independent: three singleton editors (tarifa-refresh-dialog.helpers.spec.ts).",
+        "Deselect station: station remains exactly once as singleton (helper + dialog component specs).",
+        "Grouped save: same amount/date, independent tarifas.id, current_tarifa_id, and tarifa_importe.id (dialog spec + pgTAP).",
+        "Wrong provider category: provider 3 remains; unique Category 2 match sets calculated 2 (service spec + pgTAP + Paso 9 spec).",
+        "Ambiguous category: no automatic calculated category; options shown; explicit choice or REVISAR (service/dialog specs + pgTAP).",
+        "Historical match: HISTORICAL_TARIFF_MATCH; no insert or current-pointer change (pgTAP + service spec).",
+        "New confirmed tariff: previous end equals new start; new end null; pointer advances; previous amount unchanged (validity pgTAP).",
+        "Continue unresolved: explicit review row has diagnostico = REVISAR, null validity, and no pointer promotion (pgTAP + dialog/Paso 9 specs).",
+        "AMBAS: one editor and no unknown-direction semantics (helper/dialog specs + pgTAP).",
+        "Separate IDA/VUELTA: both direction editors visible in one dialog (dialog component spec).",
+        "Multiple unmatched prices: all remain visible; no implicit status/direction/category assignment (helper/dialog specs).",
+        "Safe autocomplete: exactly one candidate/identity pre-fills New but does not persist (helper/dialog specs).",
+        "IVA normalization: existing adapter called once; SQL receives both direct/normalized amounts and chooses by flag (service spec + pgTAP).",
+        "Exactly 1% relative error: match accepted (pgTAP).",
+        "More than 1% relative error: no safe match (pgTAP).",
+        "Adjacent validity periods: [a,b) and [b,c) accepted (validity pgTAP).",
+        "Overlapping validity periods: whole save rejected without partial rows (validity pgTAP).",
+        "Legacy unknown validity: dates stay null and UI states unknown; no invented backfill (migration pgTAP + history component spec).",
+        "All imported detected stations remain visible under every grouping state.",
+        "Current, historical, category-corrected, new confirmed, and unresolved/review outcomes are visually and semantically distinct.",
+        "Price comparisons always use the existing normalized representation and inclusive 1% tolerance.",
+        "Unique cross-category matches set categoria_calculated; ambiguous matches never do so automatically.",
+        "pasadas.categoria remains unchanged and auditability comes from the result plus tarifa_importe_id association.",
+        "Confirmed saves close only the prior end date, append a new amount, and advance the same station current pointer.",
+        "Review saves append REVISAR evidence without closing or promoting any tariff.",
+        "IDA/VUELTA are never inferred from amount, and AMBAS never means unknown.",
+        "Shared UI values fan out to independent database identities and histories.",
+        "The dialog asks only for the start date and never asks the user to predict an end date.",
+        "Paso 9 can continue only after every unresolved candidate has an explicit confirmed, assigned, or review decision.",
+        "tarifas_normalizadas remains structurally and behaviorally intact.",
+        "Local database, Angular, TypeScript, build, integration, accessibility, and browser gates are recorded before F14-19 is marked passing."
+      ],
+      "evidence": [
+        "2026-09-09 Task 1 baseline only (docs). HEAD 95033bda8434b21473aa51937dfa8831acf0d3b9 on codex/tarifa-importe-cases. git status --short before this registration: M .superpowers/sdd/progress.md; ?? .pnpm-store/v11/projects/1a1330c3f101d64fe6d7165b7e72754e/docs/superpowers/plans/2026-09-09-tarifa-refresh-dialog-paso9-validity-corrections.md; ?? .superpowers/sdd/task-1-f14-19-brief.md; ?? ibarra-app/docs/superpowers/plans/2026-09-09-tarifa-refresh-dialog-paso9-validity-corrections.md. No product behavior. F14-16/F14-17/F14-18 untouched. pnpm exec ng test --watch=false --browsers=ChromeHeadless --include=\"**/peajes/services/tarifa-refresh.service.spec.ts\" --include=\"**/peajes/wizard/paso9-revision/**/*.spec.ts\" --include=\"**/peajes/tarifario/**/*.spec.ts\" --include=\"**/peajes-tarifario.service.spec.ts\" EXIT 1 TOTAL 7 FAILED, 85 SUCCESS. Failures all in paso9-revision.component.spec.ts: marca coincidencia histórica como informativa sin diálogo; masiva: confirma con rowIndexes sobre pasadasEstandarizadas, no validacion.validas concatenadas; no abre diálogo ni bloquea confirmar cuando el precio vigente coincide; incluye sentido AMBAS por defecto en el payload de confirmación; confirma carga y guarda pasadas + registro (mock); masiva: no confirma documentos omitidos y los lista en el resumen; tras confirmar muestra el diálogo y al cerrarlo emite reiniciar. npx supabase test db EXIT 1 Files=17 Tests=487 FAIL. peajes_refresh_tarifas_test.sql Failed 4/44 tests 41-44: directional collision audit is read-only and callable; directionless refresh candidates fail closed instead of becoming AMBAS (have HISTORICAL_TARIFF_MATCH want DIRECTION_REQUIRED); station/lane direction catalogue exists; station/lane catalogue rejects inferred AMBAS (relation public.estaciones_vias_sentido does not exist). peajes_tarifa_importe_cases_test.sql Failed 2/16 tests 13,16: Paso 9 writes each detected row count to its own IDA or VUELTA identity; invalid Paso 9 payload leaves both directional current pointers unchanged. Existing failures recorded as baseline, not attributed to F14-19. Sin DESARROLLO. Sin commit."
+      ]
+    },
+    {
       "id": "F17-1",
       "title": "Contratos, motor de confianza y proxy Netlify OpenRouter (invoice AI)",
       "prd_refs": [

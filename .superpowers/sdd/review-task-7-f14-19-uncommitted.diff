@@ -1,0 +1,982 @@
+﻿# Review package — Task 7 F14-19 (uncommitted tarifario board)
+Base: 95033bda8434b21473aa51937dfa8831acf0d3b9
+Head: WORKING TREE
+
+## Commit list
+(none)
+
+ .../tarifario/tarifario-editor-board.component.css | 150 +++++++++++++---
+ .../tarifario-editor-board.component.html          | 175 ++++++++++---------
+ .../tarifario-editor-board.component.spec.ts       | 191 ++++++++++++++++++++-
+ .../tarifario/tarifario-editor-board.component.ts  | 100 +++++++++++
+ 4 files changed, 511 insertions(+), 105 deletions(-)
+
+## Diff -U10
+
+diff --git a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.css b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.css
+index 9e03f26..555e828 100644
+--- a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.css
++++ b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.css
+@@ -1,38 +1,41 @@
+ .tf__board {
+-  --tf-board: #fff;
++  --tf-board: #ffffff;
++  --tf-editable: #f3f7fd;
+   --tf-nopico: #004ac6;
+   --tf-pico: #b45309;
+   --tf-missing: #94a3b8;
+-  --at-line: var(--at-line, #d5e0ec);
+-  --at-muted: var(--at-muted, #5b6f86);
+-  --at-ink: var(--at-ink, #0f233a);
+-  --at-signal: var(--at-signal, #004ac6);
+-  --at-danger: var(--at-danger, #b42318);
++  --at-line: #d5e0ec;
++  --at-muted: #5b6f86;
++  --at-ink: #0f233a;
++  --at-signal: #004ac6;
++  --at-danger: #b42318;
+   overflow: auto;
+   border: 1px solid var(--at-line);
+   border-radius: 0.8rem;
+   background: var(--tf-board);
++  color: var(--at-ink);
+   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.035);
+ }
+ 
+ .tf__table {
+   width: 100%;
+   border-collapse: collapse;
+   font-variant-numeric: tabular-nums;
+ }
+ 
+ .tf__table th,
+ .tf__table td {
+   padding: 0.55rem 0.65rem;
+   border-bottom: 1px solid var(--at-line);
+   text-align: right;
++  vertical-align: top;
+ }
+ 
+ .tf__cat,
+ .tf__cat-cell {
+   position: sticky;
+   left: 0;
+   z-index: 2;
+   text-align: center;
+   background: #f8fafc;
+   font-size: 0.78rem;
+@@ -49,96 +52,175 @@
+ .tf__lane--pico { color: var(--tf-pico); background: color-mix(in srgb, var(--tf-pico) 10%, #fff); }
+ 
+ .tf__sub {
+   text-align: center;
+   color: var(--at-muted);
+   font-size: 0.62rem;
+   letter-spacing: 0.06em;
+   text-transform: uppercase;
+ }
+ 
++.tf__cell-label {
++  display: none;
++  margin-bottom: 0.2rem;
++  color: var(--at-muted);
++  font-size: 0.62rem;
++  font-weight: 800;
++  letter-spacing: 0.06em;
++  text-transform: uppercase;
++  text-align: left;
++}
++
+ .tf__amount { font-weight: 750; }
+ 
+ .tf__fecha {
+   display: block;
+   margin-top: 0.12rem;
+   color: var(--at-muted);
+   font-size: 0.62rem;
+   font-weight: 650;
+   letter-spacing: 0.02em;
+ }
+ 
+ .tf__actual {
+   font-weight: 750;
+   color: var(--at-ink);
+ }
+ 
+ .tf__missing { color: var(--tf-missing); font-weight: 600; }
+ 
++.tf__current-list,
++.tf__detected {
++  margin: 0;
++  padding: 0;
++  list-style: none;
++}
++
++.tf__current-list {
++  display: grid;
++  gap: 0.35rem;
++}
++
++.tf__current-item,
++.tf__station-names {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  justify-content: flex-end;
++  gap: 0.35rem 0.55rem;
++}
++
++.tf__station-names { margin-top: 0.2rem; }
++
++.tf__trace {
++  display: inline-flex;
++  align-items: center;
++  gap: 0.28rem;
++  color: var(--at-ink);
++  font-weight: 650;
++}
++
++.tf__trace-swatch {
++  width: 0.55rem;
++  height: 0.55rem;
++  border-radius: 999px;
++  background: var(--tf-trace-color, var(--at-signal));
++  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tf-trace-color, var(--at-signal)) 35%, #fff);
++}
++
++.tf__trace-name {
++  font-size: 0.68rem;
++  font-weight: 700;
++}
++
+ .tf__nuevo { min-width: 7.5rem; }
++.tf__detected-cell { min-width: 7rem; }
+ .tf__nuevo[data-lane='nopico'].tf__dirty { box-shadow: inset 3px 0 0 var(--tf-nopico); }
+ .tf__nuevo[data-lane='pico'].tf__dirty { box-shadow: inset 3px 0 0 var(--tf-pico); }
+ 
+ .tf__input--invalid {
+   border-color: var(--at-danger);
+-  border-style: solid;
+ }
+ 
+ .tf__input {
+   width: 100%;
+   min-height: 2.35rem;
+   padding: 0.4rem 0.55rem;
+-  border: 1px dashed var(--at-line);
++  border: 1px solid var(--at-line);
+   border-radius: 0.4rem;
+-  background: #fff;
++  background: var(--tf-editable);
++  color: var(--at-ink);
+   font: inherit;
+   font-variant-numeric: tabular-nums;
+   text-align: right;
++  transition: border-color 0.12s ease;
+ }
+ 
+-.tf__input:focus-visible {
++.tf__input:hover {
++  border-color: color-mix(in srgb, var(--at-signal) 55%, var(--at-line));
++}
++
++.tf__input:focus-visible,
++.tf__input--focus {
+   outline: 2px solid color-mix(in srgb, var(--at-signal) 45%, transparent);
+   outline-offset: 2px;
+-  border-style: solid;
+ }
+ 
+ .tf__hist {
+   display: block;
+   margin-top: 0.25rem;
+   padding: 0;
+   border: 0;
+   background: transparent;
+   color: var(--at-signal);
+   font-size: 0.68rem;
+   font-weight: 700;
+   cursor: pointer;
+ }
+ 
+ .tf__hist:disabled {
+   opacity: 0.35;
+   cursor: not-allowed;
+ }
+ 
+ .tf__detected {
+-  margin: 0.35rem 0 0;
+-  padding: 0;
+-  list-style: none;
++  margin-top: 0.1rem;
+   text-align: right;
+-  color: var(--tf-nopico);
++  color: var(--at-ink);
+   font-size: 0.62rem;
+   font-weight: 700;
+ }
+ 
+-.tf__nuevo[data-lane='pico'] .tf__detected { color: var(--tf-pico); }
++.tf__detected-item {
++  appearance: none;
++  display: inline-flex;
++  flex-wrap: wrap;
++  align-items: center;
++  justify-content: flex-end;
++  gap: 0.28rem;
++  width: 100%;
++  padding: 0.15rem 0;
++  border: 0;
++  background: transparent;
++  color: inherit;
++  font: inherit;
++  cursor: pointer;
++  text-align: right;
++}
++
++.tf__detected-item:focus-visible {
++  outline: 2px solid color-mix(in srgb, var(--at-signal) 45%, transparent);
++  outline-offset: 2px;
++}
+ 
+ .tf__detected-count {
+-  margin-left: 0.2rem;
++  margin-left: 0.05rem;
+   opacity: 0.75;
+ }
+ 
+ .tf__add-row {
+   display: flex;
+   flex-wrap: wrap;
+   align-items: center;
+   gap: 0.65rem;
+   padding: 0.7rem 0.85rem;
+   border-top: 1px dashed var(--at-line);
+@@ -153,20 +235,21 @@
+   min-height: 2.45rem;
+   padding: 0.4rem 0.85rem;
+   border: 1px dashed var(--tf-nopico);
+   border-radius: 0.45rem;
+   background: color-mix(in srgb, var(--tf-nopico) 8%, #fff);
+   color: var(--tf-nopico);
+   font: inherit;
+   font-size: 0.78rem;
+   font-weight: 750;
+   cursor: pointer;
++  transition: border-color 0.12s ease;
+ }
+ 
+ .tf__add:hover:not(:disabled),
+ .tf__add:focus-visible {
+   border-style: solid;
+   outline: 2px solid color-mix(in srgb, var(--at-signal) 45%, transparent);
+   outline-offset: 2px;
+ }
+ 
+ .tf__add:disabled {
+@@ -179,36 +262,51 @@
+   font-size: 0.72rem;
+ }
+ 
+ @media (max-width: 1023px) {
+   .tf__table thead { display: none; }
+   .tf__table,
+   .tf__table tbody {
+     display: block;
+   }
+   .tf__table tr {
+-    display: grid;
+-    grid-template-columns: 1fr 1fr;
+-    gap: 0.35rem 0.6rem;
++    display: flex;
++    flex-direction: column;
++    gap: 0.45rem;
+     margin: 0.6rem;
+     padding: 0.6rem;
+     border: 1px solid var(--at-line);
+     border-radius: 0.6rem;
+   }
+   .tf__cat-cell {
+-    grid-column: 1 / -1;
+     position: sticky;
+     top: 0;
+     z-index: 2;
+     text-align: left;
+     font-size: 1rem;
+-    margin-bottom: 0.2rem;
+   }
++  .tf__cell-label { display: block; }
+   .tf__actual,
++  .tf__detected-cell,
+   .tf__nuevo {
++    display: block;
++    width: 100%;
++    text-align: left;
++  }
++  .tf__current-item,
++  .tf__station-names,
++  .tf__detected {
++    justify-content: flex-start;
+     text-align: left;
+   }
+-  .tf__actual[data-lane='nopico'] { grid-column: 1; }
+-  .tf__nuevo[data-lane='nopico'] { grid-column: 2; }
+-  .tf__actual[data-lane='pico'] { grid-column: 1; }
+-  .tf__nuevo[data-lane='pico'] { grid-column: 2; }
++  .tf__detected-item { justify-content: flex-start; text-align: left; }
++  .tf__input { text-align: left; }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .tf__input,
++  .tf__detected-item,
++  .tf__trace-swatch,
++  .tf__add {
++    transition: none;
++  }
+ }
+diff --git a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.html b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.html
+index 6accfe9..6464b17 100644
+--- a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.html
++++ b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.html
+@@ -1,104 +1,123 @@
+ <section class="tf__board" aria-label="Escalera tarifaria" (keydown)="onBoardKeydown($event)">
+   <table class="tf__table">
+     <thead>
+       <tr>
+         <th class="tf__cat" rowspan="2">Categor├¡a</th>
+-        <th class="tf__lane tf__lane--nopico" colspan="2">NO_PICO</th>
+-        <th class="tf__lane tf__lane--pico" colspan="2">PICO</th>
++        <th class="tf__lane tf__lane--nopico" colspan="3">NO_PICO</th>
++        <th class="tf__lane tf__lane--pico" colspan="3">PICO</th>
+       </tr>
+       <tr>
+         <th class="tf__sub">Actual</th>
++        <th class="tf__sub">Detectado</th>
+         <th class="tf__sub">Nuevo</th>
+         <th class="tf__sub">Actual</th>
++        <th class="tf__sub">Detectado</th>
+         <th class="tf__sub">Nuevo</th>
+       </tr>
+     </thead>
+     <tbody>
+       <tr *ngFor="let row of rows">
+         <th class="tf__cat-cell" scope="row">{{ row.categoria }}</th>
+-        <td class="tf__actual" data-lane="nopico" [class.tf__missing]="row.no_pico.importe == null">
+-          <div class="tf__amount">{{ displayActual(row.no_pico.importe) }}</div>
+-          <time class="tf__fecha" [attr.datetime]="row.no_pico.fecha_actualizacion ?? null">
+-            {{ displayFecha(row.no_pico.fecha_actualizacion) }}
+-          </time>
+-          <button
+-            type="button"
+-            class="tf__hist"
+-            tabindex="-1"
+-            [disabled]="!row.no_pico.tarifa_id"
+-            (click)="requestHistory(row, 'NO_PICO')"
+-          >Historial</button>
+-        </td>
+-        <td
+-          class="tf__nuevo"
+-          data-lane="nopico"
+-          [class.tf__dirty]="isDirty(row.categoria, 'NO_PICO')"
+-        >
+-          <input
+-            #nuevoInput
+-            class="tf__input"
+-            type="text"
+-            inputmode="decimal"
+-            [ngModel]="draftValue(row.categoria, 'NO_PICO')"
+-            (ngModelChange)="setDraft(row.categoria, 'NO_PICO', $event)"
+-            (keydown)="onNuevoKeydown($event)"
+-            (focus)="selectNuevo($event)"
+-            [class.tf__input--invalid]="isInvalid(row.categoria, 'NO_PICO')"
+-            [attr.aria-invalid]="isInvalid(row.categoria, 'NO_PICO')"
+-            [attr.aria-label]="'Nuevo NO_PICO categor├¡a ' + row.categoria"
+-          />
+-          <ul class="tf__detected" *ngIf="detectedFor(row.categoria, 'NO_PICO').length">
+-            <li *ngFor="let item of detectedFor(row.categoria, 'NO_PICO')">
+-              {{ formatDetected(item.valor) }}
+-              <span class="tf__detected-count">├ù{{ item.count }}</span>
+-            </li>
+-          </ul>
+-        </td>
+-        <td class="tf__actual" data-lane="pico" [class.tf__missing]="row.pico.importe == null">
+-          <div class="tf__amount">{{ displayActual(row.pico.importe) }}</div>
+-          <time class="tf__fecha" [attr.datetime]="row.pico.fecha_actualizacion ?? null">
+-            {{ displayFecha(row.pico.fecha_actualizacion) }}
+-          </time>
+-          <button
+-            type="button"
+-            class="tf__hist"
+-            tabindex="-1"
+-            [disabled]="!row.pico.tarifa_id"
+-            (click)="requestHistory(row, 'PICO')"
+-          >Historial</button>
+-        </td>
+-        <td
+-          class="tf__nuevo"
+-          data-lane="pico"
+-          [class.tf__dirty]="isDirty(row.categoria, 'PICO')"
+-        >
+-          <input
+-            #nuevoInput
+-            class="tf__input"
+-            type="text"
+-            inputmode="decimal"
+-            [ngModel]="draftValue(row.categoria, 'PICO')"
+-            (ngModelChange)="setDraft(row.categoria, 'PICO', $event)"
+-            (keydown)="onNuevoKeydown($event)"
+-            (focus)="selectNuevo($event)"
+-            [class.tf__input--invalid]="isInvalid(row.categoria, 'PICO')"
+-            [attr.aria-invalid]="isInvalid(row.categoria, 'PICO')"
+-            [attr.aria-label]="'Nuevo PICO categor├¡a ' + row.categoria"
+-          />
+-          <ul class="tf__detected" *ngIf="detectedFor(row.categoria, 'PICO').length">
+-            <li *ngFor="let item of detectedFor(row.categoria, 'PICO')">
+-              {{ formatDetected(item.valor) }}
+-              <span class="tf__detected-count">├ù{{ item.count }}</span>
+-            </li>
+-          </ul>
+-        </td>
++        <ng-container *ngFor="let lane of lanes">
++          <td
++            class="tf__actual"
++            [attr.data-lane]="lane.lane"
++            data-role="actual"
++            [class.tf__missing]="isActualMissing(row, lane.status)"
++          >
++            <span class="tf__cell-label">Actual</span>
++            <ng-container *ngIf="currentView(row, lane.status) as view">
++              <ng-container *ngIf="view.kind === 'split'; else unifiedActual">
++                <ul class="tf__current-list">
++                  <li *ngFor="let station of view.stations" class="tf__current-item">
++                    <span class="tf__trace" [style.--tf-trace-color]="station.color">
++                      <span class="tf__trace-swatch" aria-hidden="true"></span>
++                      <span class="tf__trace-name">{{ station.estacionNombre }}</span>
++                    </span>
++                    <div class="tf__amount">{{ displayActual(station.importe) }}</div>
++                  </li>
++                </ul>
++              </ng-container>
++              <ng-template #unifiedActual>
++                <div class="tf__amount">{{ displayActual(actualImporte(row, lane.status)) }}</div>
++                <div class="tf__station-names" *ngIf="view.kind === 'shared'">
++                  <span
++                    class="tf__trace"
++                    *ngFor="let station of view.stations"
++                    [style.--tf-trace-color]="station.color"
++                  >
++                    <span class="tf__trace-swatch" aria-hidden="true"></span>
++                    <span class="tf__trace-name">{{ station.estacionNombre }}</span>
++                  </span>
++                </div>
++                <time class="tf__fecha" [attr.datetime]="cellOf(row, lane.status).fecha_actualizacion ?? null">
++                  {{ displayFecha(cellOf(row, lane.status).fecha_actualizacion) }}
++                </time>
++              </ng-template>
++            </ng-container>
++            <button
++              type="button"
++              class="tf__hist"
++              tabindex="-1"
++              [disabled]="!cellOf(row, lane.status).tarifa_id"
++              (click)="requestHistory(row, lane.status)"
++            >Historial</button>
++          </td>
++          <td class="tf__detected-cell" [attr.data-lane]="lane.lane" data-role="detectado">
++            <span class="tf__cell-label">Detectado</span>
++            <ul class="tf__detected" *ngIf="detectedFor(row.categoria, lane.status).length">
++              <li *ngFor="let item of detectedFor(row.categoria, lane.status)">
++                <button
++                  type="button"
++                  class="tf__detected-item"
++                  (click)="selectCandidate(row.categoria, lane.status, item)"
++                >
++                  <span
++                    class="tf__trace"
++                    *ngIf="item.estacionNombre"
++                    [style.--tf-trace-color]="item.color"
++                  >
++                    <span class="tf__trace-swatch" aria-hidden="true"></span>
++                    <span class="tf__trace-name">{{ item.estacionNombre }}</span>
++                  </span>
++                  <span class="tf__detected-amount">{{ formatDetected(item.valor) }}</span>
++                  <span class="tf__detected-count">├ù{{ item.count }}</span>
++                </button>
++              </li>
++            </ul>
++          </td>
++          <td
++            class="tf__nuevo"
++            [attr.data-lane]="lane.lane"
++            data-role="nuevo"
++            [class.tf__dirty]="isDirty(row.categoria, lane.status)"
++          >
++            <span class="tf__cell-label">Nuevo</span>
++            <input
++              #nuevoInput
++              class="tf__input"
++              type="text"
++              inputmode="decimal"
++              placeholder="Ingresar nueva tarifa"
++              [ngModel]="draftValue(row.categoria, lane.status)"
++              (ngModelChange)="setDraft(row.categoria, lane.status, $event)"
++              (keydown)="onNuevoKeydown($event)"
++              (focus)="onNuevoFocus($event, row.categoria, lane.status)"
++              (blur)="onNuevoBlur(row.categoria, lane.status)"
++              [class.tf__input--invalid]="isInvalid(row.categoria, lane.status)"
++              [class.tf__input--focus]="isNuevoFocused(row.categoria, lane.status)"
++              [attr.aria-invalid]="isInvalid(row.categoria, lane.status)"
++              [attr.aria-label]="'Nuevo ' + lane.status + ' categor├¡a ' + row.categoria"
++            />
++          </td>
++        </ng-container>
+       </tr>
+     </tbody>
+   </table>
+   <div class="tf__add-row" *ngIf="showAddCategoria">
+     <button
+       #addCategoriaBtn
+       type="button"
+       class="tf__add"
+       [disabled]="!allowAddCategoria"
+       [attr.aria-keyshortcuts]="'+'"
+diff --git a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.spec.ts b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.spec.ts
+index f9577b5..764e935 100644
+--- a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.spec.ts
++++ b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.spec.ts
+@@ -1,14 +1,17 @@
+ import { ComponentFixture, TestBed } from '@angular/core/testing';
+ import { TarifarioEditorRow } from '../models/tarifario.contracts';
+ import { MISSING_IMPORTE_LABEL } from './tarifario.helpers';
+-import { TarifarioEditorBoardComponent } from './tarifario-editor-board.component';
++import {
++  TarifarioEditorBoardComponent,
++  groupCurrentAmounts,
++} from './tarifario-editor-board.component';
+ 
+ function cell(importe: number | null, tarifaId: string | null = null): TarifarioEditorRow['no_pico'] {
+   return {
+     tarifa_id: tarifaId,
+     current_tarifa_importe_id: tarifaId,
+     importe,
+     fecha_actualizacion: importe == null ? null : '2026-07-01T00:00:00Z',
+   };
+ }
+ 
+@@ -97,11 +100,197 @@ describe('TarifarioEditorBoardComponent', () => {
+     root.querySelectorAll('.tf__hist').forEach((btn) => {
+       expect(btn.getAttribute('tabindex')).toBe('-1');
+     });
+     const inputs = Array.from(root.querySelectorAll<HTMLInputElement>('.tf__input'));
+     expect(inputs.length).toBe(4);
+     inputs[0].focus();
+     inputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+     fixture.detectChanges();
+     expect(document.activeElement).toBe(inputs[1]);
+   });
++
++  it('mantiene etiquetas persistentes Actual, Detectado y Nuevo', () => {
++    const root = fixture.nativeElement as HTMLElement;
++    const subs = Array.from(root.querySelectorAll('.tf__sub')).map((el) => el.textContent?.trim());
++    expect(subs).toEqual(['Actual', 'Detectado', 'Nuevo', 'Actual', 'Detectado', 'Nuevo']);
++    const cellLabels = Array.from(root.querySelectorAll('.tf__cell-label')).map((el) =>
++      el.textContent?.trim(),
++    );
++    expect(cellLabels.filter((label) => label === 'Actual').length).toBeGreaterThan(0);
++    expect(cellLabels.filter((label) => label === 'Detectado').length).toBeGreaterThan(0);
++    expect(cellLabels.filter((label) => label === 'Nuevo').length).toBeGreaterThan(0);
++  });
++
++  it('el campo Nuevo tiene placeholder, aria-label y borde s├│lido editable', () => {
++    const root = fixture.nativeElement as HTMLElement;
++    const input = root.querySelector<HTMLInputElement>('.tf__input')!;
++    expect(input.placeholder).toBe('Ingresar nueva tarifa');
++    expect(input.getAttribute('aria-label')).toBe('Nuevo NO_PICO categor├¡a 1');
++    const style = getComputedStyle(input);
++    expect(style.borderTopStyle).toBe('solid');
++    expect(style.backgroundColor).not.toBe('rgb(255, 255, 255)');
++    expect(style.fontVariantNumeric).toContain('tabular-nums');
++  });
++
++  it('marca inv├ílido y foco con clases visibles', () => {
++    component.drafts = { ...component.drafts, 1: { no_pico: 'abc', pico: '' } };
++    fixture.detectChanges();
++    const input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
++      '[aria-label="Nuevo NO_PICO categor├¡a 1"]',
++    )!;
++    expect(input.classList.contains('tf__input--invalid')).toBeTrue();
++    input.dispatchEvent(new Event('focus'));
++    fixture.detectChanges();
++    expect(input.classList.contains('tf__input--focus')).toBeTrue();
++    input.dispatchEvent(new Event('blur'));
++    fixture.detectChanges();
++    expect(input.classList.contains('tf__input--focus')).toBeFalse();
++  });
++
++  it('muestra montos detectados con estaci├│n, color y conteo', () => {
++    component.detected = {
++      '1:NO_PICO': [
++        {
++          valor: 12500,
++          count: 12,
++          estacionId: 'dock',
++          estacionNombre: 'Dock Sud',
++          color: '#6D28D9',
++          candidateId: 'cand-dock',
++        },
++      ],
++    };
++    fixture.detectChanges();
++    const item = (fixture.nativeElement as HTMLElement).querySelector('.tf__detected-item') as HTMLElement;
++    expect(item).toBeTruthy();
++    expect(item.textContent).toContain('Dock Sud');
++    expect(item.textContent).toContain('12.500');
++    expect(item.textContent).toContain('├ù12');
++    expect(item.querySelector('.tf__trace-swatch')).toBeTruthy();
++    expect(item.querySelector('.tf__trace-name')?.textContent?.trim()).toBe('Dock Sud');
++  });
++
++  it('emite candidateSelected y no muta el borrador al mostrar o elegir un detectado', () => {
++    const selected = jasmine.createSpy('candidateSelected');
++    const draft = jasmine.createSpy('draftChange');
++    component.candidateSelected.subscribe(selected);
++    component.draftChange.subscribe(draft);
++    component.detected = {
++      '1:NO_PICO': [
++        {
++          valor: 12500,
++          count: 12,
++          estacionId: 'dock',
++          estacionNombre: 'Dock Sud',
++          color: '#6D28D9',
++          candidateId: 'cand-dock',
++        },
++      ],
++    };
++    fixture.detectChanges();
++    expect(component.draftValue(1, 'NO_PICO')).toBe('');
++    expect(draft).not.toHaveBeenCalled();
++    const btn = (fixture.nativeElement as HTMLElement).querySelector(
++      '.tf__detected-item',
++    ) as HTMLButtonElement;
++    btn.click();
++    expect(selected).toHaveBeenCalledWith({
++      categoria: 1,
++      status: 'NO_PICO',
++      candidate: jasmine.objectContaining({ candidateId: 'cand-dock', valor: 12500, count: 12 }),
++    });
++    expect(draft).not.toHaveBeenCalled();
++    expect(component.draftValue(1, 'NO_PICO')).toBe('');
++  });
++
++  it('cuando los actuales agrupados coinciden muestra un monto y todos los nombres', () => {
++    component.currentStations = {
++      '1:NO_PICO': [
++        { estacionId: 'dock', estacionNombre: 'Dock Sud', color: '#6D28D9', importe: 28740.39 },
++        { estacionId: 'hudson', estacionNombre: 'Hudson', color: '#15803D', importe: 28740.39 },
++      ],
++    };
++    fixture.detectChanges();
++    const cell = (fixture.nativeElement as HTMLElement).querySelector(
++      'tr:first-child .tf__actual[data-lane="nopico"]',
++    ) as HTMLElement;
++    expect(cell.querySelectorAll('.tf__amount').length).toBe(1);
++    expect(cell.textContent).toContain('Dock Sud');
++    expect(cell.textContent).toContain('Hudson');
++    expect(cell.textContent).toContain('28.740');
++  });
++
++  it('cuando los actuales agrupados difieren muestra un monto por estaci├│n y no usa el ancla', () => {
++    component.rows = [row(1, 1000, 6000)];
++    component.currentStations = {
++      '1:NO_PICO': [
++        { estacionId: 'dock', estacionNombre: 'Dock Sud', color: '#6D28D9', importe: 28740.39 },
++        { estacionId: 'hudson', estacionNombre: 'Hudson', color: '#15803D', importe: 15500 },
++      ],
++    };
++    fixture.detectChanges();
++    const cell = (fixture.nativeElement as HTMLElement).querySelector(
++      'tr:first-child .tf__actual[data-lane="nopico"]',
++    ) as HTMLElement;
++    expect(cell.querySelectorAll('.tf__amount').length).toBe(2);
++    expect(cell.textContent).toContain('Dock Sud');
++    expect(cell.textContent).toContain('Hudson');
++    expect(cell.textContent).toContain('28.740');
++    expect(cell.textContent).toContain('15.500');
++    expect(cell.textContent).not.toContain(component.displayActual(1000));
++  });
++
++  it('ordena Actual, Detectado y Nuevo por carril para NO_PICO y luego PICO', () => {
++    const cells = Array.from(
++      (fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr:first-child td'),
++    ).map((el) => ({
++      role: el.getAttribute('data-role'),
++      lane: el.getAttribute('data-lane'),
++    }));
++    expect(cells).toEqual([
++      { role: 'actual', lane: 'nopico' },
++      { role: 'detectado', lane: 'nopico' },
++      { role: 'nuevo', lane: 'nopico' },
++      { role: 'actual', lane: 'pico' },
++      { role: 'detectado', lane: 'pico' },
++      { role: 'nuevo', lane: 'pico' },
++    ]);
++  });
++
++  it('emite historyRequest desde Historial y Enter recorre inputs Nuevo', () => {
++    const spy = jasmine.createSpy('historyRequest');
++    component.historyRequest.subscribe(spy);
++    const root = fixture.nativeElement as HTMLElement;
++    (root.querySelector('.tf__hist') as HTMLButtonElement).click();
++    expect(spy).toHaveBeenCalledWith({ row: component.rows[0], status: 'NO_PICO' });
++    const inputs = Array.from(root.querySelectorAll<HTMLInputElement>('.tf__input'));
++    inputs[0].focus();
++    inputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
++    fixture.detectChanges();
++    expect(document.activeElement).toBe(inputs[1]);
++  });
++});
++
++describe('groupCurrentAmounts', () => {
++  it('agrupa importes id├®nticos y separa los distintos', () => {
++    const shared = groupCurrentAmounts([
++      { estacionId: 'a', estacionNombre: 'A', color: '#6D28D9', importe: 10 },
++      { estacionId: 'b', estacionNombre: 'B', color: '#15803D', importe: 10 },
++    ]);
++    expect(shared).toEqual({
++      kind: 'shared',
++      importe: 10,
++      stations: [
++        { estacionId: 'a', estacionNombre: 'A', color: '#6D28D9', importe: 10 },
++        { estacionId: 'b', estacionNombre: 'B', color: '#15803D', importe: 10 },
++      ],
++    });
++    const split = groupCurrentAmounts([
++      { estacionId: 'a', estacionNombre: 'A', color: '#6D28D9', importe: 10 },
++      { estacionId: 'b', estacionNombre: 'B', color: '#15803D', importe: 20 },
++    ]);
++    expect(split.kind).toBe('split');
++    if (split.kind === 'split') {
++      expect(split.stations.map((s) => s.importe)).toEqual([10, 20]);
++    }
++  });
+ });
+diff --git a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.ts b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.ts
+index a2d7f3c..149de4d 100644
+--- a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.ts
++++ b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor-board.component.ts
+@@ -5,87 +5,164 @@ import {
+   EventEmitter,
+   Input,
+   Output,
+   QueryList,
+   ViewChild,
+   ViewChildren,
+ } from '@angular/core';
+ import { FormsModule } from '@angular/forms';
+ import {
+   TarifaStatusPico,
++  TarifarioEditorCell,
+   TarifarioEditorDrafts,
+   TarifarioEditorRow,
+ } from '../models/tarifario.contracts';
+ import {
+   MISSING_IMPORTE_LABEL,
+   TARIFARIO_CATEGORIAS_MAX,
+   collectDraftErrores,
+   formatFechaActualizacion,
+   formatTarifaImporte,
+   formatTarifaImporteDisplay,
+ } from './tarifario.helpers';
+ 
+ export interface TarifarioDetectedAmount {
+   valor: number;
+   count: number;
++  estacionId?: string;
++  estacionNombre?: string;
++  color?: string;
++  candidateId?: string;
+ }
+ 
+ export type TarifarioDetectedMap = Record<string, TarifarioDetectedAmount[]>;
+ 
++export interface TarifarioStationCurrent {
++  estacionId: string;
++  estacionNombre: string;
++  color: string;
++  importe: number | null;
++}
++
++export type TarifarioCurrentStationMap = Record<string, TarifarioStationCurrent[]>;
++
++export interface TarifarioGroupedCurrentSingle {
++  kind: 'single';
++}
++
++export interface TarifarioGroupedCurrentShared {
++  kind: 'shared';
++  importe: number | null;
++  stations: TarifarioStationCurrent[];
++}
++
++export interface TarifarioGroupedCurrentSplit {
++  kind: 'split';
++  stations: TarifarioStationCurrent[];
++}
++
++export type TarifarioGroupedCurrent =
++  | TarifarioGroupedCurrentSingle
++  | TarifarioGroupedCurrentShared
++  | TarifarioGroupedCurrentSplit;
++
+ export interface TarifarioDraftChange {
+   categoria: number;
+   status: TarifaStatusPico;
+   value: string;
+ }
+ 
++export interface TarifarioCandidateSelected {
++  categoria: number;
++  status: TarifaStatusPico;
++  candidate: TarifarioDetectedAmount;
++}
++
+ export interface TarifarioHistoryRequest {
+   row: TarifarioEditorRow;
+   status: TarifaStatusPico;
+ }
+ 
+ export function detectedCellKey(categoria: number, status: TarifaStatusPico): string {
+   return `${categoria}:${status}`;
+ }
+ 
++export function groupCurrentAmounts(
++  stations: readonly TarifarioStationCurrent[],
++): TarifarioGroupedCurrent {
++  if (!stations.length) return { kind: 'single' };
++  const importe = stations[0].importe;
++  const same = stations.every((station) => station.importe === importe);
++  if (same) return { kind: 'shared', importe, stations: [...stations] };
++  return { kind: 'split', stations: [...stations] };
++}
++
+ @Component({
+   selector: 'app-tarifario-editor-board',
+   standalone: true,
+   imports: [CommonModule, FormsModule],
+   templateUrl: './tarifario-editor-board.component.html',
+   styleUrls: ['./tarifario-editor-board.component.css'],
+ })
+ export class TarifarioEditorBoardComponent {
+   @ViewChildren('nuevoInput') private readonly nuevoInputs?: QueryList<ElementRef<HTMLInputElement>>;
+   @ViewChild('addCategoriaBtn') private readonly addCategoriaBtn?: ElementRef<HTMLButtonElement>;
+ 
+   readonly missing = MISSING_IMPORTE_LABEL;
+   readonly categoriasMax = TARIFARIO_CATEGORIAS_MAX;
++  readonly lanes: ReadonlyArray<{ status: TarifaStatusPico; lane: 'nopico' | 'pico' }> = [
++    { status: 'NO_PICO', lane: 'nopico' },
++    { status: 'PICO', lane: 'pico' },
++  ];
++  private nuevoFocusKey: string | null = null;
+ 
+   @Input() rows: TarifarioEditorRow[] = [];
+   @Input() drafts: TarifarioEditorDrafts = {};
+   @Input() detected: TarifarioDetectedMap = {};
++  @Input() currentStations: TarifarioCurrentStationMap = {};
+   @Input() allowAddCategoria = true;
+   @Input() categoriaCount = 0;
+   @Input() showAddCategoria = true;
+ 
+   @Output() readonly draftChange = new EventEmitter<TarifarioDraftChange>();
++  @Output() readonly candidateSelected = new EventEmitter<TarifarioCandidateSelected>();
+   @Output() readonly historyRequest = new EventEmitter<TarifarioHistoryRequest>();
+   @Output() readonly addCategoria = new EventEmitter<void>();
+ 
+   displayActual(value: number | null): string {
+     return formatTarifaImporteDisplay(value);
+   }
+ 
+   displayFecha(iso: string | null | undefined): string {
+     return formatFechaActualizacion(iso);
+   }
+ 
++  cellOf(row: TarifarioEditorRow, status: TarifaStatusPico): TarifarioEditorCell {
++    return status === 'NO_PICO' ? row.no_pico : row.pico;
++  }
++
++  currentView(row: TarifarioEditorRow, status: TarifaStatusPico): TarifarioGroupedCurrent {
++    return groupCurrentAmounts(this.currentStations[detectedCellKey(row.categoria, status)] ?? []);
++  }
++
++  actualImporte(row: TarifarioEditorRow, status: TarifaStatusPico): number | null {
++    const view = this.currentView(row, status);
++    if (view.kind === 'shared') return view.importe;
++    return this.cellOf(row, status).importe;
++  }
++
++  isActualMissing(row: TarifarioEditorRow, status: TarifaStatusPico): boolean {
++    const view = this.currentView(row, status);
++    if (view.kind === 'split') return false;
++    return this.actualImporte(row, status) == null;
++  }
++
+   detectedFor(categoria: number, status: TarifaStatusPico): TarifarioDetectedAmount[] {
+     return this.detected[detectedCellKey(categoria, status)] ?? [];
+   }
+ 
+   formatDetected(valor: number): string {
+     return formatTarifaImporte(valor);
+   }
+ 
+   isDirty(categoria: number, status: TarifaStatusPico): boolean {
+     const draft = this.drafts[categoria];
+@@ -103,25 +180,48 @@ export class TarifarioEditorBoardComponent {
+   draftValue(categoria: number, status: TarifaStatusPico): string {
+     const draft = this.drafts[categoria];
+     if (!draft) return '';
+     return status === 'NO_PICO' ? draft.no_pico : draft.pico;
+   }
+ 
+   setDraft(categoria: number, status: TarifaStatusPico, value: string): void {
+     this.draftChange.emit({ categoria, status, value });
+   }
+ 
++  selectCandidate(
++    categoria: number,
++    status: TarifaStatusPico,
++    candidate: TarifarioDetectedAmount,
++  ): void {
++    this.candidateSelected.emit({ categoria, status, candidate });
++  }
++
++  isNuevoFocused(categoria: number, status: TarifaStatusPico): boolean {
++    return this.nuevoFocusKey === detectedCellKey(categoria, status);
++  }
++
+   selectNuevo(event: FocusEvent): void {
+     const el = event.target as HTMLInputElement;
+     queueMicrotask(() => el.select());
+   }
+ 
++  onNuevoFocus(event: FocusEvent, categoria: number, status: TarifaStatusPico): void {
++    this.nuevoFocusKey = detectedCellKey(categoria, status);
++    this.selectNuevo(event);
++  }
++
++  onNuevoBlur(categoria: number, status: TarifaStatusPico): void {
++    if (this.nuevoFocusKey === detectedCellKey(categoria, status)) {
++      this.nuevoFocusKey = null;
++    }
++  }
++
+   onNuevoKeydown(event: KeyboardEvent): void {
+     if (event.key !== 'Tab' && event.key !== 'Enter') return;
+     const inputs = this.nuevoInputs?.map((ref) => ref.nativeElement) ?? [];
+     if (!inputs.length) return;
+     const current = event.target as HTMLInputElement;
+     const index = inputs.indexOf(current);
+     if (index < 0) return;
+     if (event.key === 'Tab' && event.shiftKey && index === 0) return;
+     const goingForward = !event.shiftKey;
+     if (goingForward && index === inputs.length - 1) {

@@ -7,6 +7,7 @@
  * Usage:
  *   node download-batch.mjs --limit 3 --diverse
  *   node download-batch.mjs --prefer SANTAFE,AUSA,AUMESA --limit 3
+ *   node download-batch.mjs --month-init 3 --month-finish 4
  *   node download-batch.mjs --tryfailed
  *   node download-batch.mjs
  */
@@ -19,9 +20,11 @@ import { ensureAuth } from './login.mjs';
 import { loadRowsFromDisk } from './parse-facturas.mjs';
 import {
   buildDownloadPath,
+  filterRowsByPeriodMonth,
+  formatLocalDateTime,
   loadRowsJson,
+  persistRowsJson,
   updateRowsWithDownloadPath,
-  writeRowsJson,
 } from './download-paths.mjs';
 import {
   AUTH_JSON_PATH,
@@ -32,7 +35,33 @@ import {
 
 dotenv.config({ path: path.join(TELEPASE_DIR, '.env') });
 
-function parseArgs(argv) {
+const MONTH_INIT_FLAGS = ['--month-init', '--month_init'];
+const MONTH_FINISH_FLAGS = [
+  '--month-finish',
+  '--month_finish',
+  '--month-end',
+  '--month_end',
+  '--mont_finish',
+  '--mont-finish',
+];
+
+function matchNamedFlag(arg, names) {
+  for (const name of names) {
+    if (arg === name) return { hit: true, value: null };
+    if (arg.startsWith(`${name}=`)) return { hit: true, value: arg.slice(name.length + 1) };
+  }
+  return { hit: false, value: null };
+}
+
+function parseMonthNumber(value, flagName) {
+  const month = Number(value);
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error(`${flagName} must be 1-12`);
+  }
+  return month;
+}
+
+export function parseArgs(argv) {
   const args = {
     limit: null,
     diverse: false,
@@ -40,9 +69,13 @@ function parseArgs(argv) {
     headless: process.env.HEADLESS !== '0',
     noAuth: false,
     tryFailed: false,
+    monthInit: null,
+    monthFinish: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
+    const monthInit = matchNamedFlag(a, MONTH_INIT_FLAGS);
+    const monthFinish = matchNamedFlag(a, MONTH_FINISH_FLAGS);
     if (a === '--limit') {
       const n = Number(argv[++i]);
       args.limit = Number.isFinite(n) ? n : null;
@@ -69,9 +102,18 @@ function parseArgs(argv) {
     } else if (a === '--tryfailed' || a === '--try-failed') {
       // Retry only unique URLs from errors.csv
       args.tryFailed = true;
+    } else if (monthInit.hit) {
+      args.monthInit = parseMonthNumber(monthInit.value ?? argv[++i], 'month-init');
+    } else if (monthFinish.hit) {
+      args.monthFinish = parseMonthNumber(monthFinish.value ?? argv[++i], 'month-finish');
+    } else {
+      throw new Error(`Unknown argument: ${a}`);
     }
   }
   if (args.limit === 0) args.limit = null;
+  if (args.monthInit != null && args.monthFinish != null && args.monthInit > args.monthFinish) {
+    throw new Error('month-init cannot be after month-finish');
+  }
   return args;
 }
 
@@ -318,8 +360,18 @@ function resolveFailedJobs(failedEntries, allRows) {
   return jobs;
 }
 
-function selectRows(rows, { limit, diverse, prefer }) {
-  const withBoth = rows.filter((r) => r.facturaUrl && r.pasadaUrl);
+function monthRangeLabel(args) {
+  if (args.monthInit == null && args.monthFinish == null) return '';
+  const start = args.monthInit ?? args.monthFinish;
+  const end = args.monthFinish ?? args.monthInit;
+  return start === end ? `, month=${start}` : `, month ${start}–${end}`;
+}
+
+function selectRows(rows, { limit, diverse, prefer, monthInit, monthFinish }) {
+  const withBoth = filterRowsByPeriodMonth(
+    rows.filter((r) => r.facturaUrl && r.pasadaUrl),
+    { monthInit, monthFinish },
+  );
   if (!limit) return withBoth;
 
   const picked = [];
@@ -514,11 +566,13 @@ export async function runDownloadBatch(options = {}) {
       };
     }
     jobs = resolveFailedJobs(failedEntries, allRows);
+    jobs = filterRowsByPeriodMonth(jobs, args);
     if (args.limit) jobs = jobs.slice(0, args.limit);
     console.log(`Total rows parsed: ${allRows.length}`);
     console.log(
       `Retrying failed downloads: ${jobs.length} unique URL(s) from ${ERRORS_CSV_PATH}` +
-        (args.limit ? ` (limit=${args.limit})` : '')
+        (args.limit ? ` (limit=${args.limit})` : '') +
+        monthRangeLabel(args)
     );
   } else {
     const rows = selectRows(allRows, args);
@@ -527,7 +581,8 @@ export async function runDownloadBatch(options = {}) {
       `Selected for download: ${rows.length}` +
         (args.limit
           ? ` (limit=${args.limit}${args.diverse ? ', diverse' : ''}${args.prefer?.length ? `, prefer=${args.prefer.join(',')}` : ''})`
-          : ' (full)')
+          : ' (full)') +
+        monthRangeLabel(args)
     );
     for (const row of rows) {
       const base = {
@@ -582,6 +637,14 @@ export async function runDownloadBatch(options = {}) {
   }
 
   const stillFailed = [];
+  const persistEvery = 10;
+  let updatesSincePersist = 0;
+
+  const persistProgress = (force = false) => {
+    if (!force && updatesSincePersist < persistEvery) return;
+    persistRowsJson(rowsForStatus);
+    updatesSincePersist = 0;
+  };
 
   for (const job of jobs) {
     console.log(
@@ -609,8 +672,10 @@ export async function runDownloadBatch(options = {}) {
         path: result.path,
         periodo: job.periodo,
         numero: job.numero,
+        ...(result.status === 'saved' ? { downloadedAt: formatLocalDateTime() } : {}),
       });
-      writeRowsJson(rowsForStatus);
+      updatesSincePersist += 1;
+      persistProgress();
     }
     if (args.tryFailed && result.status === 'failed') {
       stillFailed.push({
@@ -621,6 +686,8 @@ export async function runDownloadBatch(options = {}) {
     }
     await sleep(randomDelay());
   }
+
+  persistProgress(true);
 
   if (browser) await browser.close();
 

@@ -51,52 +51,71 @@ DROP POLICY IF EXISTS estaciones_vias_sentido_authenticated_select
   ON public.estaciones_vias_sentido;
 DROP POLICY IF EXISTS estaciones_vias_sentido_authenticated_write
   ON public.estaciones_vias_sentido;
-CREATE POLICY estaciones_vias_sentido_authenticated_select
-  ON public.estaciones_vias_sentido
-  FOR SELECT TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1
-      FROM public.user_profile_roles upr
-      JOIN public.role_permissions rp ON rp.role_id = upr.role_id
-      JOIN public.module_permissions mp ON mp.id = rp.module_permission_id
-      JOIN public.system_modules sm ON sm.id = mp.module_id
-      JOIN public.system_actions sa ON sa.id = mp.action_id
-      WHERE upr.user_id = (SELECT auth.uid())
-        AND sm.name = 'peajes'
-        AND sa.name IN ('read', 'manage')
-    )
-  );
 
-CREATE POLICY estaciones_vias_sentido_authenticated_write
-  ON public.estaciones_vias_sentido
-  FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1
-      FROM public.user_profile_roles upr
-      JOIN public.role_permissions rp ON rp.role_id = upr.role_id
-      JOIN public.module_permissions mp ON mp.id = rp.module_permission_id
-      JOIN public.system_modules sm ON sm.id = mp.module_id
-      JOIN public.system_actions sa ON sa.id = mp.action_id
-      WHERE upr.user_id = (SELECT auth.uid())
-        AND sm.name = 'peajes'
-        AND sa.name IN ('create', 'manage')
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1
-      FROM public.user_profile_roles upr
-      JOIN public.role_permissions rp ON rp.role_id = upr.role_id
-      JOIN public.module_permissions mp ON mp.id = rp.module_permission_id
-      JOIN public.system_modules sm ON sm.id = mp.module_id
-      JOIN public.system_actions sa ON sa.id = mp.action_id
-      WHERE upr.user_id = (SELECT auth.uid())
-        AND sm.name = 'peajes'
-        AND sa.name IN ('create', 'manage')
-    )
-  );
+-- CREATE POLICY validates relations at parse time. On empty CLI (--no-seed)
+-- host RBAC tables are absent, matching the established no-op pattern.
+DO $$
+BEGIN
+  IF to_regclass('public.user_profile_roles') IS NULL
+     OR to_regclass('public.role_permissions') IS NULL
+     OR to_regclass('public.module_permissions') IS NULL
+     OR to_regclass('public.system_modules') IS NULL
+     OR to_regclass('public.system_actions') IS NULL THEN
+    RAISE NOTICE 'RBAC ausente: se omiten policies estaciones_vias_sentido (ok en CLI vacío)';
+    RETURN;
+  END IF;
+
+  EXECUTE $pol$
+    CREATE POLICY estaciones_vias_sentido_authenticated_select
+      ON public.estaciones_vias_sentido
+      FOR SELECT TO authenticated
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM public.user_profile_roles upr
+          JOIN public.role_permissions rp ON rp.role_id = upr.role_id
+          JOIN public.module_permissions mp ON mp.id = rp.module_permission_id
+          JOIN public.system_modules sm ON sm.id = mp.module_id
+          JOIN public.system_actions sa ON sa.id = mp.action_id
+          WHERE upr.user_id = (SELECT auth.uid())
+            AND sm.name = 'peajes'
+            AND sa.name IN ('read', 'manage')
+        )
+      )
+  $pol$;
+
+  EXECUTE $pol$
+    CREATE POLICY estaciones_vias_sentido_authenticated_write
+      ON public.estaciones_vias_sentido
+      FOR ALL TO authenticated
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM public.user_profile_roles upr
+          JOIN public.role_permissions rp ON rp.role_id = upr.role_id
+          JOIN public.module_permissions mp ON mp.id = rp.module_permission_id
+          JOIN public.system_modules sm ON sm.id = mp.module_id
+          JOIN public.system_actions sa ON sa.id = mp.action_id
+          WHERE upr.user_id = (SELECT auth.uid())
+            AND sm.name = 'peajes'
+            AND sa.name IN ('create', 'manage')
+        )
+      )
+      WITH CHECK (
+        EXISTS (
+          SELECT 1
+          FROM public.user_profile_roles upr
+          JOIN public.role_permissions rp ON rp.role_id = upr.role_id
+          JOIN public.module_permissions mp ON mp.id = rp.module_permission_id
+          JOIN public.system_modules sm ON sm.id = mp.module_id
+          JOIN public.system_actions sa ON sa.id = mp.action_id
+          WHERE upr.user_id = (SELECT auth.uid())
+            AND sm.name = 'peajes'
+            AND sa.name IN ('create', 'manage')
+        )
+      )
+  $pol$;
+END $$;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.estaciones_vias_sentido TO authenticated;
 GRANT ALL ON public.estaciones_vias_sentido TO service_role;

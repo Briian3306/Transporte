@@ -533,7 +533,13 @@ export class Paso8ValidacionComponent implements OnInit {
           : 'AMBAS';
       const neto = Number(p.IMPORTE_NETO);
       const precio = Number(p.PRECIO);
-      const precio_directo = Number.isFinite(neto) ? neto : Number.isFinite(precio) ? precio : 0;
+      const precioPresente =
+        p.PRECIO != null && p.PRECIO !== '' && Number.isFinite(precio);
+      const precio_directo = precioPresente
+        ? precio
+        : Number.isFinite(neto)
+          ? neto
+          : 0;
       const catRaw = p.CATEGORIA;
       let categoria: number | string | null = null;
       if (catRaw != null && String(catRaw).trim() !== '') {

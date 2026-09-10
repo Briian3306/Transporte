@@ -53,6 +53,10 @@ interface TarifaImporteRow {
   tarifa_id: string;
   importe: number;
   fecha_aparicion: string;
+  fecha_vigencia_inicio: string | null;
+  fecha_vigencia_fin: string | null;
+  diagnostico: string | null;
+  categoria_calculada: number | null;
 }
 
 const PEAJES: { id: string; nombre: string }[] = [{ id: PEAJE_AUBASA, nombre: 'AUBASA' }];
@@ -115,11 +119,24 @@ function seedState(): { tarifas: TarifaIdentidad[]; importes: TarifaImporteRow[]
       tarifa_id: id,
       importe,
       fecha_aparicion: now,
+      fecha_vigencia_inicio: null,
+      fecha_vigencia_fin: null,
+      diagnostico: null,
+      categoria_calculada: null,
     });
   };
 
   add('tarifa-hudson-ida-1-np', ESTACION_HUDSON, 'NO_PICO', 1, 'IDA', TI_100, 5500, [
-    { id: TI_099, tarifa_id: 'tarifa-hudson-ida-1-np', importe: 5000, fecha_aparicion: older },
+    {
+      id: TI_099,
+      tarifa_id: 'tarifa-hudson-ida-1-np',
+      importe: 5000,
+      fecha_aparicion: older,
+      fecha_vigencia_inicio: null,
+      fecha_vigencia_fin: null,
+      diagnostico: null,
+      categoria_calculada: null,
+    },
   ]);
   add('tarifa-hudson-ida-1-p', ESTACION_HUDSON, 'PICO', 1, 'IDA', 'ti-h-ida-1-p', 6000);
   add('tarifa-hudson-ida-2-np', ESTACION_HUDSON, 'NO_PICO', 2, 'IDA', 'ti-h-ida-2-np', 7000);
@@ -240,12 +257,23 @@ export class TarifarioMockService implements PeajesTarifarioService {
         };
         this.tarifas.push(tarifa);
       }
+      const start = cambio.fechaVigenciaInicio ?? null;
+      if (tarifa.current_tarifa_id && start) {
+        const previous = this.importes.find((row) => row.id === tarifa.current_tarifa_id);
+        if (previous && previous.fecha_vigencia_fin == null) {
+          previous.fecha_vigencia_fin = start;
+        }
+      }
       const importeId = nextId('TI');
       this.importes.push({
         id: importeId,
         tarifa_id: tarifa.id,
         importe: cambio.importe,
         fecha_aparicion: stamp,
+        fecha_vigencia_inicio: start,
+        fecha_vigencia_fin: null,
+        diagnostico: start ? 'CONFIRMADO' : null,
+        categoria_calculada: null,
       });
       tarifa.current_tarifa_id = importeId;
       tarifa.fecha_actualizacion = stamp;
@@ -263,6 +291,10 @@ export class TarifarioMockService implements PeajesTarifarioService {
         importe: i.importe,
         fecha_aparicion: i.fecha_aparicion,
         es_actual: tarifa?.current_tarifa_id === i.id,
+        fechaVigenciaInicio: i.fecha_vigencia_inicio,
+        fechaVigenciaFin: i.fecha_vigencia_fin,
+        diagnostico: i.diagnostico,
+        categoriaCalculada: i.categoria_calculada,
       }));
     return of(rows);
   }

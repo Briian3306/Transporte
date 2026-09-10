@@ -32,6 +32,17 @@
     (addCategoria)="addCategoria()"
   ></app-tarifario-editor-board>
 
+  <div class="tf__date" *ngIf="!loading && !error">
+    <app-date-range-picker
+      label="Vigente desde"
+      mode="single"
+      placeholder="dd/mm/aaaa"
+      [value]="vigenteDesde"
+      [disabled]="saving"
+      (valueChange)="onVigenteDesde($event)"
+    ></app-date-range-picker>
+  </div>
+
   <p class="at__error" *ngIf="saveError" role="alert">{{ saveError }}</p>
 
   <footer class="tf__actions" *ngIf="!loading && !error">

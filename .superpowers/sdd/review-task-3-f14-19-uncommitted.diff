@@ -1,0 +1,2013 @@
+﻿# Review package — Task 3 F14-19 (uncommitted; no commits by design)
+Base: 95033bda8434b21473aa51937dfa8831acf0d3b9 (repo HEAD; Task 2 also uncommitted on overlapping test files)
+Head: WORKING TREE
+Branch: codex/tarifa-importe-cases
+Note: peajes_refresh_tarifas_test.sql / peajes_tarifario_rpc_test.sql / peajes_tarifa_importe_cases_test.sql also contain Task 2 fixture validity edits. Task 3 product SQL is the new migration only.
+
+## Commit list
+(none — controller forbids commits)
+
+## Files changed
+
+ .../supabase/tests/peajes_refresh_tarifas_test.sql | 573 ++++++++++++++++++++-
+ .../tests/peajes_tarifa_importe_cases_test.sql     |  34 +-
+ .../supabase/tests/peajes_tarifario_rpc_test.sql   | 125 ++++-
+ 3 files changed, 693 insertions(+), 39 deletions(-)
+
+Untracked new files:
+ ibarra-app/supabase/migrations/20260909192938_peajes_tarifa_matching_correcciones.sql (new)
+
+## Diff (tracked, -U10)
+
+diff --git a/ibarra-app/supabase/tests/peajes_refresh_tarifas_test.sql b/ibarra-app/supabase/tests/peajes_refresh_tarifas_test.sql
+index 50bda43..0deda1d 100644
+--- a/ibarra-app/supabase/tests/peajes_refresh_tarifas_test.sql
++++ b/ibarra-app/supabase/tests/peajes_refresh_tarifas_test.sql
+@@ -1,15 +1,15 @@
+ -- pgTAP: F14-18 Task 3 ÔÇö batch prepare/detect refresh RPCs.
+ -- Fixture namespace 18180000-ÔÇª (avoids F14-16 162/166 and F14-17 174).
+ -- Empty tables; synthetic Dock Sud-like fixtures only.
+ BEGIN;
+-SELECT plan(44);
++SELECT plan(63);
+ 
+ CREATE FUNCTION pg_temp.rpc_jsonb(p_fn text, p_arg jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql AS $$
+ DECLARE
+   v jsonb;
+ BEGIN
+   EXECUTE format('SELECT public.%I($1)', p_fn) INTO v USING p_arg;
+   RETURN v;
+ EXCEPTION
+@@ -77,63 +77,74 @@ INSERT INTO public.tarifas (
+     '18180000-aaaa-4aa1-8aa1-000000000010',
+     'NO_PICO', 2, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000051',
+     '18180000-aaaa-4aa1-8aa1-000000000001',
+     '18180000-aaaa-4aa1-8aa1-000000000010',
+     'PICO', 2, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+   );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000150',
+     '18180000-aaaa-4aa1-8aa1-000000000050',
+     12000.00,
+-    timestamptz '2025-01-01 00:00:00+00'
++    timestamptz '2025-01-01 00:00:00+00',
++    'CONFIRMADO', DATE '2025-01-01', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000151',
+     '18180000-aaaa-4aa1-8aa1-000000000050',
+     11975.15,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01', NULL
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000161',
+     '18180000-aaaa-4aa1-8aa1-000000000051',
+     14968.96,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01', NULL
+   );
+ 
+ -- Cat 5: current 14500, historical 12000 (historical-only match for 12010)
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   requiere_normalizacion_iva, fecha_actualizacion
+ ) VALUES (
+   '18180000-aaaa-4aa1-8aa1-000000000052',
+   '18180000-aaaa-4aa1-8aa1-000000000001',
+   '18180000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 5, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000170',
+     '18180000-aaaa-4aa1-8aa1-000000000052',
+     12000.00,
+-    timestamptz '2025-06-01 00:00:00+00'
++    timestamptz '2025-06-01 00:00:00+00',
++    'CONFIRMADO', DATE '2025-06-01', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000171',
+     '18180000-aaaa-4aa1-8aa1-000000000052',
+     14500.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01', NULL
+   );
+ 
+ -- Direction fixtures on SENTIDO MIXTO cat 1
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   requiere_normalizacion_iva, fecha_actualizacion
+ ) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000060',
+     '18180000-aaaa-4aa1-8aa1-000000000001',
+@@ -152,95 +163,161 @@ INSERT INTO public.tarifas (
+     '18180000-aaaa-4aa1-8aa1-000000000011',
+     'NO_PICO', 2, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000063',
+     '18180000-aaaa-4aa1-8aa1-000000000001',
+     '18180000-aaaa-4aa1-8aa1-000000000011',
+     'NO_PICO', 3, 'IDA', false, timestamptz '2026-07-01 00:00:00+00'
+   );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000180',
+     '18180000-aaaa-4aa1-8aa1-000000000060',
+     1000.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000181',
+     '18180000-aaaa-4aa1-8aa1-000000000061',
+     2000.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000182',
+     '18180000-aaaa-4aa1-8aa1-000000000062',
+     3333.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000183',
+     '18180000-aaaa-4aa1-8aa1-000000000063',
+     4444.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   );
+ 
+ -- Ambiguous status-less: both PICO and NO_PICO share 10000
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   requiere_normalizacion_iva, fecha_actualizacion
+ ) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000070',
+     '18180000-aaaa-4aa1-8aa1-000000000001',
+     '18180000-aaaa-4aa1-8aa1-000000000010',
+     'NO_PICO', 7, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000071',
+     '18180000-aaaa-4aa1-8aa1-000000000001',
+     '18180000-aaaa-4aa1-8aa1-000000000010',
+     'PICO', 7, 'AMBAS', false, timestamptz '2026-07-01 00:00:00+00'
+   );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000190',
+     '18180000-aaaa-4aa1-8aa1-000000000070',
+     10000.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   ),
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000191',
+     '18180000-aaaa-4aa1-8aa1-000000000071',
+     10000.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
+   );
+ 
+ -- IVA flag identity: current 100, flag true
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   requiere_normalizacion_iva, fecha_actualizacion
+ ) VALUES (
+   '18180000-aaaa-4aa1-8aa1-000000000080',
+   '18180000-aaaa-4aa1-8aa1-000000000001',
+   '18180000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 8, 'AMBAS', true, timestamptz '2026-07-01 00:00:00+00'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES
+   (
+     '18180000-aaaa-4aa1-8aa1-000000000200',
+     '18180000-aaaa-4aa1-8aa1-000000000080',
+     100.00,
+-    timestamptz '2026-07-01 00:00:00+00'
++    timestamptz '2026-07-01 00:00:00+00',
++    'CONFIRMADO', DATE '2026-07-01'
++  );
++
++-- F14-19 Task 3: dedicated identities for atomic confirmed/review saves.
++INSERT INTO public.tarifas (
++  id, peaje_id, estacion_id, status, categoria, sentido,
++  requiere_normalizacion_iva, fecha_actualizacion
++) VALUES
++  (
++    '18180000-aaaa-4aa1-8aa1-000000000090',
++    '18180000-aaaa-4aa1-8aa1-000000000001',
++    '18180000-aaaa-4aa1-8aa1-000000000010',
++    'NO_PICO', 10, 'AMBAS', false, timestamptz '2026-06-01 12:00:00+00'
++  ),
++  (
++    '18180000-aaaa-4aa1-8aa1-000000000040',
++    '18180000-aaaa-4aa1-8aa1-000000000001',
++    '18180000-aaaa-4aa1-8aa1-000000000010',
++    'NO_PICO', 0, 'AMBAS', false, timestamptz '2026-06-01 00:00:00+00'
++  );
++
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, cases, fecha_aparicion, categoria_calculated,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES
++  (
++    '18180000-aaaa-4aa1-8aa1-000000000289',
++    '18180000-aaaa-4aa1-8aa1-000000000090',
++    3500.00,
++    1,
++    timestamptz '2026-01-01 00:00:00+00',
++    10,
++    'CONFIRMADO', DATE '2026-01-01', DATE '2026-06-01'
++  ),
++  (
++    '18180000-aaaa-4aa1-8aa1-000000000290',
++    '18180000-aaaa-4aa1-8aa1-000000000090',
++    4000.00,
++    2,
++    timestamptz '2026-06-01 12:00:00+00',
++    10,
++    'CONFIRMADO', DATE '2026-06-01', NULL
++  ),
++  (
++    '18180000-aaaa-4aa1-8aa1-000000000240',
++    '18180000-aaaa-4aa1-8aa1-000000000040',
++    1111.00,
++    0,
++    timestamptz '2026-06-01 00:00:00+00',
++    NULL,
++    'CONFIRMADO', DATE '2026-06-01', NULL
+   );
+ 
+ SELECT ok(
+   (
+     SELECT
+       count(*) FILTER (WHERE e->>'status' = 'NO_PICO') = 1
+       AND count(*) FILTER (WHERE e->>'status' = 'PICO') = 1
+       AND bool_or((e->>'importe')::numeric = 11975.15)
+       AND bool_or((e->>'importe')::numeric = 14968.96)
+       AND bool_and(e->>'peaje_id' = '18180000-aaaa-4aa1-8aa1-000000000001')
+@@ -741,35 +818,41 @@ SELECT has_function(
+   'public',
+   'peajes_guardar_refresco_tarifas',
+   ARRAY['jsonb'],
+   'F14-18 peajes_guardar_refresco_tarifas(jsonb) existe'
+ );
+ 
+ CREATE TEMP TABLE pg_temp._g31 AS
+ SELECT public.peajes_guardar_refresco_tarifas(
+   jsonb_build_array(
+     jsonb_build_object(
++      'candidate_id', 'g31-nopico',
++      'action', 'CONFIRM_NEW',
+       'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
+       'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
+       'sentido', 'AMBAS',
+       'categoria', 2,
+       'status', 'NO_PICO',
+       'importe', 12500,
++      'fecha_vigencia_inicio', '2026-09-01',
+       'requiere_normalizacion_iva', false
+     ),
+     jsonb_build_object(
++      'candidate_id', 'g31-pico',
++      'action', 'CONFIRM_NEW',
+       'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
+       'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
+       'sentido', 'AMBAS',
+       'categoria', 2,
+       'status', 'PICO',
+       'importe', 15500,
++      'fecha_vigencia_inicio', '2026-09-01',
+       'requiere_normalizacion_iva', false
+     )
+   )
+ ) AS r;
+ 
+ SELECT ok(
+   (
+     SELECT
+       jsonb_array_length(r) = 2
+       AND r -> 0 ->> 'accion' = 'ACTUALIZADA'
+@@ -787,26 +870,29 @@ SELECT ok(
+       ) IS DISTINCT FROM '18180000-aaaa-4aa1-8aa1-000000000151'::uuid
+     FROM pg_temp._g31
+   ),
+   'F14-18 guardar actualiza PICO y NO_PICO, preserva historial y avanza current'
+ );
+ 
+ CREATE TEMP TABLE pg_temp._g32 AS
+ SELECT public.peajes_guardar_refresco_tarifas(
+   jsonb_build_array(
+     jsonb_build_object(
++      'candidate_id', 'g32-new',
++      'action', 'CONFIRM_NEW',
+       'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
+       'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
+       'sentido', 'AMBAS',
+       'categoria', 9,
+       'status', 'NO_PICO',
+       'importe', 900,
++      'fecha_vigencia_inicio', '2026-09-01',
+       'requiere_normalizacion_iva', true
+     )
+   )
+ ) AS r;
+ 
+ SELECT ok(
+   (
+     SELECT
+       r -> 0 ->> 'accion' = 'IDENTIDAD_CREADA'
+       AND r -> 0 ->> 'tarifa_id' IS NOT NULL
+@@ -825,26 +911,29 @@ SELECT ok(
+   'F14-18 guardar crea identidad faltante con IVA expl├¡cito'
+ );
+ 
+ SELECT is(
+   (
+     SELECT r -> 0 ->> 'accion'
+     FROM pg_temp.rpc_jsonb(
+       'peajes_guardar_refresco_tarifas',
+       jsonb_build_array(
+         jsonb_build_object(
++          'candidate_id', 'g33-same',
++          'action', 'CONFIRM_NEW',
+           'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
+           'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
+           'sentido', 'AMBAS',
+           'categoria', 5,
+           'status', 'NO_PICO',
+           'importe', 14500,
++          'fecha_vigencia_inicio', '2026-09-01',
+           'requiere_normalizacion_iva', false
+         )
+       )
+     ) AS r
+   ),
+   'SIN_CAMBIO',
+   'F14-18 guardar importe exacto vigente es SIN_CAMBIO'
+ );
+ 
+ SELECT is(
+@@ -857,93 +946,108 @@ SELECT is(
+   'F14-18 SIN_CAMBIO no inserta otro tarifa_importe'
+ );
+ 
+ SELECT ok(
+   (
+     SELECT t.requiere_normalizacion_iva IS TRUE
+     FROM pg_temp.rpc_jsonb(
+       'peajes_guardar_refresco_tarifas',
+       jsonb_build_array(
+         jsonb_build_object(
++          'candidate_id', 'g34-iva',
++          'action', 'CONFIRM_NEW',
+           'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
+           'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
+           'sentido', 'AMBAS',
+           'categoria', 8,
+           'status', 'NO_PICO',
+           'importe', 110,
++          'fecha_vigencia_inicio', '2026-09-01',
+           'requiere_normalizacion_iva', false
+         )
+       )
+     ) AS r
+     JOIN public.tarifas t ON t.id = '18180000-aaaa-4aa1-8aa1-000000000080'
+     WHERE r -> 0 ->> 'accion' = 'ACTUALIZADA'
+   ),
+   'F14-18 guardar no cambia el flag IVA de una identidad existente'
+ );
+ 
+ SELECT throws_ok(
+   $$SELECT public.peajes_guardar_refresco_tarifas(
+     jsonb_build_array(
+       jsonb_build_object(
++        'candidate_id', 'g35-dup-a',
++        'action', 'CONFIRM_NEW',
+         'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
+         'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
+         'sentido', 'AMBAS',
+         'categoria', 4,
+         'status', 'NO_PICO',
+         'importe', 1,
++        'fecha_vigencia_inicio', '2026-09-01',
+         'requiere_normalizacion_iva', true
+       ),
+       jsonb_build_object(
++        'candidate_id', 'g35-dup-b',
++        'action', 'CONFIRM_NEW',
+         'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
+         'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
+         'sentido', 'AMBAS',
+         'categoria', 4,
+         'status', 'NO_PICO',
+         'importe', 2,
++        'fecha_vigencia_inicio', '2026-09-01',
+         'requiere_normalizacion_iva', true
+       )
+     )
+   )$$,
+   'P0001',
+   'p_cambios contiene celdas duplicadas',
+   'F14-18 guardar rechaza duplicados en el payload antes de escribir'
+ );
+ 
+ SELECT throws_ok(
+   $$SELECT public.peajes_guardar_refresco_tarifas(
+     jsonb_build_array(
+       jsonb_build_object(
++        'candidate_id', 'g36-iva-missing',
++        'action', 'CONFIRM_NEW',
+         'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
+         'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
+         'sentido', 'AMBAS',
+         'categoria', 6,
+         'status', 'PICO',
+         'importe', 800,
++        'fecha_vigencia_inicio', '2026-09-01',
+         'requiere_normalizacion_iva', NULL
+       )
+     )
+   )$$,
+   'P0001',
+   'requiere_normalizacion_iva es obligatorio para una identidad nueva',
+   'F14-18 guardar exige IVA expl├¡cito al crear identidad'
+ );
+ 
+ SELECT throws_ok(
+   $$SELECT public.peajes_guardar_refresco_tarifas(
+     jsonb_build_array(
+       jsonb_build_object(
++        'candidate_id', 'g37-station',
++        'action', 'CONFIRM_NEW',
+         'peaje_id', '18180000-aaaa-4aa1-8aa1-000000009999',
+         'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
+         'sentido', 'AMBAS',
+         'categoria', 2,
+         'status', 'NO_PICO',
+         'importe', 13000,
++        'fecha_vigencia_inicio', '2026-09-01',
+         'requiere_normalizacion_iva', false
+       )
+     )
+   )$$,
+   'P0001',
+   'la estacion no pertenece al peaje indicado',
+   'F14-18 guardar rechaza peaje/estacion inconsistentes'
+ );
+ 
+ SELECT ok(
+@@ -964,20 +1068,453 @@ SELECT ok(
+         'anon',
+         'public.peajes_guardar_refresco_tarifas(jsonb)',
+         'EXECUTE'
+       )
+     ),
+     false
+   ),
+   'F14-18 guardar REVOKE PUBLIC / anon sin EXECUTE'
+ );
+ 
++-- -----------------------------------------------------------------------------
++-- F14-19 Task 3: atomic CONFIRM_NEW / MARK_REVIEW saves
++-- -----------------------------------------------------------------------------
++SELECT ok(
++  pg_temp.fn_def('public.peajes_guardar_refresco_tarifas(jsonb)') ILIKE '%FOR UPDATE%'
++  AND pg_temp.fn_def('public.peajes_guardar_refresco_tarifas(jsonb)')
++    ~* 'ORDER BY[[:space:]]+t\.peaje_id,[[:space:]]*t\.estacion_id,[[:space:]]*t\.sentido,[[:space:]]*t\.categoria,[[:space:]]*t\.status',
++  'F14-19 guardar lockea tarifas existentes en orden (peaje_id, estacion_id, sentido, categoria, status)'
++);
++
++CREATE TEMP TABLE pg_temp._g19_confirm AS
++SELECT public.peajes_guardar_refresco_tarifas(
++  jsonb_build_array(
++    jsonb_build_object(
++      'candidate_id', 'confirm-cat10',
++      'action', 'CONFIRM_NEW',
++      'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++      'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++      'categoria', 10,
++      'categoria_calculada', 10,
++      'status', 'NO_PICO',
++      'sentido', 'AMBAS',
++      'importe', 5000,
++      'fecha_vigencia_inicio', '2026-09-01',
++      'cases', 4,
++      'requiere_normalizacion_iva', false
++    )
++  )
++) AS r;
++
++SELECT ok(
++  (
++    SELECT
++      (SELECT t.current_tarifa_id FROM public.tarifas t
++        WHERE t.id = '18180000-aaaa-4aa1-8aa1-000000000090')
++        IS DISTINCT FROM '18180000-aaaa-4aa1-8aa1-000000000290'::uuid
++      AND (SELECT fecha_vigencia_fin FROM public.tarifa_importe
++            WHERE id = '18180000-aaaa-4aa1-8aa1-000000000290') = DATE '2026-09-01'
++      AND (SELECT diagnostico FROM public.tarifa_importe
++            WHERE id = (
++              SELECT current_tarifa_id FROM public.tarifas
++              WHERE id = '18180000-aaaa-4aa1-8aa1-000000000090'
++            )) = 'CONFIRMADO'
++      AND (SELECT fecha_vigencia_inicio FROM public.tarifa_importe
++            WHERE id = (
++              SELECT current_tarifa_id FROM public.tarifas
++              WHERE id = '18180000-aaaa-4aa1-8aa1-000000000090'
++            )) = DATE '2026-09-01'
++      AND (SELECT fecha_vigencia_fin FROM public.tarifa_importe
++            WHERE id = (
++              SELECT current_tarifa_id FROM public.tarifas
++              WHERE id = '18180000-aaaa-4aa1-8aa1-000000000090'
++            )) IS NULL
++      AND (SELECT fecha_actualizacion FROM public.tarifas
++            WHERE id = '18180000-aaaa-4aa1-8aa1-000000000090')
++          > timestamptz '2026-06-01 12:00:00+00'
++    FROM pg_temp._g19_confirm
++  ),
++  'F14-19 CONFIRM_NEW cierra el vigente, inserta CONFIRMADO abierto, mueve el puntero y actualiza fecha_actualizacion'
++);
++
++SELECT ok(
++  (
++    SELECT importe = 4000.00
++       AND cases = 2
++       AND categoria_calculated = 10
++       AND fecha_aparicion = timestamptz '2026-06-01 12:00:00+00'
++       AND tarifas_normalizadas_id IS NULL
++    FROM public.tarifa_importe
++    WHERE id = '18180000-aaaa-4aa1-8aa1-000000000290'
++  ),
++  'F14-19 al cerrar el vigente no muta importe, categoria_calculated, fecha_aparicion, linaje ni cases'
++);
++
++SELECT ok(
++  (
++    SELECT (SELECT fecha_vigencia_inicio FROM public.tarifa_importe
++              WHERE id = '18180000-aaaa-4aa1-8aa1-000000000290') = DATE '2026-06-01'
++       AND (SELECT fecha_vigencia_fin FROM public.tarifa_importe
++              WHERE id = '18180000-aaaa-4aa1-8aa1-000000000290') = DATE '2026-09-01'
++       AND (SELECT fecha_vigencia_inicio FROM public.tarifa_importe
++              WHERE id = (
++                SELECT current_tarifa_id FROM public.tarifas
++                WHERE id = '18180000-aaaa-4aa1-8aa1-000000000090'
++              )) = DATE '2026-09-01'
++       AND (SELECT fecha_vigencia_fin FROM public.tarifa_importe
++              WHERE id = (
++                SELECT current_tarifa_id FROM public.tarifas
++                WHERE id = '18180000-aaaa-4aa1-8aa1-000000000090'
++              )) IS NULL
++  ),
++  'F14-19 [2026-06-01, 2026-09-01) seguido de [2026-09-01, infinity) se acepta'
++);
++
++SELECT ok(
++  (
++    SELECT
++      r -> 0 ->> 'accion' = 'ACTUALIZADA'
++      AND (r -> 0 ->> 'anterior')::numeric = 4000
++      AND (r -> 0 ->> 'nueva')::numeric = 5000
++      AND (r -> 0 ->> 'anterior_fin')::date = DATE '2026-09-01'
++      AND (r -> 0 ->> 'fecha_vigencia_inicio')::date = DATE '2026-09-01'
++      AND (r -> 0 ->> 'fecha_vigencia_fin') IS NULL
++      AND r -> 0 ->> 'diagnostico' = 'CONFIRMADO'
++      AND (r -> 0 ->> 'categoria_calculada')::int = 10
++      AND r -> 0 ->> 'tarifa_importe_id' IS NOT NULL
++      AND r -> 0 ->> 'candidate_id' = 'confirm-cat10'
++    FROM pg_temp._g19_confirm
++  ),
++  'F14-19 CONFIRM_NEW conserva el orden de entrada y devuelve anterior, fin previo, vigencia, diagnostico, categoria calculada e id nuevo'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_refresco_tarifas(
++    jsonb_build_array(
++      jsonb_build_object(
++        'candidate_id', 'before-start',
++        'action', 'CONFIRM_NEW',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'AMBAS',
++        'categoria', 0,
++        'status', 'NO_PICO',
++        'importe', 2222,
++        'fecha_vigencia_inicio', '2026-05-01',
++        'requiere_normalizacion_iva', false
++      )
++    )
++  )$$,
++  'P0001',
++  'la vigencia nueva se superpone o inicia antes del vigente',
++  'F14-19 CONFIRM_NEW rechaza un inicio anterior al vigente'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_refresco_tarifas(
++    jsonb_build_array(
++      jsonb_build_object(
++        'candidate_id', 'batch-ok',
++        'action', 'CONFIRM_NEW',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'AMBAS',
++        'categoria', 0,
++        'status', 'NO_PICO',
++        'importe', 2222,
++        'fecha_vigencia_inicio', '2026-09-01',
++        'requiere_normalizacion_iva', false
++      ),
++      jsonb_build_object(
++        'candidate_id', 'inside-hist',
++        'action', 'CONFIRM_NEW',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'AMBAS',
++        'categoria', 10,
++        'status', 'NO_PICO',
++        'importe', 6000,
++        'fecha_vigencia_inicio', '2026-03-01',
++        'requiere_normalizacion_iva', false
++      )
++    )
++  )$$,
++  'P0001',
++  'la vigencia nueva se superpone o inicia antes del vigente',
++  'F14-19 un inicio dentro de un intervalo conocido rechaza el lote entero'
++);
++
++SELECT ok(
++  (
++    SELECT (SELECT current_tarifa_id FROM public.tarifas
++              WHERE id = '18180000-aaaa-4aa1-8aa1-000000000040')
++             = '18180000-aaaa-4aa1-8aa1-000000000240'::uuid
++       AND (SELECT importe FROM public.tarifa_importe
++              WHERE id = (
++                SELECT current_tarifa_id FROM public.tarifas
++                WHERE id = '18180000-aaaa-4aa1-8aa1-000000000090'
++              )) = 5000
++       AND (SELECT count(*) FROM public.tarifa_importe
++              WHERE tarifa_id = '18180000-aaaa-4aa1-8aa1-000000000040') = 1
++  ),
++  'F14-19 el rechazo por vigencia no deja escrituras parciales en el lote'
++);
++
++CREATE TEMP TABLE pg_temp._g19_review AS
++SELECT public.peajes_guardar_refresco_tarifas(
++  jsonb_build_array(
++    jsonb_build_object(
++      'candidate_id', 'review-cat7',
++      'action', 'MARK_REVIEW',
++      'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++      'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++      'sentido', 'AMBAS',
++      'categoria', 7,
++      'status', 'NO_PICO',
++      'importe', 11111,
++      'cases', 3,
++      'requiere_normalizacion_iva', false
++    )
++  )
++) AS r;
++
++SELECT ok(
++  (
++    SELECT
++      (SELECT current_tarifa_id FROM public.tarifas
++        WHERE id = '18180000-aaaa-4aa1-8aa1-000000000070')
++        = '18180000-aaaa-4aa1-8aa1-000000000190'::uuid
++      AND (SELECT fecha_vigencia_fin FROM public.tarifa_importe
++            WHERE id = '18180000-aaaa-4aa1-8aa1-000000000190') IS NULL
++      AND (SELECT diagnostico FROM public.tarifa_importe
++            WHERE id = (r -> 0 ->> 'tarifa_importe_id')::uuid) = 'REVISAR'
++      AND (SELECT fecha_vigencia_inicio FROM public.tarifa_importe
++            WHERE id = (r -> 0 ->> 'tarifa_importe_id')::uuid) IS NULL
++      AND (SELECT fecha_vigencia_fin FROM public.tarifa_importe
++            WHERE id = (r -> 0 ->> 'tarifa_importe_id')::uuid) IS NULL
++      AND r -> 0 ->> 'diagnostico' = 'REVISAR'
++    FROM pg_temp._g19_review
++  ),
++  'F14-19 MARK_REVIEW inserta REVISAR sin vigencia, no cierra el vigente y no mueve el puntero'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_refresco_tarifas(
++    jsonb_build_array(
++      jsonb_build_object(
++        'candidate_id', 'bad-action',
++        'action', 'IGNORE',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'AMBAS',
++        'categoria', 2,
++        'status', 'NO_PICO',
++        'importe', 1,
++        'fecha_vigencia_inicio', '2026-09-01',
++        'requiere_normalizacion_iva', false
++      )
++    )
++  )$$,
++  'P0001',
++  'accion invalida: IGNORE',
++  'F14-19 guardar rechaza una accion no permitida'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_refresco_tarifas(
++    jsonb_build_array(
++      jsonb_build_object(
++        'candidate_id', 'bad-status',
++        'action', 'CONFIRM_NEW',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'AMBAS',
++        'categoria', 2,
++        'status', 'PENDIENTE',
++        'importe', 1,
++        'fecha_vigencia_inicio', '2026-09-01',
++        'requiere_normalizacion_iva', false
++      )
++    )
++  )$$,
++  'P0001',
++  'status invalido: PENDIENTE',
++  'F14-19 guardar rechaza un status no permitido'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_refresco_tarifas(
++    jsonb_build_array(
++      jsonb_build_object(
++        'candidate_id', 'bad-sentido',
++        'action', 'CONFIRM_NEW',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'DESCONOCIDO',
++        'categoria', 2,
++        'status', 'NO_PICO',
++        'importe', 1,
++        'fecha_vigencia_inicio', '2026-09-01',
++        'requiere_normalizacion_iva', false
++      )
++    )
++  )$$,
++  'P0001',
++  'sentido invalido: DESCONOCIDO',
++  'F14-19 guardar rechaza un sentido no permitido'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_refresco_tarifas(
++    jsonb_build_array(
++      jsonb_build_object(
++        'candidate_id', 'bad-importe',
++        'action', 'CONFIRM_NEW',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'AMBAS',
++        'categoria', 2,
++        'status', 'NO_PICO',
++        'importe', 0,
++        'fecha_vigencia_inicio', '2026-09-01',
++        'requiere_normalizacion_iva', false
++      )
++    )
++  )$$,
++  'P0001',
++  'importe debe ser > 0',
++  'F14-19 guardar rechaza un importe no positivo'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_refresco_tarifas(
++    jsonb_build_array(
++      jsonb_build_object(
++        'candidate_id', 'bad-cat',
++        'action', 'CONFIRM_NEW',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'AMBAS',
++        'categoria', 11,
++        'status', 'NO_PICO',
++        'importe', 1,
++        'fecha_vigencia_inicio', '2026-09-01',
++        'requiere_normalizacion_iva', false
++      )
++    )
++  )$$,
++  'P0001',
++  'categoria invalida: 11',
++  'F14-19 guardar rechaza categoria fuera de 0-10'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_refresco_tarifas(
++    jsonb_build_array(
++      jsonb_build_object(
++        'candidate_id', 'missing-start',
++        'action', 'CONFIRM_NEW',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'AMBAS',
++        'categoria', 2,
++        'status', 'NO_PICO',
++        'importe', 1,
++        'requiere_normalizacion_iva', false
++      )
++    )
++  )$$,
++  'P0001',
++  'fecha_vigencia_inicio es obligatorio para CONFIRM_NEW',
++  'F14-19 CONFIRM_NEW exige fecha_vigencia_inicio'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_refresco_tarifas(
++    jsonb_build_array(
++      jsonb_build_object(
++        'candidate_id', 'review-with-start',
++        'action', 'MARK_REVIEW',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'AMBAS',
++        'categoria', 7,
++        'status', 'PICO',
++        'importe', 1,
++        'fecha_vigencia_inicio', '2026-09-01',
++        'requiere_normalizacion_iva', false
++      )
++    )
++  )$$,
++  'P0001',
++  'fecha_vigencia_inicio no aplica a MARK_REVIEW',
++  'F14-19 MARK_REVIEW prohibe fecha_vigencia_inicio'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_refresco_tarifas(
++    jsonb_build_array(
++      jsonb_build_object(
++        'candidate_id', 'dup-cand',
++        'action', 'CONFIRM_NEW',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'AMBAS',
++        'categoria', 2,
++        'status', 'NO_PICO',
++        'importe', 1,
++        'fecha_vigencia_inicio', '2026-10-01',
++        'requiere_normalizacion_iva', false
++      ),
++      jsonb_build_object(
++        'candidate_id', 'dup-cand',
++        'action', 'CONFIRM_NEW',
++        'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
++        'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
++        'sentido', 'AMBAS',
++        'categoria', 2,
++        'status', 'PICO',
++        'importe', 2,
++        'fecha_vigencia_inicio', '2026-10-01',
++        'requiere_normalizacion_iva', false
++      )
++    )
++  )$$,
++  'P0001',
++  'p_cambios contiene candidatos duplicados',
++  'F14-19 guardar rechaza candidate_id duplicados antes de escribir'
++);
++
++SELECT ok(
++  COALESCE(
++    has_function_privilege(
++      'authenticated',
++      'public.peajes_guardar_refresco_tarifas(jsonb)',
++      'EXECUTE'
++    ),
++    false
++  ),
++  'F14-19 guardar_refresco EXECUTE queda en authenticated'
++);
++
++SELECT ok(
++  COALESCE(
++    has_function_privilege(
++      'service_role',
++      'public.peajes_guardar_refresco_tarifas(jsonb)',
++      'EXECUTE'
++    ),
++    false
++  ),
++  'F14-19 guardar_refresco EXECUTE queda en service_role'
++);
++
+ SELECT has_function(
+   'public',
+   'peajes_auditar_tarifas_direccion_colisiones',
+   ARRAY[]::text[],
+   'directional collision audit is read-only and callable'
+ );
+ 
+ SELECT is(
+   pg_temp.codigo('missing-direction', public.peajes_detectar_refresco_tarifas(jsonb_build_array(
+     jsonb_build_object(
+diff --git a/ibarra-app/supabase/tests/peajes_tarifa_importe_cases_test.sql b/ibarra-app/supabase/tests/peajes_tarifa_importe_cases_test.sql
+index bee056d..9bf74aa 100644
+--- a/ibarra-app/supabase/tests/peajes_tarifa_importe_cases_test.sql
++++ b/ibarra-app/supabase/tests/peajes_tarifa_importe_cases_test.sql
+@@ -20,35 +20,43 @@ INSERT INTO public.estaciones (id, peaje_id, nombre) VALUES
+   ('19990000-aaaa-4aa1-8aa1-000000000010', '19990000-aaaa-4aa1-8aa1-000000000001', 'Cases test station');
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido, fecha_actualizacion
+ ) VALUES (
+   '19990000-aaaa-4aa1-8aa1-000000000020',
+   '19990000-aaaa-4aa1-8aa1-000000000001',
+   '19990000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 1, 'IDA', timestamptz '2026-01-01 00:00:00+00'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES (
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES (
+   '19990000-aaaa-4aa1-8aa1-000000000100',
+   '19990000-aaaa-4aa1-8aa1-000000000020',
+-  1000, timestamptz '2026-01-01 00:00:00+00'
++  1000, timestamptz '2026-01-01 00:00:00+00',
++  'CONFIRMADO', DATE '2026-01-01', DATE '2026-01-02'
+ );
+ SELECT is(
+   (SELECT cases FROM public.tarifa_importe WHERE id = '19990000-aaaa-4aa1-8aa1-000000000100'),
+   0,
+   'manual or catalogue history defaults to zero cases'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, cases, fecha_aparicion) VALUES (
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, cases, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES (
+   '19990000-aaaa-4aa1-8aa1-000000000101',
+   '19990000-aaaa-4aa1-8aa1-000000000020',
+-  1100, 7, timestamptz '2026-01-02 00:00:00+00'
++  1100, 7, timestamptz '2026-01-02 00:00:00+00',
++  'CONFIRMADO', DATE '2026-01-02'
+ );
+ SELECT is(
+   (SELECT cases FROM public.tarifa_importe WHERE id = '19990000-aaaa-4aa1-8aa1-000000000101'),
+   7,
+   'explicit detected case count is retained'
+ );
+ 
+ SELECT throws_ok(
+   $$INSERT INTO public.tarifa_importe (tarifa_id, importe, cases, fecha_aparicion)
+     VALUES ('19990000-aaaa-4aa1-8aa1-000000000020', 1200, -1, now())$$,
+@@ -66,21 +74,21 @@ SELECT is(
+   (SELECT current_tarifa_id FROM public.tarifas WHERE id = '19990000-aaaa-4aa1-8aa1-000000000020'),
+   '19990000-aaaa-4aa1-8aa1-000000000101'::uuid,
+   'case validation and immutable updates do not change the current pointer'
+ );
+ 
+ SELECT lives_ok(
+   $$SELECT public.peajes_guardar_tarifas_actuales(
+       '19990000-aaaa-4aa1-8aa1-000000000001',
+       '19990000-aaaa-4aa1-8aa1-000000000010',
+       'IDA',
+-      '[{"categoria":1,"status":"NO_PICO","importe":1200}]'::jsonb
++      '[{"categoria":1,"status":"NO_PICO","importe":1200,"fecha_vigencia_inicio":"2026-02-01"}]'::jsonb
+     )$$,
+   'manual tariff save succeeds'
+ );
+ SELECT is(
+   (
+     SELECT ti.cases
+     FROM public.tarifas t
+     JOIN public.tarifa_importe ti ON ti.id = t.current_tarifa_id
+     WHERE t.id = '19990000-aaaa-4aa1-8aa1-000000000020'
+   ),
+@@ -89,48 +97,52 @@ SELECT is(
+ );
+ 
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido, fecha_actualizacion
+ ) VALUES (
+   '19990000-aaaa-4aa1-8aa1-000000000021',
+   '19990000-aaaa-4aa1-8aa1-000000000001',
+   '19990000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 1, 'VUELTA', timestamptz '2026-01-01 00:00:00+00'
+ );
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES (
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES (
+   '19990000-aaaa-4aa1-8aa1-000000000102',
+   '19990000-aaaa-4aa1-8aa1-000000000021',
+-  2000, timestamptz '2026-01-01 00:00:00+00'
++  2000, timestamptz '2026-01-01 00:00:00+00',
++  'CONFIRMADO', DATE '2026-01-01'
+ );
+ 
+ SELECT lives_ok(
+   $$SELECT public.peajes_guardar_refresco_tarifas(
+     '[
+-      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"IDA","categoria":1,"status":"NO_PICO","importe":1300,"cases":3},
+-      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"VUELTA","categoria":1,"status":"NO_PICO","importe":2100,"cases":5}
++      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"IDA","categoria":1,"status":"NO_PICO","importe":1300,"cases":3,"action":"CONFIRM_NEW","fecha_vigencia_inicio":"2026-03-01"},
++      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"VUELTA","categoria":1,"status":"NO_PICO","importe":2100,"cases":5,"action":"CONFIRM_NEW","fecha_vigencia_inicio":"2026-03-01"}
+     ]'::jsonb
+   )$$,
+   'Paso 9 saves independent directional case snapshots'
+ );
+ SELECT ok(
+   (
+     SELECT (SELECT ti.cases FROM public.tarifas t JOIN public.tarifa_importe ti ON ti.id = t.current_tarifa_id WHERE t.id = '19990000-aaaa-4aa1-8aa1-000000000020') = 3
+        AND (SELECT ti.cases FROM public.tarifas t JOIN public.tarifa_importe ti ON ti.id = t.current_tarifa_id WHERE t.id = '19990000-aaaa-4aa1-8aa1-000000000021') = 5
+   ),
+   'Paso 9 writes each detected row count to its own IDA or VUELTA identity'
+ );
+ 
+ SELECT throws_ok(
+   $$SELECT public.peajes_guardar_refresco_tarifas(
+     '[
+-      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"IDA","categoria":1,"status":"NO_PICO","importe":1400,"cases":4},
+-      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"VUELTA","categoria":1,"status":"NO_PICO","importe":2200,"cases":1.5}
++      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"IDA","categoria":1,"status":"NO_PICO","importe":1400,"cases":4,"action":"CONFIRM_NEW","fecha_vigencia_inicio":"2026-04-01"},
++      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"VUELTA","categoria":1,"status":"NO_PICO","importe":2200,"cases":1.5,"action":"CONFIRM_NEW","fecha_vigencia_inicio":"2026-04-01"}
+     ]'::jsonb
+   )$$,
+   '23514', NULL,
+   'fractional Paso 9 cases is rejected'
+ );
+ SELECT is(
+   (SELECT count(*)::integer FROM public.tarifa_importe),
+   6,
+   'invalid Paso 9 payload rolls back all of its history inserts'
+ );
+diff --git a/ibarra-app/supabase/tests/peajes_tarifario_rpc_test.sql b/ibarra-app/supabase/tests/peajes_tarifario_rpc_test.sql
+index 40dff61..3bdfb61 100644
+--- a/ibarra-app/supabase/tests/peajes_tarifario_rpc_test.sql
++++ b/ibarra-app/supabase/tests/peajes_tarifario_rpc_test.sql
+@@ -1,14 +1,14 @@
+ -- pgTAP: F14-17 Tarifario RPCs (list current / editor / save / history)
+ -- Fixture namespace 17400000-ÔÇª so this file does not collide with F14-16 (16200000-ÔÇª).
+ BEGIN;
+-SELECT plan(15);
++SELECT plan(22);
+ 
+ SELECT has_function(
+   'public',
+   'peajes_listar_tarifas_actuales',
+   ARRAY['jsonb', 'integer', 'integer', 'text'],
+   'F14-17 peajes_listar_tarifas_actuales(jsonb,int,int,text)'
+ );
+ SELECT has_function(
+   'public',
+   'peajes_obtener_tarifario_editor',
+@@ -39,53 +39,65 @@ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   fecha_actualizacion
+ ) VALUES (
+   '17400000-aaaa-4aa1-8aa1-000000000050',
+   '17400000-aaaa-4aa1-8aa1-000000000001',
+   '17400000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 1, 'IDA',
+   '2026-03-10T00:00:00Z'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
++) VALUES
+   (
+     '17400000-aaaa-4aa1-8aa1-000000000099',
+     '17400000-aaaa-4aa1-8aa1-000000000050',
+     5000,
+-    '2025-08-21T00:00:00Z'
++    '2025-08-21T00:00:00Z',
++    'CONFIRMADO', DATE '2025-08-21', DATE '2026-03-10'
+   );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES
+   (
+     '17400000-aaaa-4aa1-8aa1-000000000100',
+     '17400000-aaaa-4aa1-8aa1-000000000050',
+     5500,
+-    '2026-03-10T00:00:00Z'
++    '2026-03-10T00:00:00Z',
++    'CONFIRMADO', DATE '2026-03-10'
+   );
+ 
+ INSERT INTO public.tarifas (
+   id, peaje_id, estacion_id, status, categoria, sentido,
+   fecha_actualizacion
+ ) VALUES (
+   '17400000-aaaa-4aa1-8aa1-000000000051',
+   '17400000-aaaa-4aa1-8aa1-000000000001',
+   '17400000-aaaa-4aa1-8aa1-000000000010',
+   'NO_PICO', 1, 'VUELTA',
+   '2026-03-10T00:00:00Z'
+ );
+ 
+-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES
++INSERT INTO public.tarifa_importe (
++  id, tarifa_id, importe, fecha_aparicion,
++  diagnostico, fecha_vigencia_inicio
++) VALUES
+   (
+     '17400000-aaaa-4aa1-8aa1-000000000110',
+     '17400000-aaaa-4aa1-8aa1-000000000051',
+     5700,
+-    '2026-03-10T00:00:00Z'
++    '2026-03-10T00:00:00Z',
++    'CONFIRMADO', DATE '2026-03-10'
+   );
+ 
+ SELECT ok(
+   (
+     SELECT (r -> 0 ->> 'importe')::numeric = 5500
+        AND (r -> 0 ->> 'current_tarifa_importe_id')
+            = '17400000-aaaa-4aa1-8aa1-000000000100'
+     FROM (
+       SELECT public.peajes_listar_tarifas_actuales(
+         jsonb_build_object(
+@@ -129,21 +141,21 @@ SELECT is(
+   ),
+   0,
+   'F14-17 editor vacio es exito con existentes []'
+ );
+ 
+ SELECT lives_ok(
+   $$SELECT public.peajes_guardar_tarifas_actuales(
+       '17400000-aaaa-4aa1-8aa1-000000000001',
+       '17400000-aaaa-4aa1-8aa1-000000000010',
+       'IDA',
+-      '[{"categoria":1,"status":"NO_PICO","importe":5800}]'::jsonb
++      '[{"categoria":1,"status":"NO_PICO","importe":5800,"fecha_vigencia_inicio":"2026-09-01"}]'::jsonb
+     )$$,
+   'F14-17 guardar append 5800'
+ );
+ 
+ SELECT ok(
+   (
+     SELECT importe = 5000
+     FROM public.tarifa_importe
+     WHERE id = '17400000-aaaa-4aa1-8aa1-000000000099'
+   ),
+@@ -181,42 +193,135 @@ SELECT ok(
+     ) h
+   ),
+   'F14-17 historial marca vigente 5800 y conserva 5500/5000'
+ );
+ 
+ SELECT throws_ok(
+   $$SELECT public.peajes_guardar_tarifas_actuales(
+       '17400000-aaaa-4aa1-8aa1-000000000001',
+       '17400000-aaaa-4aa1-8aa1-000000000010',
+       'IDA',
+-      '[{"categoria":1,"status":"NO_PICO","importe":0}]'::jsonb
++      '[{"categoria":1,"status":"NO_PICO","importe":0,"fecha_vigencia_inicio":"2026-09-01"}]'::jsonb
+     )$$,
+   '23514',
+   'importe debe ser > 0 (F14-16 tarifa_importe_importe_chk)',
+   'F14-17 rechaza importe 0'
+ );
+ 
+ SELECT is(
+   (
+     SELECT (public.peajes_guardar_tarifas_actuales(
+       '17400000-aaaa-4aa1-8aa1-000000000001',
+       '17400000-aaaa-4aa1-8aa1-000000000011',
+       'IDA',
+-      '[{"categoria":4,"status":"PICO","importe":9500}]'::jsonb
++      '[{"categoria":4,"status":"PICO","importe":9500,"fecha_vigencia_inicio":"2026-09-01"}]'::jsonb
+     ) ->> 'actualizadas')::int
+   ),
+   1,
+   'F14-17 guardar crea identidad faltante'
+ );
+ 
+ SELECT is(
+   (
+     SELECT count(*)::int FROM public.tarifas
+     WHERE estacion_id = '17400000-aaaa-4aa1-8aa1-000000000011'
+       AND categoria = 4 AND status = 'PICO' AND sentido = 'IDA'
+   ),
+   1,
+   'F14-17 VACIA gana una fila tarifas'
+ );
+ 
++SELECT is(
++  (
++    SELECT fecha_vigencia_fin
++    FROM public.tarifa_importe
++    WHERE id = '17400000-aaaa-4aa1-8aa1-000000000100'
++  ),
++  DATE '2026-09-01',
++  'F14-19 editor cierra el vigente en fecha_vigencia_inicio nueva'
++);
++
++SELECT ok(
++  (
++    SELECT ti.diagnostico = 'CONFIRMADO'
++       AND ti.fecha_vigencia_inicio = DATE '2026-09-01'
++       AND ti.fecha_vigencia_fin IS NULL
++    FROM public.tarifas t
++    JOIN public.tarifa_importe ti ON ti.id = t.current_tarifa_id
++    WHERE t.id = '17400000-aaaa-4aa1-8aa1-000000000050'
++  ),
++  'F14-19 editor inserta CONFIRMADO abierto y mueve el puntero'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_tarifas_actuales(
++      '17400000-aaaa-4aa1-8aa1-000000000001',
++      '17400000-aaaa-4aa1-8aa1-000000000010',
++      'IDA',
++      '[{"categoria":1,"status":"NO_PICO","importe":5900}]'::jsonb
++    )$$,
++  'P0001',
++  'fecha_vigencia_inicio es obligatorio para CONFIRM_NEW',
++  'F14-19 editor exige fecha_vigencia_inicio'
++);
++
++SELECT throws_ok(
++  $$SELECT public.peajes_guardar_tarifas_actuales(
++      '17400000-aaaa-4aa1-8aa1-000000000001',
++      '17400000-aaaa-4aa1-8aa1-000000000010',
++      'IDA',
++      '[{"categoria":1,"status":"NO_PICO","importe":5900,"fecha_vigencia_inicio":"2026-08-01"}]'::jsonb
++    )$$,
++  'P0001',
++  'la vigencia nueva se superpone o inicia antes del vigente',
++  'F14-19 editor rechaza un inicio anterior o interior al vigente'
++);
++
++SELECT ok(
++  pg_get_functiondef('public.peajes_guardar_tarifas_actuales(uuid,uuid,text,jsonb)'::regprocedure)
++    ILIKE '%FOR UPDATE%'
++  AND pg_get_functiondef('public.peajes_guardar_tarifas_actuales(uuid,uuid,text,jsonb)'::regprocedure)
++    ~* 'ORDER BY[[:space:]]+t\.peaje_id,[[:space:]]*t\.estacion_id,[[:space:]]*t\.sentido,[[:space:]]*t\.categoria,[[:space:]]*t\.status',
++  'F14-19 editor lockea tarifas en orden determinista'
++);
++
++SELECT ok(
++  (
++    SELECT p.prosecdef IS FALSE
++    FROM pg_proc p
++    JOIN pg_namespace n ON n.oid = p.pronamespace
++    WHERE n.nspname = 'public'
++      AND p.proname = 'peajes_guardar_tarifas_actuales'
++  ),
++  'F14-19 guardar_tarifas_actuales es SECURITY INVOKER'
++);
++
++SELECT ok(
++  NOT COALESCE(
++    has_function_privilege(
++      'anon',
++      'public.peajes_guardar_tarifas_actuales(uuid, uuid, text, jsonb)',
++      'EXECUTE'
++    ),
++    false
++  )
++  AND COALESCE(
++    has_function_privilege(
++      'authenticated',
++      'public.peajes_guardar_tarifas_actuales(uuid, uuid, text, jsonb)',
++      'EXECUTE'
++    ),
++    false
++  )
++  AND COALESCE(
++    has_function_privilege(
++      'service_role',
++      'public.peajes_guardar_tarifas_actuales(uuid, uuid, text, jsonb)',
++      'EXECUTE'
++    ),
++    false
++  ),
++  'F14-19 editor PUBLIC/anon sin EXECUTE; authenticated y service_role conservan EXECUTE'
++);
++
+ SELECT finish();
+ ROLLBACK;
+
+## New file: ibarra-app/supabase/migrations/20260909192938_peajes_tarifa_matching_correcciones.sql
+
+diff --git a/ibarra-app/supabase/migrations/20260909192938_peajes_tarifa_matching_correcciones.sql b/ibarra-app/supabase/migrations/20260909192938_peajes_tarifa_matching_correcciones.sql
+new file mode 100644
+index 0000000..98cb636
+--- /dev/null
++++ b/ibarra-app/supabase/migrations/20260909192938_peajes_tarifa_matching_correcciones.sql
+@@ -0,0 +1,656 @@
++-- F14-19 Task 3: atomic CONFIRM_NEW / MARK_REVIEW saves.
++-- Replaces CURRENT_DATE compatibility writers with explicit validity payloads.
++-- Function signatures of peajes_guardar_refresco_tarifas(jsonb) and
++-- peajes_guardar_tarifas_actuales(uuid, uuid, text, jsonb) stay unchanged.
++-- Matching/detect behavior is Task 4 and is not modified here.
++
++DROP FUNCTION IF EXISTS public._peajes_append_tarifa_importe_confirmado(uuid, numeric, integer);
++
++CREATE OR REPLACE FUNCTION public._peajes_aplicar_importe_guardado(
++  p_tarifa_id uuid,
++  p_importe numeric,
++  p_cases integer,
++  p_diagnostico text,
++  p_fecha_inicio date,
++  p_categoria_calculated smallint
++)
++RETURNS TABLE (
++  new_id uuid,
++  prior_id uuid,
++  prior_importe numeric,
++  prior_fin date,
++  new_inicio date,
++  new_fin date
++)
++LANGUAGE plpgsql
++SECURITY INVOKER
++SET search_path = public
++AS $$
++DECLARE
++  v_current_id uuid;
++  v_prior_importe numeric;
++  v_prior_fin date;
++  v_new_id uuid;
++BEGIN
++  SELECT t.current_tarifa_id
++    INTO v_current_id
++    FROM public.tarifas t
++   WHERE t.id = p_tarifa_id;
++
++  IF v_current_id IS NOT NULL THEN
++    SELECT ti.importe, ti.fecha_vigencia_fin
++      INTO v_prior_importe, v_prior_fin
++      FROM public.tarifa_importe ti
++     WHERE ti.id = v_current_id;
++  END IF;
++
++  IF p_diagnostico = 'CONFIRMADO' THEN
++    IF v_current_id IS NOT NULL THEN
++      UPDATE public.tarifa_importe
++         SET fecha_vigencia_fin = p_fecha_inicio
++       WHERE id = v_current_id
++         AND fecha_vigencia_fin IS NULL;
++      v_prior_fin := p_fecha_inicio;
++    END IF;
++
++    INSERT INTO public.tarifa_importe (
++      tarifa_id, importe, cases, fecha_aparicion,
++      diagnostico, fecha_vigencia_inicio, categoria_calculated
++    ) VALUES (
++      p_tarifa_id, p_importe, p_cases, now(),
++      'CONFIRMADO', p_fecha_inicio, p_categoria_calculated
++    )
++    RETURNING id INTO v_new_id;
++
++    RETURN QUERY SELECT
++      v_new_id, v_current_id, v_prior_importe, v_prior_fin,
++      p_fecha_inicio, NULL::date;
++    RETURN;
++  END IF;
++
++  INSERT INTO public.tarifa_importe (
++    tarifa_id, importe, cases, fecha_aparicion,
++    diagnostico, categoria_calculated
++  ) VALUES (
++    p_tarifa_id, p_importe, p_cases, now(),
++    'REVISAR', p_categoria_calculated
++  )
++  RETURNING id INTO v_new_id;
++
++  RETURN QUERY SELECT
++    v_new_id, v_current_id, v_prior_importe, v_prior_fin,
++    NULL::date, NULL::date;
++END;
++$$;
++
++COMMENT ON FUNCTION public._peajes_aplicar_importe_guardado(uuid, numeric, integer, text, date, smallint) IS
++  'F14-19 ┬À Cierra el vigente y appendea CONFIRMADO, o appendea REVISAR sin tocar el puntero.';
++
++REVOKE ALL ON FUNCTION public._peajes_aplicar_importe_guardado(uuid, numeric, integer, text, date, smallint) FROM PUBLIC;
++GRANT EXECUTE ON FUNCTION public._peajes_aplicar_importe_guardado(uuid, numeric, integer, text, date, smallint)
++  TO authenticated, service_role;
++
++CREATE OR REPLACE FUNCTION public.peajes_guardar_tarifas_actuales(
++  p_peaje_id uuid,
++  p_estacion_id uuid,
++  p_sentido text,
++  p_cambios jsonb
++)
++RETURNS jsonb
++LANGUAGE plpgsql
++SECURITY INVOKER
++SET search_path = public
++AS $$
++DECLARE
++  v_sentido text := upper(btrim(p_sentido));
++  v_cambio jsonb;
++  v_categoria smallint;
++  v_status text;
++  v_importe numeric;
++  v_fecha date;
++  v_tarifa_id uuid;
++  v_current_id uuid;
++  v_cur_inicio date;
++  v_n integer := 0;
++  v_lock_id uuid;
++  v_est_peaje uuid;
++BEGIN
++  IF v_sentido NOT IN ('IDA', 'VUELTA', 'AMBAS') THEN
++    RAISE EXCEPTION 'sentido invalido: %', p_sentido USING ERRCODE = '22023';
++  END IF;
++  IF p_cambios IS NULL OR jsonb_typeof(p_cambios) <> 'array' THEN
++    RAISE EXCEPTION 'p_cambios debe ser un array JSON' USING ERRCODE = '22023';
++  END IF;
++
++  SELECT e.peaje_id INTO v_est_peaje FROM public.estaciones e WHERE e.id = p_estacion_id;
++  IF v_est_peaje IS NULL OR v_est_peaje IS DISTINCT FROM p_peaje_id THEN
++    RAISE EXCEPTION 'la estacion no pertenece al peaje indicado';
++  END IF;
++
++  FOR v_cambio IN SELECT value FROM jsonb_array_elements(p_cambios)
++  LOOP
++    BEGIN
++      v_categoria := (v_cambio->>'categoria')::smallint;
++      v_importe := (v_cambio->>'importe')::numeric;
++    EXCEPTION WHEN invalid_text_representation THEN
++      RAISE EXCEPTION 'p_cambios incompleto o tipos invalidos' USING ERRCODE = '22023';
++    END;
++    v_status := upper(btrim(v_cambio->>'status'));
++    BEGIN
++      v_fecha := NULLIF(btrim(COALESCE(
++        v_cambio->>'fecha_vigencia_inicio',
++        v_cambio->>'fechaVigenciaInicio'
++      )), '')::date;
++    EXCEPTION WHEN invalid_datetime_format OR datetime_field_overflow THEN
++      RAISE EXCEPTION 'fecha_vigencia_inicio es obligatorio para CONFIRM_NEW';
++    END;
++
++    IF v_categoria IS NULL OR v_categoria < 0 OR v_categoria > 10 THEN
++      RAISE EXCEPTION 'categoria invalida: %', v_cambio->>'categoria' USING ERRCODE = '22023';
++    END IF;
++    IF v_status NOT IN ('PICO', 'NO_PICO') THEN
++      RAISE EXCEPTION 'status invalido: %', v_cambio->>'status' USING ERRCODE = '22023';
++    END IF;
++    IF v_importe IS NULL OR v_importe <= 0 THEN
++      RAISE EXCEPTION 'importe debe ser > 0 (F14-16 tarifa_importe_importe_chk)'
++        USING ERRCODE = '23514';
++    END IF;
++    IF v_fecha IS NULL THEN
++      RAISE EXCEPTION 'fecha_vigencia_inicio es obligatorio para CONFIRM_NEW';
++    END IF;
++  END LOOP;
++
++  FOR v_lock_id IN
++    SELECT t.id
++    FROM public.tarifas t
++    WHERE t.peaje_id = p_peaje_id
++      AND t.estacion_id = p_estacion_id
++      AND t.sentido = v_sentido
++      AND EXISTS (
++        SELECT 1
++        FROM jsonb_array_elements(p_cambios) c
++        WHERE (c->>'categoria')::smallint = t.categoria
++          AND upper(btrim(c->>'status')) = t.status
++      )
++    ORDER BY t.peaje_id, t.estacion_id, t.sentido, t.categoria, t.status
++    FOR UPDATE
++  LOOP
++    NULL;
++  END LOOP;
++
++  FOR v_cambio IN SELECT value FROM jsonb_array_elements(p_cambios)
++  LOOP
++    v_categoria := (v_cambio->>'categoria')::smallint;
++    v_status := upper(btrim(v_cambio->>'status'));
++    v_fecha := NULLIF(btrim(COALESCE(
++      v_cambio->>'fecha_vigencia_inicio',
++      v_cambio->>'fechaVigenciaInicio'
++    )), '')::date;
++
++    SELECT t.id, t.current_tarifa_id
++      INTO v_tarifa_id, v_current_id
++      FROM public.tarifas t
++     WHERE t.peaje_id = p_peaje_id
++       AND t.estacion_id = p_estacion_id
++       AND t.status = v_status
++       AND t.categoria = v_categoria
++       AND t.sentido = v_sentido;
++
++    IF v_tarifa_id IS NOT NULL THEN
++      IF v_current_id IS NOT NULL THEN
++        SELECT ti.fecha_vigencia_inicio
++          INTO v_cur_inicio
++          FROM public.tarifa_importe ti
++         WHERE ti.id = v_current_id;
++        IF v_cur_inicio IS NOT NULL AND v_fecha <= v_cur_inicio THEN
++          RAISE EXCEPTION 'la vigencia nueva se superpone o inicia antes del vigente';
++        END IF;
++      END IF;
++      IF EXISTS (
++        SELECT 1
++        FROM public.tarifa_importe ti
++        WHERE ti.tarifa_id = v_tarifa_id
++          AND ti.diagnostico = 'CONFIRMADO'
++          AND ti.fecha_vigencia_inicio IS NOT NULL
++          AND ti.id IS DISTINCT FROM v_current_id
++          AND daterange(
++                ti.fecha_vigencia_inicio,
++                COALESCE(ti.fecha_vigencia_fin, 'infinity'::date),
++                '[)'
++              ) && daterange(v_fecha, 'infinity'::date, '[)')
++      ) THEN
++        RAISE EXCEPTION 'la vigencia nueva se superpone o inicia antes del vigente';
++      END IF;
++    END IF;
++  END LOOP;
++
++  FOR v_cambio IN SELECT value FROM jsonb_array_elements(p_cambios)
++  LOOP
++    v_categoria := (v_cambio->>'categoria')::smallint;
++    v_status := upper(btrim(v_cambio->>'status'));
++    v_importe := (v_cambio->>'importe')::numeric;
++    v_fecha := NULLIF(btrim(COALESCE(
++      v_cambio->>'fecha_vigencia_inicio',
++      v_cambio->>'fechaVigenciaInicio'
++    )), '')::date;
++
++    SELECT t.id INTO v_tarifa_id
++    FROM public.tarifas t
++    WHERE t.peaje_id = p_peaje_id
++      AND t.estacion_id = p_estacion_id
++      AND t.status = v_status
++      AND t.categoria = v_categoria
++      AND t.sentido = v_sentido;
++
++    IF v_tarifa_id IS NULL THEN
++      INSERT INTO public.tarifas (
++        peaje_id, estacion_id, status, categoria, sentido,
++        requiere_normalizacion_iva, current_tarifa_id, fecha_actualizacion
++      ) VALUES (
++        p_peaje_id, p_estacion_id, v_status, v_categoria, v_sentido,
++        false, NULL, now()
++      )
++      RETURNING id INTO v_tarifa_id;
++    END IF;
++
++    PERFORM public._peajes_aplicar_importe_guardado(
++      v_tarifa_id, v_importe, 0, 'CONFIRMADO', v_fecha, NULL
++    );
++
++    UPDATE public.tarifas
++       SET fecha_actualizacion = now()
++     WHERE id = v_tarifa_id;
++
++    v_n := v_n + 1;
++  END LOOP;
++
++  RETURN jsonb_build_object('actualizadas', v_n);
++END;
++$$;
++
++CREATE OR REPLACE FUNCTION public.peajes_guardar_refresco_tarifas(
++  p_cambios jsonb
++)
++RETURNS jsonb
++LANGUAGE plpgsql
++VOLATILE
++SECURITY INVOKER
++SET search_path = public
++AS $$
++DECLARE
++  v_elem jsonb;
++  v_ord integer;
++  v_action text;
++  v_candidate text;
++  v_peaje uuid;
++  v_estacion uuid;
++  v_sentido text;
++  v_categoria smallint;
++  v_cat_calc smallint;
++  v_status text;
++  v_importe numeric;
++  v_cases integer;
++  v_fecha date;
++  v_iva boolean;
++  v_iva_present boolean;
++  v_key text;
++  v_keys text[] := '{}';
++  v_cand_keys text[] := '{}';
++  v_est_peaje uuid;
++  v_tarifa_id uuid;
++  v_current_id uuid;
++  v_current_importe numeric;
++  v_cur_inicio date;
++  v_flag boolean;
++  v_was_new boolean;
++  v_accion text;
++  v_new_ti uuid;
++  v_prior_fin date;
++  v_new_inicio date;
++  v_new_fin date;
++  v_lock_id uuid;
++  v_applied record;
++  v_rows jsonb := '[]'::jsonb;
++BEGIN
++  IF p_cambios IS NULL OR jsonb_typeof(p_cambios) <> 'array' THEN
++    RAISE EXCEPTION 'p_cambios debe ser un arreglo JSON';
++  END IF;
++
++  FOR v_elem, v_ord IN
++    SELECT t.elem, t.ord
++    FROM jsonb_array_elements(p_cambios) WITH ORDINALITY AS t(elem, ord)
++  LOOP
++    v_action := upper(btrim(COALESCE(v_elem->>'action', '')));
++    v_candidate := NULLIF(btrim(COALESCE(v_elem->>'candidate_id', v_elem->>'candidateId')), '');
++    BEGIN
++      v_peaje := NULLIF(btrim(COALESCE(v_elem->>'peaje_id', v_elem->>'peajeId')), '')::uuid;
++      v_estacion := NULLIF(btrim(COALESCE(v_elem->>'estacion_id', v_elem->>'estacionId')), '')::uuid;
++    EXCEPTION WHEN invalid_text_representation THEN
++      RAISE EXCEPTION 'p_cambios contiene UUID invalido';
++    END;
++    v_sentido := upper(btrim(COALESCE(v_elem->>'sentido', '')));
++    v_status := upper(btrim(COALESCE(v_elem->>'status', '')));
++    BEGIN
++      v_cat_calc := COALESCE(
++        (v_elem->>'categoria_calculada')::smallint,
++        (v_elem->>'categoriaCalculada')::smallint
++      );
++      v_categoria := COALESCE(
++        v_cat_calc,
++        (v_elem->>'categoria')::smallint,
++        (v_elem->>'categoriaProveedor')::smallint
++      );
++      v_importe := (COALESCE(v_elem->>'importe', ''))::numeric;
++    EXCEPTION WHEN invalid_text_representation THEN
++      RAISE EXCEPTION 'p_cambios incompleto o tipos invalidos';
++    END;
++    IF COALESCE(btrim(v_elem->>'cases'), '') = '' THEN
++      v_cases := 0;
++    ELSIF btrim(v_elem->>'cases') !~ '^[0-9]+$' THEN
++      RAISE EXCEPTION 'cases invalido: %', v_elem->>'cases' USING ERRCODE = '23514';
++    ELSE
++      v_cases := (v_elem->>'cases')::integer;
++    END IF;
++    v_iva_present := COALESCE(jsonb_typeof(COALESCE(
++      v_elem->'requiere_normalizacion_iva',
++      v_elem->'requiereNormalizacionIva'
++    )) = 'boolean', false);
++    v_iva := COALESCE(
++      (v_elem->>'requiere_normalizacion_iva')::boolean,
++      (v_elem->>'requiereNormalizacionIva')::boolean
++    );
++    BEGIN
++      v_fecha := NULLIF(btrim(COALESCE(
++        v_elem->>'fecha_vigencia_inicio',
++        v_elem->>'fechaVigenciaInicio'
++      )), '')::date;
++    EXCEPTION WHEN invalid_datetime_format OR datetime_field_overflow THEN
++      RAISE EXCEPTION 'p_cambios incompleto o tipos invalidos';
++    END;
++
++    IF v_action NOT IN ('CONFIRM_NEW', 'MARK_REVIEW') THEN
++      RAISE EXCEPTION 'accion invalida: %', COALESCE(v_elem->>'action', '');
++    END IF;
++    IF v_peaje IS NULL OR v_estacion IS NULL OR v_categoria IS NULL OR v_importe IS NULL THEN
++      RAISE EXCEPTION 'p_cambios incompleto o tipos invalidos';
++    END IF;
++    IF v_sentido NOT IN ('IDA', 'VUELTA', 'AMBAS') THEN
++      RAISE EXCEPTION 'sentido invalido: %', COALESCE(v_elem->>'sentido', '');
++    END IF;
++    IF v_status NOT IN ('PICO', 'NO_PICO') THEN
++      RAISE EXCEPTION 'status invalido: %', COALESCE(v_elem->>'status', '');
++    END IF;
++    IF v_categoria < 0 OR v_categoria > 10 THEN
++      RAISE EXCEPTION 'categoria invalida: %', COALESCE(
++        v_elem->>'categoria',
++        v_elem->>'categoriaProveedor',
++        v_elem->>'categoria_calculada',
++        v_elem->>'categoriaCalculada'
++      );
++    END IF;
++    IF v_cat_calc IS NOT NULL AND (v_cat_calc < 0 OR v_cat_calc > 10) THEN
++      RAISE EXCEPTION 'categoria invalida: %', v_cat_calc;
++    END IF;
++    IF v_importe <= 0 THEN
++      RAISE EXCEPTION 'importe debe ser > 0';
++    END IF;
++    IF v_action = 'CONFIRM_NEW' AND v_fecha IS NULL THEN
++      RAISE EXCEPTION 'fecha_vigencia_inicio es obligatorio para CONFIRM_NEW';
++    END IF;
++    IF v_action = 'MARK_REVIEW' AND v_fecha IS NOT NULL THEN
++      RAISE EXCEPTION 'fecha_vigencia_inicio no aplica a MARK_REVIEW';
++    END IF;
++
++    IF v_candidate IS NOT NULL THEN
++      IF v_candidate = ANY (v_cand_keys) THEN
++        RAISE EXCEPTION 'p_cambios contiene candidatos duplicados';
++      END IF;
++      v_cand_keys := array_append(v_cand_keys, v_candidate);
++    END IF;
++
++    v_key := v_peaje::text || '|' || v_estacion::text || '|' || v_sentido || '|'
++      || v_categoria::text || '|' || v_status;
++    IF v_key = ANY (v_keys) THEN
++      RAISE EXCEPTION 'p_cambios contiene celdas duplicadas';
++    END IF;
++    v_keys := array_append(v_keys, v_key);
++
++    SELECT e.peaje_id INTO v_est_peaje FROM public.estaciones e WHERE e.id = v_estacion;
++    IF v_est_peaje IS NULL OR v_est_peaje IS DISTINCT FROM v_peaje THEN
++      RAISE EXCEPTION 'la estacion no pertenece al peaje indicado';
++    END IF;
++    IF NOT EXISTS (
++      SELECT 1 FROM public.tarifas t
++      WHERE t.peaje_id = v_peaje AND t.estacion_id = v_estacion
++        AND t.sentido = v_sentido AND t.categoria = v_categoria AND t.status = v_status
++    ) AND v_iva_present IS NOT TRUE THEN
++      RAISE EXCEPTION 'requiere_normalizacion_iva es obligatorio para una identidad nueva';
++    END IF;
++  END LOOP;
++
++  FOR v_lock_id IN
++    SELECT t.id
++    FROM public.tarifas t
++    WHERE EXISTS (
++      SELECT 1
++      FROM jsonb_array_elements(p_cambios) e
++      WHERE t.peaje_id = NULLIF(btrim(COALESCE(e->>'peaje_id', e->>'peajeId')), '')::uuid
++        AND t.estacion_id = NULLIF(btrim(COALESCE(e->>'estacion_id', e->>'estacionId')), '')::uuid
++        AND t.sentido = upper(btrim(COALESCE(e->>'sentido', '')))
++        AND t.status = upper(btrim(COALESCE(e->>'status', '')))
++        AND t.categoria = COALESCE(
++          (e->>'categoria_calculada')::smallint,
++          (e->>'categoriaCalculada')::smallint,
++          (e->>'categoria')::smallint,
++          (e->>'categoriaProveedor')::smallint
++        )
++    )
++    ORDER BY t.peaje_id, t.estacion_id, t.sentido, t.categoria, t.status
++    FOR UPDATE
++  LOOP
++    NULL;
++  END LOOP;
++
++  FOR v_elem, v_ord IN
++    SELECT t.elem, t.ord
++    FROM jsonb_array_elements(p_cambios) WITH ORDINALITY AS t(elem, ord)
++  LOOP
++    v_action := upper(btrim(COALESCE(v_elem->>'action', '')));
++    IF v_action <> 'CONFIRM_NEW' THEN
++      CONTINUE;
++    END IF;
++    v_peaje := NULLIF(btrim(COALESCE(v_elem->>'peaje_id', v_elem->>'peajeId')), '')::uuid;
++    v_estacion := NULLIF(btrim(COALESCE(v_elem->>'estacion_id', v_elem->>'estacionId')), '')::uuid;
++    v_sentido := upper(btrim(COALESCE(v_elem->>'sentido', '')));
++    v_status := upper(btrim(COALESCE(v_elem->>'status', '')));
++    v_cat_calc := COALESCE(
++      (v_elem->>'categoria_calculada')::smallint,
++      (v_elem->>'categoriaCalculada')::smallint
++    );
++    v_categoria := COALESCE(
++      v_cat_calc,
++      (v_elem->>'categoria')::smallint,
++      (v_elem->>'categoriaProveedor')::smallint
++    );
++    v_fecha := NULLIF(btrim(COALESCE(
++      v_elem->>'fecha_vigencia_inicio',
++      v_elem->>'fechaVigenciaInicio'
++    )), '')::date;
++
++    SELECT t.id, t.current_tarifa_id
++      INTO v_tarifa_id, v_current_id
++      FROM public.tarifas t
++     WHERE t.peaje_id = v_peaje AND t.estacion_id = v_estacion AND t.sentido = v_sentido
++       AND t.categoria = v_categoria AND t.status = v_status;
++
++    IF v_tarifa_id IS NULL THEN
++      CONTINUE;
++    END IF;
++
++    v_cur_inicio := NULL;
++    IF v_current_id IS NOT NULL THEN
++      SELECT ti.fecha_vigencia_inicio
++        INTO v_cur_inicio
++        FROM public.tarifa_importe ti
++       WHERE ti.id = v_current_id;
++      IF v_cur_inicio IS NOT NULL AND v_fecha <= v_cur_inicio THEN
++        RAISE EXCEPTION 'la vigencia nueva se superpone o inicia antes del vigente';
++      END IF;
++    END IF;
++
++    IF EXISTS (
++      SELECT 1
++      FROM public.tarifa_importe ti
++      WHERE ti.tarifa_id = v_tarifa_id
++        AND ti.diagnostico = 'CONFIRMADO'
++        AND ti.fecha_vigencia_inicio IS NOT NULL
++        AND ti.id IS DISTINCT FROM v_current_id
++        AND daterange(
++              ti.fecha_vigencia_inicio,
++              COALESCE(ti.fecha_vigencia_fin, 'infinity'::date),
++              '[)'
++            ) && daterange(v_fecha, 'infinity'::date, '[)')
++    ) THEN
++      RAISE EXCEPTION 'la vigencia nueva se superpone o inicia antes del vigente';
++    END IF;
++  END LOOP;
++
++  FOR v_elem, v_ord IN
++    SELECT t.elem, t.ord
++    FROM jsonb_array_elements(p_cambios) WITH ORDINALITY AS t(elem, ord)
++  LOOP
++    v_action := upper(btrim(COALESCE(v_elem->>'action', '')));
++    v_candidate := NULLIF(btrim(COALESCE(v_elem->>'candidate_id', v_elem->>'candidateId')), '');
++    v_peaje := NULLIF(btrim(COALESCE(v_elem->>'peaje_id', v_elem->>'peajeId')), '')::uuid;
++    v_estacion := NULLIF(btrim(COALESCE(v_elem->>'estacion_id', v_elem->>'estacionId')), '')::uuid;
++    v_sentido := upper(btrim(COALESCE(v_elem->>'sentido', '')));
++    v_status := upper(btrim(COALESCE(v_elem->>'status', '')));
++    v_cat_calc := COALESCE(
++      (v_elem->>'categoria_calculada')::smallint,
++      (v_elem->>'categoriaCalculada')::smallint
++    );
++    v_categoria := COALESCE(
++      v_cat_calc,
++      (v_elem->>'categoria')::smallint,
++      (v_elem->>'categoriaProveedor')::smallint
++    );
++    v_importe := (v_elem->>'importe')::numeric;
++    v_cases := COALESCE((v_elem->>'cases')::integer, 0);
++    v_iva := COALESCE(
++      (v_elem->>'requiere_normalizacion_iva')::boolean,
++      (v_elem->>'requiereNormalizacionIva')::boolean
++    );
++    v_fecha := NULLIF(btrim(COALESCE(
++      v_elem->>'fecha_vigencia_inicio',
++      v_elem->>'fechaVigenciaInicio'
++    )), '')::date;
++    v_tarifa_id := NULL;
++    v_current_id := NULL;
++    v_flag := NULL;
++    v_new_ti := NULL;
++    v_current_importe := NULL;
++    v_prior_fin := NULL;
++    v_new_inicio := NULL;
++    v_new_fin := NULL;
++
++    SELECT t.id, t.current_tarifa_id, t.requiere_normalizacion_iva
++    INTO v_tarifa_id, v_current_id, v_flag
++    FROM public.tarifas t
++    WHERE t.peaje_id = v_peaje AND t.estacion_id = v_estacion AND t.sentido = v_sentido
++      AND t.categoria = v_categoria AND t.status = v_status;
++
++    v_was_new := v_tarifa_id IS NULL;
++    IF v_was_new THEN
++      INSERT INTO public.tarifas (
++        peaje_id, estacion_id, status, categoria, sentido,
++        requiere_normalizacion_iva, current_tarifa_id, fecha_actualizacion
++      ) VALUES (
++        v_peaje, v_estacion, v_status, v_categoria, v_sentido, v_iva, NULL, now()
++      ) RETURNING id INTO v_tarifa_id;
++      v_current_id := NULL;
++    END IF;
++
++    IF v_current_id IS NOT NULL THEN
++      SELECT ti.importe, ti.fecha_vigencia_fin
++        INTO v_current_importe, v_prior_fin
++        FROM public.tarifa_importe ti
++       WHERE ti.id = v_current_id;
++    END IF;
++
++    IF v_action = 'CONFIRM_NEW'
++       AND v_current_importe IS NOT NULL
++       AND v_current_importe = v_importe
++    THEN
++      v_accion := 'SIN_CAMBIO';
++      v_new_ti := NULL;
++    ELSIF v_action = 'MARK_REVIEW' THEN
++      SELECT *
++        INTO v_applied
++        FROM public._peajes_aplicar_importe_guardado(
++          v_tarifa_id, v_importe, v_cases, 'REVISAR', NULL, v_cat_calc
++        );
++      v_new_ti := v_applied.new_id;
++      v_current_importe := v_applied.prior_importe;
++      v_prior_fin := v_applied.prior_fin;
++      v_new_inicio := v_applied.new_inicio;
++      v_new_fin := v_applied.new_fin;
++      v_accion := 'REVISAR';
++    ELSE
++      SELECT *
++        INTO v_applied
++        FROM public._peajes_aplicar_importe_guardado(
++          v_tarifa_id, v_importe, v_cases, 'CONFIRMADO', v_fecha, v_cat_calc
++        );
++      v_new_ti := v_applied.new_id;
++      v_current_importe := v_applied.prior_importe;
++      v_prior_fin := v_applied.prior_fin;
++      v_new_inicio := v_applied.new_inicio;
++      v_new_fin := v_applied.new_fin;
++      v_accion := CASE WHEN v_was_new THEN 'IDENTIDAD_CREADA' ELSE 'ACTUALIZADA' END;
++      UPDATE public.tarifas
++         SET fecha_actualizacion = now()
++       WHERE id = v_tarifa_id;
++    END IF;
++
++    v_rows := v_rows || jsonb_build_array(
++      jsonb_build_object(
++        'peaje_id', v_peaje,
++        'estacion_id', v_estacion,
++        'sentido', v_sentido,
++        'categoria', v_categoria,
++        'status', v_status,
++        'tarifa_id', v_tarifa_id,
++        'nueva', v_importe,
++        'accion', v_accion,
++        'anterior', v_current_importe,
++        'tarifa_importe_id', v_new_ti,
++        'candidate_id', v_candidate,
++        'anterior_fin', v_prior_fin,
++        'fecha_vigencia_inicio', v_new_inicio,
++        'fecha_vigencia_fin', v_new_fin,
++        'diagnostico', CASE
++          WHEN v_accion = 'SIN_CAMBIO' THEN NULL
++          WHEN v_action = 'MARK_REVIEW' THEN 'REVISAR'
++          ELSE 'CONFIRMADO'
++        END,
++        'categoria_calculada', v_cat_calc
++      )
++    );
++  END LOOP;
++  RETURN v_rows;
++END;
++$$;
++
++COMMENT ON FUNCTION public.peajes_guardar_refresco_tarifas(jsonb) IS
++  'F14-19 ┬À Guardado at├│mico CONFIRM_NEW / MARK_REVIEW. Cierra el vigente en el nuevo inicio; REVISAR no mueve el puntero.';
++
++COMMENT ON FUNCTION public.peajes_guardar_tarifas_actuales(uuid, uuid, text, jsonb) IS
++  'F14-19 ┬À Editor de ruta: append CONFIRMADO con fecha_vigencia_inicio expl├¡cita. Firma intacta.';
++
++REVOKE ALL ON FUNCTION public.peajes_guardar_refresco_tarifas(jsonb) FROM PUBLIC;
++GRANT EXECUTE ON FUNCTION public.peajes_guardar_refresco_tarifas(jsonb)
++  TO authenticated, service_role;
++
++REVOKE ALL ON FUNCTION public.peajes_guardar_tarifas_actuales(uuid, uuid, text, jsonb) FROM PUBLIC;
++GRANT EXECUTE ON FUNCTION public.peajes_guardar_tarifas_actuales(uuid, uuid, text, jsonb)
++  TO authenticated, service_role;

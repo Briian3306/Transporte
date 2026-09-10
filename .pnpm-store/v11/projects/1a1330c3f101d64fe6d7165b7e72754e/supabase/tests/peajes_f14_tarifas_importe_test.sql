@@ -4,7 +4,7 @@
 -- + Task 8 compatibility readers (RED: pwbi_tarifas_v2 absent; legacy RPCs stay).
 -- Empty tables; fixture inserts only. Do not load the Cruzado workbook.
 BEGIN;
-SELECT plan(176);
+SELECT plan(185);
 
 -- -----------------------------------------------------------------------------
 -- Hard constraint: tarifas_normalizadas stays as compatibility path
@@ -323,6 +323,66 @@ SELECT col_type_is(
   'fecha_aparicion',
   'timestamp with time zone',
   'F14-16 tarifa_importe.fecha_aparicion timestamptz'
+);
+
+SELECT has_column(
+  'public',
+  'tarifa_importe',
+  'fecha_vigencia_inicio',
+  'F14-19 tarifa_importe.fecha_vigencia_inicio'
+);
+SELECT col_type_is(
+  'public',
+  'tarifa_importe',
+  'fecha_vigencia_inicio',
+  'date',
+  'F14-19 tarifa_importe.fecha_vigencia_inicio date'
+);
+SELECT col_is_null(
+  'public',
+  'tarifa_importe',
+  'fecha_vigencia_inicio',
+  'F14-19 tarifa_importe.fecha_vigencia_inicio nullable'
+);
+
+SELECT has_column(
+  'public',
+  'tarifa_importe',
+  'fecha_vigencia_fin',
+  'F14-19 tarifa_importe.fecha_vigencia_fin'
+);
+SELECT col_type_is(
+  'public',
+  'tarifa_importe',
+  'fecha_vigencia_fin',
+  'date',
+  'F14-19 tarifa_importe.fecha_vigencia_fin date'
+);
+SELECT col_is_null(
+  'public',
+  'tarifa_importe',
+  'fecha_vigencia_fin',
+  'F14-19 tarifa_importe.fecha_vigencia_fin nullable'
+);
+
+SELECT has_column(
+  'public',
+  'tarifa_importe',
+  'diagnostico',
+  'F14-19 tarifa_importe.diagnostico'
+);
+SELECT col_type_is(
+  'public',
+  'tarifa_importe',
+  'diagnostico',
+  'text',
+  'F14-19 tarifa_importe.diagnostico text'
+);
+SELECT col_is_null(
+  'public',
+  'tarifa_importe',
+  'diagnostico',
+  'F14-19 tarifa_importe.diagnostico nullable'
 );
 
 SELECT has_column(
@@ -1032,13 +1092,15 @@ SELECT ok(
 
 -- First insert promotes bootstrap NULL pointer and copies fecha_aparicion.
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES (
   '16200000-aaaa-4aa1-8aa1-000000000060',
   '16200000-aaaa-4aa1-8aa1-000000000050',
   1000.00,
   timestamptz '2026-07-01 00:00:00+00',
-  timestamptz '2026-07-01 12:00:00+00'
+  timestamptz '2026-07-01 12:00:00+00',
+  'CONFIRMADO', DATE '2026-07-01', DATE '2026-08-01'
 );
 
 SELECT is(
@@ -1053,15 +1115,17 @@ SELECT is(
   'F14-16 primer INSERT copia fecha_aparicion a tarifas.fecha_actualizacion'
 );
 
--- Strictly later (fecha_aparicion, created_at, id) promotes.
+-- Strictly later fecha_vigencia_inicio promotes (CONFIRMADO + start).
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES (
   '16200000-aaaa-4aa1-8aa1-000000000061',
   '16200000-aaaa-4aa1-8aa1-000000000050',
   2000.00,
   timestamptz '2026-08-01 00:00:00+00',
-  timestamptz '2026-08-01 12:00:00+00'
+  timestamptz '2026-08-01 12:00:00+00',
+  'CONFIRMADO', DATE '2026-08-01', NULL
 );
 
 SELECT is(
@@ -1076,15 +1140,17 @@ SELECT is(
   'F14-16 promoción posterior copia fecha_aparicion a fecha_actualizacion'
 );
 
--- Earlier tuple never demotes.
+-- Earlier validity never demotes.
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES (
   '16200000-aaaa-4aa1-8aa1-000000000062',
   '16200000-aaaa-4aa1-8aa1-000000000050',
   500.00,
   timestamptz '2026-06-01 00:00:00+00',
-  timestamptz '2026-06-01 12:00:00+00'
+  timestamptz '2026-06-01 12:00:00+00',
+  'CONFIRMADO', DATE '2026-06-01', DATE '2026-07-01'
 );
 
 SELECT is(
@@ -1101,13 +1167,15 @@ SELECT is(
 
 -- Cross-parent pointer: 051 cannot point at 050's amount (composite FK).
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio
 ) VALUES (
   '16200000-aaaa-4aa1-8aa1-000000000070',
   '16200000-aaaa-4aa1-8aa1-000000000051',
   1500.00,
   timestamptz '2026-07-01 00:00:00+00',
-  timestamptz '2026-07-01 12:00:00+00'
+  timestamptz '2026-07-01 12:00:00+00',
+  'CONFIRMADO', DATE '2026-07-01'
 );
 
 SELECT throws_ok(
@@ -1124,21 +1192,24 @@ SELECT throws_ok(
 -- Immutable history: reject business UPDATE and DELETE of a non-current row
 -- (DELETE of the current pointer could be blocked by the composite FK alone).
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES
   (
     '16200000-aaaa-4aa1-8aa1-000000000080',
     '16200000-aaaa-4aa1-8aa1-000000000052',
     800.00,
     timestamptz '2026-07-01 00:00:00+00',
-    timestamptz '2026-07-01 12:00:00+00'
+    timestamptz '2026-07-01 12:00:00+00',
+    'CONFIRMADO', DATE '2026-07-01', DATE '2026-08-01'
   ),
   (
     '16200000-aaaa-4aa1-8aa1-000000000081',
     '16200000-aaaa-4aa1-8aa1-000000000052',
     900.00,
     timestamptz '2026-08-01 00:00:00+00',
-    timestamptz '2026-08-01 12:00:00+00'
+    timestamptz '2026-08-01 12:00:00+00',
+    'CONFIRMADO', DATE '2026-08-01', NULL
   );
 
 SELECT throws_ok(
@@ -1162,25 +1233,29 @@ SELECT throws_ok(
   'F14-16 tarifa_importe rechaza DELETE (historial inmutable)'
 );
 
--- Equal fecha_aparicion: later created_at wins even with a smaller id.
+-- Equal fecha_aparicion: later fecha_vigencia_inicio wins even with a smaller id.
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES (
   '16200000-aaaa-4aa1-8aa1-000000000091',
   '16200000-aaaa-4aa1-8aa1-000000000053',
   1100.00,
   timestamptz '2026-07-10 00:00:00+00',
-  timestamptz '2026-07-15 10:00:00+00'
+  timestamptz '2026-07-15 10:00:00+00',
+  'CONFIRMADO', DATE '2026-07-10', DATE '2026-07-11'
 );
 
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES (
   '16200000-aaaa-4aa1-8aa1-000000000090',
   '16200000-aaaa-4aa1-8aa1-000000000053',
   1200.00,
   timestamptz '2026-07-10 00:00:00+00',
-  timestamptz '2026-07-15 11:00:00+00'
+  timestamptz '2026-07-15 11:00:00+00',
+  'CONFIRMADO', DATE '2026-07-11', NULL
 );
 
 SELECT is(
@@ -1190,13 +1265,15 @@ SELECT is(
 );
 
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES (
   '16200000-aaaa-4aa1-8aa1-000000000092',
   '16200000-aaaa-4aa1-8aa1-000000000053',
   1300.00,
   timestamptz '2026-07-10 00:00:00+00',
-  timestamptz '2026-07-15 09:00:00+00'
+  timestamptz '2026-07-15 09:00:00+00',
+  'CONFIRMADO', DATE '2026-07-09', DATE '2026-07-10'
 );
 
 SELECT is(
@@ -1205,25 +1282,29 @@ SELECT is(
   'F14-16 misma fecha_aparicion: created_at anterior no degrada el puntero'
 );
 
--- Equal fecha_aparicion + equal created_at: later id promotes; earlier id does not.
+-- Equal fecha_aparicion + equal created_at: later fecha_vigencia_inicio promotes.
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES (
   '16200000-aaaa-4aa1-8aa1-0000000000a0',
   '16200000-aaaa-4aa1-8aa1-000000000054',
   1400.00,
   timestamptz '2026-07-10 00:00:00+00',
-  timestamptz '2026-07-15 12:00:00+00'
+  timestamptz '2026-07-15 12:00:00+00',
+  'CONFIRMADO', DATE '2026-07-10', DATE '2026-07-11'
 );
 
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES (
   '16200000-aaaa-4aa1-8aa1-0000000000a1',
   '16200000-aaaa-4aa1-8aa1-000000000054',
   1500.00,
   timestamptz '2026-07-10 00:00:00+00',
-  timestamptz '2026-07-15 12:00:00+00'
+  timestamptz '2026-07-15 12:00:00+00',
+  'CONFIRMADO', DATE '2026-07-11', NULL
 );
 
 SELECT is(
@@ -1233,13 +1314,15 @@ SELECT is(
 );
 
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES (
   '16200000-aaaa-4aa1-8aa1-00000000009f',
   '16200000-aaaa-4aa1-8aa1-000000000054',
   1600.00,
   timestamptz '2026-07-10 00:00:00+00',
-  timestamptz '2026-07-15 12:00:00+00'
+  timestamptz '2026-07-15 12:00:00+00',
+  'CONFIRMADO', DATE '2026-07-09', DATE '2026-07-10'
 );
 
 SELECT is(
@@ -1395,7 +1478,7 @@ INSERT INTO public.tarifas (
 
 INSERT INTO public.tarifa_importe (
   id, tarifa_id, importe, fecha_aparicion, created_at,
-  hora_min, hora_max
+  hora_min, hora_max, diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES
   (
     '16600000-aaaa-4aa1-8aa1-000000000110',
@@ -1403,7 +1486,7 @@ INSERT INTO public.tarifa_importe (
     1111.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    NULL, NULL
+    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
   ),
   (
     '16600000-aaaa-4aa1-8aa1-000000000111',
@@ -1411,7 +1494,7 @@ INSERT INTO public.tarifa_importe (
     1999.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    NULL, NULL
+    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
   ),
   (
     '16600000-aaaa-4aa1-8aa1-000000000120',
@@ -1419,7 +1502,7 @@ INSERT INTO public.tarifa_importe (
     2222.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    NULL, NULL
+    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
   ),
   (
     '16600000-aaaa-4aa1-8aa1-000000000130',
@@ -1427,7 +1510,7 @@ INSERT INTO public.tarifa_importe (
     3001.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    NULL, NULL
+    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
   ),
   (
     '16600000-aaaa-4aa1-8aa1-000000000131',
@@ -1435,7 +1518,7 @@ INSERT INTO public.tarifa_importe (
     3002.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    NULL, NULL
+    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
   ),
   (
     '16600000-aaaa-4aa1-8aa1-000000000150',
@@ -1443,7 +1526,7 @@ INSERT INTO public.tarifa_importe (
     5001.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    7, 9
+    7, 9, 'CONFIRMADO', DATE '2026-07-01', NULL
   ),
   (
     '16600000-aaaa-4aa1-8aa1-000000000151',
@@ -1451,7 +1534,7 @@ INSERT INTO public.tarifa_importe (
     5002.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    10, 18
+    10, 18, 'CONFIRMADO', DATE '2026-07-01', NULL
   ),
   (
     '16600000-aaaa-4aa1-8aa1-000000000160',
@@ -1459,7 +1542,7 @@ INSERT INTO public.tarifa_importe (
     6000.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    NULL, NULL
+    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
   ),
   (
     '16600000-aaaa-4aa1-8aa1-000000000170',
@@ -1467,7 +1550,7 @@ INSERT INTO public.tarifa_importe (
     1000.00,
     timestamptz '2026-06-01 00:00:00+00',
     timestamptz '2026-06-01 12:00:00+00',
-    NULL, NULL
+    NULL, NULL, 'CONFIRMADO', DATE '2026-06-01', DATE '2026-08-01'
   ),
   (
     '16600000-aaaa-4aa1-8aa1-000000000171',
@@ -1475,7 +1558,7 @@ INSERT INTO public.tarifa_importe (
     2000.00,
     timestamptz '2026-08-01 00:00:00+00',
     timestamptz '2026-08-01 12:00:00+00',
-    NULL, NULL
+    NULL, NULL, 'CONFIRMADO', DATE '2026-08-01', NULL
   ),
   (
     '16600000-aaaa-4aa1-8aa1-000000000180',
@@ -1483,7 +1566,7 @@ INSERT INTO public.tarifa_importe (
     1000.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    NULL, NULL
+    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
   ),
   (
     '16600000-aaaa-4aa1-8aa1-000000000190',
@@ -1491,7 +1574,7 @@ INSERT INTO public.tarifa_importe (
     1000.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    NULL, NULL
+    NULL, NULL, 'CONFIRMADO', DATE '2026-07-01', NULL
   );
 
 INSERT INTO public.pasadas (
@@ -2084,7 +2167,7 @@ INSERT INTO public.tarifas (
 
 INSERT INTO public.tarifa_importe (
   id, tarifa_id, importe, fecha_aparicion, created_at,
-  tarifas_normalizadas_id
+  tarifas_normalizadas_id, diagnostico, fecha_vigencia_inicio
 ) VALUES
   (
     '16700000-aaaa-4aa1-8aa1-0000000000b1',
@@ -2092,7 +2175,8 @@ INSERT INTO public.tarifa_importe (
     1111.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    '16700000-aaaa-4aa1-8aa1-0000000000b1'
+    '16700000-aaaa-4aa1-8aa1-0000000000b1',
+    'CONFIRMADO', DATE '2026-07-01'
   ),
   (
     '16700000-aaaa-4aa1-8aa1-0000000000b3',
@@ -2100,7 +2184,8 @@ INSERT INTO public.tarifa_importe (
     3333.00,
     timestamptz '2026-07-01 00:00:00+00',
     timestamptz '2026-07-01 12:00:00+00',
-    NULL
+    NULL,
+    'CONFIRMADO', DATE '2026-07-01'
   );
 
 INSERT INTO public.pasadas (
@@ -2348,21 +2433,24 @@ INSERT INTO public.tarifas (
 );
 
 INSERT INTO public.tarifa_importe (
-  id, tarifa_id, importe, fecha_aparicion, created_at
+  id, tarifa_id, importe, fecha_aparicion, created_at,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
 ) VALUES
   (
     '16800000-aaaa-4aa1-8aa1-000000000100',
     '16800000-aaaa-4aa1-8aa1-000000000010',
     1111.00,
     timestamptz '2026-06-01 00:00:00+00',
-    timestamptz '2026-06-01 12:00:00+00'
+    timestamptz '2026-06-01 12:00:00+00',
+    'CONFIRMADO', DATE '2026-06-01', DATE '2026-08-01'
   ),
   (
     '16800000-aaaa-4aa1-8aa1-000000000200',
     '16800000-aaaa-4aa1-8aa1-000000000010',
     9999.00,
     timestamptz '2026-08-01 00:00:00+00',
-    timestamptz '2026-08-01 12:00:00+00'
+    timestamptz '2026-08-01 12:00:00+00',
+    'CONFIRMADO', DATE '2026-08-01', NULL
   );
 
 SELECT has_function(

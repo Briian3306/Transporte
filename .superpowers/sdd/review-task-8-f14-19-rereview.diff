@@ -1,0 +1,2041 @@
+﻿# Review package — Task 8 F14-19 re-review (uncommitted dialog editors after Important fixes)
+Base: 95033bda8434b21473aa51937dfa8831acf0d3b9
+Head: WORKING TREE
+
+## Commit list
+(none)
+
+## Files changed
+
+ .../tarifa-refresh-dialog.component.css            |  89 ++-
+ .../tarifa-refresh-dialog.component.html           | 116 +++-
+ .../tarifa-refresh-dialog.component.spec.ts        | 622 ++++++++++++++++++
+ .../tarifa-refresh-dialog.component.ts             | 726 ++++++++++++++++++---
+ 4 files changed, 1444 insertions(+), 109 deletions(-)
+
+## Diff -U10
+
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.css b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.css
+index b900810..94e2360 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.css
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.css
+@@ -19,24 +19,100 @@
+ .trd__editor .at__field {
+   margin-bottom: 0.85rem;
+ }
+ 
+ .trd__sentido {
+   margin: 0 0 0.75rem;
+   color: var(--at-muted, #52647a);
+   font-size: 0.92rem;
+ }
+ 
+-.trd__stations {
++.trd__stations,
++.trd__date,
++.trd__sentido-select {
+   margin: 0 0 1rem;
+ }
+ 
++.trd__rail {
++  margin: 0 0 1rem;
++  padding: 0.75rem 0.85rem;
++  border: 1px solid var(--at-line, #dbe4ee);
++  border-radius: 0.7rem;
++  background: var(--at-rail, #f3f7fd);
++}
++
++.trd__rail-title,
++.trd__editor-title {
++  margin: 0 0 0.55rem;
++  font-size: 0.82rem;
++  letter-spacing: 0.04em;
++  text-transform: uppercase;
++  color: var(--at-ink, #0f172a);
++}
++
++.trd__editor-title {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.45rem;
++  align-items: center;
++}
++
++.trd__candidate {
++  display: grid;
++  gap: 0.2rem;
++  margin: 0 0 0.75rem;
++  padding: 0.55rem 0 0.65rem;
++  border-top: 1px solid var(--at-line, #dbe4ee);
++  color: var(--at-ink, #0f172a);
++  font-size: 0.86rem;
++}
++
++.trd__candidate:first-of-type {
++  border-top: 0;
++  padding-top: 0;
++}
++
++.trd__candidate p {
++  margin: 0;
++}
++
++.trd__candidate-actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.4rem;
++  margin-top: 0.4rem;
++}
++
++.trd__trace {
++  display: inline-flex;
++  gap: 0.35rem;
++  align-items: center;
++  color: var(--at-ink, #0f172a);
++}
++
++.trd__swatch {
++  width: 0.7rem;
++  height: 0.7rem;
++  border-radius: 99px;
++  background: var(--trd-trace, #004ac6);
++}
++
++.trd__warn {
++  margin: 0.55rem 0 0;
++  color: #b42318;
++  font-weight: 650;
++}
++
++.trd__warn[data-warn='revisar'] {
++  color: var(--at-pending, #b45309);
++}
++
+ .trd__sentido-title {
+   margin: 1rem 0 0.45rem;
+   font-size: 0.95rem;
+   letter-spacing: 0.04em;
+   text-transform: uppercase;
+   color: var(--at-ink, #0f172a);
+ }
+ 
+ .trd__error,
+ .trd__perm {
+@@ -50,20 +126,31 @@
+   min-height: 2.4rem;
+   padding: 0.4rem 0.9rem;
+   border: 1px solid #d5e0ec;
+   border-radius: 0.45rem;
+   background: #fff;
+   font: inherit;
+   font-weight: 700;
+   cursor: pointer;
+ }
+ 
++.trd__btn:focus-visible {
++  outline: 2px solid #6ea0ee;
++  outline-offset: 2px;
++}
++
+ .trd__btn--primary {
+   border-color: #004ac6;
+   background: #004ac6;
+   color: #fff;
+ }
+ 
++.trd__btn--pressed {
++  border-color: #004ac6;
++  background: #e8f0fe;
++  color: #004ac6;
++}
++
+ .trd__btn:disabled {
+   opacity: 0.45;
+   cursor: not-allowed;
+ }
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.html b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.html
+index 98d5927..2d28aeb 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.html
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.html
+@@ -1,76 +1,158 @@
+ <app-dialog
+   [open]="open"
+   size="xl"
+   placement="top"
+   eyebrow="Paso 09 ┬À tarifas"
+   title="Actualizar tarifas detectadas"
+   description="Mismo editor del tarifario. Si varias estaciones comparten el precio, complet├í la tabla una sola vez. Un campo Nuevo vac├¡o no cambia esa tarifa."
+   [closeOnBackdrop]="false"
+   (closed)="close()"
+ >
+-  <p class="trd__perm" *ngIf="!canManage" role="alert">
+-    Necesit├ís permiso peajes:manage para guardar tarifas nuevas.
+-  </p>
+   <p class="at__empty" *ngIf="loading">Cargando tarifarioÔÇª</p>
+ 
+   <section class="tf trd__editor" *ngFor="let grupo of grupos">
+     <header class="at__header">
+       <div>
+         <p class="at__eyebrow">M├│dulo Peajes ┬À Tarifario</p>
+         <h1>
+           {{ grupo.peajeNombre || 'Tarifario' }}
+           <span *ngIf="familyLabel(grupo.family)">  >  {{ familyLabel(grupo.family) }}</span>
+         </h1>
+         <p class="at__sub">
+           Actualiz├í NO_PICO y PICO juntas. Un campo NUEVO vac├¡o no modifica esa tarifa.
+         </p>
+       </div>
+     </header>
+ 
+     <p class="trd__sentido" *ngIf="familyLabel(grupo.family)">
+       Sentido: <strong>{{ familyLabel(grupo.family) }}</strong>
+     </p>
+ 
+-    <div class="trd__stations" *ngIf="grupo.opciones.length > 1">
++    <div class="trd__stations" *ngIf="grupo.detectedStations.length > 1">
+       <app-checkbox-multi-select
+         label="Estaciones con la misma tarifa"
++        hint="Las estaciones desmarcadas reciben un editor independiente."
+         [options]="checkboxOptions(grupo)"
+         [value]="grupo.seleccionadas"
+         [disabled]="!canManage || saving"
+         [modalPopover]="true"
+         [maxCount]="6"
+         placeholder="Elegir estaciones"
+         (valueChange)="onSeleccionChange(grupo, $event)"
+       ></app-checkbox-multi-select>
+     </div>
+ 
++    <div class="trd__date">
++      <app-date-range-picker
++        label="Vigente desde"
++        mode="single"
++        placeholder="dd/mm/aaaa"
++        [value]="grupo.vigenteDesde"
++        [disabled]="!canManage || saving"
++        (valueChange)="onVigenteDesde(grupo, $event)"
++      ></app-date-range-picker>
++    </div>
++
+     <p class="at__error" *ngIf="grupo.family === 'SIN_TARIFARIO'" role="alert">
+       No hay un tarifario cargado para esta estaci├│n. No se puede crear un sentido desde la carga.
+     </p>
+ 
+-    <ng-container *ngFor="let tabla of grupo.tablas">
+-      <h4 class="trd__sentido-title" *ngIf="grupo.family === 'DIRECCIONAL'">{{ tabla.sentido }}</h4>
+-      <app-tarifario-editor-board
+-        *ngIf="!loading"
+-        [rows]="tabla.rows"
+-        [drafts]="tabla.drafts"
+-        [detected]="tabla.detected"
+-        [showAddCategoria]="false"
+-        [allowAddCategoria]="false"
+-        (draftChange)="onDraft(grupo, tabla, $event)"
+-        (historyRequest)="openHistory(grupo, tabla, $event)"
+-      ></app-tarifario-editor-board>
++    <section class="trd__rail" *ngIf="candidatesFor(grupo).length" aria-label="Candidatos detectados">
++      <h3 class="trd__rail-title">Candidatos detectados</h3>
++      <article class="trd__candidate" *ngFor="let cand of candidatesFor(grupo); trackBy: trackCandidate">
++        <p class="trd__trace" [style.--trd-trace]="cand.station.color">
++          <span class="trd__swatch" aria-hidden="true"></span>
++          <strong>{{ cand.station.estacionNombre }}</strong>
++        </p>
++        <p>Categor├¡a proveedor {{ cand.categoriaProveedor ?? 'ÔÇö' }}</p>
++        <p *ngIf="cand.categoriaCalculada != null">Categor├¡a calculada {{ cand.categoriaCalculada }}</p>
++        <p *ngIf="cand.possibleCategorias.length">posibles {{ cand.possibleCategorias.join(', ') }}</p>
++        <p>Importe detectado {{ cand.amount }} ┬À {{ cand.cases }} casos</p>
++        <p>Status: {{ cand.status || 'sin status' }} ┬À Sentido: {{ cand.sentido || 'sin sentido' }}</p>
++        <p *ngIf="cand.fechaPasada">Fecha pasada {{ cand.fechaPasada }}</p>
++        <p *ngIf="cand.vigencia && cand.vigencia !== cand.fechaPasada">Vigencia {{ cand.vigencia }}</p>
++        <p>{{ cand.reason }}</p>
++        <div class="trd__candidate-actions">
++          <button
++            type="button"
++            class="trd__btn"
++            [class.trd__btn--pressed]="armedAction(grupo, cand.candidateId) === 'CONFIRM_NEW'"
++            [attr.aria-pressed]="armedAction(grupo, cand.candidateId) === 'CONFIRM_NEW'"
++            [disabled]="!canManage || saving || !candidateCanArm(grupo, cand)"
++            (click)="confirmCandidate(grupo, cand.candidateId, 'CONFIRM_NEW')"
++          >
++            Confirmar como nueva
++          </button>
++          <button
++            type="button"
++            class="trd__btn"
++            [class.trd__btn--pressed]="armedAction(grupo, cand.candidateId) === 'MARK_REVIEW'"
++            [attr.aria-pressed]="armedAction(grupo, cand.candidateId) === 'MARK_REVIEW'"
++            [disabled]="!canManage || saving || !candidateCanArm(grupo, cand)"
++            (click)="confirmCandidate(grupo, cand.candidateId, 'MARK_REVIEW')"
++          >
++            Marcar para revisar
++          </button>
++        </div>
++      </article>
++    </section>
++
++    <ng-container *ngFor="let editor of grupo.editors">
++      <h3 class="trd__editor-title">
++        <span
++          class="trd__trace"
++          *ngFor="let station of editor.stations"
++          [style.--trd-trace]="station.color"
++        >
++          <span class="trd__swatch" aria-hidden="true"></span>
++          {{ station.estacionNombre }}
++        </span>
++      </h3>
++      <div class="trd__sentido-select" *ngIf="editor.sentidoRequiereEleccion">
++        <app-search-select
++          label="Sentido"
++          placeholder="Eleg├¡ IDA, VUELTA o AMBAS"
++          [options]="sentidoOptions"
++          [value]="editor.sentidoSeleccionado"
++          [showAllWhenEmpty]="true"
++          [disabled]="!canManage || saving"
++          (valueChange)="onSentidoChange(editor, $event)"
++        ></app-search-select>
++      </div>
++      <ng-container *ngFor="let tabla of editor.tablas">
++        <h4 class="trd__sentido-title" *ngIf="editor.family === 'DIRECCIONAL'">{{ tabla.sentido }}</h4>
++        <app-tarifario-editor-board
++          *ngIf="!loading"
++          [rows]="tabla.rows"
++          [drafts]="tabla.drafts"
++          [detected]="tabla.detected"
++          [currentStations]="tabla.currentStations"
++          [showAddCategoria]="false"
++          [allowAddCategoria]="false"
++          (draftChange)="onDraft(grupo, tabla, $event)"
++          (candidateSelected)="onCandidateSelected(grupo, editor, tabla, $event)"
++          (historyRequest)="openHistory(grupo, tabla, $event)"
++        ></app-tarifario-editor-board>
++      </ng-container>
+     </ng-container>
+   </section>
+ 
+-  <p class="trd__error" *ngIf="error" role="alert">{{ error }}</p>
++  <p
++    class="trd__warn"
++    *ngFor="let warn of warnings"
++    [attr.data-warn]="warn.code"
++    [attr.role]="warn.code === 'revisar' ? 'status' : 'alert'"
++  >
++    {{ warn.message }}
++  </p>
++  <p class="trd__error" *ngIf="error && !hasOverlapWarning" role="alert">{{ error }}</p>
+ 
+   <app-tarifario-historial-dialog
+     [open]="historyOpen"
+     [title]="historyTitle"
+     [loading]="historyLoading"
+     [error]="historyError"
+     [rows]="historyRows"
+     (closed)="historyOpen = false"
+   ></app-tarifario-historial-dialog>
+ 
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.spec.ts b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.spec.ts
+index 22ccd0d..183e9f0 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.spec.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.spec.ts
+@@ -1,36 +1,40 @@
+ import { ComponentFixture, TestBed } from '@angular/core/testing';
+ import { PEAJES_TARIFARIO_SERVICE } from '../../models/tarifario.contracts';
+ import { TARIFA_REFRESH_SERVICE } from '../../models/tarifa-refresh.contracts';
+ import {
+   ESTACION_BERNAL,
+   ESTACION_DOCK_SUD,
+   ESTACION_GUTIERREZ,
+   ESTACION_HUDSON,
++  ESTACION_INCOMPLETA,
+   ESTACION_SAMBOROMBON,
+   PEAJE_AUBASA,
+   TarifarioMockService,
+ } from '../../tarifario/mocks/tarifario.mock';
+ import { TarifaRefreshMockService } from '../mocks/tarifa-refresh.mock';
+ import { CandidatoRefrescoTarifa, ResultadoDetectarRefresco } from '../../models/tarifa-refresh.contracts';
+ import { TarifaRefreshDialogComponent } from './tarifa-refresh-dialog.component';
++import { STATION_SESSION_PALETTE } from './tarifa-refresh-dialog.helpers';
+ 
+ function pendiente(
+   estacionId: string,
+   opts: Partial<ResultadoDetectarRefresco> = {},
+ ): ResultadoDetectarRefresco {
+   return {
+     id: `${estacionId}-7`,
+     codigo: 'NEW_TARIFF',
+     peajeId: PEAJE_AUBASA,
+     estacionId,
+     categoria: 2,
++    categoriaProveedor: 2,
++    categoriaCalculada: null,
+     status: 'NO_PICO',
+     sentidoSolicitado: null,
+     sentidoAplicado: null,
+     importeActual: null,
+     tarifaId: null,
+     tarifaImporteId: null,
+     requiereNormalizacionIva: false,
+     rowIndexes: opts.rowIndexes ?? [0],
+     candidatePrice: opts.candidatePrice ?? 7000,
+     ...opts,
+@@ -38,28 +42,35 @@ function pendiente(
+ }
+ 
+ function candidato(
+   estacionId: string,
+   opts: Partial<CandidatoRefrescoTarifa> = {},
+ ): CandidatoRefrescoTarifa {
+   return {
+     id: `${estacionId}-7`,
+     estacionId,
+     categoria: 2,
++    categoriaProveedor: 2,
++    categoriaCalculada: null,
+     statusSolicitado: 'NO_PICO',
+     sentidoSolicitado: null,
+     directionConfidence: 'UNRESOLVED',
+     unresolvedReason: 'MISSING_MAPPING',
+     sourceStationCode: null,
+     sourceLane: null,
++    fechaPasada: null,
++    estacionNombre: null,
++    peajeId: null,
++    peajeNombre: null,
+     candidatePrice: opts.candidatePrice ?? 7000,
+     precioDirecto: opts.precioDirecto ?? opts.candidatePrice ?? 7000,
++    cases: (opts.rowIndexes ?? [0]).length,
+     filaRepresentativa: {},
+     rowIndexes: opts.rowIndexes ?? [0],
+     ...opts,
+   };
+ }
+ 
+ describe('TarifaRefreshDialogComponent', () => {
+   let fixture: ComponentFixture<TarifaRefreshDialogComponent>;
+   let component: TarifaRefreshDialogComponent;
+ 
+@@ -176,11 +187,622 @@ describe('TarifaRefreshDialogComponent', () => {
+     );
+     const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE) as TarifaRefreshMockService;
+     const spy = spyOn(refresh, 'guardar').and.callThrough();
+     const grupo = component.grupos[0];
+     component.onDraft(grupo, grupo.tablas[0], { categoria: 7, status: 'NO_PICO', value: '25500' });
+     await component.guardar();
+     const cambios = spy.calls.mostRecent().args[0];
+     expect(cambios.length).toBeGreaterThan(0);
+     expect(cambios.every((c) => c.requiereNormalizacionIva === false)).toBeTrue();
+   });
++
++  it('arma opciones solo con estaciones importadas, colores de sesi├│n y aviso de editores independientes', async () => {
++    await open(
++      [
++        pendiente(ESTACION_DOCK_SUD, { rowIndexes: [0], candidatePrice: 7000 }),
++        pendiente(ESTACION_HUDSON, { rowIndexes: [1], candidatePrice: 7000 }),
++        pendiente(ESTACION_SAMBOROMBON, { rowIndexes: [2], candidatePrice: 8000 }),
++      ],
++      [
++        candidato(ESTACION_DOCK_SUD, { rowIndexes: [0], precioDirecto: 7000 }),
++        candidato(ESTACION_HUDSON, { rowIndexes: [1], precioDirecto: 7000 }),
++        candidato(ESTACION_SAMBOROMBON, { rowIndexes: [2], precioDirecto: 8000, candidatePrice: 8000 }),
++      ],
++    );
++    const grupo = component.grupos[0];
++    expect(grupo.opciones.map((o) => o.estacionId)).toEqual([
++      ESTACION_DOCK_SUD,
++      ESTACION_HUDSON,
++      ESTACION_SAMBOROMBON,
++    ]);
++    expect(grupo.opciones.map((o) => o.estacionId)).not.toContain(ESTACION_INCOMPLETA);
++    expect(grupo.opciones.map((o) => o.estacionId)).not.toContain(ESTACION_BERNAL);
++    const options = component.checkboxOptions(grupo);
++    expect(options[0].style?.badgeColor).toBe(STATION_SESSION_PALETTE[0]);
++    expect(options[0].style?.iconColor).toBe(STATION_SESSION_PALETTE[0]);
++    expect(options[1].style?.badgeColor).toBe(STATION_SESSION_PALETTE[1]);
++    const root = fixture.nativeElement as HTMLElement;
++    expect(root.textContent).toContain('Las estaciones desmarcadas reciben un editor independiente');
++  });
++
++  it('reconstruye editores al desmarcar y deja tres singletons si la selecci├│n compartida queda vac├¡a', async () => {
++    await open(
++      [
++        pendiente(ESTACION_DOCK_SUD, { rowIndexes: [0], candidatePrice: 7000 }),
++        pendiente(ESTACION_HUDSON, { rowIndexes: [1], candidatePrice: 7000 }),
++        pendiente(ESTACION_SAMBOROMBON, { rowIndexes: [2], candidatePrice: 8000 }),
++      ],
++      [
++        candidato(ESTACION_DOCK_SUD, { rowIndexes: [0], precioDirecto: 7000 }),
++        candidato(ESTACION_HUDSON, { rowIndexes: [1], precioDirecto: 7000 }),
++        candidato(ESTACION_SAMBOROMBON, { rowIndexes: [2], precioDirecto: 8000, candidatePrice: 8000 }),
++      ],
++    );
++    const grupo = component.grupos[0];
++    await component.onSeleccionChange(grupo, [ESTACION_DOCK_SUD, ESTACION_HUDSON]);
++    fixture.detectChanges();
++    await fixture.whenStable();
++    expect(grupo.editors.map((editor) => [...editor.stationIds])).toEqual([
++      [ESTACION_DOCK_SUD, ESTACION_HUDSON],
++      [ESTACION_SAMBOROMBON],
++    ]);
++
++    await component.onSeleccionChange(grupo, []);
++    fixture.detectChanges();
++    await fixture.whenStable();
++    expect(grupo.seleccionadas).toEqual([]);
++    expect(grupo.editors.map((editor) => [...editor.stationIds])).toEqual([
++      [ESTACION_DOCK_SUD],
++      [ESTACION_HUDSON],
++      [ESTACION_SAMBOROMBON],
++    ]);
++    expect(fixture.nativeElement.querySelectorAll('app-tarifario-editor-board').length).toBe(6);
++  });
++
++  it('preselecciona el sentido expl├¡cito o AMBAS y pide elecci├│n solo si queda ambiguo', async () => {
++    await open(
++      [
++        pendiente(ESTACION_HUDSON, {
++          sentidoSolicitado: 'IDA',
++          sentidoAplicado: 'IDA',
++          directionConfidence: 'EXPLICIT',
++        }),
++      ],
++      [
++        candidato(ESTACION_HUDSON, {
++          sentidoSolicitado: 'IDA',
++          directionConfidence: 'EXPLICIT',
++        }),
++      ],
++    );
++    expect(component.grupos[0].editors[0].sentidoSeleccionado).toBe('IDA');
++    expect((fixture.nativeElement as HTMLElement).querySelector('app-search-select')).toBeNull();
++
++    await open(
++      [pendiente(ESTACION_GUTIERREZ, { candidatePrice: 5000 })],
++      [candidato(ESTACION_GUTIERREZ, { precioDirecto: 5000, candidatePrice: 5000 })],
++    );
++    expect(component.grupos[0].editors[0].sentidoSeleccionado).toBe('AMBAS');
++    expect((fixture.nativeElement as HTMLElement).querySelector('app-search-select')).toBeNull();
++
++    await open(
++      [
++        pendiente(ESTACION_HUDSON, {
++          codigo: 'DIRECTION_REQUIRED',
++          sentidoSolicitado: null,
++          sentidoAplicado: null,
++          directionConfidence: 'UNRESOLVED',
++        }),
++      ],
++      [
++        candidato(ESTACION_HUDSON, {
++          sentidoSolicitado: null,
++          directionConfidence: 'UNRESOLVED',
++          unresolvedReason: 'MISSING_MAPPING',
++        }),
++      ],
++    );
++    const root = fixture.nativeElement as HTMLElement;
++    expect(component.grupos[0].editors[0].sentidoSeleccionado).toBeNull();
++    expect(root.querySelector('app-search-select')).toBeTruthy();
++    expect(component.sentidoOptions.map((o) => o.id)).toEqual(['IDA', 'VUELTA', 'AMBAS']);
++  });
++
++  it('lista candidatos con rastro, categor├¡as, importe, casos, vigencia y motivo', async () => {
++    await open(
++      [
++        pendiente(ESTACION_HUDSON, {
++          codigo: 'AMBIGUOUS_TARIFF_MATCH',
++          categoria: 3,
++          categoriaProveedor: 3,
++          categoriaCalculada: null,
++          candidatePrice: 5300,
++          fechaPasada: '2026-03-10',
++          fechaVigenciaInicio: '2026-01-01',
++          possibleMatches: [
++            {
++              tarifaId: 't-2',
++              tarifaImporteId: 'ti-2',
++              categoria: 2,
++              status: 'PICO',
++              sentido: 'IDA',
++              importe: 5300,
++              diagnostico: 'CONFIRMADO',
++              fechaVigenciaInicio: '2026-01-01',
++              fechaVigenciaFin: null,
++              esActual: true,
++              errorRelativo: 0,
++            },
++            {
++              tarifaId: 't-4',
++              tarifaImporteId: 'ti-4',
++              categoria: 4,
++              status: 'PICO',
++              sentido: 'IDA',
++              importe: 5300,
++              diagnostico: 'CONFIRMADO',
++              fechaVigenciaInicio: '2026-01-01',
++              fechaVigenciaFin: null,
++              esActual: true,
++              errorRelativo: 0,
++            },
++          ],
++        }),
++      ],
++      [
++        candidato(ESTACION_HUDSON, {
++          categoria: 3,
++          categoriaProveedor: 3,
++          candidatePrice: 5300,
++          precioDirecto: 5300,
++          cases: 4,
++          rowIndexes: [0, 1, 2, 3],
++          fechaPasada: '2026-03-10',
++        }),
++      ],
++    );
++    const root = fixture.nativeElement as HTMLElement;
++    expect(root.querySelector('.trd__rail')).toBeTruthy();
++    expect(root.textContent).toContain('HUDSON');
++    expect(root.textContent).toContain('Categor├¡a proveedor 3');
++    expect(root.textContent).toContain('posibles 2, 4');
++    expect(root.textContent).toContain('5300');
++    expect(root.textContent).toContain('4 casos');
++    expect(root.textContent).toContain('NO_PICO');
++    expect(root.textContent).toContain('2026-03-10');
++    expect(root.textContent).toContain('Hay m├ís de una tarifa compatible');
++  });
++
++  it('asigna un candidato a una celda permitida y no deja que otro pise el mismo Nuevo', async () => {
++    await open(
++      [
++        pendiente(ESTACION_HUDSON, {
++          id: 'cand-a',
++          rowIndexes: [0],
++          candidatePrice: 7000,
++          status: 'NO_PICO',
++          sentidoAplicado: 'IDA',
++          sentidoSolicitado: 'IDA',
++        }),
++        pendiente(ESTACION_HUDSON, {
++          id: 'cand-b',
++          categoria: 2,
++          rowIndexes: [1],
++          candidatePrice: 8100,
++          status: 'NO_PICO',
++          sentidoAplicado: 'IDA',
++          sentidoSolicitado: 'IDA',
++        }),
++      ],
++      [
++        candidato(ESTACION_HUDSON, {
++          id: 'cand-a',
++          rowIndexes: [0],
++          candidatePrice: 7000,
++          precioDirecto: 7000,
++        }),
++        candidato(ESTACION_HUDSON, {
++          id: 'cand-b',
++          categoria: 2,
++          rowIndexes: [1],
++          candidatePrice: 8100,
++          precioDirecto: 8100,
++        }),
++      ],
++    );
++    const grupo = component.grupos[0];
++    const editor = grupo.editors[0];
++    const tabla = editor.tablas.find((item) => item.sentido === 'IDA') ?? editor.tablas[0];
++    component.onCandidateSelected(grupo, editor, tabla, {
++      categoria: 2,
++      status: 'NO_PICO',
++      candidate: { valor: 7000, count: 1, candidateId: 'cand-a', estacionId: ESTACION_HUDSON },
++    });
++    expect(tabla.drafts[2].no_pico).toBe('7000');
++    component.onCandidateSelected(grupo, editor, tabla, {
++      categoria: 2,
++      status: 'NO_PICO',
++      candidate: { valor: 8100, count: 1, candidateId: 'cand-b', estacionId: ESTACION_HUDSON },
++    });
++    expect(tabla.drafts[2].no_pico).toBe('7000');
++    expect(component.warnings.some((w) => w.code === 'precios')).toBeTrue();
++  });
++
++  it('no infiere PICO/NO_PICO ni sentido por importe y deja tres precios visibles', async () => {
++    await open(
++      [
++        pendiente(ESTACION_HUDSON, {
++          id: 'p1',
++          status: null,
++          sentidoAplicado: null,
++          sentidoSolicitado: null,
++          candidatePrice: 1000,
++          rowIndexes: [0],
++        }),
++        pendiente(ESTACION_HUDSON, {
++          id: 'p2',
++          status: null,
++          sentidoAplicado: null,
++          sentidoSolicitado: null,
++          candidatePrice: 2000,
++          rowIndexes: [1],
++        }),
++        pendiente(ESTACION_HUDSON, {
++          id: 'p3',
++          status: null,
++          sentidoAplicado: null,
++          sentidoSolicitado: null,
++          candidatePrice: 3000,
++          rowIndexes: [2],
++        }),
++      ],
++      [
++        candidato(ESTACION_HUDSON, { id: 'p1', statusSolicitado: null, candidatePrice: 1000, precioDirecto: 1000, rowIndexes: [0] }),
++        candidato(ESTACION_HUDSON, { id: 'p2', statusSolicitado: null, candidatePrice: 2000, precioDirecto: 2000, rowIndexes: [1] }),
++        candidato(ESTACION_HUDSON, { id: 'p3', statusSolicitado: null, candidatePrice: 3000, precioDirecto: 3000, rowIndexes: [2] }),
++      ],
++    );
++    const drafts = component.grupos[0].editors[0].tablas.flatMap((tabla) =>
++      Object.values(tabla.drafts).flatMap((cell) => [cell.no_pico, cell.pico]),
++    );
++    expect(drafts.every((value) => value === '')).toBeTrue();
++    const root = fixture.nativeElement as HTMLElement;
++    expect(root.textContent).toContain('1000');
++    expect(root.textContent).toContain('2000');
++    expect(root.textContent).toContain('3000');
++    expect(root.querySelector('[data-warn="precios"]')).toBeTruthy();
++  });
++
++  it('pide Vigente desde solo al confirmar una tarifa nueva y no muestra fecha hasta', async () => {
++    await open(
++      [pendiente(ESTACION_HUDSON)],
++      [candidato(ESTACION_HUDSON)],
++    );
++    const root = fixture.nativeElement as HTMLElement;
++    const picker = root.querySelector('app-date-range-picker');
++    expect(picker).toBeTruthy();
++    expect(root.textContent).toContain('Vigente desde');
++    expect(root.textContent).not.toContain('Vigente hasta');
++    expect(root.textContent).not.toContain('Fecha hasta');
++    const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE) as TarifaRefreshMockService;
++    const spy = spyOn(refresh, 'guardar').and.callThrough();
++    component.confirmCandidate(component.grupos[0], 'estacion-hudson-7', 'CONFIRM_NEW');
++    await component.guardar();
++    expect(spy).not.toHaveBeenCalled();
++    expect(component.error).toContain('Vigente desde');
++  });
++
++  it('no llama al RPC de guardado al abrir, recargar o reagrupar, y autocompleta solo como borrador', async () => {
++    await open(
++      [
++        pendiente(ESTACION_HUDSON, {
++          status: 'NO_PICO',
++          sentidoAplicado: 'IDA',
++          sentidoSolicitado: 'IDA',
++          candidatePrice: 25500,
++        }),
++      ],
++      [
++        candidato(ESTACION_HUDSON, {
++          statusSolicitado: 'NO_PICO',
++          sentidoSolicitado: 'IDA',
++          directionConfidence: 'EXPLICIT',
++          candidatePrice: 25500,
++          precioDirecto: 25500,
++        }),
++      ],
++    );
++    const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE) as TarifaRefreshMockService;
++    const spy = spyOn(refresh, 'guardar').and.callThrough();
++    const grupo = component.grupos[0];
++    const ida = grupo.editors[0].tablas.find((tabla) => tabla.sentido === 'IDA');
++    expect(ida?.drafts[2].no_pico).toBe('25500');
++    await component.onSeleccionChange(grupo, []);
++    expect(spy).not.toHaveBeenCalled();
++    fixture.componentRef.setInput('open', false);
++    fixture.detectChanges();
++    fixture.componentRef.setInput('open', true);
++    fixture.detectChanges();
++    await fixture.whenStable();
++    expect(spy).not.toHaveBeenCalled();
++  });
++
++  it('expone avisos accesibles de tarifa, ambig├╝edad, precios, solapamiento, permiso y REVISAR', async () => {
++    await open(
++      [
++        pendiente(ESTACION_HUDSON, { codigo: 'NEW_TARIFF' }),
++        pendiente(ESTACION_SAMBOROMBON, {
++          codigo: 'STATUS_AMBIGUOUS',
++          status: null,
++          candidatePrice: 8000,
++          rowIndexes: [1],
++        }),
++      ],
++      [
++        candidato(ESTACION_HUDSON),
++        candidato(ESTACION_SAMBOROMBON, {
++          statusSolicitado: null,
++          candidatePrice: 8000,
++          precioDirecto: 8000,
++          rowIndexes: [1],
++        }),
++      ],
++    );
++    fixture.componentRef.setInput('canManage', false);
++    component.error = 'Las vigencias se solapan';
++    fixture.detectChanges();
++    const root = fixture.nativeElement as HTMLElement;
++    expect(root.querySelector('[data-warn="sin-compatible"][role="alert"]')).toBeTruthy();
++    expect(root.querySelector('[data-warn="status"][role="alert"]')).toBeTruthy();
++    expect(root.querySelector('[data-warn="permiso"][role="alert"]')).toBeTruthy();
++    expect(root.querySelector('[data-warn="solapamiento"][role="alert"]')).toBeTruthy();
++    expect(root.querySelector('[data-warn="revisar"]')).toBeTruthy();
++    expect(root.textContent).toContain('no cierra la tarifa vigente');
++  });
++
++  it('no deja que otro candidato pise el Nuevo despu├®s de desmarcar una estaci├│n compartida', async () => {
++    await open(
++      [
++        pendiente(ESTACION_DOCK_SUD, {
++          id: 'cand-dock',
++          rowIndexes: [0],
++          candidatePrice: 7000,
++          status: 'NO_PICO',
++          sentidoAplicado: 'IDA',
++          sentidoSolicitado: 'IDA',
++        }),
++        pendiente(ESTACION_HUDSON, {
++          id: 'cand-a',
++          rowIndexes: [1],
++          candidatePrice: 7000,
++          status: 'NO_PICO',
++          sentidoAplicado: 'IDA',
++          sentidoSolicitado: 'IDA',
++        }),
++        pendiente(ESTACION_HUDSON, {
++          id: 'cand-b',
++          categoria: 2,
++          rowIndexes: [2],
++          candidatePrice: 8100,
++          status: 'NO_PICO',
++          sentidoAplicado: 'IDA',
++          sentidoSolicitado: 'IDA',
++        }),
++      ],
++      [
++        candidato(ESTACION_DOCK_SUD, {
++          id: 'cand-dock',
++          rowIndexes: [0],
++          candidatePrice: 7000,
++          precioDirecto: 7000,
++        }),
++        candidato(ESTACION_HUDSON, {
++          id: 'cand-a',
++          rowIndexes: [1],
++          candidatePrice: 7000,
++          precioDirecto: 7000,
++        }),
++        candidato(ESTACION_HUDSON, {
++          id: 'cand-b',
++          categoria: 2,
++          rowIndexes: [2],
++          candidatePrice: 8100,
++          precioDirecto: 8100,
++        }),
++      ],
++    );
++    const grupo = component.grupos[0];
++    const shared = grupo.editors.find((editor) => editor.stationIds.length > 1);
++    expect(shared).toBeTruthy();
++    const tabla = shared!.tablas.find((item) => item.sentido === 'IDA') ?? shared!.tablas[0];
++    component.onCandidateSelected(grupo, shared!, tabla, {
++      categoria: 2,
++      status: 'NO_PICO',
++      candidate: { valor: 7000, count: 1, candidateId: 'cand-a', estacionId: ESTACION_HUDSON },
++    });
++    expect(tabla.drafts[2].no_pico).toBe('7000');
++
++    await component.onSeleccionChange(grupo, [ESTACION_HUDSON]);
++    fixture.detectChanges();
++    await fixture.whenStable();
++
++    const hudsonEditor = grupo.editors.find(
++      (editor) => editor.stationIds.length === 1 && editor.stationIds[0] === ESTACION_HUDSON,
++    );
++    expect(hudsonEditor).toBeTruthy();
++    const hudsonTabla = hudsonEditor!.tablas.find((item) => item.sentido === 'IDA') ?? hudsonEditor!.tablas[0];
++    expect(hudsonTabla.drafts[2].no_pico).toBe('7000');
++    component.onCandidateSelected(grupo, hudsonEditor!, hudsonTabla, {
++      categoria: 2,
++      status: 'NO_PICO',
++      candidate: { valor: 8100, count: 1, candidateId: 'cand-b', estacionId: ESTACION_HUDSON },
++    });
++    expect(hudsonTabla.drafts[2].no_pico).toBe('7000');
++  });
++
++  it('no confirma en silencio un candidato sin sentido o status: deshabilita o avisa', async () => {
++    await open(
++      [
++        pendiente(ESTACION_HUDSON, {
++          codigo: 'DIRECTION_REQUIRED',
++          sentidoSolicitado: null,
++          sentidoAplicado: null,
++          directionConfidence: 'UNRESOLVED',
++        }),
++      ],
++      [
++        candidato(ESTACION_HUDSON, {
++          sentidoSolicitado: null,
++          directionConfidence: 'UNRESOLVED',
++          unresolvedReason: 'MISSING_MAPPING',
++        }),
++      ],
++    );
++    const root = fixture.nativeElement as HTMLElement;
++    const confirmBtn = Array.from(root.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
++      (btn.textContent ?? '').includes('Confirmar'),
++    ) as HTMLButtonElement | undefined;
++    const revisarBtn = Array.from(root.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
++      (btn.textContent ?? '').includes('revisar'),
++    ) as HTMLButtonElement | undefined;
++    expect(confirmBtn?.disabled).toBeTrue();
++    expect(revisarBtn?.disabled).toBeTrue();
++
++    const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE) as TarifaRefreshMockService;
++    const spy = spyOn(refresh, 'guardar').and.callThrough();
++    const grupo = component.grupos[0];
++    component.onVigenteDesde(grupo, { from: new Date(2026, 2, 10), to: null });
++    component.confirmCandidate(grupo, 'estacion-hudson-7', 'CONFIRM_NEW');
++    await component.guardar();
++    expect(spy).not.toHaveBeenCalled();
++    expect(component.error).toContain('sentido');
++  });
++
++  it('mantiene el selector de sentido visible despu├®s de elegir IDA', async () => {
++    await open(
++      [
++        pendiente(ESTACION_HUDSON, {
++          codigo: 'DIRECTION_REQUIRED',
++          sentidoSolicitado: null,
++          sentidoAplicado: null,
++          directionConfidence: 'UNRESOLVED',
++        }),
++      ],
++      [
++        candidato(ESTACION_HUDSON, {
++          sentidoSolicitado: null,
++          directionConfidence: 'UNRESOLVED',
++          unresolvedReason: 'MISSING_MAPPING',
++        }),
++      ],
++    );
++    const editor = component.grupos[0].editors[0];
++    expect((fixture.nativeElement as HTMLElement).querySelector('app-search-select')).toBeTruthy();
++    component.onSentidoChange(editor, 'IDA');
++    fixture.detectChanges();
++    expect(editor.sentidoSeleccionado).toBe('IDA');
++    expect((fixture.nativeElement as HTMLElement).querySelector('app-search-select')).toBeTruthy();
++  });
++
++  it('no muestra aviso de varios precios cuando 7000 compartido convive con un 8000 independiente', async () => {
++    await open(
++      [
++        pendiente(ESTACION_DOCK_SUD, { rowIndexes: [0], candidatePrice: 7000 }),
++        pendiente(ESTACION_HUDSON, { rowIndexes: [1], candidatePrice: 7000 }),
++        pendiente(ESTACION_SAMBOROMBON, { rowIndexes: [2], candidatePrice: 8000 }),
++      ],
++      [
++        candidato(ESTACION_DOCK_SUD, { rowIndexes: [0], precioDirecto: 7000 }),
++        candidato(ESTACION_HUDSON, { rowIndexes: [1], precioDirecto: 7000 }),
++        candidato(ESTACION_SAMBOROMBON, { rowIndexes: [2], precioDirecto: 8000, candidatePrice: 8000 }),
++      ],
++    );
++    const root = fixture.nativeElement as HTMLElement;
++    expect(component.grupos[0].seleccionadas).toEqual([ESTACION_DOCK_SUD, ESTACION_HUDSON]);
++    expect(root.querySelector('[data-warn="precios"]')).toBeNull();
++    expect(component.warnings.some((warn) => warn.code === 'precios')).toBeFalse();
++  });
++
++  it('marca Confirmar o Revisar como seleccionados con aria-pressed', async () => {
++    await open([pendiente(ESTACION_HUDSON)], [candidato(ESTACION_HUDSON)]);
++    const grupo = component.grupos[0];
++    const candidateId = component.candidatesFor(grupo)[0].candidateId;
++    component.confirmCandidate(grupo, candidateId, 'CONFIRM_NEW');
++    fixture.detectChanges();
++    const root = fixture.nativeElement as HTMLElement;
++    const confirmBtn = Array.from(root.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
++      (btn.textContent ?? '').includes('Confirmar'),
++    ) as HTMLButtonElement;
++    const revisarBtn = Array.from(root.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
++      (btn.textContent ?? '').includes('revisar'),
++    ) as HTMLButtonElement;
++    expect(confirmBtn.getAttribute('aria-pressed')).toBe('true');
++    expect(revisarBtn.getAttribute('aria-pressed')).toBe('false');
++    expect(confirmBtn.classList.contains('trd__btn--pressed')).toBeTrue();
++
++    component.confirmCandidate(grupo, candidateId, 'MARK_REVIEW');
++    fixture.detectChanges();
++    const after = fixture.nativeElement as HTMLElement;
++    const confirmAfter = Array.from(after.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
++      (btn.textContent ?? '').includes('Confirmar'),
++    ) as HTMLButtonElement;
++    const revisarAfter = Array.from(after.querySelectorAll('.trd__candidate-actions button')).find((btn) =>
++      (btn.textContent ?? '').includes('revisar'),
++    ) as HTMLButtonElement;
++    expect(confirmAfter.getAttribute('aria-pressed')).toBe('false');
++    expect(revisarAfter.getAttribute('aria-pressed')).toBe('true');
++    expect(revisarAfter.classList.contains('trd__btn--pressed')).toBeTrue();
++  });
++
++  it('emite TarifaRefreshDecision al confirmar con fecha y deja vigencia nula en Revisar', async () => {
++    await open(
++      [
++        pendiente(ESTACION_HUDSON, {
++          sentidoAplicado: 'IDA',
++          sentidoSolicitado: 'IDA',
++          directionConfidence: 'EXPLICIT',
++        }),
++      ],
++      [
++        candidato(ESTACION_HUDSON, {
++          sentidoSolicitado: 'IDA',
++          directionConfidence: 'EXPLICIT',
++        }),
++      ],
++    );
++    const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE) as TarifaRefreshMockService;
++    const spy = spyOn(refresh, 'guardar').and.callThrough();
++    const grupo = component.grupos[0];
++    const candidateId = component.candidatesFor(grupo)[0].candidateId;
++    component.onVigenteDesde(grupo, { from: new Date(2026, 2, 10), to: null });
++    component.confirmCandidate(grupo, candidateId, 'CONFIRM_NEW');
++    await component.guardar();
++    expect(spy).toHaveBeenCalled();
++    const confirmPayload = spy.calls.mostRecent().args[0] as Array<{ action?: string }>;
++    const confirmed = confirmPayload.find((item) => item.action === 'CONFIRM_NEW') as
++      | {
++          action: string;
++          fechaVigenciaInicio: string | null;
++          categoriaProveedor: number;
++          status: string;
++          sentido: string;
++        }
++      | undefined;
++    expect(confirmed).toBeTruthy();
++    expect(confirmed!.action).toBe('CONFIRM_NEW');
++    expect(confirmed!.fechaVigenciaInicio).toBe('2026-03-10');
++    expect(confirmed!.categoriaProveedor).toBe(2);
++    expect(confirmed!.status).toBe('NO_PICO');
++    expect(confirmed!.sentido).toBe('IDA');
++
++    spy.calls.reset();
++    component.confirmCandidate(grupo, candidateId, 'MARK_REVIEW');
++    await component.guardar();
++    const reviewPayload = spy.calls.mostRecent().args[0] as Array<{ action?: string }>;
++    const reviewed = reviewPayload.find((item) => item.action === 'MARK_REVIEW') as
++      | { action: string; fechaVigenciaInicio: string | null }
++      | undefined;
++    expect(reviewed).toBeTruthy();
++    expect(reviewed!.action).toBe('MARK_REVIEW');
++    expect(reviewed!.fechaVigenciaInicio).toBeNull();
++  });
+ });
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.ts b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.ts
+index e3bcddd..932b145 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.ts
+@@ -1,94 +1,169 @@
+ import { CommonModule } from '@angular/common';
+ import { Component, EventEmitter, Inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+ import { firstValueFrom } from 'rxjs';
+-import { CheckboxMultiSelectComponent, DialogComponent } from '../../../shared';
+-import type { CheckboxMultiSelectOption } from '../../../shared';
++import {
++  CheckboxMultiSelectComponent,
++  DateRangePickerComponent,
++  DialogComponent,
++  SearchSelectComponent,
++} from '../../../shared';
++import type { CheckboxMultiSelectOption, DateRangeValue, SearchSelectOption } from '../../../shared';
+ import {
+   CandidatoRefrescoTarifa,
+   ResultadoDetectarRefresco,
+   TARIFA_REFRESH_SERVICE,
+   TarifaRefreshService,
+ } from '../../models/tarifa-refresh.contracts';
+ import {
+   CambioRefrescoTarifa,
+   PEAJES_TARIFARIO_SERVICE,
+   PeajesTarifarioService,
++  TarifaRefreshDecision,
+   TarifaSentido,
+   TarifaStatusPico,
+   TarifarioEditorDrafts,
+   TarifarioEditorRow,
+   TarifarioHistorialItem,
+   TarifaRefrescoGuardada,
+ } from '../../models/tarifario.contracts';
+ import {
++  TarifarioCandidateSelected,
++  TarifarioCurrentStationMap,
++  TarifarioDetectedAmount,
+   TarifarioDetectedMap,
+   TarifarioDraftChange,
+   TarifarioEditorBoardComponent,
+   TarifarioHistoryRequest,
+   detectedCellKey,
+ } from '../../tarifario/tarifario-editor-board.component';
+ import { TarifarioHistorialDialogComponent } from '../../tarifario/tarifario-historial-dialog.component';
+ import {
+   buildEditorRows,
+   categoriasEditor,
+   collectCambios,
+   collectDraftErrores,
+   countCategoriasEditor,
+ } from '../../tarifario/tarifario.helpers';
+ import {
+   agruparPendientesPorPeajeYFamilia,
++  assignSafeAutocomplete,
++  buildDetectedStations,
++  deriveEditorGroups,
+   familySentidos,
+   heuristicaSeleccionInicial,
+   interseccionSentidos,
+   resolverRequiereNormalizacionIva,
++  stationTraceViewModel,
++  type AutocompleteCandidate,
++  type DetectedStation,
++  type EditorGroup,
+   type EstacionCatalogoRefresco,
+   type EstacionOpcionRefresco,
+   type IdentidadTarifaExistente,
+   type SentidoFamily,
++  type StationTraceViewModel,
+ } from './tarifa-refresh-dialog.helpers';
+ 
+ export interface TablaSentidoRefresco {
+   sentido: TarifaSentido;
+   rows: TarifarioEditorRow[];
+   drafts: TarifarioEditorDrafts;
+   detected: TarifarioDetectedMap;
++  currentStations: TarifarioCurrentStationMap;
++}
++
++export interface EditorViewRefresco {
++  key: string;
++  stationIds: readonly string[];
++  stations: readonly DetectedStation[];
++  family: SentidoFamily;
++  tablas: TablaSentidoRefresco[];
++  sentidoSeleccionado: TarifaSentido | null;
++  sentidoRequiereEleccion: boolean;
++}
++
++export type TarifaRefreshWarningCode =
++  | 'sin-compatible'
++  | 'categoria'
++  | 'status'
++  | 'direccion'
++  | 'precios'
++  | 'solapamiento'
++  | 'permiso'
++  | 'revisar';
++
++export interface TarifaRefreshWarning {
++  code: TarifaRefreshWarningCode;
++  message: string;
+ }
+ 
+ export interface GrupoTarifaRefresco {
+   key: string;
+   peajeId: string;
+   peajeNombre: string;
+   family: SentidoFamily;
++  detectedStations: DetectedStation[];
+   opciones: EstacionOpcionRefresco[];
+   seleccionadas: string[];
+   anchorEstacionId: string;
+   tablas: TablaSentidoRefresco[];
++  editors: EditorViewRefresco[];
+   itemsPorEstacion: Map<string, ResultadoDetectarRefresco[]>;
+   existentes: IdentidadTarifaExistente[];
++  vigenteDesde: DateRangeValue;
++  pendingActions: Record<string, 'CONFIRM_NEW' | 'MARK_REVIEW'>;
++  assignedByCell: Record<string, string>;
++}
++
++export interface CandidateRailItem {
++  candidateId: string;
++  estacionId: string;
++  station: StationTraceViewModel;
++  categoriaProveedor: number | null;
++  categoriaCalculada: number | null;
++  possibleCategorias: number[];
++  amount: number;
++  cases: number;
++  status: TarifaStatusPico | null;
++  sentido: TarifaSentido | null;
++  fechaPasada: string | null;
++  vigencia: string | null;
++  reason: string;
++  codigo: string;
+ }
+ 
+ const BLOQUEANTES: ReadonlySet<string> = new Set([
+   'NEW_TARIFF',
++  'AMBIGUOUS_TARIFF_MATCH',
+   'STATUS_REQUIRED',
+   'STATUS_AMBIGUOUS',
+   'DIRECTION_REQUIRED',
+   'DIRECTION_CONFLICT',
++  'CONTEXT_INCOMPLETE',
+ ]);
+ 
++const SENTIDO_CHOICES: SearchSelectOption[] = [
++  { id: 'IDA', label: 'IDA' },
++  { id: 'VUELTA', label: 'VUELTA' },
++  { id: 'AMBAS', label: 'AMBAS' },
++];
++
+ @Component({
+   selector: 'app-tarifa-refresh-dialog',
+   standalone: true,
+   imports: [
+     CommonModule,
+     DialogComponent,
+     CheckboxMultiSelectComponent,
++    DateRangePickerComponent,
++    SearchSelectComponent,
+     TarifarioEditorBoardComponent,
+     TarifarioHistorialDialogComponent,
+   ],
+   templateUrl: './tarifa-refresh-dialog.component.html',
+   styleUrls: [
+     '../../shared/peajes-list-shell.css',
+     '../../tarifario/tarifario-editor.component.css',
+     './tarifa-refresh-dialog.component.css',
+   ],
+ })
+@@ -99,20 +174,22 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
+   @Input() canManage = true;
+   @Input() saving = false;
+ 
+   @Output() openChange = new EventEmitter<boolean>();
+   @Output() cancelled = new EventEmitter<void>();
+   @Output() saved = new EventEmitter<TarifaRefrescoGuardada[]>();
+ 
+   grupos: GrupoTarifaRefresco[] = [];
+   loading = false;
+   error: string | null = null;
++  readonly sentidoOptions: SearchSelectOption[] = SENTIDO_CHOICES;
++  private assignmentConflict = false;
+ 
+   historyOpen = false;
+   historyTitle = '';
+   historyLoading = false;
+   historyError: string | null = null;
+   historyRows: TarifarioHistorialItem[] = [];
+ 
+   constructor(
+     @Inject(PEAJES_TARIFARIO_SERVICE) private readonly tarifario: PeajesTarifarioService,
+     @Inject(TARIFA_REFRESH_SERVICE) private readonly refresh: TarifaRefreshService,
+@@ -125,104 +202,223 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
+   ngOnChanges(changes: SimpleChanges): void {
+     if (changes['open'] || changes['resultados'] || changes['candidatos']) {
+       this.reloadIfOpen();
+     }
+   }
+ 
+   get unresolved(): ResultadoDetectarRefresco[] {
+     return this.resultados.filter((r) => BLOQUEANTES.has(r.codigo));
+   }
+ 
++  get warnings(): TarifaRefreshWarning[] {
++    return this.collectWarnings();
++  }
++
++  get hasOverlapWarning(): boolean {
++    return this.warnings.some((warn) => warn.code === 'solapamiento');
++  }
++
+   familyLabel(family: SentidoFamily): string {
+     if (family === 'AMBAS') return 'AMBAS';
+     if (family === 'DIRECCIONAL') return 'IDA y VUELTA';
+     return '';
+   }
+ 
+   checkboxOptions(grupo: GrupoTarifaRefresco): CheckboxMultiSelectOption[] {
+-    return grupo.opciones.map((opcion) => ({
+-      value: opcion.estacionId,
+-      label: opcion.estacionNombre,
++    return grupo.detectedStations.map((station) => ({
++      value: station.estacionId,
++      label: station.estacionNombre,
++      style: { badgeColor: station.color, iconColor: station.color },
+     }));
+   }
+ 
++  candidatesFor(grupo: GrupoTarifaRefresco): CandidateRailItem[] {
++    const stationById = new Map(grupo.detectedStations.map((station) => [station.estacionId, station]));
++    const items: CandidateRailItem[] = [];
++    for (const station of grupo.detectedStations) {
++      for (const result of grupo.itemsPorEstacion.get(station.estacionId) ?? []) {
++        const related = this.candidatos.find((c) =>
++          c.rowIndexes.some((idx) => result.rowIndexes.includes(idx)),
++        );
++        const possible = [
++          ...new Set((result.possibleMatches ?? []).map((match) => match.categoria)),
++        ];
++        const amount = related?.candidatePrice ?? result.candidatePrice ?? 0;
++        const vigencia =
++          result.fechaVigenciaInicio || result.fechaVigenciaFin
++            ? [result.fechaVigenciaInicio, result.fechaVigenciaFin].filter(Boolean).join(' ÔåÆ ')
++            : null;
++        items.push({
++          candidateId: result.id,
++          estacionId: station.estacionId,
++          station: stationTraceViewModel(stationById.get(station.estacionId) ?? station),
++          categoriaProveedor: result.categoriaProveedor ?? related?.categoriaProveedor ?? result.categoria,
++          categoriaCalculada: result.categoriaCalculada,
++          possibleCategorias: possible,
++          amount,
++          cases: related?.cases ?? result.rowIndexes.length,
++          status: result.status ?? related?.statusSolicitado ?? null,
++          sentido: result.sentidoAplicado ?? result.sentidoSolicitado ?? related?.sentidoSolicitado ?? null,
++          fechaPasada: result.fechaPasada ?? related?.fechaPasada ?? null,
++          vigencia: vigencia ?? null,
++          reason: reasonFor(result.codigo),
++          codigo: result.codigo,
++        });
++      }
++    }
++    return items;
++  }
++
++  candidateCanArm(grupo: GrupoTarifaRefresco, cand: CandidateRailItem): boolean {
++    return this.candidateIdentity(grupo, cand) != null;
++  }
++
++  armedAction(grupo: GrupoTarifaRefresco, candidateId: string): 'CONFIRM_NEW' | 'MARK_REVIEW' | null {
++    return grupo.pendingActions[candidateId] ?? null;
++  }
++
++  trackCandidate(_index: number, cand: CandidateRailItem): string {
++    return cand.candidateId;
++  }
++
+   anchorNombre(grupo: GrupoTarifaRefresco): string {
+     return (
++      grupo.detectedStations.find((station) => station.estacionId === grupo.anchorEstacionId)?.estacionNombre ??
+       grupo.opciones.find((opcion) => opcion.estacionId === grupo.anchorEstacionId)?.estacionNombre ??
+       grupo.anchorEstacionId
+     );
+   }
+ 
+   close(): void {
+     this.openChange.emit(false);
+     this.cancelled.emit();
+   }
+ 
+   onDraft(grupo: GrupoTarifaRefresco, tabla: TablaSentidoRefresco, change: TarifarioDraftChange): void {
+     const current = tabla.drafts[change.categoria] ?? { no_pico: '', pico: '' };
+     tabla.drafts = {
+       ...tabla.drafts,
+       [change.categoria]:
+         change.status === 'NO_PICO'
+           ? { ...current, no_pico: change.value }
+           : { ...current, pico: change.value },
+     };
++    if (!change.value.trim()) {
++      const editor = grupo.editors.find((item) => item.tablas.includes(tabla));
++      if (editor) {
++        const key = cellAssignmentKey(editor.key, tabla.sentido, change.categoria, change.status);
++        delete grupo.assignedByCell[key];
++      }
++    }
++  }
++
++  onCandidateSelected(
++    grupo: GrupoTarifaRefresco,
++    editor: EditorViewRefresco,
++    tabla: TablaSentidoRefresco,
++    event: TarifarioCandidateSelected,
++  ): void {
++    const candidateId = event.candidate.candidateId;
++    if (!candidateId) return;
++    const key = cellAssignmentKey(editor.key, tabla.sentido, event.categoria, event.status);
++    const existing = grupo.assignedByCell[key];
++    const current = tabla.drafts[event.categoria] ?? { no_pico: '', pico: '' };
++    const occupied = (event.status === 'NO_PICO' ? current.no_pico : current.pico).trim();
++    if ((existing && existing !== candidateId) || (occupied && existing !== candidateId)) {
++      this.assignmentConflict = true;
++      return;
++    }
++    this.assignmentConflict = false;
++    grupo.assignedByCell[key] = candidateId;
++    this.onDraft(grupo, tabla, {
++      categoria: event.categoria,
++      status: event.status,
++      value: String(event.candidate.valor),
++    });
++  }
++
++  confirmCandidate(
++    grupo: GrupoTarifaRefresco,
++    candidateId: string,
++    action: 'CONFIRM_NEW' | 'MARK_REVIEW',
++  ): void {
++    grupo.pendingActions = { ...grupo.pendingActions, [candidateId]: action };
++  }
++
++  onSentidoChange(editor: EditorViewRefresco, value: string | null): void {
++    editor.sentidoSeleccionado = isTarifaSentidoValue(value) ? value : null;
++  }
++
++  onVigenteDesde(grupo: GrupoTarifaRefresco, value: DateRangeValue): void {
++    grupo.vigenteDesde = { from: value.from, to: null };
+   }
+ 
+   async onSeleccionChange(grupo: GrupoTarifaRefresco, next: string[]): Promise<void> {
+-    const valid = next.filter((id) => grupo.opciones.some((opcion) => opcion.estacionId === id));
+-    if (!valid.length) return;
++    const valid = next.filter((id) => grupo.detectedStations.some((station) => station.estacionId === id));
+     grupo.seleccionadas = valid;
+-    grupo.anchorEstacionId = valid[0];
+-    await this.loadTablas(grupo);
++    grupo.anchorEstacionId = valid[0] ?? grupo.detectedStations[0]?.estacionId ?? '';
++    await this.rebuildEditors(grupo);
+   }
+ 
+   async guardar(): Promise<void> {
+     if (!this.canManage) return;
+     this.error = null;
+-    const cambios: CambioRefrescoTarifa[] = [];
++    const cambios: Array<CambioRefrescoTarifa | TarifaRefreshDecision> = [];
+     for (const grupo of this.grupos) {
+       if (grupo.family === 'SIN_TARIFARIO') {
+         this.error = 'No hay un tarifario cargado para esta estaci├│n. No se puede crear un sentido desde la carga.';
+         return;
+       }
+-      if (!grupo.seleccionadas.length || !grupo.tablas.length) {
+-        this.error = 'Eleg├¡ al menos una estaci├│n con un sentido existente del tarifario.';
++      const fechaIso = toIsoDate(grupo.vigenteDesde.from);
++      const hasConfirmNew = Object.values(grupo.pendingActions).includes('CONFIRM_NEW');
++      if (hasConfirmNew && !fechaIso) {
++        this.error = 'Indic├í la fecha de Vigente desde para confirmar tarifas nuevas.';
+         return;
+       }
+-      for (const tabla of grupo.tablas) {
+-        const errores = collectDraftErrores(tabla.rows, tabla.drafts);
+-        if (errores.length) {
+-          this.error = 'Hay importes inv├ílidos. Corregilos antes de guardar.';
+-          return;
+-        }
+-        for (const cambio of collectCambios(tabla.rows, tabla.drafts)) {
+-          for (const estacionId of grupo.seleccionadas) {
+-            cambios.push({
+-              peajeId: grupo.peajeId,
+-              estacionId,
+-              sentido: tabla.sentido,
+-              categoria: cambio.categoria,
+-              status: cambio.status,
+-              importe: cambio.importe,
+-              cases: 0,
+-              requiereNormalizacionIva: resolverRequiereNormalizacionIva(
++      const incomplete = this.candidatesFor(grupo).find(
++        (item) => grupo.pendingActions[item.candidateId] && !this.candidateCanArm(grupo, item),
++      );
++      if (incomplete) {
++        this.error = this.incompleteIdentityError(grupo, incomplete);
++        return;
++      }
++      for (const editor of grupo.editors) {
++        if (!editor.tablas.length) continue;
++        for (const tabla of editor.tablas) {
++          const errores = collectDraftErrores(tabla.rows, tabla.drafts);
++          if (errores.length) {
++            this.error = 'Hay importes inv├ílidos. Corregilos antes de guardar.';
++            return;
++          }
++          for (const cambio of collectCambios(tabla.rows, tabla.drafts)) {
++            for (const estacionId of editor.stationIds) {
++              cambios.push({
++                peajeId: grupo.peajeId,
+                 estacionId,
+-                cambio.categoria,
+-                cambio.status,
+-                tabla.sentido,
+-                grupo.existentes,
+-              ),
+-            });
++                sentido: tabla.sentido,
++                categoria: cambio.categoria,
++                status: cambio.status,
++                importe: cambio.importe,
++                cases: this.casesFor(grupo, estacionId, cambio.categoria, cambio.status, tabla.sentido),
++                requiereNormalizacionIva: resolverRequiereNormalizacionIva(
++                  estacionId,
++                  cambio.categoria,
++                  cambio.status,
++                  tabla.sentido,
++                  grupo.existentes,
++                ),
++              });
++            }
+           }
+         }
+       }
++      cambios.push(...this.collectPendingDecisions(grupo, fechaIso));
+     }
+     if (!cambios.length) return;
+     this.saving = true;
+     try {
+       const saved = await this.refresh.guardar(cambios);
+       this.saved.emit(saved);
+       this.openChange.emit(false);
+     } catch (e) {
+       this.error = e instanceof Error ? e.message : 'No se pudieron guardar los cambios.';
+     } finally {
+@@ -252,20 +448,21 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
+   }
+ 
+   private reloadIfOpen(): void {
+     if (!this.open) return;
+     void this.loadGrupos();
+   }
+ 
+   private async loadGrupos(): Promise<void> {
+     this.loading = true;
+     this.error = null;
++    this.assignmentConflict = false;
+     try {
+       const byPeaje = new Map<string, ResultadoDetectarRefresco[]>();
+       for (const item of this.unresolved) {
+         const key = item.peajeId ?? '';
+         const list = byPeaje.get(key) ?? [];
+         list.push(item);
+         byPeaje.set(key, list);
+       }
+       const grupos: GrupoTarifaRefresco[] = [];
+       for (const [peajeId, items] of byPeaje) {
+@@ -278,30 +475,49 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
+             pageSize: 500,
+           }),
+         );
+         const catalogo = this.catalogoDesdeListado(listed.rows, peajeId, items);
+         const existentes: IdentidadTarifaExistente[] = listed.rows.map((row) => ({
+           estacionId: row.estacion_id,
+           categoria: row.categoria,
+           status: row.status,
+           sentido: row.sentido,
+         }));
++        const detectedAll = buildDetectedStations(items, catalogo);
+         for (const pending of agruparPendientesPorPeajeYFamilia(items, catalogo)) {
+-          const seleccionadas = heuristicaSeleccionInicial(pending, this.candidatos);
++          const detectedStations = detectedAll.filter(
++            (station) => station.peajeId === pending.peajeId && station.family === pending.family,
++          );
++          const opciones: EstacionOpcionRefresco[] = detectedStations.map((station) => {
++            const catalogRow = catalogo.find((row) => row.estacionId === station.estacionId);
++            return {
++              estacionId: station.estacionId,
++              estacionNombre: station.estacionNombre,
++              pendiente: true,
++              sentidosExistentes: catalogRow?.sentidosExistentes ?? [],
++            };
++          });
++          const grupoPendiente = { ...pending, opciones };
++          const seleccionadas = heuristicaSeleccionInicial(grupoPendiente, this.candidatos);
+           const grupo: GrupoTarifaRefresco = {
+-            ...pending,
++            ...grupoPendiente,
++            detectedStations,
+             seleccionadas,
+-            anchorEstacionId: seleccionadas[0] ?? pending.opciones[0]?.estacionId ?? '',
++            anchorEstacionId: seleccionadas[0] ?? detectedStations[0]?.estacionId ?? '',
+             tablas: [],
++            editors: [],
+             existentes,
++            vigenteDesde: { from: null, to: null },
++            pendingActions: {},
++            assignedByCell: {},
+           };
+-          await this.loadTablas(grupo);
++          await this.rebuildEditors(grupo);
+           grupos.push(grupo);
+         }
+       }
+       this.grupos = grupos;
+     } catch (e) {
+       this.grupos = [];
+       this.error = e instanceof Error ? e.message : 'No se pudo cargar el tarifario de esta estaci├│n.';
+     } finally {
+       this.loading = false;
+     }
+@@ -339,89 +555,417 @@ export class TarifaRefreshDialogComponent implements OnInit, OnChanges {
+         estacionId: item.estacionId,
+         estacionNombre: item.estacionId,
+         peajeId: peajeId || item.peajeId || '',
+         peajeNombre: [...byEstacion.values()][0]?.peajeNombre ?? '',
+         sentidosExistentes: [],
+       });
+     }
+     return [...byEstacion.values()];
+   }
+ 
+-  private async loadTablas(grupo: GrupoTarifaRefresco): Promise<void> {
+-    if (grupo.family === 'SIN_TARIFARIO' || !grupo.anchorEstacionId || !grupo.peajeId) {
++  private async rebuildEditors(grupo: GrupoTarifaRefresco): Promise<void> {
++    if (grupo.family === 'SIN_TARIFARIO') {
++      grupo.editors = [];
+       grupo.tablas = [];
+       return;
+     }
+-    const selected = grupo.opciones.filter((opcion) => grupo.seleccionadas.includes(opcion.estacionId));
+-    const sentidos = familySentidos(
+-      grupo.family,
+-      interseccionSentidos(selected.map((opcion) => opcion.sentidosExistentes)),
++    const previous = grupo.editors;
++    const derived = deriveEditorGroups({
++      detectedStations: grupo.detectedStations,
++      sharedStationIds: grupo.seleccionadas,
++    });
++    const editors: EditorViewRefresco[] = [];
++    for (const group of derived) {
++      editors.push(await this.buildEditorView(grupo, group, previous));
++    }
++    grupo.editors = editors;
++    this.remapAssignedByCell(grupo, previous, editors);
++    grupo.tablas = editors[0]?.tablas ?? [];
++    grupo.anchorEstacionId = editors[0]?.stationIds[0] ?? grupo.detectedStations[0]?.estacionId ?? '';
++  }
++
++  private async buildEditorView(
++    grupo: GrupoTarifaRefresco,
++    group: EditorGroup,
++    previous: readonly EditorViewRefresco[],
++  ): Promise<EditorViewRefresco> {
++    const family = group.stations[0]?.family ?? grupo.family;
++    const sentidosExistentes = interseccionSentidos(
++      group.stations.map((station) => {
++        const opcion = grupo.opciones.find((item) => item.estacionId === station.estacionId);
++        return opcion?.sentidosExistentes ?? [];
++      }),
+     );
+-    const previous = new Map(grupo.tablas.map((tabla) => [tabla.sentido, tabla.drafts]));
+-    const items = grupo.seleccionadas.flatMap((id) => grupo.itemsPorEstacion.get(id) ?? []);
++    const sentidos =
++      family === 'DIRECCIONAL'
++        ? familySentidos(family, sentidosExistentes.length ? sentidosExistentes : ['IDA', 'VUELTA'])
++        : familySentidos(family, sentidosExistentes);
++    const direction = this.resolveEditorDirection(grupo, group, family);
++    const editor: EditorViewRefresco = {
++      key: group.stationIds.join('+'),
++      stationIds: group.stationIds,
++      stations: group.stations,
++      family,
++      tablas: [],
++      sentidoSeleccionado: direction.sentido,
++      sentidoRequiereEleccion: direction.requiresChoice,
++    };
+     const tablas: TablaSentidoRefresco[] = [];
+     for (const sentido of sentidos) {
+-      let rows: TarifarioEditorRow[] = [];
++      tablas.push(await this.buildTabla(grupo, editor, group, sentido, previous));
++    }
++    editor.tablas = tablas;
++    this.applySafeAutocomplete(grupo, editor, group);
++    return editor;
++  }
++
++  private async buildTabla(
++    grupo: GrupoTarifaRefresco,
++    editor: EditorViewRefresco,
++    group: EditorGroup,
++    sentido: TarifaSentido,
++    previous: readonly EditorViewRefresco[],
++  ): Promise<TablaSentidoRefresco> {
++    const items = group.stationIds.flatMap((id) => grupo.itemsPorEstacion.get(id) ?? []);
++    const currentStations: TarifarioCurrentStationMap = {};
++    let maxCats = Math.max(1, ...items.map((item) => item.categoria ?? 1));
++    let firstExistentes: Parameters<typeof buildEditorRows>[0] = [];
++    for (const station of group.stations) {
+       try {
+-        const editor = await firstValueFrom(
+-          this.tarifario.obtenerEditor(grupo.peajeId, grupo.anchorEstacionId, sentido),
+-        );
+-        grupo.peajeNombre = editor.context.peaje_nombre || grupo.peajeNombre;
+-        const cats = Math.max(
+-          countCategoriasEditor(editor.existentes),
+-          ...items.map((item) => item.categoria ?? 0),
++        const payload = await firstValueFrom(
++          this.tarifario.obtenerEditor(grupo.peajeId, station.estacionId, sentido),
+         );
+-        rows = buildEditorRows(editor.existentes, categoriasEditor(cats || 1));
++        grupo.peajeNombre = payload.context.peaje_nombre || grupo.peajeNombre;
++        maxCats = Math.max(maxCats, countCategoriasEditor(payload.existentes));
++        if (!firstExistentes.length) firstExistentes = payload.existentes;
++        for (const existente of payload.existentes) {
++          const key = detectedCellKey(existente.categoria, existente.status);
++          currentStations[key] = [
++            ...(currentStations[key] ?? []),
++            {
++              estacionId: station.estacionId,
++              estacionNombre: station.estacionNombre,
++              color: station.color,
++              importe: existente.importe,
++            },
++          ];
++        }
+       } catch {
+-        rows = buildEditorRows(
+-          [],
+-          categoriasEditor(Math.max(...items.map((item) => item.categoria ?? 1), 1)),
++        /* station without this sentido stays missing in Actual */
++      }
++    }
++    const rows = buildEditorRows(firstExistentes, categoriasEditor(maxCats || 1));
++
++    const drafts: TarifarioEditorDrafts = { ...this.previousDrafts(previous, group, sentido) };
++    const detected: TarifarioDetectedMap = {};
++    for (const row of rows) {
++      drafts[row.categoria] ??= { no_pico: '', pico: '' };
++    }
++    for (const item of items) {
++      if (item.categoria == null) continue;
++      const itemSentido = item.sentidoAplicado ?? item.sentidoSolicitado;
++      if (itemSentido && itemSentido !== sentido) continue;
++      if (!item.status) continue;
++      const station = group.stations.find((row) => row.estacionId === item.estacionId);
++      const amounts = this.detectedAmounts(item, station);
++      const key = detectedCellKey(item.categoria, item.status);
++      detected[key] = [...(detected[key] ?? []), ...amounts];
++    }
++    return { sentido, rows, drafts, detected, currentStations };
++  }
++
++  private applySafeAutocomplete(
++    grupo: GrupoTarifaRefresco,
++    editor: EditorViewRefresco,
++    group: EditorGroup,
++  ): void {
++    const candidates: AutocompleteCandidate[] = [];
++    for (const station of group.stations) {
++      for (const item of grupo.itemsPorEstacion.get(station.estacionId) ?? []) {
++        const related = this.candidatos.find((c) =>
++          c.rowIndexes.some((idx) => item.rowIndexes.includes(idx)),
+         );
++        const sentido = item.sentidoAplicado ?? item.sentidoSolicitado ?? related?.sentidoSolicitado ?? null;
++        const status = item.status ?? related?.statusSolicitado ?? null;
++        candidates.push({
++          id: item.id,
++          estacionId: station.estacionId,
++          estacionNombre: station.estacionNombre,
++          amount: related?.candidatePrice ?? item.candidatePrice ?? 0,
++          categoria: item.categoria,
++          status,
++          sentido,
++        });
+       }
+-      const drafts: TarifarioEditorDrafts = { ...(previous.get(sentido) ?? {}) };
+-      const detected: TarifarioDetectedMap = {};
+-      for (const row of rows) {
+-        drafts[row.categoria] ??= { no_pico: '', pico: '' };
++    }
++    const assignment = assignSafeAutocomplete(group, candidates);
++    for (const prefill of assignment.prefills) {
++      const tabla = editor.tablas.find((item) => item.sentido === prefill.sentido);
++      if (!tabla) continue;
++      const current = tabla.drafts[prefill.categoria] ?? { no_pico: '', pico: '' };
++      if (prefill.status === 'NO_PICO' && !current.no_pico.trim()) {
++        tabla.drafts = { ...tabla.drafts, [prefill.categoria]: { ...current, no_pico: String(prefill.amount) } };
++      } else if (prefill.status === 'PICO' && !current.pico.trim()) {
++        tabla.drafts = { ...tabla.drafts, [prefill.categoria]: { ...current, pico: String(prefill.amount) } };
+       }
+-      for (const item of items) {
+-        if (item.categoria == null) continue;
+-        const itemSentido = item.sentidoAplicado ?? item.sentidoSolicitado;
+-        if (itemSentido && itemSentido !== sentido) continue;
+-        const amounts = this.detectedAmounts(item);
+-        const statuses: TarifaStatusPico[] = item.status ? [item.status] : ['NO_PICO', 'PICO'];
+-        for (const status of statuses) {
+-          const key = detectedCellKey(item.categoria, status);
+-          detected[key] = [...(detected[key] ?? []), ...amounts];
+-        }
+-        if (
+-          amounts.length === 1 &&
+-          item.status &&
+-          item.codigo === 'NEW_TARIFF' &&
+-          (grupo.family === 'AMBAS' || itemSentido === sentido)
+-        ) {
+-          const current = drafts[item.categoria] ?? { no_pico: '', pico: '' };
+-          if (item.status === 'NO_PICO' && !current.no_pico) {
+-            drafts[item.categoria] = { ...current, no_pico: String(amounts[0].valor) };
+-          } else if (item.status === 'PICO' && !current.pico) {
+-            drafts[item.categoria] = { ...current, pico: String(amounts[0].valor) };
+-          }
++    }
++  }
++
++  private previousDrafts(
++    previous: readonly EditorViewRefresco[],
++    group: EditorGroup,
++    sentido: TarifaSentido,
++  ): TarifarioEditorDrafts {
++    const ids = new Set(group.stationIds);
++    for (const editor of previous) {
++      if (!editor.stationIds.some((id) => ids.has(id))) continue;
++      const tabla = editor.tablas.find((item) => item.sentido === sentido);
++      if (tabla) return { ...tabla.drafts };
++    }
++    return {};
++  }
++
++  private resolveEditorDirection(
++    grupo: GrupoTarifaRefresco,
++    group: EditorGroup,
++    family: SentidoFamily,
++  ): { sentido: TarifaSentido | null; requiresChoice: boolean } {
++    if (family === 'AMBAS') return { sentido: 'AMBAS', requiresChoice: false };
++    const resolved = new Set<TarifaSentido>();
++    for (const stationId of group.stationIds) {
++      for (const item of grupo.itemsPorEstacion.get(stationId) ?? []) {
++        const related = this.candidatos.find((c) =>
++          c.rowIndexes.some((idx) => item.rowIndexes.includes(idx)),
++        );
++        const confidence = item.directionConfidence ?? related?.directionConfidence;
++        const sentido = item.sentidoAplicado ?? item.sentidoSolicitado ?? related?.sentidoSolicitado ?? null;
++        if ((confidence === 'EXPLICIT' || confidence === 'LANE_MAP') && sentido) {
++          resolved.add(sentido);
+         }
+       }
+-      tablas.push({ sentido, rows, drafts, detected });
+     }
+-    grupo.tablas = tablas;
++    if (resolved.size === 1) return { sentido: [...resolved][0], requiresChoice: false };
++    return { sentido: null, requiresChoice: true };
+   }
+ 
+-  private detectedAmounts(item: ResultadoDetectarRefresco): Array<{ valor: number; count: number }> {
++  private detectedAmounts(item: ResultadoDetectarRefresco, station?: DetectedStation): TarifarioDetectedAmount[] {
+     const related = this.candidatos.filter((c) =>
+       c.rowIndexes.some((idx) => item.rowIndexes.includes(idx)),
+     );
+     const counts = new Map<number, number>();
+     for (const c of related) {
+       counts.set(c.precioDirecto, (counts.get(c.precioDirecto) ?? 0) + c.rowIndexes.length);
+     }
+-    if (!counts.size && item.candidatePrice) {
+-      return [{ valor: item.candidatePrice, count: item.rowIndexes.length }];
++    const entries = counts.size
++      ? [...counts.entries()].map(([valor, count]) => ({ valor, count }))
++      : item.candidatePrice != null
++        ? [{ valor: item.candidatePrice, count: item.rowIndexes.length }]
++        : [];
++    return entries.map((entry) => ({
++      ...entry,
++      estacionId: station?.estacionId ?? item.estacionId,
++      estacionNombre: station?.estacionNombre,
++      color: station?.color,
++      candidateId: item.id,
++    }));
++  }
++
++  private casesFor(
++    grupo: GrupoTarifaRefresco,
++    estacionId: string,
++    categoria: number,
++    status: TarifaStatusPico,
++    sentido: TarifaSentido,
++  ): number {
++    const items = grupo.itemsPorEstacion.get(estacionId) ?? [];
++    return items
++      .filter((item) => {
++        const itemSentido = item.sentidoAplicado ?? item.sentidoSolicitado;
++        return (
++          item.categoria === categoria &&
++          (item.status == null || item.status === status) &&
++          (itemSentido == null || itemSentido === sentido)
++        );
++      })
++      .reduce((sum, item) => sum + item.rowIndexes.length, 0);
++  }
++
++  private remapAssignedByCell(
++    grupo: GrupoTarifaRefresco,
++    previous: readonly EditorViewRefresco[],
++    editors: readonly EditorViewRefresco[],
++  ): void {
++    const next: Record<string, string> = {};
++    for (const [oldKey, candidateId] of Object.entries(grupo.assignedByCell)) {
++      const parsed = parseAssignmentKey(oldKey);
++      if (!parsed) continue;
++      const oldEditor = previous.find((item) => item.key === parsed.editorKey);
++      const oldStations = new Set(oldEditor?.stationIds ?? parsed.editorKey.split('+').filter(Boolean));
++      for (const editor of editors) {
++        if (!editor.stationIds.some((id) => oldStations.has(id))) continue;
++        next[cellAssignmentKey(editor.key, parsed.sentido, parsed.categoria, parsed.status)] = candidateId;
++      }
++    }
++    grupo.assignedByCell = next;
++  }
++
++  private candidateIdentity(
++    grupo: GrupoTarifaRefresco,
++    cand: CandidateRailItem,
++  ): { categoria: number; status: TarifaStatusPico; sentido: TarifaSentido } | null {
++    const sentido = cand.sentido ?? this.editorSentidoFor(grupo, cand.estacionId);
++    if (cand.categoriaProveedor == null || cand.status == null || sentido == null) return null;
++    return { categoria: cand.categoriaProveedor, status: cand.status, sentido };
++  }
++
++  private incompleteIdentityError(grupo: GrupoTarifaRefresco, item: CandidateRailItem): string {
++    const sentido = item.sentido ?? this.editorSentidoFor(grupo, item.estacionId);
++    if (sentido == null) {
++      return 'El sentido IDA/VUELTA es ambiguo. Elegilo; no se infiere por el importe.';
+     }
+-    return [...counts.entries()].map(([valor, count]) => ({ valor, count }));
++    if (item.status == null) {
++      return 'El status PICO/NO_PICO es ambiguo. Elegilo antes de guardar.';
++    }
++    if (item.categoriaProveedor == null) {
++      return 'La categor├¡a es ambigua. Eleg├¡ una opci├│n o marc├í para revisar.';
++    }
++    return 'Falta identidad de tarifa para confirmar o revisar.';
+   }
++
++  private collectPendingDecisions(grupo: GrupoTarifaRefresco, fechaIso: string | null): TarifaRefreshDecision[] {
++    const decisions: TarifaRefreshDecision[] = [];
++    for (const item of this.candidatesFor(grupo)) {
++      const action = grupo.pendingActions[item.candidateId];
++      if (!action) continue;
++      const sentido = item.sentido ?? this.editorSentidoFor(grupo, item.estacionId);
++      const status = item.status;
++      if (item.categoriaProveedor == null || status == null || sentido == null) continue;
++      decisions.push({
++        candidateId: item.candidateId,
++        action,
++        peajeId: grupo.peajeId,
++        estacionId: item.estacionId,
++        categoriaProveedor: item.categoriaProveedor,
++        categoriaCalculada: item.categoriaCalculada,
++        status,
++        sentido,
++        importe: item.amount,
++        fechaVigenciaInicio: action === 'CONFIRM_NEW' ? fechaIso : null,
++        cases: item.cases,
++        requiereNormalizacionIva: resolverRequiereNormalizacionIva(
++          item.estacionId,
++          item.categoriaProveedor,
++          status,
++          sentido,
++          grupo.existentes,
++        ),
++      });
++    }
++    return decisions;
++  }
++
++  private editorSentidoFor(grupo: GrupoTarifaRefresco, estacionId: string): TarifaSentido | null {
++    const editor = grupo.editors.find((item) => item.stationIds.includes(estacionId));
++    return editor?.sentidoSeleccionado ?? (grupo.family === 'AMBAS' ? 'AMBAS' : null);
++  }
++
++  private collectWarnings(): TarifaRefreshWarning[] {
++    const list: TarifaRefreshWarning[] = [];
++    const push = (code: TarifaRefreshWarningCode, message: string): void => {
++      if (!list.some((item) => item.code === code)) list.push({ code, message });
++    };
++    if (!this.canManage) {
++      push('permiso', 'Necesit├ís permiso peajes:manage para guardar tarifas nuevas.');
++    }
++    if (this.error && /solap/i.test(this.error)) {
++      push('solapamiento', this.error);
++    }
++    const codes = this.unresolved.map((item) => item.codigo);
++    if (codes.includes('NEW_TARIFF')) {
++      push('sin-compatible', 'No hay una tarifa compatible para este importe detectado.');
++    }
++    if (codes.includes('AMBIGUOUS_TARIFF_MATCH')) {
++      push('categoria', 'La categor├¡a es ambigua. Eleg├¡ una opci├│n o marc├í para revisar.');
++    }
++    if (codes.includes('STATUS_REQUIRED') || codes.includes('STATUS_AMBIGUOUS')) {
++      push('status', 'El status PICO/NO_PICO es ambiguo. Elegilo antes de guardar.');
++    }
++    if (codes.includes('DIRECTION_REQUIRED') || codes.includes('DIRECTION_CONFLICT')) {
++      push('direccion', 'El sentido IDA/VUELTA es ambiguo. Elegilo; no se infiere por el importe.');
++    }
++    if (this.assignmentConflict || this.hasMultiplePricesInOneEditor()) {
++      push('precios', 'Hay varios importes detectados. Asign├í cada uno a una celda; no se pisan entre s├¡.');
++    }
++    push(
++      'revisar',
++      'Marcar para revisar guarda el candidato como REVISAR: no cierra la tarifa vigente ni la promociona.',
++    );
++    return list;
++  }
++
++  private hasMultiplePricesInOneEditor(): boolean {
++    for (const grupo of this.grupos) {
++      for (const editor of grupo.editors) {
++        const amounts = new Set(
++          this.candidatesFor(grupo)
++            .filter((item) => editor.stationIds.includes(item.estacionId))
++            .map((item) => item.amount),
++        );
++        if (amounts.size > 1) return true;
++      }
++    }
++    return false;
++  }
++}
++
++function reasonFor(codigo: string): string {
++  switch (codigo) {
++    case 'NEW_TARIFF':
++      return 'No hay una tarifa compatible';
++    case 'AMBIGUOUS_TARIFF_MATCH':
++      return 'Hay m├ís de una tarifa compatible';
++    case 'STATUS_REQUIRED':
++    case 'STATUS_AMBIGUOUS':
++      return 'El status PICO/NO_PICO es ambiguo';
++    case 'DIRECTION_REQUIRED':
++    case 'DIRECTION_CONFLICT':
++      return 'El sentido IDA/VUELTA es ambiguo';
++    case 'CONTEXT_INCOMPLETE':
++      return 'Falta contexto para asociar la tarifa';
++    default:
++      return codigo;
++  }
++}
++
++function cellAssignmentKey(
++  editorKey: string,
++  sentido: TarifaSentido,
++  categoria: number,
++  status: TarifaStatusPico,
++): string {
++  return `${editorKey}|${sentido}|${categoria}|${status}`;
++}
++
++function parseAssignmentKey(
++  key: string,
++): { editorKey: string; sentido: TarifaSentido; categoria: number; status: TarifaStatusPico } | null {
++  const parts = key.split('|');
++  if (parts.length !== 4) return null;
++  const [editorKey, sentido, categoriaRaw, status] = parts;
++  if (!isTarifaSentidoValue(sentido)) return null;
++  if (status !== 'PICO' && status !== 'NO_PICO') return null;
++  const categoria = Number(categoriaRaw);
++  if (!Number.isFinite(categoria)) return null;
++  return { editorKey, sentido, categoria, status };
++}
++
++function isTarifaSentidoValue(value: string | null | undefined): value is TarifaSentido {
++  return value === 'IDA' || value === 'VUELTA' || value === 'AMBAS';
++}
++
++function toIsoDate(value: Date | null | undefined): string | null {
++  if (!value) return null;
++  const y = value.getFullYear();
++  const m = String(value.getMonth() + 1).padStart(2, '0');
++  const d = String(value.getDate()).padStart(2, '0');
++  return `${y}-${m}-${d}`;
+ }

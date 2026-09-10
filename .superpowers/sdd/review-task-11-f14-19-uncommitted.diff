@@ -1,0 +1,1538 @@
+﻿# Review package — Task 11 F14-19 (uncommitted standalone Tarifario validity)
+Base: 95033bda8434b21473aa51937dfa8831acf0d3b9
+Head: WORKING TREE
+
+## Commit list
+(none)
+
+## Files changed
+
+ .../peajes/models/tarifario.contracts.ts           |  69 ++++-
+ .../services/peajes-tarifario.service.spec.ts      | 338 ++++++++++++++++++++-
+ .../peajes/services/peajes-tarifario.service.ts    | 169 +++++++++--
+ .../peajes/tarifario/mocks/tarifario.mock.ts       |  34 ++-
+ .../tarifario/tarifario-editor.component.css       |   5 +
+ .../tarifario/tarifario-editor.component.html      |  11 +
+ .../tarifario/tarifario-editor.component.spec.ts   |  93 +++++-
+ .../peajes/tarifario/tarifario-editor.component.ts |  26 +-
+ .../tarifario-historial-dialog.component.html      |  14 +-
+ .../tarifario-historial-dialog.component.ts        |  18 +-
+ 10 files changed, 732 insertions(+), 45 deletions(-)
+
+## Diff -U10
+
+diff --git a/ibarra-app/src/app/components/peajes/models/tarifario.contracts.ts b/ibarra-app/src/app/components/peajes/models/tarifario.contracts.ts
+index 46713eb..9e94b91 100644
+--- a/ibarra-app/src/app/components/peajes/models/tarifario.contracts.ts
++++ b/ibarra-app/src/app/components/peajes/models/tarifario.contracts.ts
+@@ -17,20 +17,24 @@ export interface TarifarioCurrentRow {
+   peaje_id: string;
+   peaje_nombre: string | null;
+   estacion_id: string;
+   estacion_nombre: string;
+   categoria: number;
+   status: TarifaStatusPico;
+   sentido: TarifaSentido;
+   importe: number | null;
+   fecha_actualizacion: string | null;
+   current_tarifa_importe_id: string | null;
++  fechaVigenciaInicio?: string | null;
++  fechaVigenciaFin?: string | null;
++  diagnostico?: string | null;
++  categoriaCalculada?: number | null;
+ }
+ 
+ export interface TarifarioFilters {
+   peaje_ids?: string[];
+   estacion_ids?: string[];
+   categorias?: number[];
+   status?: TarifaStatusPico[];
+   sentidos?: TarifaSentido[];
+   q_estacion?: string | null;
+ }
+@@ -70,42 +74,51 @@ export interface TarifarioEditorRow {
+   pico: TarifarioEditorCell;
+ }
+ 
+ export interface TarifarioIdentidadExistente {
+   tarifa_id: string;
+   categoria: number;
+   status: TarifaStatusPico;
+   current_tarifa_importe_id: string | null;
+   importe: number | null;
+   fecha_actualizacion: string | null;
++  fechaVigenciaInicio?: string | null;
++  fechaVigenciaFin?: string | null;
++  diagnostico?: string | null;
++  categoriaCalculada?: number | null;
+ }
+ 
+ export interface TarifarioEditorPayload {
+   context: TarifarioEditorContext;
+   existentes: TarifarioIdentidadExistente[];
+ }
+ 
+ export interface TarifarioEditorDrafts {
+   [categoria: number]: { no_pico: string; pico: string };
+ }
+ 
+ export interface TarifarioImporteCambio {
+   categoria: number;
+   status: TarifaStatusPico;
+   importe: number;
++  fechaVigenciaInicio?: string | null;
+ }
+ 
+ export interface TarifarioHistorialItem {
+   id: string;
+   importe: number;
+   fecha_aparicion: string;
+   es_actual: boolean;
++  fechaVigenciaInicio: string | null;
++  fechaVigenciaFin: string | null;
++  diagnostico: string | null;
++  categoriaCalculada: number | null;
+ }
+ 
+ export interface PrepararRefrescoTarifaInput {
+   id: string;
+   estacionId: string;
+   categoria: number | null;
+   statusSolicitado: TarifaStatusPico | null;
+   sentidoSolicitado: TarifaSentido | null;
+ }
+ 
+@@ -118,74 +131,124 @@ export interface PrepararRefrescoTarifaItem {
+   sentido: TarifaSentido | null;
+   tarifaId: string | null;
+   importe: number | null;
+   requiereNormalizacionIva: boolean;
+ }
+ 
+ export interface DetectarRefrescoTarifaInput {
+   id: string;
+   estacionId: string;
+   categoria: number | null;
++  categoriaProveedor?: number | null;
+   statusSolicitado: TarifaStatusPico | null;
+   sentidoSolicitado: TarifaSentido | null;
++  fechaPasada?: string | null;
+   precioDirecto: number;
+   precioNormalizado: number | null;
+ }
+ 
+ export type RefreshTarifaCodigoRpc =
+   | 'CURRENT_TARIFF'
+   | 'HISTORICAL_TARIFF_MATCH'
++  | 'CURRENT_CATEGORY_CORRECTION'
++  | 'HISTORICAL_CATEGORY_CORRECTION'
+   | 'NEW_TARIFF'
++  | 'AMBIGUOUS_TARIFF_MATCH'
+   | 'STATUS_REQUIRED'
+   | 'STATUS_AMBIGUOUS'
+-  | 'CONTEXT_INCOMPLETE'
+   | 'DIRECTION_REQUIRED'
+-  | 'DIRECTION_CONFLICT';
++  | 'DIRECTION_CONFLICT'
++  | 'CONTEXT_INCOMPLETE'
++  | 'REVIEW_RECORDED';
++
++export interface TarifaMatchOption {
++  tarifaId: string;
++  tarifaImporteId: string;
++  categoria: number;
++  status: 'PICO' | 'NO_PICO';
++  sentido: 'IDA' | 'VUELTA' | 'AMBAS';
++  importe: number;
++  diagnostico: string | null;
++  fechaVigenciaInicio: string | null;
++  fechaVigenciaFin: string | null;
++  esActual: boolean;
++  errorRelativo: number;
++}
+ 
+ export interface DetectarRefrescoTarifaItem {
+   id: string;
+   codigo: RefreshTarifaCodigoRpc;
+   peajeId: string | null;
+   estacionId: string;
+   categoria: number | null;
++  categoriaProveedor: number | null;
++  categoriaCalculada: number | null;
+   status: TarifaStatusPico | null;
+   sentidoSolicitado: TarifaSentido | null;
+   sentidoAplicado: TarifaSentido | null;
+   importeActual: number | null;
+   tarifaId: string | null;
+   tarifaImporteId: string | null;
+   requiereNormalizacionIva: boolean | null;
++  diagnostico: string | null;
++  fechaVigenciaInicio: string | null;
++  fechaVigenciaFin: string | null;
++  possibleMatches: TarifaMatchOption[];
+ }
+ 
+ export interface CambioRefrescoTarifa {
+   peajeId: string;
+   estacionId: string;
+   sentido: TarifaSentido;
+   categoria: number;
+   status: TarifaStatusPico;
+   importe: number;
+   /** Immutable number of source pasadas that evidenced this price snapshot. */
+   cases: number;
+   requiereNormalizacionIva: boolean | null;
+ }
+ 
++export interface TarifaRefreshDecision {
++  candidateId: string;
++  action: 'CONFIRM_NEW' | 'MARK_REVIEW';
++  peajeId: string;
++  estacionId: string;
++  categoriaProveedor: number;
++  categoriaCalculada: number | null;
++  status: 'PICO' | 'NO_PICO';
++  sentido: 'IDA' | 'VUELTA' | 'AMBAS';
++  importe: number;
++  fechaVigenciaInicio: string | null;
++  cases: number;
++  requiereNormalizacionIva: boolean | null;
++}
++
+ export interface TarifaRefrescoGuardada {
+   peaje_id: string;
+   estacion_id: string;
+   sentido: TarifaSentido;
+   categoria: number;
+   status: TarifaStatusPico;
+   tarifa_id: string;
+   anterior: number | null;
+   nueva: number;
+   tarifa_importe_id: string | null;
+   accion: 'ACTUALIZADA' | 'IDENTIDAD_CREADA' | 'SIN_CAMBIO';
++  candidate_id?: string | null;
++  anterior_fin?: string | null;
++  fecha_vigencia_inicio?: string | null;
++  fecha_vigencia_fin?: string | null;
++  diagnostico?: string | null;
++  categoria_calculada?: number | null;
++  fechaVigenciaInicio?: string | null;
++  fechaVigenciaFin?: string | null;
++  categoriaCalculada?: number | null;
+ }
+ 
+ export interface PeajesTarifarioService {
+   listar(params: TarifarioListParams): Observable<TarifarioListResult>;
+   obtenerEditor(
+     peajeId: string,
+     estacionId: string,
+     sentido: TarifaSentido,
+   ): Observable<TarifarioEditorPayload>;
+   guardar(
+@@ -194,16 +257,16 @@ export interface PeajesTarifarioService {
+     sentido: TarifaSentido,
+     cambios: TarifarioImporteCambio[],
+   ): Observable<{ actualizadas: number }>;
+   listarHistorial(tarifaId: string): Observable<TarifarioHistorialItem[]>;
+   prepararRefresco(
+     candidatos: PrepararRefrescoTarifaInput[],
+   ): Observable<PrepararRefrescoTarifaItem[]>;
+   detectarRefresco(
+     candidatos: DetectarRefrescoTarifaInput[],
+   ): Observable<DetectarRefrescoTarifaItem[]>;
+-  guardarRefresco(cambios: CambioRefrescoTarifa[]): Observable<TarifaRefrescoGuardada[]>;
++  guardarRefresco(cambios: Array<CambioRefrescoTarifa | TarifaRefreshDecision>): Observable<TarifaRefrescoGuardada[]>;
+ }
+ 
+ export const PEAJES_TARIFARIO_SERVICE = new InjectionToken<PeajesTarifarioService>(
+   'PEAJES_TARIFARIO_SERVICE',
+ );
+diff --git a/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.spec.ts b/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.spec.ts
+index 116dfec..45b07fc 100644
+--- a/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.spec.ts
++++ b/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.spec.ts
+@@ -63,42 +63,154 @@ describe('PeajesTarifarioSupabaseService', () => {
+       p_peaje_id: 'p',
+       p_estacion_id: 'e',
+       p_sentido: 'IDA',
+     });
+     expect(payload.existentes).toEqual([]);
+   });
+ 
+   it('guardar envia el array de cambios sin vacios', async () => {
+     rpcSpy.and.resolveTo({ data: { actualizadas: 3 }, error: null });
+     const cambios = [
+-      { categoria: 1, status: 'NO_PICO' as const, importe: 5800 },
+-      { categoria: 2, status: 'NO_PICO' as const, importe: 7300 },
+-      { categoria: 2, status: 'PICO' as const, importe: 7900 },
++      { categoria: 1, status: 'NO_PICO' as const, importe: 5800, fechaVigenciaInicio: '2026-09-01' },
++      { categoria: 2, status: 'NO_PICO' as const, importe: 7300, fechaVigenciaInicio: '2026-09-01' },
++      { categoria: 2, status: 'PICO' as const, importe: 7900, fechaVigenciaInicio: '2026-09-01' },
+     ];
+     const out = await firstValueFrom(service.guardar('p', 'e', 'IDA', cambios));
+     expect(rpcSpy).toHaveBeenCalledWith('peajes_guardar_tarifas_actuales', {
+       p_peaje_id: 'p',
+       p_estacion_id: 'e',
+       p_sentido: 'IDA',
+-      p_cambios: cambios,
++      p_cambios: [
++        { categoria: 1, status: 'NO_PICO', importe: 5800, fecha_vigencia_inicio: '2026-09-01' },
++        { categoria: 2, status: 'NO_PICO', importe: 7300, fecha_vigencia_inicio: '2026-09-01' },
++        { categoria: 2, status: 'PICO', importe: 7900, fecha_vigencia_inicio: '2026-09-01' },
++      ],
+     });
+     expect(out.actualizadas).toBe(3);
+   });
+ 
+   it('listarHistorial llama peajes_listar_tarifa_historial', async () => {
+     rpcSpy.and.resolveTo({ data: [], error: null });
+     await firstValueFrom(service.listarHistorial('tarifa-1'));
+     expect(rpcSpy).toHaveBeenCalledWith('peajes_listar_tarifa_historial', {
+       p_tarifa_id: 'tarifa-1',
+     });
+   });
+ 
++  it('listarHistorial mapea vigencia y diagnostico y conserva fecha_aparicion', async () => {
++    rpcSpy.and.resolveTo({
++      data: [
++        {
++          id: 'ti-1',
++          importe: 5800,
++          fecha_aparicion: '2025-08-21T00:00:00.000Z',
++          es_actual: true,
++          fecha_vigencia_inicio: '2026-09-01',
++          fecha_vigencia_fin: null,
++          diagnostico: 'CONFIRMADO',
++          categoria_calculada: 2,
++        },
++        {
++          id: 'ti-legacy',
++          importe: 5000,
++          fecha_aparicion: '2024-01-15T00:00:00.000Z',
++          es_actual: false,
++        },
++      ],
++      error: null,
++    });
++    const out = await firstValueFrom(service.listarHistorial('tarifa-1'));
++    expect(out[0]).toEqual({
++      id: 'ti-1',
++      importe: 5800,
++      fecha_aparicion: '2025-08-21T00:00:00.000Z',
++      es_actual: true,
++      fechaVigenciaInicio: '2026-09-01',
++      fechaVigenciaFin: null,
++      diagnostico: 'CONFIRMADO',
++      categoriaCalculada: 2,
++    });
++    expect(out[1].fecha_aparicion).toBe('2024-01-15T00:00:00.000Z');
++    expect(out[1].fechaVigenciaInicio).toBeNull();
++    expect(out[1].fechaVigenciaFin).toBeNull();
++    expect(out[1].diagnostico).toBeNull();
++    expect(out[1].categoriaCalculada).toBeNull();
++  });
++
++  it('listar mapea vigencia y diagnostico del precio actual', async () => {
++    rpcSpy.and.resolveTo({
++      data: {
++        rows: [
++          {
++            tarifa_id: 't1',
++            peaje_id: 'p',
++            peaje_nombre: 'AUBASA',
++            estacion_id: 'e',
++            estacion_nombre: 'HUDSON',
++            categoria: 1,
++            status: 'NO_PICO',
++            sentido: 'IDA',
++            importe: 5500,
++            fecha_actualizacion: '2026-03-10T00:00:00.000Z',
++            current_tarifa_importe_id: 'ti-1',
++            fecha_vigencia_inicio: '2026-01-01',
++            fecha_vigencia_fin: null,
++            diagnostico: 'CONFIRMADO',
++            categoria_calculada: 1,
++          },
++        ],
++        total: 1,
++        page: 1,
++        page_size: 50,
++      },
++      error: null,
++    });
++    const out = await firstValueFrom(service.listar());
++    expect(out.rows[0].fechaVigenciaInicio).toBe('2026-01-01');
++    expect(out.rows[0].fechaVigenciaFin).toBeNull();
++    expect(out.rows[0].diagnostico).toBe('CONFIRMADO');
++    expect(out.rows[0].categoriaCalculada).toBe(1);
++  });
++
++  it('obtenerEditor mapea vigencia y diagnostico de identidades existentes', async () => {
++    rpcSpy.and.resolveTo({
++      data: {
++        context: {
++          peaje_id: 'p',
++          peaje_nombre: 'AUBASA',
++          estacion_id: 'e',
++          estacion_nombre: 'HUDSON',
++          sentido: 'IDA',
++        },
++        existentes: [
++          {
++            tarifa_id: 't1',
++            categoria: 1,
++            status: 'NO_PICO',
++            current_tarifa_importe_id: 'ti-1',
++            importe: 5500,
++            fecha_actualizacion: '2026-03-10T00:00:00.000Z',
++            fecha_vigencia_inicio: '2026-01-01',
++            fecha_vigencia_fin: null,
++            diagnostico: 'CONFIRMADO',
++            categoria_calculada: 1,
++          },
++        ],
++      },
++      error: null,
++    });
++    const payload = await firstValueFrom(service.obtenerEditor('p', 'e', 'IDA'));
++    expect(payload.existentes[0].fechaVigenciaInicio).toBe('2026-01-01');
++    expect(payload.existentes[0].diagnostico).toBe('CONFIRMADO');
++    expect(payload.existentes[0].categoriaCalculada).toBe(1);
++  });
++
+   it('prepararRefresco envia candidatos en forma RPC snake_case', async () => {
+     rpcSpy.and.resolveTo({ data: [], error: null });
+     await firstValueFrom(
+       service.prepararRefresco([
+         {
+           id: 'c1',
+           estacionId: 'est-1',
+           categoria: 2,
+           statusSolicitado: 'NO_PICO',
+           sentidoSolicitado: 'AMBAS',
+@@ -179,11 +291,229 @@ describe('PeajesTarifarioSupabaseService', () => {
+           status: 'NO_PICO',
+           importe: 12500,
+           cases: 3,
+           requiere_normalizacion_iva: false,
+         },
+       ],
+     });
+     expect(out[0].accion).toBe('ACTUALIZADA');
+     expect(out[0].anterior).toBe(11975.15);
+   });
++
++  it('detectarRefresco envia fecha_pasada y categoria_proveedor', async () => {
++    rpcSpy.and.resolveTo({ data: [], error: null });
++    await firstValueFrom(
++      service.detectarRefresco([
++        {
++          id: 'c1',
++          estacionId: 'est-1',
++          categoria: 3,
++          categoriaProveedor: 3,
++          statusSolicitado: null,
++          sentidoSolicitado: 'AMBAS',
++          fechaPasada: '2026-07-31',
++          precioDirecto: 5300,
++          precioNormalizado: null,
++        } as never,
++      ]),
++    );
++    expect(rpcSpy).toHaveBeenCalledWith('peajes_detectar_refresco_tarifas', {
++      p_candidatos: [
++        jasmine.objectContaining({
++          id: 'c1',
++          estacion_id: 'est-1',
++          categoria: 3,
++          categoria_proveedor: 3,
++          fecha_pasada: '2026-07-31',
++          precio_directo: 5300,
++          precio_normalizado: null,
++        }),
++      ],
++    });
++  });
++
++  it('detectarRefresco mapea correccion, possible_matches, diagnostico, vigencia y categoriaCalculada', async () => {
++    rpcSpy.and.resolveTo({
++      data: [
++        {
++          id: 'c1',
++          codigo: 'CURRENT_CATEGORY_CORRECTION',
++          peaje_id: 'p',
++          estacion_id: 'e',
++          categoria: 3,
++          categoria_proveedor: 3,
++          categoria_calculada: 2,
++          status: 'PICO',
++          sentido_solicitado: 'AMBAS',
++          sentido_aplicado: 'AMBAS',
++          importe_actual: 5300,
++          tarifa_id: 't',
++          tarifa_importe_id: 'ti',
++          requiere_normalizacion_iva: false,
++          diagnostico: 'CONFIRMADO',
++          fecha_vigencia_inicio: '2026-06-01',
++          fecha_vigencia_fin: null,
++          possible_matches: [
++            {
++              tarifa_id: 't',
++              tarifa_importe_id: 'ti',
++              categoria: 2,
++              status: 'PICO',
++              sentido: 'AMBAS',
++              importe: 5300,
++              diagnostico: 'CONFIRMADO',
++              fecha_vigencia_inicio: '2026-06-01',
++              fecha_vigencia_fin: null,
++              es_actual: true,
++              error_relativo: 0,
++            },
++          ],
++        },
++      ],
++      error: null,
++    });
++    const out = await firstValueFrom(
++      service.detectarRefresco([
++        {
++          id: 'c1',
++          estacionId: 'e',
++          categoria: 3,
++          statusSolicitado: 'PICO',
++          sentidoSolicitado: 'AMBAS',
++          fechaPasada: '2026-07-31',
++          precioDirecto: 5300,
++          precioNormalizado: null,
++        } as never,
++      ]),
++    );
++    expect(out[0].codigo).toBe('CURRENT_CATEGORY_CORRECTION');
++    expect((out[0] as { categoriaProveedor?: number | null }).categoriaProveedor).toBe(3);
++    expect((out[0] as { categoriaCalculada?: number | null }).categoriaCalculada).toBe(2);
++    expect((out[0] as { diagnostico?: string | null }).diagnostico).toBe('CONFIRMADO');
++    expect((out[0] as { fechaVigenciaInicio?: string | null }).fechaVigenciaInicio).toBe('2026-06-01');
++    expect((out[0] as { fechaVigenciaFin?: string | null }).fechaVigenciaFin).toBeNull();
++    const matches = out[0].possibleMatches ?? [];
++    expect(matches.length).toBe(1);
++    expect(matches[0]).toEqual(
++      jasmine.objectContaining({
++        tarifaId: 't',
++        tarifaImporteId: 'ti',
++        categoria: 2,
++        status: 'PICO',
++        sentido: 'AMBAS',
++        importe: 5300,
++        diagnostico: 'CONFIRMADO',
++        fechaVigenciaInicio: '2026-06-01',
++        fechaVigenciaFin: null,
++        esActual: true,
++        errorRelativo: 0,
++      }),
++    );
++  });
++
++  it('detectarRefresco acepta camelCase y guarda REVIEW_RECORDED', async () => {
++    rpcSpy.and.resolveTo({
++      data: [
++        {
++          id: 'c2',
++          codigo: 'HISTORICAL_CATEGORY_CORRECTION',
++          peajeId: 'p',
++          estacionId: 'e',
++          categoriaProveedor: 3,
++          categoriaCalculada: 2,
++          possibleMatches: [],
++        },
++        {
++          id: 'c3',
++          codigo: 'REVIEW_RECORDED',
++          peajeId: 'p',
++          estacionId: 'e',
++          categoria_proveedor: 3,
++          categoria_calculada: null,
++          tarifa_importe_id: 'ti-rev',
++          diagnostico: 'REVISAR',
++        },
++      ],
++      error: null,
++    });
++    const out = await firstValueFrom(
++      service.detectarRefresco([
++        {
++          id: 'c2',
++          estacionId: 'e',
++          categoria: 3,
++          statusSolicitado: null,
++          sentidoSolicitado: 'AMBAS',
++          fechaPasada: '2026-01-15',
++          precioDirecto: 5300,
++          precioNormalizado: null,
++        } as never,
++      ]),
++    );
++    expect(out[0].codigo).toBe('HISTORICAL_CATEGORY_CORRECTION');
++    expect((out[0] as { categoriaCalculada?: number | null }).categoriaCalculada).toBe(2);
++    expect(out[1].codigo).toBe('REVIEW_RECORDED');
++    expect(out[1].tarifaImporteId).toBe('ti-rev');
++  });
++
++  it('guardarRefresco mapea TarifaRefreshDecision a snake_case', async () => {
++    rpcSpy.and.resolveTo({
++      data: [
++        {
++          peaje_id: 'p',
++          estacion_id: 'e',
++          sentido: 'AMBAS',
++          categoria: 2,
++          status: 'NO_PICO',
++          tarifa_id: 't',
++          anterior: 11975.15,
++          nueva: 12500,
++          tarifa_importe_id: 'ti-new',
++          accion: 'ACTUALIZADA',
++          candidate_id: 'cand-1',
++          anterior_fin: '2026-09-01',
++          fecha_vigencia_inicio: '2026-09-01',
++          fecha_vigencia_fin: null,
++          diagnostico: 'CONFIRMADO',
++          categoria_calculada: 2,
++        },
++      ],
++      error: null,
++    });
++    const decision = {
++      candidateId: 'cand-1',
++      action: 'CONFIRM_NEW' as const,
++      peajeId: 'p',
++      estacionId: 'e',
++      categoriaProveedor: 3,
++      categoriaCalculada: 2,
++      status: 'NO_PICO' as const,
++      sentido: 'AMBAS' as const,
++      importe: 12500,
++      fechaVigenciaInicio: '2026-09-01',
++      cases: 4,
++      requiereNormalizacionIva: false,
++    };
++    const out = await firstValueFrom(service.guardarRefresco([decision] as never));
++    expect(rpcSpy).toHaveBeenCalledWith('peajes_guardar_refresco_tarifas', {
++      p_cambios: [
++        jasmine.objectContaining({
++          candidate_id: 'cand-1',
++          action: 'CONFIRM_NEW',
++          peaje_id: 'p',
++          estacion_id: 'e',
++          categoria_proveedor: 3,
++          categoria_calculada: 2,
++          status: 'NO_PICO',
++          sentido: 'AMBAS',
++          importe: 12500,
++          fecha_vigencia_inicio: '2026-09-01',
++          cases: 4,
++          requiere_normalizacion_iva: false,
++        }),
++      ],
++    });
++    expect((out[0] as { diagnostico?: string | null }).diagnostico).toBe('CONFIRMADO');
++    expect((out[0] as { fechaVigenciaInicio?: string | null }).fechaVigenciaInicio).toBe('2026-09-01');
++    expect((out[0] as { categoriaCalculada?: number | null }).categoriaCalculada).toBe(2);
++  });
+ });
+diff --git a/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.ts b/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.ts
+index a0659a2..ded4b95 100644
+--- a/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.ts
++++ b/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.ts
+@@ -1,20 +1,22 @@
+ import { Injectable, inject } from '@angular/core';
+ import { Observable, from } from 'rxjs';
+ import { SupabaseService } from '../../../services/supabase.service';
+ import {
+   CambioRefrescoTarifa,
+   DetectarRefrescoTarifaInput,
+   DetectarRefrescoTarifaItem,
+   PeajesTarifarioService,
+   PrepararRefrescoTarifaInput,
+   PrepararRefrescoTarifaItem,
++  TarifaMatchOption,
++  TarifaRefreshDecision,
+   TarifaRefrescoGuardada,
+   TarifaSentido,
+   TarifaStatusPico,
+   TarifarioCurrentRow,
+   TarifarioEditorPayload,
+   TarifarioHistorialItem,
+   TarifarioIdentidadExistente,
+   TarifarioImporteCambio,
+   TarifarioListParams,
+   TarifarioListResult,
+@@ -47,95 +49,217 @@ function mapListRow(raw: Record<string, unknown>): TarifarioCurrentRow {
+     categoria: asNumber(raw['categoria']),
+     status: String(raw['status']) as TarifaStatusPico,
+     sentido: String(raw['sentido']) as TarifaSentido,
+     importe: asNullableNumber(raw['importe']),
+     fecha_actualizacion:
+       raw['fecha_actualizacion'] == null ? null : String(raw['fecha_actualizacion']),
+     current_tarifa_importe_id:
+       raw['current_tarifa_importe_id'] == null
+         ? null
+         : String(raw['current_tarifa_importe_id']),
++    ...mapVigenciaDiagnostico(raw),
+   };
+ }
+ 
+ function mapExistente(raw: Record<string, unknown>): TarifarioIdentidadExistente {
+   return {
+     tarifa_id: String(raw['tarifa_id'] ?? ''),
+     categoria: asNumber(raw['categoria']),
+     status: String(raw['status']) as TarifaStatusPico,
+     current_tarifa_importe_id:
+       raw['current_tarifa_importe_id'] == null
+         ? null
+         : String(raw['current_tarifa_importe_id']),
+     importe: asNullableNumber(raw['importe']),
+     fecha_actualizacion:
+       raw['fecha_actualizacion'] == null ? null : String(raw['fecha_actualizacion']),
++    ...mapVigenciaDiagnostico(raw),
+   };
+ }
+ 
++function pickRaw(raw: Record<string, unknown>, snake: string, camel: string): unknown {
++  if (Object.prototype.hasOwnProperty.call(raw, snake) && raw[snake] !== undefined) return raw[snake];
++  if (Object.prototype.hasOwnProperty.call(raw, camel) && raw[camel] !== undefined) return raw[camel];
++  return raw[snake] ?? raw[camel];
++}
++
++function asDateString(value: unknown): string | null {
++  if (value == null || value === '') return null;
++  return String(value);
++}
++
++function mapVigenciaDiagnostico(raw: Record<string, unknown>): {
++  fechaVigenciaInicio: string | null;
++  fechaVigenciaFin: string | null;
++  diagnostico: string | null;
++  categoriaCalculada: number | null;
++} {
++  const diagnosticoRaw = pickRaw(raw, 'diagnostico', 'diagnostico');
++  return {
++    fechaVigenciaInicio: asDateString(pickRaw(raw, 'fecha_vigencia_inicio', 'fechaVigenciaInicio')),
++    fechaVigenciaFin: asDateString(pickRaw(raw, 'fecha_vigencia_fin', 'fechaVigenciaFin')),
++    diagnostico: diagnosticoRaw == null ? null : String(diagnosticoRaw),
++    categoriaCalculada: asNullableNumber(pickRaw(raw, 'categoria_calculada', 'categoriaCalculada')),
++  };
++}
++
++function mapImporteCambio(c: TarifarioImporteCambio): Record<string, unknown> {
++  return {
++    categoria: c.categoria,
++    status: c.status,
++    importe: c.importe,
++    fecha_vigencia_inicio: c.fechaVigenciaInicio ?? null,
++  };
++}
++
++function mapMatchOption(raw: Record<string, unknown>): TarifaMatchOption {
++  return {
++    tarifaId: String(pickRaw(raw, 'tarifa_id', 'tarifaId') ?? ''),
++    tarifaImporteId: String(pickRaw(raw, 'tarifa_importe_id', 'tarifaImporteId') ?? ''),
++    categoria: asNumber(pickRaw(raw, 'categoria', 'categoria')),
++    status: String(pickRaw(raw, 'status', 'status') ?? '') as TarifaStatusPico,
++    sentido: String(pickRaw(raw, 'sentido', 'sentido') ?? '') as TarifaSentido,
++    importe: asNumber(pickRaw(raw, 'importe', 'importe')),
++    diagnostico: pickRaw(raw, 'diagnostico', 'diagnostico') == null ? null : String(pickRaw(raw, 'diagnostico', 'diagnostico')),
++    fechaVigenciaInicio: asDateString(pickRaw(raw, 'fecha_vigencia_inicio', 'fechaVigenciaInicio')),
++    fechaVigenciaFin: asDateString(pickRaw(raw, 'fecha_vigencia_fin', 'fechaVigenciaFin')),
++    esActual: Boolean(pickRaw(raw, 'es_actual', 'esActual')),
++    errorRelativo: asNumber(pickRaw(raw, 'error_relativo', 'errorRelativo')),
++  };
++}
++
++function mapPossibleMatches(value: unknown): TarifaMatchOption[] {
++  if (!Array.isArray(value)) return [];
++  return value
++    .filter((item): item is Record<string, unknown> => item != null && typeof item === 'object')
++    .map(mapMatchOption);
++}
++
+ function mapPreparar(raw: Record<string, unknown>): PrepararRefrescoTarifaItem {
+   return {
+     id: String(raw['id'] ?? ''),
+     peajeId: raw['peaje_id'] == null ? null : String(raw['peaje_id']),
+     estacionId: String(raw['estacion_id'] ?? ''),
+     categoria: asNullableNumber(raw['categoria']),
+     status: raw['status'] == null ? null : (String(raw['status']) as TarifaStatusPico),
+     sentido: raw['sentido'] == null ? null : String(raw['sentido']) as TarifaSentido,
+     tarifaId: raw['tarifa_id'] == null ? null : String(raw['tarifa_id']),
+     importe: asNullableNumber(raw['importe']),
+     requiereNormalizacionIva: Boolean(raw['requiere_normalizacion_iva']),
+   };
+ }
+ 
+ function mapDetectar(raw: Record<string, unknown>): DetectarRefrescoTarifaItem {
++  const categoriaProveedor = asNullableNumber(pickRaw(raw, 'categoria_proveedor', 'categoriaProveedor') ?? raw['categoria']);
+   return {
+-    id: String(raw['id'] ?? ''),
+-    codigo: String(raw['codigo'] ?? '') as DetectarRefrescoTarifaItem['codigo'],
+-    peajeId: raw['peaje_id'] == null ? null : String(raw['peaje_id']),
+-    estacionId: String(raw['estacion_id'] ?? ''),
+-    categoria: asNullableNumber(raw['categoria']),
+-    status: raw['status'] == null ? null : (String(raw['status']) as TarifaStatusPico),
+-    sentidoSolicitado: raw['sentido_solicitado'] == null ? null : String(raw['sentido_solicitado']) as TarifaSentido,
++    id: String(pickRaw(raw, 'id', 'id') ?? ''),
++    codigo: String(pickRaw(raw, 'codigo', 'codigo') ?? '') as DetectarRefrescoTarifaItem['codigo'],
++    peajeId: pickRaw(raw, 'peaje_id', 'peajeId') == null ? null : String(pickRaw(raw, 'peaje_id', 'peajeId')),
++    estacionId: String(pickRaw(raw, 'estacion_id', 'estacionId') ?? ''),
++    categoria: categoriaProveedor,
++    categoriaProveedor,
++    categoriaCalculada: asNullableNumber(pickRaw(raw, 'categoria_calculada', 'categoriaCalculada')),
++    status: pickRaw(raw, 'status', 'status') == null ? null : (String(pickRaw(raw, 'status', 'status')) as TarifaStatusPico),
++    sentidoSolicitado:
++      pickRaw(raw, 'sentido_solicitado', 'sentidoSolicitado') == null
++        ? null
++        : (String(pickRaw(raw, 'sentido_solicitado', 'sentidoSolicitado')) as TarifaSentido),
+     sentidoAplicado:
+-      raw['sentido_aplicado'] == null ? null : (String(raw['sentido_aplicado']) as TarifaSentido),
+-    importeActual: asNullableNumber(raw['importe_actual']),
+-    tarifaId: raw['tarifa_id'] == null ? null : String(raw['tarifa_id']),
+-    tarifaImporteId: raw['tarifa_importe_id'] == null ? null : String(raw['tarifa_importe_id']),
++      pickRaw(raw, 'sentido_aplicado', 'sentidoAplicado') == null
++        ? null
++        : (String(pickRaw(raw, 'sentido_aplicado', 'sentidoAplicado')) as TarifaSentido),
++    importeActual: asNullableNumber(pickRaw(raw, 'importe_actual', 'importeActual')),
++    tarifaId: pickRaw(raw, 'tarifa_id', 'tarifaId') == null ? null : String(pickRaw(raw, 'tarifa_id', 'tarifaId')),
++    tarifaImporteId:
++      pickRaw(raw, 'tarifa_importe_id', 'tarifaImporteId') == null
++        ? null
++        : String(pickRaw(raw, 'tarifa_importe_id', 'tarifaImporteId')),
+     requiereNormalizacionIva:
+-      raw['requiere_normalizacion_iva'] == null
++      pickRaw(raw, 'requiere_normalizacion_iva', 'requiereNormalizacionIva') == null
+         ? null
+-        : Boolean(raw['requiere_normalizacion_iva']),
++        : Boolean(pickRaw(raw, 'requiere_normalizacion_iva', 'requiereNormalizacionIva')),
++    diagnostico: pickRaw(raw, 'diagnostico', 'diagnostico') == null ? null : String(pickRaw(raw, 'diagnostico', 'diagnostico')),
++    fechaVigenciaInicio: asDateString(pickRaw(raw, 'fecha_vigencia_inicio', 'fechaVigenciaInicio')),
++    fechaVigenciaFin: asDateString(pickRaw(raw, 'fecha_vigencia_fin', 'fechaVigenciaFin')),
++    possibleMatches: mapPossibleMatches(pickRaw(raw, 'possible_matches', 'possibleMatches')),
+   };
+ }
+ 
+ function mapGuardado(raw: Record<string, unknown>): TarifaRefrescoGuardada {
++  const fechaInicio = asDateString(pickRaw(raw, 'fecha_vigencia_inicio', 'fechaVigenciaInicio'));
++  const fechaFin = asDateString(pickRaw(raw, 'fecha_vigencia_fin', 'fechaVigenciaFin'));
++  const categoriaCalculada = asNullableNumber(pickRaw(raw, 'categoria_calculada', 'categoriaCalculada'));
+   return {
+     peaje_id: String(raw['peaje_id'] ?? ''),
+     estacion_id: String(raw['estacion_id'] ?? ''),
+     sentido: String(raw['sentido'] ?? 'AMBAS') as TarifaSentido,
+     categoria: asNumber(raw['categoria']),
+     status: String(raw['status']) as TarifaStatusPico,
+     tarifa_id: String(raw['tarifa_id'] ?? ''),
+     anterior: asNullableNumber(raw['anterior']),
+     nueva: asNumber(raw['nueva']),
+     tarifa_importe_id:
+       raw['tarifa_importe_id'] == null ? null : String(raw['tarifa_importe_id']),
+     accion: String(raw['accion'] ?? 'SIN_CAMBIO') as TarifaRefrescoGuardada['accion'],
++    candidate_id: pickRaw(raw, 'candidate_id', 'candidateId') == null ? null : String(pickRaw(raw, 'candidate_id', 'candidateId')),
++    anterior_fin: asDateString(pickRaw(raw, 'anterior_fin', 'anteriorFin')),
++    fecha_vigencia_inicio: fechaInicio,
++    fecha_vigencia_fin: fechaFin,
++    diagnostico: pickRaw(raw, 'diagnostico', 'diagnostico') == null ? null : String(pickRaw(raw, 'diagnostico', 'diagnostico')),
++    categoria_calculada: categoriaCalculada,
++    fechaVigenciaInicio: fechaInicio,
++    fechaVigenciaFin: fechaFin,
++    categoriaCalculada,
+   };
+ }
+ 
+ function mapHistorial(raw: Record<string, unknown>): TarifarioHistorialItem {
+   return {
+     id: String(raw['id'] ?? ''),
+     importe: asNumber(raw['importe']),
+     fecha_aparicion: String(raw['fecha_aparicion'] ?? ''),
+     es_actual: Boolean(raw['es_actual']),
++    ...mapVigenciaDiagnostico(raw),
++  };
++}
++
++function isRefreshDecision(c: CambioRefrescoTarifa | TarifaRefreshDecision): c is TarifaRefreshDecision {
++  return 'action' in c && (c.action === 'CONFIRM_NEW' || c.action === 'MARK_REVIEW');
++}
++
++function mapCambioRpc(c: CambioRefrescoTarifa | TarifaRefreshDecision): Record<string, unknown> {
++  if (isRefreshDecision(c)) {
++    return {
++      candidate_id: c.candidateId,
++      action: c.action,
++      peaje_id: c.peajeId,
++      estacion_id: c.estacionId,
++      categoria: c.categoriaCalculada ?? c.categoriaProveedor,
++      categoria_proveedor: c.categoriaProveedor,
++      categoria_calculada: c.categoriaCalculada,
++      status: c.status,
++      sentido: c.sentido,
++      importe: c.importe,
++      fecha_vigencia_inicio: c.fechaVigenciaInicio,
++      cases: c.cases,
++      requiere_normalizacion_iva: c.requiereNormalizacionIva,
++    };
++  }
++  return {
++    peaje_id: c.peajeId,
++    estacion_id: c.estacionId,
++    sentido: c.sentido,
++    categoria: c.categoria,
++    status: c.status,
++    importe: c.importe,
++    cases: c.cases,
++    requiere_normalizacion_iva: c.requiereNormalizacionIva,
+   };
+ }
+ 
+ @Injectable({ providedIn: 'root' })
+ export class PeajesTarifarioSupabaseService implements PeajesTarifarioService {
+   private readonly supabase = inject(SupabaseService);
+ 
+   listar(params: TarifarioListParams = {}): Observable<TarifarioListResult> {
+     return from(
+       this.supabase.executeWithRetry(async () => {
+@@ -192,21 +316,21 @@ export class PeajesTarifarioSupabaseService implements PeajesTarifarioService {
+     sentido: TarifaSentido,
+     cambios: TarifarioImporteCambio[],
+   ): Observable<{ actualizadas: number }> {
+     return from(
+       this.supabase.executeWithRetry(async () => {
+         const client = await this.supabase.getClient();
+         const { data, error } = await client.rpc('peajes_guardar_tarifas_actuales', {
+           p_peaje_id: peajeId,
+           p_estacion_id: estacionId,
+           p_sentido: sentido,
+-          p_cambios: cambios,
++          p_cambios: cambios.map(mapImporteCambio),
+         });
+         if (error) throw error;
+         return {
+           actualizadas: Number(
+             (data as { actualizadas?: number } | null)?.actualizadas ?? 0,
+           ),
+         };
+       }),
+     );
+   }
+@@ -249,44 +373,39 @@ export class PeajesTarifarioSupabaseService implements PeajesTarifarioService {
+     candidatos: DetectarRefrescoTarifaInput[],
+   ): Observable<DetectarRefrescoTarifaItem[]> {
+     return from(
+       this.supabase.executeWithRetry(async () => {
+         const client = await this.supabase.getClient();
+         const { data, error } = await client.rpc('peajes_detectar_refresco_tarifas', {
+           p_candidatos: candidatos.map((c) => ({
+             id: c.id,
+             estacion_id: c.estacionId,
+             categoria: c.categoria,
++            categoria_proveedor: c.categoriaProveedor ?? c.categoria,
+             status_solicitado: c.statusSolicitado,
+             sentido_solicitado: c.sentidoSolicitado,
++            fecha_pasada: c.fechaPasada ?? null,
+             precio_directo: c.precioDirecto,
+             precio_normalizado: c.precioNormalizado,
+           })),
+         });
+         if (error) throw error;
+         return ((data ?? []) as Record<string, unknown>[]).map(mapDetectar);
+       }),
+     );
+   }
+ 
+-  guardarRefresco(cambios: CambioRefrescoTarifa[]): Observable<TarifaRefrescoGuardada[]> {
++  guardarRefresco(
++    cambios: Array<CambioRefrescoTarifa | TarifaRefreshDecision>,
++  ): Observable<TarifaRefrescoGuardada[]> {
+     return from(
+       this.supabase.executeWithRetry(async () => {
+         const client = await this.supabase.getClient();
+         const { data, error } = await client.rpc('peajes_guardar_refresco_tarifas', {
+-          p_cambios: cambios.map((c) => ({
+-            peaje_id: c.peajeId,
+-            estacion_id: c.estacionId,
+-            sentido: c.sentido,
+-            categoria: c.categoria,
+-            status: c.status,
+-            importe: c.importe,
+-            cases: c.cases,
+-            requiere_normalizacion_iva: c.requiereNormalizacionIva,
+-          })),
++          p_cambios: cambios.map((c) => mapCambioRpc(c)),
+         });
+         if (error) throw error;
+         return ((data ?? []) as Record<string, unknown>[]).map(mapGuardado);
+       }),
+     );
+   }
+ }
+diff --git a/ibarra-app/src/app/components/peajes/tarifario/mocks/tarifario.mock.ts b/ibarra-app/src/app/components/peajes/tarifario/mocks/tarifario.mock.ts
+index d3ffe00..7f27ddc 100644
+--- a/ibarra-app/src/app/components/peajes/tarifario/mocks/tarifario.mock.ts
++++ b/ibarra-app/src/app/components/peajes/tarifario/mocks/tarifario.mock.ts
+@@ -46,20 +46,24 @@ interface TarifaIdentidad {
+   sentido: TarifaSentido;
+   current_tarifa_id: string | null;
+   fecha_actualizacion: string | null;
+ }
+ 
+ interface TarifaImporteRow {
+   id: string;
+   tarifa_id: string;
+   importe: number;
+   fecha_aparicion: string;
++  fecha_vigencia_inicio: string | null;
++  fecha_vigencia_fin: string | null;
++  diagnostico: string | null;
++  categoria_calculada: number | null;
+ }
+ 
+ const PEAJES: { id: string; nombre: string }[] = [{ id: PEAJE_AUBASA, nombre: 'AUBASA' }];
+ 
+ const ESTACIONES: CatalogEstacion[] = [
+   { id: ESTACION_DOCK_SUD, nombre: 'DOCK SUD', peaje_id: PEAJE_AUBASA },
+   { id: ESTACION_HUDSON, nombre: 'HUDSON', peaje_id: PEAJE_AUBASA },
+   { id: ESTACION_SAMBOROMBON, nombre: 'SAMBOROMBON', peaje_id: PEAJE_AUBASA },
+   { id: ESTACION_GUTIERREZ, nombre: 'GUTIERREZ', peaje_id: PEAJE_AUBASA },
+   { id: ESTACION_BERNAL, nombre: 'BERNAL', peaje_id: PEAJE_AUBASA },
+@@ -108,25 +112,38 @@ function seedState(): { tarifas: TarifaIdentidad[]; importes: TarifaImporteRow[]
+       categoria,
+       sentido,
+       current_tarifa_id: currentId,
+       fecha_actualizacion: now,
+     });
+     importes.push(...extras, {
+       id: currentId,
+       tarifa_id: id,
+       importe,
+       fecha_aparicion: now,
++      fecha_vigencia_inicio: null,
++      fecha_vigencia_fin: null,
++      diagnostico: null,
++      categoria_calculada: null,
+     });
+   };
+ 
+   add('tarifa-hudson-ida-1-np', ESTACION_HUDSON, 'NO_PICO', 1, 'IDA', TI_100, 5500, [
+-    { id: TI_099, tarifa_id: 'tarifa-hudson-ida-1-np', importe: 5000, fecha_aparicion: older },
++    {
++      id: TI_099,
++      tarifa_id: 'tarifa-hudson-ida-1-np',
++      importe: 5000,
++      fecha_aparicion: older,
++      fecha_vigencia_inicio: null,
++      fecha_vigencia_fin: null,
++      diagnostico: null,
++      categoria_calculada: null,
++    },
+   ]);
+   add('tarifa-hudson-ida-1-p', ESTACION_HUDSON, 'PICO', 1, 'IDA', 'ti-h-ida-1-p', 6000);
+   add('tarifa-hudson-ida-2-np', ESTACION_HUDSON, 'NO_PICO', 2, 'IDA', 'ti-h-ida-2-np', 7000);
+   add('tarifa-hudson-ida-2-p', ESTACION_HUDSON, 'PICO', 2, 'IDA', 'ti-h-ida-2-p', 7500);
+ 
+   add('tarifa-hudson-vue-1-np', ESTACION_HUDSON, 'NO_PICO', 1, 'VUELTA', 'ti-h-vue-1-np', 5700);
+   add('tarifa-hudson-vue-1-p', ESTACION_HUDSON, 'PICO', 1, 'VUELTA', 'ti-h-vue-1-p', 6200);
+   add('tarifa-hudson-vue-2-np', ESTACION_HUDSON, 'NO_PICO', 2, 'VUELTA', 'ti-h-vue-2-np', 7200);
+   add('tarifa-hudson-vue-2-p', ESTACION_HUDSON, 'PICO', 2, 'VUELTA', 'ti-h-vue-2-p', 7700);
+ 
+@@ -233,43 +250,58 @@ export class TarifarioMockService implements PeajesTarifarioService {
+           peaje_id: peajeId,
+           estacion_id: estacionId,
+           status: cambio.status,
+           categoria: cambio.categoria,
+           sentido,
+           current_tarifa_id: null,
+           fecha_actualizacion: null,
+         };
+         this.tarifas.push(tarifa);
+       }
++      const start = cambio.fechaVigenciaInicio ?? null;
++      if (tarifa.current_tarifa_id && start) {
++        const previous = this.importes.find((row) => row.id === tarifa.current_tarifa_id);
++        if (previous && previous.fecha_vigencia_fin == null) {
++          previous.fecha_vigencia_fin = start;
++        }
++      }
+       const importeId = nextId('TI');
+       this.importes.push({
+         id: importeId,
+         tarifa_id: tarifa.id,
+         importe: cambio.importe,
+         fecha_aparicion: stamp,
++        fecha_vigencia_inicio: start,
++        fecha_vigencia_fin: null,
++        diagnostico: start ? 'CONFIRMADO' : null,
++        categoria_calculada: null,
+       });
+       tarifa.current_tarifa_id = importeId;
+       tarifa.fecha_actualizacion = stamp;
+     }
+     return of({ actualizadas: cambios.length });
+   }
+ 
+   listarHistorial(tarifaId: string): Observable<TarifarioHistorialItem[]> {
+     const tarifa = this.tarifas.find((t) => t.id === tarifaId);
+     const rows = this.importes
+       .filter((i) => i.tarifa_id === tarifaId)
+       .sort((a, b) => (a.fecha_aparicion < b.fecha_aparicion ? 1 : a.fecha_aparicion > b.fecha_aparicion ? -1 : 0))
+       .map((i) => ({
+         id: i.id,
+         importe: i.importe,
+         fecha_aparicion: i.fecha_aparicion,
+         es_actual: tarifa?.current_tarifa_id === i.id,
++        fechaVigenciaInicio: i.fecha_vigencia_inicio,
++        fechaVigenciaFin: i.fecha_vigencia_fin,
++        diagnostico: i.diagnostico,
++        categoriaCalculada: i.categoria_calculada,
+       }));
+     return of(rows);
+   }
+ 
+   prepararRefresco(
+     _candidatos: PrepararRefrescoTarifaInput[],
+   ): Observable<PrepararRefrescoTarifaItem[]> {
+     return throwError(() => new Error('prepararRefresco no implementado'));
+   }
+ 
+diff --git a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.css b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.css
+index 7237df6..01bacc3 100644
+--- a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.css
++++ b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.css
+@@ -11,10 +11,15 @@
+   font-size: 0.78rem;
+   font-variant-numeric: tabular-nums;
+ }
+ 
+ .tf__actions {
+   display: flex;
+   justify-content: flex-end;
+   gap: 0.5rem;
+   margin-top: 1rem;
+ }
++
++.tf__date {
++  margin: 1rem 0 0;
++  max-width: 18rem;
++}
+diff --git a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.html b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.html
+index b3d431b..325966e 100644
+--- a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.html
++++ b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.html
+@@ -25,20 +25,31 @@
+     *ngIf="!loading && !error"
+     [rows]="rows"
+     [drafts]="drafts"
+     [allowAddCategoria]="canAddCategoria"
+     [categoriaCount]="categoriaCount"
+     (draftChange)="onDraftChange($event)"
+     (historyRequest)="openHistory($event.row, $event.status)"
+     (addCategoria)="addCategoria()"
+   ></app-tarifario-editor-board>
+ 
++  <div class="tf__date" *ngIf="!loading && !error">
++    <app-date-range-picker
++      label="Vigente desde"
++      mode="single"
++      placeholder="dd/mm/aaaa"
++      [value]="vigenteDesde"
++      [disabled]="saving"
++      (valueChange)="onVigenteDesde($event)"
++    ></app-date-range-picker>
++  </div>
++
+   <p class="at__error" *ngIf="saveError" role="alert">{{ saveError }}</p>
+ 
+   <footer class="tf__actions" *ngIf="!loading && !error">
+     <button type="button" class="at__btn" (click)="cancel()">Cancelar</button>
+     <button type="button" class="at__btn at__btn--primary" [disabled]="!canSave" (click)="save()">
+       {{ saving ? 'GuardandoÔÇª' : 'Guardar cambios' }}
+     </button>
+   </footer>
+ 
+   <app-tarifario-historial-dialog
+diff --git a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.spec.ts b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.spec.ts
+index 9a79f45..a46e84f 100644
+--- a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.spec.ts
++++ b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.spec.ts
+@@ -1,12 +1,14 @@
+ import { ComponentFixture, TestBed } from '@angular/core/testing';
++import { By } from '@angular/platform-browser';
+ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
++import { DateRangePickerComponent } from '../../shared';
+ import { PEAJES_TARIFARIO_SERVICE } from '../models/tarifario.contracts';
+ import {
+   TARIFARIO_CATEGORIAS_MAX,
+   MISSING_IMPORTE_LABEL,
+ } from './tarifario.helpers';
+ import {
+   ESTACION_HUDSON,
+   ESTACION_VACIA,
+   PEAJE_AUBASA,
+   TarifarioMockService,
+@@ -65,28 +67,61 @@ describe('TarifarioEditorComponent', () => {
+   });
+ 
+   it('omite New vacios al armar el payload de guardado', async () => {
+     const { component } = await setup('IDA');
+     const mock = TestBed.inject(PEAJES_TARIFARIO_SERVICE) as TarifarioMockService;
+     const spy = spyOn(mock, 'guardar').and.callThrough();
+     component.setDraft(1, 'NO_PICO', '5800');
+     component.setDraft(1, 'PICO', '');
+     component.setDraft(2, 'NO_PICO', '7300');
+     component.setDraft(2, 'PICO', '7900');
++    component.onVigenteDesde({ from: new Date(2026, 8, 1), to: null });
+     await component.save();
+     expect(spy).toHaveBeenCalledWith(PEAJE_AUBASA, ESTACION_HUDSON, 'IDA', [
+-      { categoria: 1, status: 'NO_PICO', importe: 5800 },
+-      { categoria: 2, status: 'NO_PICO', importe: 7300 },
+-      { categoria: 2, status: 'PICO', importe: 7900 },
++      { categoria: 1, status: 'NO_PICO', importe: 5800, fechaVigenciaInicio: '2026-09-01' },
++      { categoria: 2, status: 'NO_PICO', importe: 7300, fechaVigenciaInicio: '2026-09-01' },
++      { categoria: 2, status: 'PICO', importe: 7900, fechaVigenciaInicio: '2026-09-01' },
+     ]);
+   });
+ 
++  it('exige Vigente desde cuando hay New y no llama al RPC sin fecha', async () => {
++    const { component } = await setup('IDA');
++    const mock = TestBed.inject(PEAJES_TARIFARIO_SERVICE) as TarifarioMockService;
++    const spy = spyOn(mock, 'guardar').and.callThrough();
++    component.setDraft(1, 'NO_PICO', '5800');
++    await component.save();
++    expect(spy).not.toHaveBeenCalled();
++    expect(component.saveError).toContain('Vigente desde');
++  });
++
++  it('no llama al RPC si todos los New estan vacios aunque haya fecha', async () => {
++    const { component } = await setup('IDA');
++    const mock = TestBed.inject(PEAJES_TARIFARIO_SERVICE) as TarifarioMockService;
++    const spy = spyOn(mock, 'guardar').and.callThrough();
++    component.onVigenteDesde({ from: new Date(2026, 8, 1), to: null });
++    await component.save();
++    expect(spy).not.toHaveBeenCalled();
++  });
++
++  it('muestra un solo picker Vigente desde y no pide fecha hasta', async () => {
++    const { fixture } = await setup('IDA');
++    const root = fixture.nativeElement as HTMLElement;
++    const pickerDe = fixture.debugElement.query(By.directive(DateRangePickerComponent));
++    expect(pickerDe).toBeTruthy();
++    expect(pickerDe?.componentInstance.mode).toBe('single');
++    expect(pickerDe?.componentInstance.label).toBe('Vigente desde');
++    expect(root.textContent).toContain('Vigente desde');
++    expect(root.textContent).not.toContain('Vigente hasta');
++    expect(root.textContent).not.toContain('Fecha hasta');
++    expect(root.querySelectorAll('app-date-range-picker').length).toBe(1);
++  });
++
+   it('no guarda si hay un New invalido', async () => {
+     const { component } = await setup('IDA');
+     const mock = TestBed.inject(PEAJES_TARIFARIO_SERVICE) as TarifarioMockService;
+     const spy = spyOn(mock, 'guardar').and.callThrough();
+     component.setDraft(1, 'NO_PICO', 'abc');
+     await component.save();
+     expect(spy).not.toHaveBeenCalled();
+     expect(component.saveError).toContain('inv├ílidos');
+   });
+ 
+@@ -97,26 +132,78 @@ describe('TarifarioEditorComponent', () => {
+     expect(component.ultimaActualizacion).not.toBe(MISSING_IMPORTE_LABEL);
+     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+       component.displayFecha(cat1.no_pico.fecha_actualizacion),
+     );
+   });
+ 
+   it('tras guardar refresca la fecha de actualizacion vigente', async () => {
+     const { component } = await setup('IDA');
+     const before = component.rows.find((r) => r.categoria === 1)!.no_pico.fecha_actualizacion;
+     component.setDraft(1, 'NO_PICO', '5800');
++    component.onVigenteDesde({ from: new Date(2026, 8, 1), to: null });
+     await component.save();
+     const after = component.rows.find((r) => r.categoria === 1)!.no_pico.fecha_actualizacion;
+     expect(after).toBeTruthy();
+     expect(after).not.toBe(before);
+   });
+ 
++  it('historial muestra vigencia, diagnostico y no inventa fechas desde fecha_aparicion', async () => {
++    const { fixture, component } = await setup('IDA');
++    const mock = TestBed.inject(PEAJES_TARIFARIO_SERVICE) as TarifarioMockService;
++    spyOn(mock, 'listarHistorial').and.returnValue(
++      (await import('rxjs')).of([
++        {
++          id: 'ti-new',
++          importe: 5800,
++          fecha_aparicion: '2025-08-21T00:00:00.000Z',
++          es_actual: true,
++          fechaVigenciaInicio: '2026-09-01',
++          fechaVigenciaFin: null,
++          diagnostico: 'CONFIRMADO',
++          categoriaCalculada: 2,
++        },
++        {
++          id: 'ti-legacy',
++          importe: 5000,
++          fecha_aparicion: '2024-01-15T00:00:00.000Z',
++          es_actual: false,
++          fechaVigenciaInicio: null,
++          fechaVigenciaFin: null,
++          diagnostico: null,
++          categoriaCalculada: null,
++        },
++      ]),
++    );
++    const cat1 = component.rows.find((r) => r.categoria === 1)!;
++    await component.openHistory(cat1, 'NO_PICO');
++    fixture.detectChanges();
++    const dialog = (fixture.nativeElement as HTMLElement).querySelector(
++      'app-tarifario-historial-dialog',
++    ) as HTMLElement;
++    const headers = Array.from(dialog.querySelectorAll('th')).map((th) => th.textContent?.trim());
++    expect(headers).toEqual([
++      'Desde',
++      'Hasta',
++      'Importe',
++      'Diagn├│stico',
++      'Categor├¡a calculada',
++      'Vigente',
++    ]);
++    expect(dialog.textContent).toContain('01/09/2026');
++    expect(dialog.textContent).toContain('CONFIRMADO');
++    expect(dialog.textContent).toContain('Sin fecha conocida');
++    expect(dialog.textContent).not.toContain('15/01/2024');
++    expect(dialog.textContent).not.toContain('21/08/2025');
++    expect(dialog.textContent).not.toContain('20/8/25');
++    expect(dialog.textContent).not.toContain('14/1/24');
++  });
++
+   it('Tab en NUEVO va al siguiente NUEVO y omite Historial', async () => {
+     const { fixture } = await setup('IDA');
+     const root = fixture.nativeElement as HTMLElement;
+     root.querySelectorAll('.tf__hist').forEach((btn) => {
+       expect(btn.getAttribute('tabindex')).toBe('-1');
+     });
+     const inputs = Array.from(root.querySelectorAll<HTMLInputElement>('.tf__input'));
+     expect(inputs.length).toBeGreaterThan(1);
+     inputs[0].focus();
+     inputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+diff --git a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.ts b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.ts
+index 5835ec0..1c7c9e5 100644
+--- a/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.ts
++++ b/ibarra-app/src/app/components/peajes/tarifario/tarifario-editor.component.ts
+@@ -1,14 +1,15 @@
+ import { CommonModule } from '@angular/common';
+ import { Component, Inject, OnInit } from '@angular/core';
+ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+ import { firstValueFrom } from 'rxjs';
++import { DateRangePickerComponent, toDateInputValue, type DateRangeValue } from '../../shared';
+ import {
+   PEAJES_TARIFARIO_SERVICE,
+   PeajesTarifarioService,
+   TarifaSentido,
+   TarifaStatusPico,
+   TarifarioEditorDrafts,
+   TarifarioEditorPayload,
+   TarifarioEditorRow,
+   TarifarioHistorialItem,
+   TarifarioIdentidadExistente,
+@@ -27,21 +28,27 @@ import {
+   collectDraftErrores,
+   countCategoriasEditor,
+   formatFechaActualizacion,
+   formatTarifaImporteDisplay,
+   isTarifaSentido,
+ } from './tarifario.helpers';
+ 
+ @Component({
+   selector: 'app-tarifario-editor',
+   standalone: true,
+-  imports: [CommonModule, RouterLink, TarifarioEditorBoardComponent, TarifarioHistorialDialogComponent],
++  imports: [
++    CommonModule,
++    RouterLink,
++    DateRangePickerComponent,
++    TarifarioEditorBoardComponent,
++    TarifarioHistorialDialogComponent,
++  ],
+   templateUrl: './tarifario-editor.component.html',
+   styleUrls: ['../shared/peajes-list-shell.css', './tarifario-editor.component.css'],
+ })
+ export class TarifarioEditorComponent implements OnInit {
+   readonly missing = MISSING_IMPORTE_LABEL;
+   readonly categoriasMax = TARIFARIO_CATEGORIAS_MAX;
+ 
+   loading = true;
+   saving = false;
+   error: string | null = null;
+@@ -54,20 +61,21 @@ export class TarifarioEditorComponent implements OnInit {
+   rows: TarifarioEditorRow[] = [];
+   drafts: TarifarioEditorDrafts = {};
+   private existentes: TarifarioIdentidadExistente[] = [];
+   categoriaCount = 0;
+ 
+   historyOpen = false;
+   historyTitle = '';
+   historyLoading = false;
+   historyError: string | null = null;
+   historyRows: TarifarioHistorialItem[] = [];
++  vigenteDesde: DateRangeValue = { from: null, to: null };
+ 
+   constructor(
+     private readonly route: ActivatedRoute,
+     private readonly router: Router,
+     @Inject(PEAJES_TARIFARIO_SERVICE) private readonly tarifario: PeajesTarifarioService,
+   ) {}
+ 
+   ngOnInit(): void {
+     void this.load();
+   }
+@@ -173,34 +181,48 @@ export class TarifarioEditorComponent implements OnInit {
+         status === 'NO_PICO'
+           ? { ...current, no_pico: value }
+           : { ...current, pico: value },
+     };
+   }
+ 
+   cancel(): void {
+     void this.router.navigate(['/peajes/tarifario']);
+   }
+ 
++  onVigenteDesde(value: DateRangeValue): void {
++    this.vigenteDesde = { from: value.from, to: null };
++  }
++
+   async save(): Promise<void> {
+     if (!this.sentido) return;
+     const errores = collectDraftErrores(this.rows, this.drafts);
+     if (errores.length) {
+       this.saveError = 'Hay importes inv├ílidos. Corregilos antes de guardar.';
+       return;
+     }
+     const cambios = collectCambios(this.rows, this.drafts);
+     if (!cambios.length) return;
++    const fechaIso = toDateInputValue(this.vigenteDesde.from);
++    if (!fechaIso) {
++      this.saveError = 'Indic├í la fecha de Vigente desde para confirmar tarifas nuevas.';
++      return;
++    }
+     this.saving = true;
+     this.saveError = null;
+     try {
+       await firstValueFrom(
+-        this.tarifario.guardar(this.peajeId, this.estacionId, this.sentido, cambios),
++        this.tarifario.guardar(
++          this.peajeId,
++          this.estacionId,
++          this.sentido,
++          cambios.map((cambio) => ({ ...cambio, fechaVigenciaInicio: fechaIso })),
++        ),
+       );
+       this.drafts = {};
+       this.applyEditorPayload(
+         await firstValueFrom(
+           this.tarifario.obtenerEditor(this.peajeId, this.estacionId, this.sentido),
+         ),
+       );
+     } catch {
+       this.saveError = 'No se pudieron guardar los cambios. Reintent├í.';
+     } finally {
+diff --git a/ibarra-app/src/app/components/peajes/tarifario/tarifario-historial-dialog.component.html b/ibarra-app/src/app/components/peajes/tarifario/tarifario-historial-dialog.component.html
+index 1788ceb..a18adb8 100644
+--- a/ibarra-app/src/app/components/peajes/tarifario/tarifario-historial-dialog.component.html
++++ b/ibarra-app/src/app/components/peajes/tarifario/tarifario-historial-dialog.component.html
+@@ -5,30 +5,36 @@
+   [title]="title"
+   description="Precios hist├│ricos de esta tarifa. El vigente es el que apunta current_tarifa_id."
+   (closed)="closed.emit()"
+ >
+   <p class="at__error" *ngIf="error" role="alert">{{ error }}</p>
+   <p class="at__empty" *ngIf="loading">Cargando historialÔÇª</p>
+   <div class="at__table-wrap" *ngIf="!loading">
+     <table class="at__table">
+       <thead>
+         <tr>
+-          <th scope="col">Fecha</th>
++          <th scope="col">Desde</th>
++          <th scope="col">Hasta</th>
+           <th scope="col" class="at__num">Importe</th>
+-          <th scope="col">Actual</th>
++          <th scope="col">Diagn├│stico</th>
++          <th scope="col">Categor├¡a calculada</th>
++          <th scope="col">Vigente</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr *ngIf="!rows.length">
+-          <td colspan="3" class="at__empty">Esta tarifa todav├¡a no tiene historial.</td>
++          <td colspan="6" class="at__empty">Esta tarifa todav├¡a no tiene historial.</td>
+         </tr>
+         <tr *ngFor="let row of rows">
+-          <td>{{ formatFecha(row.fecha_aparicion) }}</td>
++          <td>{{ formatVigencia(row.fechaVigenciaInicio) }}</td>
++          <td>{{ formatVigencia(row.fechaVigenciaFin) }}</td>
+           <td class="at__num at__price">{{ formatImporte(row.importe) }}</td>
++          <td>{{ formatDiagnostico(row.diagnostico) }}</td>
++          <td>{{ formatCategoriaCalculada(row.categoriaCalculada) }}</td>
+           <td>
+             <span *ngIf="row.es_actual" class="at__badge at__badge--ok">Vigente</span>
+           </td>
+         </tr>
+       </tbody>
+     </table>
+   </div>
+ </app-dialog>
+diff --git a/ibarra-app/src/app/components/peajes/tarifario/tarifario-historial-dialog.component.ts b/ibarra-app/src/app/components/peajes/tarifario/tarifario-historial-dialog.component.ts
+index 04f7e59..a64ace0 100644
+--- a/ibarra-app/src/app/components/peajes/tarifario/tarifario-historial-dialog.component.ts
++++ b/ibarra-app/src/app/components/peajes/tarifario/tarifario-historial-dialog.component.ts
+@@ -1,31 +1,43 @@
+ import { CommonModule } from '@angular/common';
+ import { Component, EventEmitter, Input, Output } from '@angular/core';
+ import { DialogComponent } from '../../shared';
+ import { TarifarioHistorialItem } from '../models/tarifario.contracts';
+-import { MISSING_IMPORTE_LABEL, formatFechaActualizacion, formatTarifaImporteDisplay } from './tarifario.helpers';
++import { MISSING_IMPORTE_LABEL, formatTarifaImporteDisplay } from './tarifario.helpers';
++
++const UNKNOWN_DATE_LABEL = 'Sin fecha conocida';
+ 
+ @Component({
+   selector: 'app-tarifario-historial-dialog',
+   standalone: true,
+   imports: [CommonModule, DialogComponent],
+   templateUrl: './tarifario-historial-dialog.component.html',
+   styleUrls: ['../shared/peajes-list-shell.css'],
+ })
+ export class TarifarioHistorialDialogComponent {
+   @Input() open = false;
+   @Input() title = 'Historial';
+   @Input() loading = false;
+   @Input() error: string | null = null;
+   @Input() rows: TarifarioHistorialItem[] = [];
+   @Output() closed = new EventEmitter<void>();
+ 
+   readonly missing = MISSING_IMPORTE_LABEL;
+ 
+-  formatFecha(iso: string): string {
+-    return formatFechaActualizacion(iso);
++  formatVigencia(iso: string | null | undefined): string {
++    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? '').trim());
++    return match ? `${match[3]}/${match[2]}/${match[1]}` : UNKNOWN_DATE_LABEL;
++  }
++
++  formatDiagnostico(value: string | null | undefined): string {
++    const text = value?.trim();
++    return text ? text : this.missing;
++  }
++
++  formatCategoriaCalculada(value: number | null | undefined): string {
++    return value == null ? this.missing : String(value);
+   }
+ 
+   formatImporte(n: number): string {
+     return formatTarifaImporteDisplay(n);
+   }
+ }

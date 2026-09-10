@@ -1,0 +1,647 @@
+﻿# Review package — Task 6 F14-19 (uncommitted grouping reducer)
+Base: 95033bda8434b21473aa51937dfa8831acf0d3b9
+Head: WORKING TREE
+
+## Commit list
+(none)
+
+ .../tarifa-refresh-dialog.helpers.spec.ts          | 271 +++++++++++++++++++++
+ .../tarifa-refresh-dialog.helpers.ts               | 243 ++++++++++++++++++
+ 2 files changed, 514 insertions(+)
+
+## Diff -U10
+
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.spec.ts b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.spec.ts
+index 2ee5740..f74dee7 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.spec.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.spec.ts
+@@ -1,20 +1,29 @@
+ import { CandidatoRefrescoTarifa, ResultadoDetectarRefresco } from '../../models/tarifa-refresh.contracts';
+ import { TarifaSentido, TarifaStatusPico } from '../../models/tarifario.contracts';
+ import {
+   agruparPendientesPorPeajeYFamilia,
++  assignSafeAutocomplete,
++  buildDetectedStations,
++  deriveEditorGroups,
+   familySentidos,
+   heuristicaSeleccionInicial,
+   interseccionSentidos,
++  preserveIdentityDrafts,
+   resolverRequiereNormalizacionIva,
+   sentidoFamilyOf,
++  stationTraceViewModel,
++  type AutocompleteCandidate,
++  type DetectedStation,
+   type EstacionCatalogoRefresco,
++  type SharedTariffGroupState,
++  type StationSessionColor,
+ } from './tarifa-refresh-dialog.helpers';
+ 
+ const PEAJE = 'peaje-aubasa';
+ 
+ const DOCK = 'estacion-dock-sud';
+ const HUDSON = 'estacion-hudson';
+ const GUTIERREZ = 'estacion-gutierrez';
+ const BERNAL = 'estacion-bernal';
+ const VACIA = 'estacion-vacia';
+ 
+@@ -32,47 +41,56 @@ function catalogo(
+   };
+ }
+ 
+ function pendiente(partial: Partial<ResultadoDetectarRefresco> & { estacionId: string }): ResultadoDetectarRefresco {
+   return {
+     id: partial.id ?? `${partial.estacionId}-7`,
+     codigo: partial.codigo ?? 'NEW_TARIFF',
+     peajeId: partial.peajeId ?? PEAJE,
+     estacionId: partial.estacionId,
+     categoria: partial.categoria ?? 7,
++    categoriaProveedor: partial.categoriaProveedor ?? partial.categoria ?? 7,
++    categoriaCalculada: partial.categoriaCalculada ?? null,
+     status: partial.status ?? 'NO_PICO',
+     sentidoSolicitado: partial.sentidoSolicitado ?? null,
+     sentidoAplicado: partial.sentidoAplicado ?? null,
+     importeActual: partial.importeActual ?? null,
+     tarifaId: partial.tarifaId ?? null,
+     tarifaImporteId: partial.tarifaImporteId ?? null,
+     requiereNormalizacionIva: partial.requiereNormalizacionIva ?? false,
+     rowIndexes: partial.rowIndexes ?? [0],
+     candidatePrice: partial.candidatePrice ?? 25500,
+   };
+ }
+ 
+ function candidato(
+   partial: Partial<CandidatoRefrescoTarifa> & { estacionId: string },
+ ): CandidatoRefrescoTarifa {
+   return {
+     id: partial.id ?? `${partial.estacionId}-7`,
+     estacionId: partial.estacionId,
+     categoria: partial.categoria ?? 7,
++    categoriaProveedor: partial.categoriaProveedor ?? partial.categoria ?? 7,
++    categoriaCalculada: partial.categoriaCalculada ?? null,
+     statusSolicitado: partial.statusSolicitado ?? 'NO_PICO',
+     sentidoSolicitado: partial.sentidoSolicitado ?? null,
+     directionConfidence: partial.directionConfidence ?? 'UNRESOLVED',
+     unresolvedReason: partial.unresolvedReason ?? 'MISSING_MAPPING',
+     sourceStationCode: partial.sourceStationCode ?? null,
+     sourceLane: partial.sourceLane ?? null,
++    fechaPasada: partial.fechaPasada ?? null,
++    estacionNombre: partial.estacionNombre ?? null,
++    peajeId: partial.peajeId ?? null,
++    peajeNombre: partial.peajeNombre ?? null,
+     candidatePrice: partial.candidatePrice ?? 25500,
+     precioDirecto: partial.precioDirecto ?? partial.candidatePrice ?? 25500,
++    cases: (partial.rowIndexes ?? [0]).length,
+     filaRepresentativa: partial.filaRepresentativa ?? {},
+     rowIndexes: partial.rowIndexes ?? [0],
+   };
+ }
+ 
+ describe('sentidoFamilyOf', () => {
+   it('clasifica AMBAS cuando el cat├ílogo ya tiene AMBAS', () => {
+     expect(sentidoFamilyOf(['AMBAS'])).toBe('AMBAS');
+     expect(sentidoFamilyOf(['IDA', 'AMBAS'])).toBe('AMBAS');
+   });
+@@ -195,10 +213,263 @@ describe('resolverRequiereNormalizacionIva', () => {
+ 
+   it('devuelve null cuando la identidad ya existe en esa estaci├│n', () => {
+     expect(resolverRequiereNormalizacionIva(DOCK, 7, 'NO_PICO', 'IDA', existentes)).toBeNull();
+   });
+ 
+   it('devuelve false cuando hay que crear la identidad en esa estaci├│n', () => {
+     expect(resolverRequiereNormalizacionIva(HUDSON, 7, 'NO_PICO', 'IDA', existentes)).toBeFalse();
+     expect(resolverRequiereNormalizacionIva(DOCK, 7, 'PICO', 'IDA', existentes)).toBeFalse();
+   });
+ });
++
++const PALETTE = ['#6D28D9', '#15803D', '#0369A1', '#B45309', '#BE123C', '#0F766E'] as const;
++
++function groupIds(state: SharedTariffGroupState): string[][] {
++  return deriveEditorGroups(state).map((group) => [...group.stationIds]);
++}
++
++function directionalStation(
++  estacionId: string,
++  nombre: string,
++  color: StationSessionColor = PALETTE[0],
++): DetectedStation {
++  return {
++    estacionId,
++    estacionNombre: nombre,
++    peajeId: PEAJE,
++    peajeNombre: 'AUBASA',
++    color,
++    family: 'DIRECCIONAL',
++  };
++}
++
++describe('buildDetectedStations', () => {
++  const aubasa: EstacionCatalogoRefresco[] = [
++    catalogo(DOCK, 'DOCK SUD', ['IDA', 'VUELTA']),
++    catalogo(HUDSON, 'HUDSON', ['IDA', 'VUELTA']),
++    catalogo(GUTIERREZ, 'GUTIERREZ', ['AMBAS']),
++    catalogo(BERNAL, 'BERNAL', ['IDA', 'VUELTA']),
++  ];
++
++  it('conserva el orden de primera aparici├│n en la importaci├│n y no agrega estaciones solo de cat├ílogo', () => {
++    const detected = buildDetectedStations(
++      [
++        pendiente({ estacionId: HUDSON, rowIndexes: [0] }),
++        pendiente({ estacionId: DOCK, rowIndexes: [1] }),
++        pendiente({ estacionId: HUDSON, rowIndexes: [2] }),
++      ],
++      aubasa,
++    );
++    expect(detected.map((s) => s.estacionId)).toEqual([HUDSON, DOCK]);
++    expect(detected.map((s) => s.estacionNombre)).toEqual(['HUDSON', 'DOCK SUD']);
++    expect(detected.some((s) => s.estacionId === BERNAL)).toBeFalse();
++  });
++
++  it('asigna colores de sesi├│n en el orden detectado y siempre los empareja con el nombre', () => {
++    const detected = buildDetectedStations(
++      [
++        pendiente({ estacionId: DOCK }),
++        pendiente({ estacionId: HUDSON, rowIndexes: [1] }),
++        pendiente({ estacionId: GUTIERREZ, rowIndexes: [2] }),
++      ],
++      aubasa,
++    );
++    expect(detected.map((s) => s.color)).toEqual([PALETTE[0], PALETTE[1], PALETTE[2]]);
++    for (const station of detected) {
++      const chip = stationTraceViewModel(station);
++      expect(chip.color).toBe(station.color);
++      expect(chip.estacionNombre).toBe(station.estacionNombre);
++      expect(chip.estacionNombre.length).toBeGreaterThan(0);
++    }
++  });
++});
++
++describe('deriveEditorGroups', () => {
++  const detectedStations: DetectedStation[] = [
++    directionalStation(DOCK, 'DOCK SUD', PALETTE[0]),
++    directionalStation(HUDSON, 'HUDSON', PALETTE[1]),
++    directionalStation(GUTIERREZ, 'GUTIERREZ', PALETTE[2]),
++  ];
++
++  it('tres estaciones detectadas seleccionadas para compartir derivan un solo editor con las tres', () => {
++    expect(
++      groupIds({
++        detectedStations,
++        sharedStationIds: [DOCK, HUDSON, GUTIERREZ],
++      }),
++    ).toEqual([[DOCK, HUDSON, GUTIERREZ]]);
++  });
++
++  it('dos seleccionadas y una desmarcada derivan dos editores: el par compartido y un singleton', () => {
++    expect(
++      groupIds({
++        detectedStations,
++        sharedStationIds: [DOCK, HUDSON],
++      }),
++    ).toEqual([[DOCK, HUDSON], [GUTIERREZ]]);
++  });
++
++  it('sin estaciones seleccionadas deriva tres editores singleton', () => {
++    expect(
++      groupIds({
++        detectedStations,
++        sharedStationIds: [],
++      }),
++    ).toEqual([[DOCK], [HUDSON], [GUTIERREZ]]);
++  });
++
++  it('desmarcar cualquier estaci├│n la conserva exactamente una vez en los grupos resultantes', () => {
++    for (const deselected of [DOCK, HUDSON, GUTIERREZ]) {
++      const sharedStationIds = detectedStations
++        .map((s) => s.estacionId)
++        .filter((id) => id !== deselected);
++      const ids = groupIds({ detectedStations, sharedStationIds }).flat();
++      expect(ids.filter((id) => id === deselected).length).toBe(1);
++      expect(ids.sort()).toEqual([DOCK, GUTIERREZ, HUDSON]);
++    }
++  });
++
++  it('cada estaci├│n detectada aparece una vez y ninguna estaci├│n solo de cat├ílogo entra al reducer', () => {
++    const catalogOnly = directionalStation(BERNAL, 'BERNAL', PALETTE[3]);
++    const groups = deriveEditorGroups({
++      detectedStations,
++      sharedStationIds: [DOCK, HUDSON, BERNAL],
++    });
++    const ids = groups.flatMap((g) => [...g.stationIds]);
++    expect(ids).toEqual([DOCK, HUDSON, GUTIERREZ]);
++    expect(ids).not.toContain(BERNAL);
++    expect(groups.some((g) => g.stations.includes(catalogOnly))).toBeFalse();
++  });
++
++  it('el orden de cada grupo sigue la primera aparici├│n en la importaci├│n, no el orden del checkbox', () => {
++    expect(
++      groupIds({
++        detectedStations,
++        sharedStationIds: [GUTIERREZ, HUDSON, DOCK],
++      }),
++    ).toEqual([[DOCK, HUDSON, GUTIERREZ]]);
++  });
++
++  it('familias de sentido incompatibles no pueden compartir editor', () => {
++    const mixed: DetectedStation[] = [
++      directionalStation(DOCK, 'DOCK SUD', PALETTE[0]),
++      directionalStation(HUDSON, 'HUDSON', PALETTE[1]),
++      { ...directionalStation(GUTIERREZ, 'GUTIERREZ', PALETTE[2]), family: 'AMBAS' },
++    ];
++    expect(
++      groupIds({
++        detectedStations: mixed,
++        sharedStationIds: [DOCK, HUDSON, GUTIERREZ],
++      }),
++    ).toEqual([[DOCK, HUDSON], [GUTIERREZ]]);
++  });
++});
++
++describe('preserveIdentityDrafts', () => {
++  it('cambiar el agrupamiento no descarta drafts de identidades de estaci├│n no afectadas', () => {
++    const drafts = {
++      [`${DOCK}|7|NO_PICO|IDA`]: '25500',
++      [`${HUDSON}|7|NO_PICO|IDA`]: '25500',
++      [`${GUTIERREZ}|7|NO_PICO|AMBAS`]: '18000',
++    };
++    const afterSplit = preserveIdentityDrafts(drafts, [DOCK, HUDSON, GUTIERREZ]);
++    expect(afterSplit[`${DOCK}|7|NO_PICO|IDA`]).toBe('25500');
++    expect(afterSplit[`${HUDSON}|7|NO_PICO|IDA`]).toBe('25500');
++    expect(afterSplit[`${GUTIERREZ}|7|NO_PICO|AMBAS`]).toBe('18000');
++
++    const afterEmptyShare = preserveIdentityDrafts(afterSplit, [DOCK, HUDSON, GUTIERREZ]);
++    expect(afterEmptyShare).toEqual(drafts);
++  });
++});
++
++describe('assignSafeAutocomplete', () => {
++  const stations: DetectedStation[] = [
++    directionalStation(DOCK, 'DOCK SUD', PALETTE[0]),
++    directionalStation(HUDSON, 'HUDSON', PALETTE[1]),
++    directionalStation(GUTIERREZ, 'GUTIERREZ', PALETTE[2]),
++  ];
++
++  function cand(
++    partial: Partial<AutocompleteCandidate> & { id: string; estacionId: string; amount: number },
++  ): AutocompleteCandidate {
++    const station = stations.find((s) => s.estacionId === partial.estacionId)!;
++    return {
++      id: partial.id,
++      estacionId: partial.estacionId,
++      estacionNombre: station.estacionNombre,
++      amount: partial.amount,
++      categoria: partial.categoria === undefined ? 7 : partial.categoria,
++      status: partial.status === undefined ? 'NO_PICO' : partial.status,
++      sentido: partial.sentido === undefined ? 'IDA' : partial.sentido,
++    };
++  }
++
++  it('prellena Nuevo solo cuando un candidato mapea a una celda de identidad', () => {
++    const group = deriveEditorGroups({
++      detectedStations: [stations[0]],
++      sharedStationIds: [],
++    })[0];
++    const assigned = assignSafeAutocomplete(group, [
++      cand({ id: 'dock-7', estacionId: DOCK, amount: 25500 }),
++    ]);
++    expect(assigned.prefills).toEqual([
++      { categoria: 7, status: 'NO_PICO', sentido: 'IDA', amount: 25500 },
++    ]);
++    expect(assigned.visible[0]).toEqual(
++      jasmine.objectContaining({
++        candidateId: 'dock-7',
++        estacionNombre: 'DOCK SUD',
++        color: PALETTE[0],
++        amount: 25500,
++      }),
++    );
++  });
++
++  it('en un grupo compartido exige el mismo importe normalizado de cada miembro para prellenar', () => {
++    const group = deriveEditorGroups({
++      detectedStations: stations.slice(0, 2),
++      sharedStationIds: [DOCK, HUDSON],
++    })[0];
++    const same = assignSafeAutocomplete(group, [
++      cand({ id: 'dock-7', estacionId: DOCK, amount: 25500 }),
++      cand({ id: 'hudson-7', estacionId: HUDSON, amount: 25500 }),
++    ]);
++    expect(same.prefills).toEqual([
++      { categoria: 7, status: 'NO_PICO', sentido: 'IDA', amount: 25500 },
++    ]);
++
++    const distinct = assignSafeAutocomplete(group, [
++      cand({ id: 'dock-7', estacionId: DOCK, amount: 25500 }),
++      cand({ id: 'hudson-7', estacionId: HUDSON, amount: 18000 }),
++    ]);
++    expect(distinct.prefills).toEqual([]);
++    expect(distinct.visible.map((v) => v.amount)).toEqual([25500, 18000]);
++  });
++
++  it('tres precios distintos no coincidentes quedan como tres candidatos y no se pisan en un Nuevo', () => {
++    const group = deriveEditorGroups({
++      detectedStations: stations,
++      sharedStationIds: [DOCK, HUDSON, GUTIERREZ],
++    })[0];
++    const assigned = assignSafeAutocomplete(group, [
++      cand({ id: 'a', estacionId: DOCK, amount: 100, status: null, sentido: null }),
++      cand({ id: 'b', estacionId: HUDSON, amount: 200, status: null, sentido: null }),
++      cand({ id: 'c', estacionId: GUTIERREZ, amount: 300, status: null, sentido: null }),
++    ]);
++    expect(assigned.visible.length).toBe(3);
++    expect(assigned.visible.map((v) => v.amount)).toEqual([100, 200, 300]);
++    expect(assigned.prefills).toEqual([]);
++  });
++
++  it('nunca infiere PICO/NO_PICO ni IDA/VUELTA/AMBAS desde el importe', () => {
++    const group = deriveEditorGroups({
++      detectedStations: [stations[0]],
++      sharedStationIds: [],
++    })[0];
++    const assigned = assignSafeAutocomplete(group, [
++      cand({ id: 'unk', estacionId: DOCK, amount: 25500, status: null, sentido: null }),
++    ]);
++    expect(assigned.prefills).toEqual([]);
++    expect(assigned.visible.length).toBe(1);
++  });
++});
++
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.ts b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.ts
+index 026ae31..ba8202c 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.ts
+@@ -27,20 +27,86 @@ export interface IdentidadTarifaExistente {
+ 
+ export interface GrupoPendienteRefresco {
+   key: string;
+   peajeId: string;
+   peajeNombre: string;
+   family: SentidoFamily;
+   opciones: EstacionOpcionRefresco[];
+   itemsPorEstacion: Map<string, ResultadoDetectarRefresco[]>;
+ }
+ 
++export const STATION_SESSION_PALETTE = [
++  '#6D28D9',
++  '#15803D',
++  '#0369A1',
++  '#B45309',
++  '#BE123C',
++  '#0F766E',
++] as const;
++
++export type StationSessionColor = (typeof STATION_SESSION_PALETTE)[number];
++
++export interface DetectedStation {
++  estacionId: string;
++  estacionNombre: string;
++  peajeId: string;
++  peajeNombre: string;
++  color: StationSessionColor;
++  family: SentidoFamily;
++}
++
++export interface SharedTariffGroupState {
++  detectedStations: readonly DetectedStation[];
++  sharedStationIds: readonly string[];
++}
++
++export interface EditorGroup {
++  stationIds: readonly string[];
++  stations: readonly DetectedStation[];
++}
++
++export interface StationTraceViewModel {
++  estacionId: string;
++  estacionNombre: string;
++  color: StationSessionColor;
++}
++
++export interface AutocompleteCandidate {
++  id: string;
++  estacionId: string;
++  estacionNombre: string;
++  amount: number;
++  categoria: number | null;
++  status: TarifaStatusPico | null;
++  sentido: TarifaSentido | null;
++}
++
++export interface IdentityCellPrefill {
++  categoria: number;
++  status: TarifaStatusPico;
++  sentido: TarifaSentido;
++  amount: number;
++}
++
++export interface CandidateTraceViewModel {
++  candidateId: string;
++  estacionId: string;
++  estacionNombre: string;
++  color: StationSessionColor;
++  amount: number;
++}
++
++export interface SafeAutocompleteAssignment {
++  visible: CandidateTraceViewModel[];
++  prefills: IdentityCellPrefill[];
++}
++
+ const SENTIDO_ORDER: TarifaSentido[] = ['IDA', 'VUELTA', 'AMBAS'];
+ 
+ export function sentidoFamilyOf(sentidosExistentes: readonly TarifaSentido[]): SentidoFamily {
+   if (sentidosExistentes.includes('AMBAS')) return 'AMBAS';
+   if (sentidosExistentes.includes('IDA') || sentidosExistentes.includes('VUELTA')) return 'DIRECCIONAL';
+   return 'SIN_TARIFARIO';
+ }
+ 
+ export function familySentidos(
+   family: SentidoFamily,
+@@ -167,10 +233,187 @@ function precioDeCandidato(
+ function signaturesDe(
+   categoria: number | null | undefined,
+   status: TarifaStatusPico | null | undefined,
+   precio: number | null | undefined,
+ ): string[] {
+   if (categoria == null || precio == null) return [];
+   const priceKey = String(precio);
+   if (status) return [`${categoria}|${status}|${priceKey}`];
+   return [`${categoria}|NO_PICO|${priceKey}`, `${categoria}|PICO|${priceKey}`];
+ }
++
++export function buildDetectedStations(
++  imported: readonly ResultadoDetectarRefresco[],
++  catalogo: readonly EstacionCatalogoRefresco[] = [],
++): DetectedStation[] {
++  const byId = new Map(catalogo.map((row) => [row.estacionId, row]));
++  const seen = new Set<string>();
++  const stations: DetectedStation[] = [];
++  for (const item of imported) {
++    if (seen.has(item.estacionId)) continue;
++    seen.add(item.estacionId);
++    const row = byId.get(item.estacionId);
++    stations.push({
++      estacionId: item.estacionId,
++      estacionNombre: row?.estacionNombre || item.estacionId,
++      peajeId: item.peajeId || row?.peajeId || '',
++      peajeNombre: row?.peajeNombre || '',
++      color: STATION_SESSION_PALETTE[stations.length % STATION_SESSION_PALETTE.length],
++      family: sentidoFamilyOf(row?.sentidosExistentes ?? []),
++    });
++  }
++  return stations;
++}
++
++export function stationTraceViewModel(station: DetectedStation): StationTraceViewModel {
++  return {
++    estacionId: station.estacionId,
++    estacionNombre: station.estacionNombre,
++    color: station.color,
++  };
++}
++
++export function deriveEditorGroups(state: SharedTariffGroupState): EditorGroup[] {
++  const detected = uniqueDetectedStations(state.detectedStations);
++  const detectedIds = new Set(detected.map((station) => station.estacionId));
++  const sharedWanted = new Set(state.sharedStationIds.filter((id) => detectedIds.has(id)));
++
++  const clusters = new Map<string, DetectedStation[]>();
++  const clusterOrder: string[] = [];
++  for (const station of detected) {
++    if (!sharedWanted.has(station.estacionId)) continue;
++    const key = `${station.peajeId}|${station.family}`;
++    let cluster = clusters.get(key);
++    if (!cluster) {
++      cluster = [];
++      clusters.set(key, cluster);
++      clusterOrder.push(key);
++    }
++    cluster.push(station);
++  }
++
++  const sharedGroups: DetectedStation[][] = [];
++  const consumed = new Set<string>();
++  for (const key of clusterOrder) {
++    const members = clusters.get(key) ?? [];
++    if (members.length < 2) continue;
++    sharedGroups.push(members);
++    for (const member of members) consumed.add(member.estacionId);
++  }
++
++  const independents = detected.filter((station) => !consumed.has(station.estacionId));
++  return [...sharedGroups, ...independents.map((station) => [station])].map(toEditorGroup);
++}
++
++export function preserveIdentityDrafts(
++  drafts: Readonly<Record<string, string>>,
++  detectedStationIds: readonly string[],
++): Record<string, string> {
++  const allowed = new Set(detectedStationIds);
++  const next: Record<string, string> = {};
++  for (const [key, value] of Object.entries(drafts)) {
++    const separator = key.indexOf('|');
++    const estacionId = separator < 0 ? key : key.slice(0, separator);
++    if (allowed.has(estacionId)) next[key] = value;
++  }
++  return next;
++}
++
++export function assignSafeAutocomplete(
++  group: EditorGroup,
++  candidates: readonly AutocompleteCandidate[],
++): SafeAutocompleteAssignment {
++  const stationById = new Map(group.stations.map((station) => [station.estacionId, station]));
++  const visible: CandidateTraceViewModel[] = [];
++  for (const candidate of candidates) {
++    const station = stationById.get(candidate.estacionId);
++    if (!station) continue;
++    visible.push({
++      candidateId: candidate.id,
++      estacionId: candidate.estacionId,
++      estacionNombre: station.estacionNombre,
++      color: station.color,
++      amount: candidate.amount,
++    });
++  }
++
++  const mapped = candidates.filter(
++    (candidate) =>
++      stationById.has(candidate.estacionId) &&
++      candidate.categoria != null &&
++      candidate.status != null &&
++      candidate.sentido != null,
++  );
++
++  const cells = new Map<string, IdentityCellPrefill>();
++  for (const candidate of mapped) {
++    const cellKey = identityCellKey(candidate.categoria!, candidate.status!, candidate.sentido!);
++    if (!cells.has(cellKey)) {
++      cells.set(cellKey, {
++        categoria: candidate.categoria!,
++        status: candidate.status!,
++        sentido: candidate.sentido!,
++        amount: candidate.amount,
++      });
++    }
++  }
++
++  const prefills: IdentityCellPrefill[] = [];
++  for (const [cellKey, cell] of cells) {
++    const perStation = new Map<string, Set<number>>();
++    for (const candidate of mapped) {
++      if (identityCellKey(candidate.categoria!, candidate.status!, candidate.sentido!) !== cellKey) {
++        continue;
++      }
++      const amounts = perStation.get(candidate.estacionId) ?? new Set<number>();
++      amounts.add(candidate.amount);
++      perStation.set(candidate.estacionId, amounts);
++    }
++
++    let agreed: number | null = null;
++    let compatible = true;
++    for (const estacionId of group.stationIds) {
++      const amounts = perStation.get(estacionId);
++      if (!amounts || amounts.size !== 1) {
++        compatible = false;
++        break;
++      }
++      const amount = [...amounts][0];
++      if (agreed == null) agreed = amount;
++      else if (agreed !== amount) {
++        compatible = false;
++        break;
++      }
++    }
++    if (compatible && agreed != null) {
++      prefills.push({ ...cell, amount: agreed });
++    }
++  }
++
++  return { visible, prefills };
++}
++
++function uniqueDetectedStations(stations: readonly DetectedStation[]): DetectedStation[] {
++  const seen = new Set<string>();
++  const unique: DetectedStation[] = [];
++  for (const station of stations) {
++    if (seen.has(station.estacionId)) continue;
++    seen.add(station.estacionId);
++    unique.push(station);
++  }
++  return unique;
++}
++
++function toEditorGroup(stations: readonly DetectedStation[]): EditorGroup {
++  return {
++    stationIds: stations.map((station) => station.estacionId),
++    stations,
++  };
++}
++
++function identityCellKey(
++  categoria: number,
++  status: TarifaStatusPico,
++  sentido: TarifaSentido,
++): string {
++  return `${categoria}|${status}|${sentido}`;
++}

@@ -33,11 +33,12 @@ Extension is taken from `Content-Type` / `Content-Disposition` (not hard-coded).
 ```json
 {
   "fileFacturaPath": "scripts/downloads/AUSA/facturas_2026-06-23_5009A02010049.pdf",
-  "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-06-23_5009A02010049.csv"
+  "filePasadasPath": "scripts/downloads/AUSA/pasadas_2026-06-23_5009A02010049.csv",
+  "downloadedAt": "2026-09-10 10:46:32"
 }
 ```
 
-Paths are repository-relative and are matched using `concesionario`, `periodo`, and `numero`. Missing files are represented by `null`. The downloader updates these fields after saving a file or when it skips an existing file.
+Paths are repository-relative and are matched using `concesionario`, `periodo`, and `numero`. Missing files are represented by `null`. The downloader updates these fields after saving a file or when it skips an existing file. `downloadedAt` is set only when a file is actually saved (not skipped). Older rows stay without a stamp. Re-parsing the HTML keeps previous `downloadedAt` values.
 
 ## Requirements
 
@@ -100,7 +101,7 @@ npm run parse
 # or: node parse-facturas.mjs
 ```
 
-Parsing initializes both path fields to `null`; running the downloader populates paths for files already present on disk as well as newly downloaded files.
+Parsing initializes both path fields to `null` and keeps any previous `downloadedAt` stamps; running the downloader populates paths for files already present on disk as well as newly downloaded files.
 
 ### 1b) Build `status.csv` for the carga-express bot
 
@@ -112,7 +113,7 @@ node build-status-csv.mjs
 # or: npm run status
 ```
 
-Output: `scripts/downloads/status.csv`. Paths are filled from `rows.json` or by matching `facturas_*` / `pasadas_*` files already on disk. AUMESA `Template` stays blank until `enrich-status-templates.mjs`. Existing `uploadFileStatus` / `Template` values are kept unless you pass `--no-merge`.
+Output: `scripts/downloads/status.csv`. Paths are filled from `rows.json` or by matching `facturas_*` / `pasadas_*` files already on disk. AUMESA `Template` stays blank until `enrich-status-templates.mjs`. Existing `uploadFileStatus` / `Template` / `fechaDescarga` values are kept unless you pass `--no-merge`. `fechaDescarga` is a report column (`YYYY-MM-DD HH:mm:ss` local); it is filled only for files saved after this field existed.
 
 ### 2) Pilot (3 rows, diverse concesionarios)
 
@@ -126,6 +127,15 @@ Or prefer specific operators:
 ```powershell
 node download-batch.mjs --no-auth --limit 3 --prefer AUMESA,SANTAFE,AUSA
 ```
+
+To download only invoices whose `periodo` month is in range (useful for AUMESA, which has many historical months):
+
+```powershell
+node download-batch.mjs --month-init 3 --month-finish 4
+# aliases also work: --month_init 3 --mont_finish 4
+```
+
+March and April of any year in the HTML table are kept. Combine with `--prefer AUMESA` if you only want that operator.
 
 ### 3) Full batch (recommended two-pass)
 
@@ -223,6 +233,8 @@ On success, those URLs are removed from `errors.csv`. Still-failing URLs stay li
 | `--limit N` | Only first N selected rows/URLs (`0` or omit = all) |
 | `--diverse` | Prefer one row per concesionario when limiting |
 | `--prefer A,B,C` | Prefer these concesionario codes first |
+| `--month-init N` | Keep rows whose `periodo` month is ≥ N (`1`–`12`). Aliases: `--month_init` |
+| `--month-finish N` | Keep rows whose `periodo` month is ≤ N (`1`–`12`). Aliases: `--month_finish`, `--mont_finish` |
 | `--tryfailed` | Retry only unique failed URLs from `errors.csv` |
 | `--no-auth` | Skip login; use public download URLs |
 | `--headed` | Run browser headed (`HEADLESS=0` also works) |
@@ -232,6 +244,7 @@ On success, those URLs are removed from `errors.csv`. Still-failing URLs stay li
 - **Skip existing**: if `facturas_{periodo}_{numero}.*` or `pasadas_...` already exists, skip.
 - **Retries**: up to 3 attempts with exponential backoff.
 - **Delay**: random 300–600 ms between requests.
+- **Progress file**: `rows.json` is written atomically every ~10 updates and again at the end. A Windows lock on that file warns and continues; it does not abort the batch.
 - **Errors**: appended to `scripts/downloads/errors.csv` as `row_id,url,status_code`.
 - **Summary**: prints total rows, saved, skipped, failed.
 
@@ -271,3 +284,4 @@ Do **not** commit:
 | Probe / download timeouts | Cloudflare slowness; retry; or use `--no-auth` |
 | HTML login body instead of PDF | Session expired → `node login.mjs --force` |
 | 0 rows with URLs | Ensure `scripts/html/facturas` contains `table#example` |
+| `UNKNOWN: unknown error, open '...rows.json'` | Windows lock (OneDrive/Cursor/antivirus). The downloader now retries atomically and continues; re-run to finish remaining files. |

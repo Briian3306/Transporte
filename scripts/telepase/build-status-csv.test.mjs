@@ -87,6 +87,44 @@ test('keeps previous Template and upload status when regenerating', () => {
   assert.equal(records[0].uploadFileStatus, 'COMPLETE');
 });
 
+test('copies downloadedAt into fechaDescarga and keeps previous stamps when missing', () => {
+  const records = buildStatusRecords(
+    [
+      {
+        periodo: '2026-09-08',
+        concesionario: 'GCO',
+        numero: '24',
+        downloadedAt: '2026-09-10 10:46:32',
+      },
+      {
+        periodo: '2026-08-16',
+        concesionario: 'GCO',
+        numero: '429984',
+      },
+    ],
+    {
+      previousRecords: [
+        {
+          periodo: '2026-08-16',
+          concesionario: 'GCO',
+          numero: '429984',
+          fechaDescarga: '2026-09-01 09:00:00',
+        },
+      ],
+    },
+  );
+
+  assert.equal(records[0].fechaDescarga, '2026-09-10 10:46:32');
+  assert.equal(records[1].fechaDescarga, '2026-09-01 09:00:00');
+});
+
+test('leaves fechaDescarga blank when neither row nor previous CSV has a stamp', () => {
+  const records = buildStatusRecords([
+    { periodo: '2026-08-07', concesionario: 'AUSA', numero: '5009A02061661' },
+  ]);
+  assert.equal(records[0].fechaDescarga, '');
+});
+
 test('writes RFC 4180 CSV with the bot header', () => {
   const csv = stringifyStatusCsv([
     {

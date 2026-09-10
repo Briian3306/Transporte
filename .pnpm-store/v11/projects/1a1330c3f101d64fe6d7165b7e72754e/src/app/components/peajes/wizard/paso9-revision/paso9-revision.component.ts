@@ -15,6 +15,7 @@ import {
   TARIFA_REFRESH_SERVICE,
   TarifaRefreshService,
   TarifaRefrescoGuardada,
+  asociacionDesdeResultadoRefresco,
   normalizarImportesPasada,
 } from '../../models';
 import {
@@ -25,10 +26,18 @@ import { DialogComponent } from '../../../shared';
 import { TarifaRefreshDialogComponent } from './tarifa-refresh-dialog.component';
 import { TarifaValidationService, AsociacionTarifaImporte } from '../../services/tarifa-validation.service';
 import { GranularPermissionService } from '../../../../services/granular-permission.service';
-import { ResumenRefrescoTarifas } from '../../models/tarifa-refresh.contracts';
+import {
+  ResultadoDetectarRefresco,
+  ResumenRefrescoTarifas,
+  resumirFilasRefresco,
+} from '../../models/tarifa-refresh.contracts';
+
+const CONTEXTO_INCOMPLETO_MSG =
+  'Hay pasadas sin estación o categoría numérica. Completá el contexto antes de confirmar.';
 
 const BLOQUEANTES = new Set([
   'NEW_TARIFF',
+  'AMBIGUOUS_TARIFF_MATCH',
   'STATUS_REQUIRED',
   'STATUS_AMBIGUOUS',
   'CONTEXT_INCOMPLETE',
@@ -40,6 +49,21 @@ function sentidoPasada(pasada: PasadaEstandarizada): 'IDA' | 'VUELTA' | 'AMBAS' 
   const raw = String(pasada.SENTIDO ?? '').trim().toUpperCase();
   if (raw === 'IDA' || raw === 'VUELTA' || raw === 'AMBAS') return raw;
   return null;
+}
+
+function formatearVigencia(iso: string | null | undefined): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? '').trim());
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : null;
+}
+
+export interface FilaResumenTarifa {
+  estacionNombre: string;
+  lineaCategoria: string;
+  status: string;
+  sentido: string;
+  precioAnterior: string;
+  precioNuevo: string;
+  vigenteDesde: string | null;
 }
 
 @Component({
@@ -182,8 +206,48 @@ export class Paso9RevisionComponent implements OnInit {
 
   get dialogNeeded(): boolean {
     return (this.resumenRefresco?.resultados ?? []).some((r) =>
-      ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo),
+      ['NEW_TARIFF', 'AMBIGUOUS_TARIFF_MATCH', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo),
     );
+  }
+
+  get seccionVigentes(): FilaResumenTarifa[] {
+    return this.filasDesdeResultados(
+      (r) => r.codigo === 'CURRENT_TARIFF' && r.diagnostico !== 'CONFIRMADO',
+    );
+  }
+
+  get seccionHistoricas(): FilaResumenTarifa[] {
+    return this.filasDesdeResultados((r) => r.codigo === 'HISTORICAL_TARIFF_MATCH');
+  }
+
+  get seccionCorrecciones(): FilaResumenTarifa[] {
+    return this.filasDesdeResultados((r) =>
+      r.codigo === 'CURRENT_CATEGORY_CORRECTION' || r.codigo === 'HISTORICAL_CATEGORY_CORRECTION',
+    );
+  }
+
+  get seccionRevisar(): FilaResumenTarifa[] {
+    return this.filasDesdeResultados((r) => r.codigo === 'REVIEW_RECORDED');
+  }
+
+  get seccionNuevasConfirmadas(): FilaResumenTarifa[] {
+    return this.tarifasActualizadas
+      .filter((row) => row.diagnostico !== 'REVISAR')
+      .map((row) => this.filaDesdeGuardada(row));
+  }
+
+  get seccionCambiosVigencia(): FilaResumenTarifa[] {
+    return this.tarifasActualizadas
+      .filter((row) => !!(row.fecha_vigencia_inicio ?? row.fechaVigenciaInicio))
+      .map((row) => this.filaDesdeGuardada(row));
+  }
+
+  nombreEstacionTarifa(estacionId: string): string {
+    const catalogo = this.estaciones.find((estacion) => estacion.id === estacionId);
+    if (catalogo?.nombre) return catalogo.nombre;
+    const candidato = this.resumenRefresco?.candidatos.find((row) => row.estacionId === estacionId);
+    if (candidato?.estacionNombre) return candidato.estacionNombre;
+    return '—';
   }
 
   async analizarTarifas(): Promise<void> {
@@ -198,23 +262,35 @@ export class Paso9RevisionComponent implements OnInit {
           via: row.via,
           sentido: row.sentido,
         })),
+        estacionesCatalogo: this.estaciones.map((estacion) => ({
+          estacionId: estacion.id,
+          estacionNombre: estacion.nombre,
+          peajeId: estacion.peaje_id,
+          peajeNombre: estacion.nombre,
+        })),
       });
       // The extractor intentionally does not invent a peaje identity. Once the
       // station catalogue is loaded, enrich unresolved candidates so an
       // explicit Paso 9 assignment can still be persisted safely.
+      const resultados = resumen.resultados.map((row) =>
+        this.aplicarDecisionPersistida(row, resumen.candidatos),
+      );
+      const counts = resumirFilasRefresco(resultados);
+      const filasNuevasConfirmadas = this.contarFilasNuevasConfirmadas(resumen.candidatos);
       this.resumenRefresco = {
         ...resumen,
-        resultados: resumen.resultados.map((row) => ({
-          ...row,
-          peajeId: row.peajeId ?? this.estaciones.find((estacion) => estacion.id === row.estacionId)?.peaje_id ?? null,
-        })),
+        ...counts,
+        filasNuevasConfirmadas,
+        filasVigentes: Math.max(0, counts.filasVigentes - filasNuevasConfirmadas),
+        resultados,
       };
       // Operators may review unresolved direction candidates even though only
       // peajes:manage can persist tariff changes.
       this.refreshOpen = this.dialogNeeded;
       if (this.resumenRefresco.contextIncomplete) {
-        this.error =
-          'Hay pasadas sin estación o categoría numérica. Completá el contexto antes de confirmar.';
+        this.error = CONTEXTO_INCOMPLETO_MSG;
+      } else if (this.error === CONTEXTO_INCOMPLETO_MSG) {
+        this.error = null;
       }
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'No se pudo analizar las tarifas.';
@@ -225,6 +301,10 @@ export class Paso9RevisionComponent implements OnInit {
 
   onRefreshCancelled(): void {
     this.refreshOpen = false;
+  }
+
+  abrirRevisionTarifas(): void {
+    if (this.dialogNeeded) this.refreshOpen = true;
   }
 
   async onRefreshSaved(_saved: TarifaRefrescoGuardada[]): Promise<void> {
@@ -359,14 +439,21 @@ export class Paso9RevisionComponent implements OnInit {
     const resultados = this.resumenRefresco?.resultados ?? [];
     const asociaciones: AsociacionTarifaImporte[] = [];
     (res.pasadas ?? []).forEach((pasada, i) => {
-      const sourceIndex = rowIndexes[i];
+      const sourceIndex = rowIndexes[i] ?? i;
       const hit = resultados.find((r) => r.rowIndexes.includes(sourceIndex));
-      if (!hit?.tarifaImporteId) return;
-      if (hit.codigo === 'CURRENT_TARIFF') {
-        asociaciones.push({ pasada_id: pasada.id, tarifa_importe_id: hit.tarifaImporteId, codigo: 'AL_DIA' });
-      } else if (hit.codigo === 'HISTORICAL_TARIFF_MATCH') {
-        asociaciones.push({ pasada_id: pasada.id, tarifa_importe_id: hit.tarifaImporteId, codigo: 'HISTORICA' });
-      }
+      if (!hit) return;
+      const mapped = asociacionDesdeResultadoRefresco({
+        codigo: hit.codigo,
+        tarifaImporteId: hit.tarifaImporteId,
+        categoriaProveedor: hit.categoriaProveedor,
+        categoriaCalculada: hit.categoriaCalculada,
+      });
+      if (!mapped) return;
+      asociaciones.push({
+        pasada_id: pasada.id,
+        tarifa_importe_id: mapped.tarifa_importe_id,
+        codigo: mapped.codigo,
+      });
     });
     if (!asociaciones.length) return;
     try {
@@ -375,5 +462,109 @@ export class Paso9RevisionComponent implements OnInit {
       this.avisoAsociacion =
         'La carga se guardó, pero no se pudieron asociar las tarifas. Podés reintentar la asociación.';
     }
+  }
+
+  private aplicarDecisionPersistida(
+    row: ResultadoDetectarRefresco,
+    candidatos: ResumenRefrescoTarifas['candidatos'],
+  ): ResultadoDetectarRefresco {
+    const peajeId = row.peajeId ?? this.estaciones.find((estacion) => estacion.id === row.estacionId)?.peaje_id ?? null;
+    const saved = this.tarifasActualizadas.find((item) => this.guardaCubreResultado(item, row, candidatos));
+    if (!saved || !BLOQUEANTES.has(row.codigo)) {
+      return { ...row, peajeId };
+    }
+    if (row.codigo === 'CONTEXT_INCOMPLETE' && !this.identidadPersistible(saved, row)) {
+      return { ...row, peajeId };
+    }
+    if (saved.diagnostico === 'REVISAR') {
+      return {
+        ...row,
+        peajeId,
+        codigo: 'REVIEW_RECORDED',
+        tarifaImporteId: saved.tarifa_importe_id ?? row.tarifaImporteId,
+        diagnostico: 'REVISAR',
+      };
+    }
+    if (saved.diagnostico === 'CONFIRMADO') {
+      return {
+        ...row,
+        peajeId,
+        codigo: 'CURRENT_TARIFF',
+        tarifaImporteId: saved.tarifa_importe_id ?? row.tarifaImporteId,
+        diagnostico: 'CONFIRMADO',
+        fechaVigenciaInicio: saved.fecha_vigencia_inicio ?? saved.fechaVigenciaInicio ?? row.fechaVigenciaInicio,
+      };
+    }
+    return { ...row, peajeId };
+  }
+
+  private identidadPersistible(
+    saved: TarifaRefrescoGuardada,
+    row: ResultadoDetectarRefresco,
+  ): boolean {
+    const estacion = saved.estacion_id || row.estacionId;
+    const categoria = saved.categoria ?? row.categoria;
+    return !!estacion && categoria != null;
+  }
+
+  private guardaCubreResultado(
+    saved: TarifaRefrescoGuardada,
+    row: ResultadoDetectarRefresco,
+    candidatos: ResumenRefrescoTarifas['candidatos'],
+  ): boolean {
+    if (saved.candidate_id && saved.candidate_id === row.id) return true;
+    const candidato = candidatos.find((item) => item.id === saved.candidate_id);
+    if (candidato && candidato.rowIndexes.some((idx) => row.rowIndexes.includes(idx))) return true;
+    return saved.estacion_id === row.estacionId && saved.nueva === (row.candidatePrice ?? null);
+  }
+
+  private contarFilasNuevasConfirmadas(
+    candidatos: ResumenRefrescoTarifas['candidatos'],
+  ): number {
+    return this.tarifasActualizadas
+      .filter((row) => row.diagnostico !== 'REVISAR')
+      .reduce((n, row) => {
+        const candidato = candidatos.find((item) => item.id === row.candidate_id);
+        return n + (candidato?.rowIndexes.length ?? 1);
+      }, 0);
+  }
+
+  private filasDesdeResultados(
+    pred: (r: ResultadoDetectarRefresco) => boolean,
+  ): FilaResumenTarifa[] {
+    return (this.resumenRefresco?.resultados ?? []).filter(pred).map((row) => ({
+      estacionNombre: this.nombreEstacionTarifa(row.estacionId),
+      lineaCategoria: this.lineaCategoria(row.categoriaProveedor, row.categoriaCalculada, row.categoria),
+      status: row.status ?? '—',
+      sentido: row.sentidoAplicado ?? row.sentidoSolicitado ?? '—',
+      precioAnterior: row.importeActual == null ? '—' : String(row.importeActual),
+      precioNuevo: row.candidatePrice == null ? '—' : String(row.candidatePrice),
+      vigenteDesde: formatearVigencia(row.fechaVigenciaInicio),
+    }));
+  }
+
+  private filaDesdeGuardada(row: TarifaRefrescoGuardada): FilaResumenTarifa {
+    return {
+      estacionNombre: this.nombreEstacionTarifa(row.estacion_id),
+      lineaCategoria: this.lineaCategoria(null, row.categoria_calculada ?? row.categoriaCalculada, row.categoria),
+      status: row.status,
+      sentido: row.sentido,
+      precioAnterior: row.anterior == null ? '—' : String(row.anterior),
+      precioNuevo: String(row.nueva),
+      vigenteDesde: formatearVigencia(row.fecha_vigencia_inicio ?? row.fechaVigenciaInicio),
+    };
+  }
+
+  private lineaCategoria(
+    proveedor: number | null | undefined,
+    calculada: number | null | undefined,
+    fallback: number | null | undefined,
+  ): string {
+    if (proveedor != null && calculada != null) {
+      return `Categoría proveedor ${proveedor} -> calculada ${calculada}`;
+    }
+    if (proveedor != null) return `Categoría ${proveedor}`;
+    if (fallback != null) return `Categoría ${fallback}`;
+    return 'Categoría —';
   }
 }

@@ -62,6 +62,15 @@ node download-batch.mjs                    # relleno autenticado
 
 ## Historial de sesiones
 
+### 2026-09-10 — rows.json lock + fechaDescarga
+
+- Batch aborted after GCO 24 because `writeFileSync(rows.json)` hit Windows `UNKNOWN` / errno -4094.
+- `writeRowsJson` now writes atomically with retries; progress persist never aborts downloads.
+- `status.csv` gained `fechaDescarga` (`YYYY-MM-DD HH:mm:ss` local), stamped only on SAVED files. Older rows stay blank.
+- Re-parse keeps previous `downloadedAt` values.
+- `download-batch.mjs` accepts `--month-init` / `--month-finish` (aliases `--month_init`, `--mont_finish`) to keep rows by `periodo` month. Example: `node download-batch.mjs --month-init 3 --month-finish 4`.
+- Verification: `npm test` in `scripts/telepase`.
+
 ### 2026-09-02 — Generate status.csv from rows.json
 
 - `download-batch.mjs` never wrote `scripts/downloads/status.csv`; the carga-express bot expected that file.

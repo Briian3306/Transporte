@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as cheerio from 'cheerio';
 import { HTML_PATH, ROWS_JSON_PATH } from './paths.mjs';
+import { loadRowsJson, writeRowsJson } from './download-paths.mjs';
 
 function cellText($el) {
   const html = $el.html() ?? '';
@@ -140,9 +141,22 @@ export function loadRowsFromDisk() {
   return parseFacturasHtml(html);
 }
 
+function rowIdentity(row) {
+  return [row.numero, row.periodo, row.concesionario].filter(Boolean).join('|');
+}
+
+export function mergeDownloadedAt(nextRows, previousRows = []) {
+  const previousByKey = new Map((previousRows || []).map((row) => [rowIdentity(row), row]));
+  return nextRows.map((row) => {
+    const previous = previousByKey.get(rowIdentity(row));
+    if (!previous?.downloadedAt) return row;
+    return { ...row, downloadedAt: previous.downloadedAt };
+  });
+}
+
 function main() {
-  const rows = loadRowsFromDisk();
-  fs.writeFileSync(ROWS_JSON_PATH, JSON.stringify(rows, null, 2), 'utf8');
+  const rows = mergeDownloadedAt(loadRowsFromDisk(), loadRowsJson());
+  writeRowsJson(rows);
   const withUrls = rows.filter((r) => r.facturaUrl && r.pasadaUrl).length;
   console.log(`Parsed ${rows.length} rows → ${ROWS_JSON_PATH}`);
   console.log(`Rows with both factura+pasada URLs: ${withUrls}`);

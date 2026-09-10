@@ -12,6 +12,15 @@
       <button type="button" class="pw__btn" (click)="atras.emit()" [disabled]="!!resultado">Volver</button>
       <button
         type="button"
+        class="pw__btn"
+        data-testid="revisar-tarifas"
+        *ngIf="!resultado && dialogNeeded && !refreshOpen"
+        (click)="abrirRevisionTarifas()"
+      >
+        Revisar tarifas
+      </button>
+      <button
+        type="button"
         class="pw__btn pw__btn--success"
         data-testid="confirmar-carga"
         *ngIf="!resultado"
@@ -54,9 +63,11 @@
     <div class="pw__note" *ngIf="resumenRefresco">
       <strong>Tarifas</strong>
       <span>
-        {{ resumenRefresco.filasVigentes }} vigentes ·
-        {{ resumenRefresco.filasHistoricas }} históricas ·
-        {{ resumenRefresco.pendientes }} pendientes
+        {{ seccionVigentes.length }} vigentes ·
+        {{ seccionHistoricas.length }} históricas ·
+        {{ seccionCorrecciones.length }} correcciones ·
+        {{ seccionNuevasConfirmadas.length }} nuevas ·
+        {{ seccionRevisar.length }} REVISAR
       </span>
     </div>
     <p class="pw__alert" *ngIf="resumenRefresco?.filasHistoricas && !dialogNeeded">
@@ -65,6 +76,82 @@
     <p class="pw__alert pw__alert--error" *ngIf="dialogNeeded && !canManageTarifas" role="alert">
       Hay tarifas nuevas. Se requiere permiso peajes:manage para actualizarlas antes de confirmar.
     </p>
+
+    <section class="paso9__tarifas" *ngIf="resumenRefresco" aria-label="Resumen de tarifas">
+      <article class="paso9__tarifa-seccion" *ngIf="seccionVigentes.length" data-testid="tarifa-resumen-vigentes">
+        <h3>Coincidencias vigentes</h3>
+        <ul>
+          <li *ngFor="let fila of seccionVigentes">
+            <strong>{{ fila.estacionNombre }}</strong>
+            · {{ fila.lineaCategoria }} · {{ fila.status }} · {{ fila.sentido }}
+          </li>
+        </ul>
+      </article>
+      <article class="paso9__tarifa-seccion" *ngIf="seccionHistoricas.length" data-testid="tarifa-resumen-historicas">
+        <h3>Coincidencias históricas</h3>
+        <ul>
+          <li *ngFor="let fila of seccionHistoricas">
+            <strong>{{ fila.estacionNombre }}</strong>
+            · {{ fila.lineaCategoria }} · {{ fila.status }} · {{ fila.sentido }}
+          </li>
+        </ul>
+      </article>
+      <article class="paso9__tarifa-seccion" *ngIf="seccionCorrecciones.length" data-testid="tarifa-resumen-correcciones">
+        <h3>Correcciones de categoría</h3>
+        <ul>
+          <li *ngFor="let fila of seccionCorrecciones">
+            <strong>{{ fila.estacionNombre }}</strong>
+            · {{ fila.lineaCategoria }}
+          </li>
+        </ul>
+      </article>
+      <article class="paso9__tarifa-seccion" *ngIf="seccionNuevasConfirmadas.length" data-testid="tarifa-resumen-nuevas">
+        <h3>Tarifas nuevas confirmadas</h3>
+        <ul>
+          <li *ngFor="let fila of seccionNuevasConfirmadas">
+            <strong>{{ fila.estacionNombre }}</strong>
+            · {{ fila.lineaCategoria }} · {{ fila.status }} · {{ fila.sentido }}
+            · {{ fila.precioNuevo }}
+          </li>
+        </ul>
+      </article>
+      <article class="paso9__tarifa-seccion" *ngIf="seccionRevisar.length" data-testid="tarifa-resumen-revisar">
+        <h3>Marcadas REVISAR</h3>
+        <ul>
+          <li *ngFor="let fila of seccionRevisar">
+            <strong>{{ fila.estacionNombre }}</strong>
+            · {{ fila.lineaCategoria }} · {{ fila.status }} · {{ fila.sentido }}
+          </li>
+        </ul>
+      </article>
+      <article class="paso9__tarifa-seccion" *ngIf="seccionCambiosVigencia.length" data-testid="tarifa-resumen-vigencia">
+        <h3>Cambios de vigencia</h3>
+        <table class="pw__table">
+          <thead>
+            <tr>
+              <th>Estación</th>
+              <th>Categoría</th>
+              <th>Estado</th>
+              <th>Sentido</th>
+              <th>Anterior</th>
+              <th>Nueva</th>
+              <th>Vigente desde</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let fila of seccionCambiosVigencia">
+              <td>{{ fila.estacionNombre }}</td>
+              <td>{{ fila.lineaCategoria }}</td>
+              <td>{{ fila.status }}</td>
+              <td>{{ fila.sentido }}</td>
+              <td>{{ fila.precioAnterior }}</td>
+              <td>{{ fila.precioNuevo }}</td>
+              <td>{{ fila.vigenteDesde || '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+    </section>
 
     <section class="paso9__resumen" *ngIf="esMasiva" aria-label="Resumen de importación masiva">
       <h3 class="paso9__resumen-title">Resumen de documentos</h3>
@@ -92,31 +179,6 @@
         </ul>
       </div>
 
-      <div class="paso9__resumen-block paso9__resumen-block--ok" *ngIf="tarifasActualizadas.length">
-        <h4>Tarifas actualizadas</h4>
-        <table class="pw__table">
-          <thead>
-            <tr>
-              <th>Estación</th>
-              <th>Categoría</th>
-              <th>Estado</th>
-              <th>Sentido</th>
-              <th>Anterior</th>
-              <th>Nueva</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let t of tarifasActualizadas">
-              <td>{{ t.estacion_id }}</td>
-              <td>{{ t.categoria }}</td>
-              <td>{{ t.status }}</td>
-              <td>{{ t.sentido }}</td>
-              <td>{{ t.anterior == null ? '—' : t.anterior }}</td>
-              <td>{{ t.nueva }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
       <div class="paso9__resumen-block paso9__resumen-block--ok" *ngIf="importadosResumen.length">
         <h4>Importados correctamente ({{ importadosResumen.length }})</h4>
         <ul>

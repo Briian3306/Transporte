@@ -46,7 +46,7 @@ After implementation, run:
 
 **CLI rule:** from `ibarra-app/`, prefer `npx supabase` (npm lockfile). Do not assume global `supabase` or `pnpm supabase`.
 
-Before any `--linked` command:
+Before any `--linked` command, confirm the ref **and** read [historial-migraciones.md](historial-migraciones.md) (CLI vs MCP timestamps):
 
 ```powershell
 Get-Content supabase\.temp\project-ref
@@ -59,6 +59,7 @@ Get-Content supabase\.temp\project-ref
 |-------|------|
 | Any Supabase backend change | [../supabase/SKILL.md](../supabase/SKILL.md) |
 | SQL queries / indexes / RLS performance | [../supabase-postgres-best-practices/SKILL.md](../supabase-postgres-best-practices/SKILL.md) |
+| Before `--linked` / `db push` fails / MCP vs filename timestamps | [historial-migraciones.md](historial-migraciones.md) |
 
 ## Responsibilities
 
@@ -76,6 +77,7 @@ You must not:
 - Edit shared models/contracts owned by agent 00
 - Reuse `checklist_templates` / `ChecklistTemplateService`
 - Use MCP remote as the source of truth for testing (CLI is)
+- Call MCP `apply_migration` when the SQL file already exists in `supabase/migrations/` (creates a second timestamp; use `db push --linked`)
 - Apply `db reset --linked` to DESARROLLO
 - Commit secrets / `service_role` / Bearer tokens
 
@@ -99,7 +101,7 @@ pnpm seed:local
 
 Do **not** stop after `--no-seed`. That leaves empty `tarifas` / `tarifa_importe` / `_stg_precio_last` and no Francis login. Tarifario v2 is a Node ETL (workbook), not a file in `config.toml` `[db.seed]`. Never put `--load-local` against DESARROLLO.
 
-DESARROLLO (only after CLI green + user authorization when required):
+DESARROLLO (only after CLI green + user authorization when required). Align history first ([historial-migraciones.md](historial-migraciones.md)), then:
 
 ```powershell
 npx supabase link --project-ref kfffigvyvtzyczeiadxh
@@ -107,6 +109,8 @@ Get-Content supabase\.temp\project-ref
 npx supabase db push --linked --dry-run
 npx supabase db push --linked
 ```
+
+After push, restore local CLI the same as step 2 (`db reset --local --no-seed` + `pnpm seed:local`). Do not leave the Docker DB on `--no-seed` only.
 
 ## SQL / RPC documentation
 
@@ -123,7 +127,8 @@ Every change → `docs/backend/` (see [plantilla-sql-task.md](plantilla-sql-task
 - [ ] [entornos.md](entornos.md) followed (CLI = testing)
 - [ ] Migration in `supabase/migrations/`
 - [ ] CLI rebuild + tests green (`db reset --local --no-seed` + `test db`)
-- [ ] After `--no-seed`, `pnpm seed:local` (includes `migrate-tarifario-v2.mjs --load-local`) unless the session is pgTAP-only
+- [ ] After `--no-seed` (and after DESARROLLO push), `pnpm seed:local` unless the session is pgTAP-only
+- [ ] `--linked` history aligned per [historial-migraciones.md](historial-migraciones.md) (no MCP duplicate timestamps)
 - [ ] `docs/backend/` updated (catalog + peajes detail as needed)
 - [ ] No OrdenCompra refs used
 - [ ] No secrets in migrations/docs
@@ -132,6 +137,7 @@ Every change → `docs/backend/` (see [plantilla-sql-task.md](plantilla-sql-task
 ## References
 
 - [entornos.md](entornos.md)
+- [historial-migraciones.md](historial-migraciones.md)
 - [plantilla-sql-task.md](plantilla-sql-task.md)
 - [../supabase/SKILL.md](../supabase/SKILL.md)
 - [../supabase-postgres-best-practices/SKILL.md](../supabase-postgres-best-practices/SKILL.md)

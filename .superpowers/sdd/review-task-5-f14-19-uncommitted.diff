@@ -1,0 +1,1926 @@
+﻿# Review package — Task 5 F14-19 (uncommitted Angular contracts)
+Base: 95033bda8434b21473aa51937dfa8831acf0d3b9
+Head: WORKING TREE
+
+## Commit list
+(none)
+
+## Files changed
+
+ .../peajes/models/tarifa-refresh.contracts.ts      | 138 ++++++-
+ .../peajes/models/tarifario.contracts.ts           |  56 ++-
+ .../services/peajes-tarifario.service.spec.ts      | 218 +++++++++++
+ .../peajes/services/peajes-tarifario.service.ts    | 140 +++++--
+ .../peajes/services/tarifa-refresh.service.spec.ts | 404 +++++++++++++++++++++
+ .../peajes/services/tarifa-refresh.service.ts      | 128 ++++---
+ .../peajes/wizard/mocks/tarifa-refresh.mock.ts     |  16 +-
+ .../tarifa-refresh-dialog.component.spec.ts        |   9 +
+ .../tarifa-refresh-dialog.helpers.spec.ts          |   9 +
+ 9 files changed, 1019 insertions(+), 99 deletions(-)
+
+## Diff -U10
+
+diff --git a/ibarra-app/src/app/components/peajes/models/tarifa-refresh.contracts.ts b/ibarra-app/src/app/components/peajes/models/tarifa-refresh.contracts.ts
+index a4a2430..db418bf 100644
+--- a/ibarra-app/src/app/components/peajes/models/tarifa-refresh.contracts.ts
++++ b/ibarra-app/src/app/components/peajes/models/tarifa-refresh.contracts.ts
+@@ -1,100 +1,200 @@
+ /**
+- * Contratos F14-18 ÔÇö refresh de tarifas durante Paso 9.
++ * Contratos F14-19 ÔÇö refresh de tarifas durante Paso 9.
+  * El extractor es puro; los wrappers RPC viven en PeajesTarifarioService.
+  */
+ 
+ import { InjectionToken } from '@angular/core';
+ import { normalizarImportesPasada } from './documento.helpers';
+ import { ConfiguracionPlantilla, PasadaEstandarizada } from './peajes.models';
+ import { EstacionViaSentidoRef, resolvePasadaSentido } from './direction-resolution';
+ import { DocumentoTipo } from './peajes.types';
+ import {
+   CambioRefrescoTarifa,
++  TarifaMatchOption,
+   TarifaRefrescoGuardada,
++  TarifaRefreshDecision,
+   TarifaSentido,
+   TarifaStatusPico,
+ } from './tarifario.contracts';
+ 
++export type { TarifaMatchOption, TarifaRefreshDecision };
++
+ export type RefreshTarifaCodigo =
+   | 'CURRENT_TARIFF'
+   | 'HISTORICAL_TARIFF_MATCH'
++  | 'CURRENT_CATEGORY_CORRECTION'
++  | 'HISTORICAL_CATEGORY_CORRECTION'
+   | 'NEW_TARIFF'
++  | 'AMBIGUOUS_TARIFF_MATCH'
+   | 'STATUS_REQUIRED'
+   | 'STATUS_AMBIGUOUS'
+-  | 'CONTEXT_INCOMPLETE'
+   | 'DIRECTION_REQUIRED'
+-  | 'DIRECTION_CONFLICT';
++  | 'DIRECTION_CONFLICT'
++  | 'CONTEXT_INCOMPLETE'
++  | 'REVIEW_RECORDED';
++
++export interface EstacionCatalogoCandidato {
++  estacionId: string;
++  estacionNombre: string;
++  peajeId: string;
++  peajeNombre: string;
++}
+ 
+ export interface CandidatoRefrescoTarifa {
+   id: string;
+   estacionId: string;
+   categoria: number | null;
++  categoriaProveedor: number | null;
++  categoriaCalculada: number | null;
+   statusSolicitado: TarifaStatusPico | null;
+   sentidoSolicitado: TarifaSentido | null;
+   directionConfidence: 'EXPLICIT' | 'LANE_MAP' | 'UNRESOLVED';
+   unresolvedReason?: 'MISSING_MAPPING' | 'CONFLICT';
+   sourceStationCode: string | null;
+   sourceLane: string | null;
++  fechaPasada: string | null;
++  estacionNombre: string | null;
++  peajeId: string | null;
++  peajeNombre: string | null;
+   candidatePrice: number;
+   precioDirecto: number;
++  cases: number;
+   filaRepresentativa: Record<string, unknown>;
+   rowIndexes: number[];
+ }
+ 
+ export interface ExtraerCandidatosRefrescoOpciones {
+   tipoDocumento?: DocumentoTipo | ReadonlyArray<DocumentoTipo | null | undefined>;
+   estacionesViasSentido?: readonly EstacionViaSentidoRef[];
++  documentos?: AnalisisRefrescoInput['documentos'];
++  estacionesCatalogo?: readonly EstacionCatalogoCandidato[];
+ }
+ 
+ export interface AnalisisRefrescoInput {
+   pasadas: PasadaEstandarizada[];
+   documentos: ReadonlyArray<{
+     tipo?: DocumentoTipo;
+     rowIndexes: number[];
+     omitido?: boolean;
+   }>;
+   configuraciones: ConfiguracionPlantilla[];
+   estacionesViasSentido?: readonly EstacionViaSentidoRef[];
++  estacionesCatalogo?: readonly EstacionCatalogoCandidato[];
+ }
+ 
+ export interface ResultadoDetectarRefresco {
+   id: string;
+   codigo: RefreshTarifaCodigo;
+   peajeId: string | null;
+   estacionId: string;
+   categoria: number | null;
++  categoriaProveedor: number | null;
++  categoriaCalculada: number | null;
+   status: TarifaStatusPico | null;
+   sentidoSolicitado: TarifaSentido | null;
+   sentidoAplicado: TarifaSentido | null;
+   importeActual: number | null;
+   tarifaId: string | null;
+   tarifaImporteId: string | null;
+   requiereNormalizacionIva: boolean | null;
++  diagnostico?: string | null;
++  fechaVigenciaInicio?: string | null;
++  fechaVigenciaFin?: string | null;
++  fechaPasada?: string | null;
++  possibleMatches?: TarifaMatchOption[];
+   rowIndexes: number[];
+   directionConfidence?: 'EXPLICIT' | 'LANE_MAP' | 'UNRESOLVED';
+   sourceLane?: string | null;
+   candidatePrice?: number | null;
+ }
+ 
+ export interface ResumenRefrescoTarifas {
+   candidatos: CandidatoRefrescoTarifa[];
+   resultados: ResultadoDetectarRefresco[];
+   filasVigentes: number;
+   filasHistoricas: number;
++  filasCorreccionCategoria: number;
++  filasNuevasConfirmadas: number;
++  filasSinResolver: number;
++  filasCambioVigencia: number;
++  /** @deprecated Use filasSinResolver. Kept for Paso 9 until Task 10. */
+   pendientes: number;
+   contextIncomplete: boolean;
+ }
+ 
++const CODIGOS_SIN_RESOLVER: ReadonlySet<RefreshTarifaCodigo> = new Set([
++  'NEW_TARIFF',
++  'AMBIGUOUS_TARIFF_MATCH',
++  'STATUS_REQUIRED',
++  'STATUS_AMBIGUOUS',
++  'CONTEXT_INCOMPLETE',
++  'DIRECTION_REQUIRED',
++  'DIRECTION_CONFLICT',
++]);
++
++const CODIGOS_CORRECCION: ReadonlySet<RefreshTarifaCodigo> = new Set([
++  'CURRENT_CATEGORY_CORRECTION',
++  'HISTORICAL_CATEGORY_CORRECTION',
++]);
++
++export function asociacionDesdeResultadoRefresco(input: {
++  codigo: RefreshTarifaCodigo | string;
++  tarifaImporteId: string | null;
++  categoriaProveedor?: number | null;
++  categoriaCalculada?: number | null;
++}): { tarifa_importe_id: string; codigo: 'AL_DIA' | 'HISTORICA' } | null {
++  if (!input.tarifaImporteId) return null;
++  switch (input.codigo) {
++    case 'CURRENT_TARIFF':
++    case 'CURRENT_CATEGORY_CORRECTION':
++      return { tarifa_importe_id: input.tarifaImporteId, codigo: 'AL_DIA' };
++    case 'HISTORICAL_TARIFF_MATCH':
++    case 'HISTORICAL_CATEGORY_CORRECTION':
++    case 'REVIEW_RECORDED':
++      return { tarifa_importe_id: input.tarifaImporteId, codigo: 'HISTORICA' };
++    default:
++      return null;
++  }
++}
++
++export function resumirFilasRefresco(resultados: readonly ResultadoDetectarRefresco[]): Pick<
++  ResumenRefrescoTarifas,
++  | 'filasVigentes'
++  | 'filasHistoricas'
++  | 'filasCorreccionCategoria'
++  | 'filasNuevasConfirmadas'
++  | 'filasSinResolver'
++  | 'filasCambioVigencia'
++  | 'pendientes'
++  | 'contextIncomplete'
++> {
++  const count = (pred: (r: ResultadoDetectarRefresco) => boolean): number =>
++    resultados.filter(pred).reduce((n, r) => n + r.rowIndexes.length, 0);
++  const filasSinResolver = count((r) => CODIGOS_SIN_RESOLVER.has(r.codigo));
++  return {
++    filasVigentes: count((r) => r.codigo === 'CURRENT_TARIFF'),
++    filasHistoricas: count((r) => r.codigo === 'HISTORICAL_TARIFF_MATCH'),
++    filasCorreccionCategoria: count((r) => CODIGOS_CORRECCION.has(r.codigo)),
++    filasNuevasConfirmadas: 0,
++    filasSinResolver,
++    filasCambioVigencia: count((r) => r.fechaVigenciaFin != null && String(r.fechaVigenciaFin).trim() !== ''),
++    pendientes: filasSinResolver,
++    contextIncomplete: resultados.some((r) =>
++      ['CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo),
++    ),
++  };
++}
++
+ export interface TarifaRefreshService {
+   analizar(input: AnalisisRefrescoInput): Promise<ResumenRefrescoTarifas>;
+-  guardar(cambios: CambioRefrescoTarifa[]): Promise<TarifaRefrescoGuardada[]>;
++  guardar(cambios: Array<CambioRefrescoTarifa | TarifaRefreshDecision>): Promise<TarifaRefrescoGuardada[]>;
+ }
+ 
+ export const TARIFA_REFRESH_SERVICE = new InjectionToken<TarifaRefreshService>(
+   'TARIFA_REFRESH_SERVICE',
+ );
+ 
+ function parseFiniteNumber(value: unknown): number | null {
+   if (value == null || value === '') return null;
+   const n = typeof value === 'number' ? value : Number(String(value).replace(',', '.'));
+   return Number.isFinite(n) ? n : null;
+@@ -116,87 +216,117 @@ function precioBrutoCandidato(pasada: PasadaEstandarizada): number | null {
+   const precio = parseFiniteNumber(pasada.PRECIO);
+   if (precio != null) return precio;
+   return parseFiniteNumber(pasada.IMPORTE_NETO);
+ }
+ 
+ /** Clave de agrupaci├│n no redondeada; el precio original se conserva para comparar. */
+ export function clavePrecioCanonico(precio: number): string {
+   return Object.is(precio, -0) ? '0' : String(precio);
+ }
+ 
++export function fechaPasadaCanonico(value: unknown): string | null {
++  if (value == null || value === '') return null;
++  const s = String(value).trim();
++  const iso = /^(\d{4}-\d{2}-\d{2})/.exec(s);
++  return iso ? iso[1] : null;
++}
++
+ function tipoDocumentoDe(
+   tipo: ExtraerCandidatosRefrescoOpciones['tipoDocumento'],
+   index: number,
+ ): DocumentoTipo {
+   if (Array.isArray(tipo)) {
+     const item = tipo[index];
+     return item === 'NC' ? 'NC' : 'FC';
+   }
+   return tipo === 'NC' ? 'NC' : 'FC';
+ }
+ 
++function indicesOmitidos(documentos: ExtraerCandidatosRefrescoOpciones['documentos']): Set<number> {
++  const omit = new Set<number>();
++  for (const doc of documentos ?? []) {
++    if (!doc.omitido) continue;
++    for (const idx of doc.rowIndexes ?? []) omit.add(idx);
++  }
++  return omit;
++}
++
+ export function extraerCandidatosRefresco(
+   pasadas: PasadaEstandarizada[],
+   opciones: ExtraerCandidatosRefrescoOpciones = {},
+ ): CandidatoRefrescoTarifa[] {
+   const grupos = new Map<string, CandidatoRefrescoTarifa>();
+   const orden: string[] = [];
++  const omitidos = indicesOmitidos(opciones.documentos);
++  const catalogo = new Map((opciones.estacionesCatalogo ?? []).map((row) => [row.estacionId, row]));
+ 
+   pasadas.forEach((fila, index) => {
++    if (omitidos.has(index)) return;
+     const bruto = precioBrutoCandidato(fila);
+     if (bruto == null) return;
+ 
+     const tipo = tipoDocumentoDe(opciones.tipoDocumento, index);
+     const firmado = normalizarImportesPasada(tipo, {
+       precio: bruto,
+       bonificacion: parseFiniteNumber(fila.BONIFICACION) ?? 0,
+       importe_neto: parseFiniteNumber(fila.IMPORTE_NETO) ?? undefined,
+     });
+     const precioDirecto = Math.abs(firmado.precio);
+     if (!Number.isFinite(precioDirecto)) return;
+ 
+     const estacionId = String(fila.ESTACION_ID ?? '').trim();
+     const categoria = parseCategoria(fila.CATEGORIA);
+     const statusSolicitado = parseStatus(fila.TARIFA_STATUS);
++    const fechaPasada = fechaPasadaCanonico(fila.FECHA_HORA);
+     const sourceStationCode = fila.SOURCE_ESTACION ?? (fila as Record<string, unknown>)['ESTACION'] ?? null;
+     const sourceLane = fila.SOURCE_VIA ?? (fila as Record<string, unknown>)['VIA'] ?? null;
+     const direction = resolvePasadaSentido({
+       explicit: fila.SENTIDO,
+       codigoEstacion: sourceStationCode,
+       via: sourceLane,
+       map: opciones.estacionesViasSentido ?? [],
+     });
+     const sentidoSolicitado = direction.sentido;
+     const id = [
+       estacionId,
+       categoria == null ? '' : String(categoria),
+       statusSolicitado ?? '',
+       sentidoSolicitado ?? '',
++      fechaPasada ?? '',
+       clavePrecioCanonico(precioDirecto),
+     ].join('|');
+ 
+     const existente = grupos.get(id);
+     if (existente) {
+       existente.rowIndexes.push(index);
++      existente.cases = existente.rowIndexes.length;
+       return;
+     }
+ 
++    const meta = catalogo.get(estacionId);
+     grupos.set(id, {
+       id,
+       estacionId,
+       categoria,
++      categoriaProveedor: categoria,
++      categoriaCalculada: null,
+       statusSolicitado,
+       sentidoSolicitado,
+       directionConfidence: direction.confidence,
+       ...(direction.confidence === 'UNRESOLVED' ? { unresolvedReason: direction.reason } : {}),
+       sourceStationCode: sourceStationCode == null ? null : String(sourceStationCode),
+       sourceLane: sourceLane == null ? null : String(sourceLane),
++      fechaPasada,
++      estacionNombre: meta?.estacionNombre ?? null,
++      peajeId: meta?.peajeId ?? null,
++      peajeNombre: meta?.peajeNombre ?? null,
+       candidatePrice: precioDirecto,
+       precioDirecto,
++      cases: 1,
+       filaRepresentativa: { ...fila },
+       rowIndexes: [index],
+     });
+     orden.push(id);
+   });
+ 
+   return orden.map((key) => grupos.get(key)!);
+ }
+diff --git a/ibarra-app/src/app/components/peajes/models/tarifario.contracts.ts b/ibarra-app/src/app/components/peajes/models/tarifario.contracts.ts
+index 46713eb..52a63dc 100644
+--- a/ibarra-app/src/app/components/peajes/models/tarifario.contracts.ts
++++ b/ibarra-app/src/app/components/peajes/models/tarifario.contracts.ts
+@@ -118,74 +118,124 @@ export interface PrepararRefrescoTarifaItem {
+   sentido: TarifaSentido | null;
+   tarifaId: string | null;
+   importe: number | null;
+   requiereNormalizacionIva: boolean;
+ }
+ 
+ export interface DetectarRefrescoTarifaInput {
+   id: string;
+   estacionId: string;
+   categoria: number | null;
++  categoriaProveedor?: number | null;
+   statusSolicitado: TarifaStatusPico | null;
+   sentidoSolicitado: TarifaSentido | null;
++  fechaPasada?: string | null;
+   precioDirecto: number;
+   precioNormalizado: number | null;
+ }
+ 
+ export type RefreshTarifaCodigoRpc =
+   | 'CURRENT_TARIFF'
+   | 'HISTORICAL_TARIFF_MATCH'
++  | 'CURRENT_CATEGORY_CORRECTION'
++  | 'HISTORICAL_CATEGORY_CORRECTION'
+   | 'NEW_TARIFF'
++  | 'AMBIGUOUS_TARIFF_MATCH'
+   | 'STATUS_REQUIRED'
+   | 'STATUS_AMBIGUOUS'
+-  | 'CONTEXT_INCOMPLETE'
+   | 'DIRECTION_REQUIRED'
+-  | 'DIRECTION_CONFLICT';
++  | 'DIRECTION_CONFLICT'
++  | 'CONTEXT_INCOMPLETE'
++  | 'REVIEW_RECORDED';
++
++export interface TarifaMatchOption {
++  tarifaId: string;
++  tarifaImporteId: string;
++  categoria: number;
++  status: 'PICO' | 'NO_PICO';
++  sentido: 'IDA' | 'VUELTA' | 'AMBAS';
++  importe: number;
++  diagnostico: string | null;
++  fechaVigenciaInicio: string | null;
++  fechaVigenciaFin: string | null;
++  esActual: boolean;
++  errorRelativo: number;
++}
+ 
+ export interface DetectarRefrescoTarifaItem {
+   id: string;
+   codigo: RefreshTarifaCodigoRpc;
+   peajeId: string | null;
+   estacionId: string;
+   categoria: number | null;
++  categoriaProveedor: number | null;
++  categoriaCalculada: number | null;
+   status: TarifaStatusPico | null;
+   sentidoSolicitado: TarifaSentido | null;
+   sentidoAplicado: TarifaSentido | null;
+   importeActual: number | null;
+   tarifaId: string | null;
+   tarifaImporteId: string | null;
+   requiereNormalizacionIva: boolean | null;
++  diagnostico: string | null;
++  fechaVigenciaInicio: string | null;
++  fechaVigenciaFin: string | null;
++  possibleMatches: TarifaMatchOption[];
+ }
+ 
+ export interface CambioRefrescoTarifa {
+   peajeId: string;
+   estacionId: string;
+   sentido: TarifaSentido;
+   categoria: number;
+   status: TarifaStatusPico;
+   importe: number;
+   /** Immutable number of source pasadas that evidenced this price snapshot. */
+   cases: number;
+   requiereNormalizacionIva: boolean | null;
+ }
+ 
++export interface TarifaRefreshDecision {
++  candidateId: string;
++  action: 'CONFIRM_NEW' | 'MARK_REVIEW';
++  peajeId: string;
++  estacionId: string;
++  categoriaProveedor: number;
++  categoriaCalculada: number | null;
++  status: 'PICO' | 'NO_PICO';
++  sentido: 'IDA' | 'VUELTA' | 'AMBAS';
++  importe: number;
++  fechaVigenciaInicio: string | null;
++  cases: number;
++  requiereNormalizacionIva: boolean | null;
++}
++
+ export interface TarifaRefrescoGuardada {
+   peaje_id: string;
+   estacion_id: string;
+   sentido: TarifaSentido;
+   categoria: number;
+   status: TarifaStatusPico;
+   tarifa_id: string;
+   anterior: number | null;
+   nueva: number;
+   tarifa_importe_id: string | null;
+   accion: 'ACTUALIZADA' | 'IDENTIDAD_CREADA' | 'SIN_CAMBIO';
++  candidate_id?: string | null;
++  anterior_fin?: string | null;
++  fecha_vigencia_inicio?: string | null;
++  fecha_vigencia_fin?: string | null;
++  diagnostico?: string | null;
++  categoria_calculada?: number | null;
++  fechaVigenciaInicio?: string | null;
++  fechaVigenciaFin?: string | null;
++  categoriaCalculada?: number | null;
+ }
+ 
+ export interface PeajesTarifarioService {
+   listar(params: TarifarioListParams): Observable<TarifarioListResult>;
+   obtenerEditor(
+     peajeId: string,
+     estacionId: string,
+     sentido: TarifaSentido,
+   ): Observable<TarifarioEditorPayload>;
+   guardar(
+@@ -194,16 +244,16 @@ export interface PeajesTarifarioService {
+     sentido: TarifaSentido,
+     cambios: TarifarioImporteCambio[],
+   ): Observable<{ actualizadas: number }>;
+   listarHistorial(tarifaId: string): Observable<TarifarioHistorialItem[]>;
+   prepararRefresco(
+     candidatos: PrepararRefrescoTarifaInput[],
+   ): Observable<PrepararRefrescoTarifaItem[]>;
+   detectarRefresco(
+     candidatos: DetectarRefrescoTarifaInput[],
+   ): Observable<DetectarRefrescoTarifaItem[]>;
+-  guardarRefresco(cambios: CambioRefrescoTarifa[]): Observable<TarifaRefrescoGuardada[]>;
++  guardarRefresco(cambios: Array<CambioRefrescoTarifa | TarifaRefreshDecision>): Observable<TarifaRefrescoGuardada[]>;
+ }
+ 
+ export const PEAJES_TARIFARIO_SERVICE = new InjectionToken<PeajesTarifarioService>(
+   'PEAJES_TARIFARIO_SERVICE',
+ );
+diff --git a/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.spec.ts b/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.spec.ts
+index 116dfec..afb8a58 100644
+--- a/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.spec.ts
++++ b/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.spec.ts
+@@ -179,11 +179,229 @@ describe('PeajesTarifarioSupabaseService', () => {
+           status: 'NO_PICO',
+           importe: 12500,
+           cases: 3,
+           requiere_normalizacion_iva: false,
+         },
+       ],
+     });
+     expect(out[0].accion).toBe('ACTUALIZADA');
+     expect(out[0].anterior).toBe(11975.15);
+   });
++
++  it('detectarRefresco envia fecha_pasada y categoria_proveedor', async () => {
++    rpcSpy.and.resolveTo({ data: [], error: null });
++    await firstValueFrom(
++      service.detectarRefresco([
++        {
++          id: 'c1',
++          estacionId: 'est-1',
++          categoria: 3,
++          categoriaProveedor: 3,
++          statusSolicitado: null,
++          sentidoSolicitado: 'AMBAS',
++          fechaPasada: '2026-07-31',
++          precioDirecto: 5300,
++          precioNormalizado: null,
++        } as never,
++      ]),
++    );
++    expect(rpcSpy).toHaveBeenCalledWith('peajes_detectar_refresco_tarifas', {
++      p_candidatos: [
++        jasmine.objectContaining({
++          id: 'c1',
++          estacion_id: 'est-1',
++          categoria: 3,
++          categoria_proveedor: 3,
++          fecha_pasada: '2026-07-31',
++          precio_directo: 5300,
++          precio_normalizado: null,
++        }),
++      ],
++    });
++  });
++
++  it('detectarRefresco mapea correccion, possible_matches, diagnostico, vigencia y categoriaCalculada', async () => {
++    rpcSpy.and.resolveTo({
++      data: [
++        {
++          id: 'c1',
++          codigo: 'CURRENT_CATEGORY_CORRECTION',
++          peaje_id: 'p',
++          estacion_id: 'e',
++          categoria: 3,
++          categoria_proveedor: 3,
++          categoria_calculada: 2,
++          status: 'PICO',
++          sentido_solicitado: 'AMBAS',
++          sentido_aplicado: 'AMBAS',
++          importe_actual: 5300,
++          tarifa_id: 't',
++          tarifa_importe_id: 'ti',
++          requiere_normalizacion_iva: false,
++          diagnostico: 'CONFIRMADO',
++          fecha_vigencia_inicio: '2026-06-01',
++          fecha_vigencia_fin: null,
++          possible_matches: [
++            {
++              tarifa_id: 't',
++              tarifa_importe_id: 'ti',
++              categoria: 2,
++              status: 'PICO',
++              sentido: 'AMBAS',
++              importe: 5300,
++              diagnostico: 'CONFIRMADO',
++              fecha_vigencia_inicio: '2026-06-01',
++              fecha_vigencia_fin: null,
++              es_actual: true,
++              error_relativo: 0,
++            },
++          ],
++        },
++      ],
++      error: null,
++    });
++    const out = await firstValueFrom(
++      service.detectarRefresco([
++        {
++          id: 'c1',
++          estacionId: 'e',
++          categoria: 3,
++          statusSolicitado: 'PICO',
++          sentidoSolicitado: 'AMBAS',
++          fechaPasada: '2026-07-31',
++          precioDirecto: 5300,
++          precioNormalizado: null,
++        } as never,
++      ]),
++    );
++    expect(out[0].codigo).toBe('CURRENT_CATEGORY_CORRECTION');
++    expect((out[0] as { categoriaProveedor?: number | null }).categoriaProveedor).toBe(3);
++    expect((out[0] as { categoriaCalculada?: number | null }).categoriaCalculada).toBe(2);
++    expect((out[0] as { diagnostico?: string | null }).diagnostico).toBe('CONFIRMADO');
++    expect((out[0] as { fechaVigenciaInicio?: string | null }).fechaVigenciaInicio).toBe('2026-06-01');
++    expect((out[0] as { fechaVigenciaFin?: string | null }).fechaVigenciaFin).toBeNull();
++    const matches = out[0].possibleMatches ?? [];
++    expect(matches.length).toBe(1);
++    expect(matches[0]).toEqual(
++      jasmine.objectContaining({
++        tarifaId: 't',
++        tarifaImporteId: 'ti',
++        categoria: 2,
++        status: 'PICO',
++        sentido: 'AMBAS',
++        importe: 5300,
++        diagnostico: 'CONFIRMADO',
++        fechaVigenciaInicio: '2026-06-01',
++        fechaVigenciaFin: null,
++        esActual: true,
++        errorRelativo: 0,
++      }),
++    );
++  });
++
++  it('detectarRefresco acepta camelCase y guarda REVIEW_RECORDED', async () => {
++    rpcSpy.and.resolveTo({
++      data: [
++        {
++          id: 'c2',
++          codigo: 'HISTORICAL_CATEGORY_CORRECTION',
++          peajeId: 'p',
++          estacionId: 'e',
++          categoriaProveedor: 3,
++          categoriaCalculada: 2,
++          possibleMatches: [],
++        },
++        {
++          id: 'c3',
++          codigo: 'REVIEW_RECORDED',
++          peajeId: 'p',
++          estacionId: 'e',
++          categoria_proveedor: 3,
++          categoria_calculada: null,
++          tarifa_importe_id: 'ti-rev',
++          diagnostico: 'REVISAR',
++        },
++      ],
++      error: null,
++    });
++    const out = await firstValueFrom(
++      service.detectarRefresco([
++        {
++          id: 'c2',
++          estacionId: 'e',
++          categoria: 3,
++          statusSolicitado: null,
++          sentidoSolicitado: 'AMBAS',
++          fechaPasada: '2026-01-15',
++          precioDirecto: 5300,
++          precioNormalizado: null,
++        } as never,
++      ]),
++    );
++    expect(out[0].codigo).toBe('HISTORICAL_CATEGORY_CORRECTION');
++    expect((out[0] as { categoriaCalculada?: number | null }).categoriaCalculada).toBe(2);
++    expect(out[1].codigo).toBe('REVIEW_RECORDED');
++    expect(out[1].tarifaImporteId).toBe('ti-rev');
++  });
++
++  it('guardarRefresco mapea TarifaRefreshDecision a snake_case', async () => {
++    rpcSpy.and.resolveTo({
++      data: [
++        {
++          peaje_id: 'p',
++          estacion_id: 'e',
++          sentido: 'AMBAS',
++          categoria: 2,
++          status: 'NO_PICO',
++          tarifa_id: 't',
++          anterior: 11975.15,
++          nueva: 12500,
++          tarifa_importe_id: 'ti-new',
++          accion: 'ACTUALIZADA',
++          candidate_id: 'cand-1',
++          anterior_fin: '2026-09-01',
++          fecha_vigencia_inicio: '2026-09-01',
++          fecha_vigencia_fin: null,
++          diagnostico: 'CONFIRMADO',
++          categoria_calculada: 2,
++        },
++      ],
++      error: null,
++    });
++    const decision = {
++      candidateId: 'cand-1',
++      action: 'CONFIRM_NEW' as const,
++      peajeId: 'p',
++      estacionId: 'e',
++      categoriaProveedor: 3,
++      categoriaCalculada: 2,
++      status: 'NO_PICO' as const,
++      sentido: 'AMBAS' as const,
++      importe: 12500,
++      fechaVigenciaInicio: '2026-09-01',
++      cases: 4,
++      requiereNormalizacionIva: false,
++    };
++    const out = await firstValueFrom(service.guardarRefresco([decision] as never));
++    expect(rpcSpy).toHaveBeenCalledWith('peajes_guardar_refresco_tarifas', {
++      p_cambios: [
++        jasmine.objectContaining({
++          candidate_id: 'cand-1',
++          action: 'CONFIRM_NEW',
++          peaje_id: 'p',
++          estacion_id: 'e',
++          categoria_proveedor: 3,
++          categoria_calculada: 2,
++          status: 'NO_PICO',
++          sentido: 'AMBAS',
++          importe: 12500,
++          fecha_vigencia_inicio: '2026-09-01',
++          cases: 4,
++          requiere_normalizacion_iva: false,
++        }),
++      ],
++    });
++    expect((out[0] as { diagnostico?: string | null }).diagnostico).toBe('CONFIRMADO');
++    expect((out[0] as { fechaVigenciaInicio?: string | null }).fechaVigenciaInicio).toBe('2026-09-01');
++    expect((out[0] as { categoriaCalculada?: number | null }).categoriaCalculada).toBe(2);
++  });
+ });
+diff --git a/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.ts b/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.ts
+index a0659a2..8aabe18 100644
+--- a/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.ts
++++ b/ibarra-app/src/app/components/peajes/services/peajes-tarifario.service.ts
+@@ -1,20 +1,22 @@
+ import { Injectable, inject } from '@angular/core';
+ import { Observable, from } from 'rxjs';
+ import { SupabaseService } from '../../../services/supabase.service';
+ import {
+   CambioRefrescoTarifa,
+   DetectarRefrescoTarifaInput,
+   DetectarRefrescoTarifaItem,
+   PeajesTarifarioService,
+   PrepararRefrescoTarifaInput,
+   PrepararRefrescoTarifaItem,
++  TarifaMatchOption,
++  TarifaRefreshDecision,
+   TarifaRefrescoGuardada,
+   TarifaSentido,
+   TarifaStatusPico,
+   TarifarioCurrentRow,
+   TarifarioEditorPayload,
+   TarifarioHistorialItem,
+   TarifarioIdentidadExistente,
+   TarifarioImporteCambio,
+   TarifarioListParams,
+   TarifarioListResult,
+@@ -65,80 +67,175 @@ function mapExistente(raw: Record<string, unknown>): TarifarioIdentidadExistente
+     current_tarifa_importe_id:
+       raw['current_tarifa_importe_id'] == null
+         ? null
+         : String(raw['current_tarifa_importe_id']),
+     importe: asNullableNumber(raw['importe']),
+     fecha_actualizacion:
+       raw['fecha_actualizacion'] == null ? null : String(raw['fecha_actualizacion']),
+   };
+ }
+ 
++function pickRaw(raw: Record<string, unknown>, snake: string, camel: string): unknown {
++  if (Object.prototype.hasOwnProperty.call(raw, snake) && raw[snake] !== undefined) return raw[snake];
++  if (Object.prototype.hasOwnProperty.call(raw, camel) && raw[camel] !== undefined) return raw[camel];
++  return raw[snake] ?? raw[camel];
++}
++
++function asDateString(value: unknown): string | null {
++  if (value == null || value === '') return null;
++  return String(value);
++}
++
++function mapMatchOption(raw: Record<string, unknown>): TarifaMatchOption {
++  return {
++    tarifaId: String(pickRaw(raw, 'tarifa_id', 'tarifaId') ?? ''),
++    tarifaImporteId: String(pickRaw(raw, 'tarifa_importe_id', 'tarifaImporteId') ?? ''),
++    categoria: asNumber(pickRaw(raw, 'categoria', 'categoria')),
++    status: String(pickRaw(raw, 'status', 'status') ?? '') as TarifaStatusPico,
++    sentido: String(pickRaw(raw, 'sentido', 'sentido') ?? '') as TarifaSentido,
++    importe: asNumber(pickRaw(raw, 'importe', 'importe')),
++    diagnostico: pickRaw(raw, 'diagnostico', 'diagnostico') == null ? null : String(pickRaw(raw, 'diagnostico', 'diagnostico')),
++    fechaVigenciaInicio: asDateString(pickRaw(raw, 'fecha_vigencia_inicio', 'fechaVigenciaInicio')),
++    fechaVigenciaFin: asDateString(pickRaw(raw, 'fecha_vigencia_fin', 'fechaVigenciaFin')),
++    esActual: Boolean(pickRaw(raw, 'es_actual', 'esActual')),
++    errorRelativo: asNumber(pickRaw(raw, 'error_relativo', 'errorRelativo')),
++  };
++}
++
++function mapPossibleMatches(value: unknown): TarifaMatchOption[] {
++  if (!Array.isArray(value)) return [];
++  return value
++    .filter((item): item is Record<string, unknown> => item != null && typeof item === 'object')
++    .map(mapMatchOption);
++}
++
+ function mapPreparar(raw: Record<string, unknown>): PrepararRefrescoTarifaItem {
+   return {
+     id: String(raw['id'] ?? ''),
+     peajeId: raw['peaje_id'] == null ? null : String(raw['peaje_id']),
+     estacionId: String(raw['estacion_id'] ?? ''),
+     categoria: asNullableNumber(raw['categoria']),
+     status: raw['status'] == null ? null : (String(raw['status']) as TarifaStatusPico),
+     sentido: raw['sentido'] == null ? null : String(raw['sentido']) as TarifaSentido,
+     tarifaId: raw['tarifa_id'] == null ? null : String(raw['tarifa_id']),
+     importe: asNullableNumber(raw['importe']),
+     requiereNormalizacionIva: Boolean(raw['requiere_normalizacion_iva']),
+   };
+ }
+ 
+ function mapDetectar(raw: Record<string, unknown>): DetectarRefrescoTarifaItem {
++  const categoriaProveedor = asNullableNumber(pickRaw(raw, 'categoria_proveedor', 'categoriaProveedor') ?? raw['categoria']);
+   return {
+-    id: String(raw['id'] ?? ''),
+-    codigo: String(raw['codigo'] ?? '') as DetectarRefrescoTarifaItem['codigo'],
+-    peajeId: raw['peaje_id'] == null ? null : String(raw['peaje_id']),
+-    estacionId: String(raw['estacion_id'] ?? ''),
+-    categoria: asNullableNumber(raw['categoria']),
+-    status: raw['status'] == null ? null : (String(raw['status']) as TarifaStatusPico),
+-    sentidoSolicitado: raw['sentido_solicitado'] == null ? null : String(raw['sentido_solicitado']) as TarifaSentido,
++    id: String(pickRaw(raw, 'id', 'id') ?? ''),
++    codigo: String(pickRaw(raw, 'codigo', 'codigo') ?? '') as DetectarRefrescoTarifaItem['codigo'],
++    peajeId: pickRaw(raw, 'peaje_id', 'peajeId') == null ? null : String(pickRaw(raw, 'peaje_id', 'peajeId')),
++    estacionId: String(pickRaw(raw, 'estacion_id', 'estacionId') ?? ''),
++    categoria: categoriaProveedor,
++    categoriaProveedor,
++    categoriaCalculada: asNullableNumber(pickRaw(raw, 'categoria_calculada', 'categoriaCalculada')),
++    status: pickRaw(raw, 'status', 'status') == null ? null : (String(pickRaw(raw, 'status', 'status')) as TarifaStatusPico),
++    sentidoSolicitado:
++      pickRaw(raw, 'sentido_solicitado', 'sentidoSolicitado') == null
++        ? null
++        : (String(pickRaw(raw, 'sentido_solicitado', 'sentidoSolicitado')) as TarifaSentido),
+     sentidoAplicado:
+-      raw['sentido_aplicado'] == null ? null : (String(raw['sentido_aplicado']) as TarifaSentido),
+-    importeActual: asNullableNumber(raw['importe_actual']),
+-    tarifaId: raw['tarifa_id'] == null ? null : String(raw['tarifa_id']),
+-    tarifaImporteId: raw['tarifa_importe_id'] == null ? null : String(raw['tarifa_importe_id']),
++      pickRaw(raw, 'sentido_aplicado', 'sentidoAplicado') == null
++        ? null
++        : (String(pickRaw(raw, 'sentido_aplicado', 'sentidoAplicado')) as TarifaSentido),
++    importeActual: asNullableNumber(pickRaw(raw, 'importe_actual', 'importeActual')),
++    tarifaId: pickRaw(raw, 'tarifa_id', 'tarifaId') == null ? null : String(pickRaw(raw, 'tarifa_id', 'tarifaId')),
++    tarifaImporteId:
++      pickRaw(raw, 'tarifa_importe_id', 'tarifaImporteId') == null
++        ? null
++        : String(pickRaw(raw, 'tarifa_importe_id', 'tarifaImporteId')),
+     requiereNormalizacionIva:
+-      raw['requiere_normalizacion_iva'] == null
++      pickRaw(raw, 'requiere_normalizacion_iva', 'requiereNormalizacionIva') == null
+         ? null
+-        : Boolean(raw['requiere_normalizacion_iva']),
++        : Boolean(pickRaw(raw, 'requiere_normalizacion_iva', 'requiereNormalizacionIva')),
++    diagnostico: pickRaw(raw, 'diagnostico', 'diagnostico') == null ? null : String(pickRaw(raw, 'diagnostico', 'diagnostico')),
++    fechaVigenciaInicio: asDateString(pickRaw(raw, 'fecha_vigencia_inicio', 'fechaVigenciaInicio')),
++    fechaVigenciaFin: asDateString(pickRaw(raw, 'fecha_vigencia_fin', 'fechaVigenciaFin')),
++    possibleMatches: mapPossibleMatches(pickRaw(raw, 'possible_matches', 'possibleMatches')),
+   };
+ }
+ 
+ function mapGuardado(raw: Record<string, unknown>): TarifaRefrescoGuardada {
++  const fechaInicio = asDateString(pickRaw(raw, 'fecha_vigencia_inicio', 'fechaVigenciaInicio'));
++  const fechaFin = asDateString(pickRaw(raw, 'fecha_vigencia_fin', 'fechaVigenciaFin'));
++  const categoriaCalculada = asNullableNumber(pickRaw(raw, 'categoria_calculada', 'categoriaCalculada'));
+   return {
+     peaje_id: String(raw['peaje_id'] ?? ''),
+     estacion_id: String(raw['estacion_id'] ?? ''),
+     sentido: String(raw['sentido'] ?? 'AMBAS') as TarifaSentido,
+     categoria: asNumber(raw['categoria']),
+     status: String(raw['status']) as TarifaStatusPico,
+     tarifa_id: String(raw['tarifa_id'] ?? ''),
+     anterior: asNullableNumber(raw['anterior']),
+     nueva: asNumber(raw['nueva']),
+     tarifa_importe_id:
+       raw['tarifa_importe_id'] == null ? null : String(raw['tarifa_importe_id']),
+     accion: String(raw['accion'] ?? 'SIN_CAMBIO') as TarifaRefrescoGuardada['accion'],
++    candidate_id: pickRaw(raw, 'candidate_id', 'candidateId') == null ? null : String(pickRaw(raw, 'candidate_id', 'candidateId')),
++    anterior_fin: asDateString(pickRaw(raw, 'anterior_fin', 'anteriorFin')),
++    fecha_vigencia_inicio: fechaInicio,
++    fecha_vigencia_fin: fechaFin,
++    diagnostico: pickRaw(raw, 'diagnostico', 'diagnostico') == null ? null : String(pickRaw(raw, 'diagnostico', 'diagnostico')),
++    categoria_calculada: categoriaCalculada,
++    fechaVigenciaInicio: fechaInicio,
++    fechaVigenciaFin: fechaFin,
++    categoriaCalculada,
+   };
+ }
+ 
+ function mapHistorial(raw: Record<string, unknown>): TarifarioHistorialItem {
+   return {
+     id: String(raw['id'] ?? ''),
+     importe: asNumber(raw['importe']),
+     fecha_aparicion: String(raw['fecha_aparicion'] ?? ''),
+     es_actual: Boolean(raw['es_actual']),
+   };
+ }
+ 
++function isRefreshDecision(c: CambioRefrescoTarifa | TarifaRefreshDecision): c is TarifaRefreshDecision {
++  return 'action' in c && (c.action === 'CONFIRM_NEW' || c.action === 'MARK_REVIEW');
++}
++
++function mapCambioRpc(c: CambioRefrescoTarifa | TarifaRefreshDecision): Record<string, unknown> {
++  if (isRefreshDecision(c)) {
++    return {
++      candidate_id: c.candidateId,
++      action: c.action,
++      peaje_id: c.peajeId,
++      estacion_id: c.estacionId,
++      categoria: c.categoriaCalculada ?? c.categoriaProveedor,
++      categoria_proveedor: c.categoriaProveedor,
++      categoria_calculada: c.categoriaCalculada,
++      status: c.status,
++      sentido: c.sentido,
++      importe: c.importe,
++      fecha_vigencia_inicio: c.fechaVigenciaInicio,
++      cases: c.cases,
++      requiere_normalizacion_iva: c.requiereNormalizacionIva,
++    };
++  }
++  return {
++    peaje_id: c.peajeId,
++    estacion_id: c.estacionId,
++    sentido: c.sentido,
++    categoria: c.categoria,
++    status: c.status,
++    importe: c.importe,
++    cases: c.cases,
++    requiere_normalizacion_iva: c.requiereNormalizacionIva,
++  };
++}
++
+ @Injectable({ providedIn: 'root' })
+ export class PeajesTarifarioSupabaseService implements PeajesTarifarioService {
+   private readonly supabase = inject(SupabaseService);
+ 
+   listar(params: TarifarioListParams = {}): Observable<TarifarioListResult> {
+     return from(
+       this.supabase.executeWithRetry(async () => {
+         const client = await this.supabase.getClient();
+         const page = params.page ?? 1;
+         const pageSize = params.pageSize ?? 50;
+@@ -249,44 +346,39 @@ export class PeajesTarifarioSupabaseService implements PeajesTarifarioService {
+     candidatos: DetectarRefrescoTarifaInput[],
+   ): Observable<DetectarRefrescoTarifaItem[]> {
+     return from(
+       this.supabase.executeWithRetry(async () => {
+         const client = await this.supabase.getClient();
+         const { data, error } = await client.rpc('peajes_detectar_refresco_tarifas', {
+           p_candidatos: candidatos.map((c) => ({
+             id: c.id,
+             estacion_id: c.estacionId,
+             categoria: c.categoria,
++            categoria_proveedor: c.categoriaProveedor ?? c.categoria,
+             status_solicitado: c.statusSolicitado,
+             sentido_solicitado: c.sentidoSolicitado,
++            fecha_pasada: c.fechaPasada ?? null,
+             precio_directo: c.precioDirecto,
+             precio_normalizado: c.precioNormalizado,
+           })),
+         });
+         if (error) throw error;
+         return ((data ?? []) as Record<string, unknown>[]).map(mapDetectar);
+       }),
+     );
+   }
+ 
+-  guardarRefresco(cambios: CambioRefrescoTarifa[]): Observable<TarifaRefrescoGuardada[]> {
++  guardarRefresco(
++    cambios: Array<CambioRefrescoTarifa | TarifaRefreshDecision>,
++  ): Observable<TarifaRefrescoGuardada[]> {
+     return from(
+       this.supabase.executeWithRetry(async () => {
+         const client = await this.supabase.getClient();
+         const { data, error } = await client.rpc('peajes_guardar_refresco_tarifas', {
+-          p_cambios: cambios.map((c) => ({
+-            peaje_id: c.peajeId,
+-            estacion_id: c.estacionId,
+-            sentido: c.sentido,
+-            categoria: c.categoria,
+-            status: c.status,
+-            importe: c.importe,
+-            cases: c.cases,
+-            requiere_normalizacion_iva: c.requiereNormalizacionIva,
+-          })),
++          p_cambios: cambios.map((c) => mapCambioRpc(c)),
+         });
+         if (error) throw error;
+         return ((data ?? []) as Record<string, unknown>[]).map(mapGuardado);
+       }),
+     );
+   }
+ }
+diff --git a/ibarra-app/src/app/components/peajes/services/tarifa-refresh.service.spec.ts b/ibarra-app/src/app/components/peajes/services/tarifa-refresh.service.spec.ts
+index 376769b..1895864 100644
+--- a/ibarra-app/src/app/components/peajes/services/tarifa-refresh.service.spec.ts
++++ b/ibarra-app/src/app/components/peajes/services/tarifa-refresh.service.spec.ts
+@@ -25,20 +25,30 @@ function pasada(overrides: Partial<PasadaEstandarizada> = {}): PasadaEstandariza
+ describe('extraerCandidatosRefresco', () => {
+   it('prefers PRECIO over a different IMPORTE_NETO', () => {
+     const candidatos = extraerCandidatosRefresco([
+       pasada({ PRECIO: 14968.96, IMPORTE_NETO: 12100 }),
+     ]);
+ 
+     expect(candidatos.length).toBe(1);
+     expect(candidatos[0].precioDirecto).toBe(14968.96);
+   });
+ 
++  it('keeps PRECIO as the tariff candidate when the line has invoice bonification', () => {
++    const candidatos = extraerCandidatosRefresco([
++      pasada({ PRECIO: 10000, BONIFICACION: 500, IMPORTE_NETO: 9500 }),
++    ]);
++
++    expect(candidatos.length).toBe(1);
++    expect(candidatos[0].precioDirecto).toBe(10000);
++    expect(candidatos[0].candidatePrice).toBe(10000);
++  });
++
+   it('falls back to IMPORTE_NETO only when PRECIO is absent', () => {
+     const candidatos = extraerCandidatosRefresco([
+       pasada({ PRECIO: null, IMPORTE_NETO: 12500 }),
+     ]);
+ 
+     expect(candidatos.length).toBe(1);
+     expect(candidatos[0].precioDirecto).toBe(12500);
+   });
+ 
+   it('keeps missing direction unresolved and keeps requested status optional', () => {
+@@ -126,20 +136,129 @@ describe('extraerCandidatosRefresco', () => {
+     expect(noPico?.rowIndexes).toEqual([0, 1]);
+     expect(picoA?.rowIndexes).toEqual([2]);
+     expect(picoB?.rowIndexes).toEqual([3]);
+   });
+ 
+   it('keeps the original numeric price for comparison instead of a rounded key', () => {
+     const candidatos = extraerCandidatosRefresco([pasada({ PRECIO: 11975.15 })]);
+     expect(candidatos[0].precioDirecto).toBe(11975.15);
+     expect(Number.isInteger(candidatos[0].precioDirecto)).toBeFalse();
+   });
++
++  it('splits the same physical price on different pasada calendar dates', () => {
++    const candidatos = extraerCandidatosRefresco([
++      pasada({ FECHA_HORA: '2026-06-01 08:00:00', PRECIO: 5300, SENTIDO: 'AMBAS' }),
++      pasada({ FECHA_HORA: '2026-09-01 08:00:00', PRECIO: 5300, SENTIDO: 'AMBAS' }),
++    ]);
++
++    expect(candidatos.length).toBe(2);
++    expect(candidatos.map((c) => (c as { fechaPasada?: string | null }).fechaPasada).sort()).toEqual([
++      '2026-06-01',
++      '2026-09-01',
++    ]);
++    expect(candidatos[0].id).toContain('2026-06-01');
++    expect(candidatos[1].id).toContain('2026-09-01');
++    expect(candidatos[0].rowIndexes).toEqual([0]);
++    expect(candidatos[1].rowIndexes).toEqual([1]);
++  });
++
++  it('keeps every original row index when the calendar date and physical price match', () => {
++    const filas = [
++      pasada({ FECHA_HORA: '2026-07-31 10:15:00', PRECIO: 11975.15, SENTIDO: 'AMBAS' }),
++      pasada({ FECHA_HORA: '2026-07-31 18:40:00', PRECIO: 11975.15, SENTIDO: 'AMBAS' }),
++      pasada({ FECHA_HORA: '2026-07-31 21:02:00', PRECIO: 11975.15, SENTIDO: 'AMBAS' }),
++    ];
++    const candidatos = extraerCandidatosRefresco(filas);
++
++    expect(candidatos.length).toBe(1);
++    expect((candidatos[0] as { fechaPasada?: string | null }).fechaPasada).toBe('2026-07-31');
++    expect(candidatos[0].rowIndexes).toEqual([0, 1, 2]);
++  });
++
++  it('excludes omitted document row indexes while preserving included original indexes', () => {
++    const candidatos = extraerCandidatosRefresco(
++      [
++        pasada({ PRECIO: 11975.15, SENTIDO: 'AMBAS' }),
++        pasada({ PRECIO: 11975.15, SENTIDO: 'AMBAS' }),
++        pasada({ PRECIO: 11975.15, SENTIDO: 'AMBAS' }),
++      ],
++      {
++        documentos: [
++          { tipo: 'FC', rowIndexes: [0, 2], omitido: false },
++          { tipo: 'FC', rowIndexes: [1], omitido: true },
++        ],
++      } as never,
++    );
++
++    expect(candidatos.length).toBe(1);
++    expect(candidatos[0].rowIndexes).toEqual([0, 2]);
++  });
++
++  it('keeps the provider category separate from the calculated category', () => {
++    const candidatos = extraerCandidatosRefresco([
++      pasada({ CATEGORIA: '3', PRECIO: 5300, SENTIDO: 'AMBAS' }),
++    ]);
++
++    expect(candidatos[0].categoria).toBe(3);
++    expect((candidatos[0] as { categoriaProveedor?: number | null }).categoriaProveedor).toBe(3);
++    expect((candidatos[0] as { categoriaCalculada?: number | null }).categoriaCalculada).toBeNull();
++  });
++
++  it('adds fechaPasada, station display metadata, source price and count without dropping lane-map confidence', () => {
++    const candidatos = extraerCandidatosRefresco(
++      [
++        pasada({
++          FECHA_HORA: '2026-07-31 10:15:00',
++          SOURCE_ESTACION: '0004',
++          SOURCE_VIA: '51M',
++          SENTIDO: null,
++          PRECIO: 28740.39,
++        }),
++        pasada({
++          FECHA_HORA: '2026-07-31 11:00:00',
++          SOURCE_ESTACION: '0004',
++          SOURCE_VIA: '51M',
++          SENTIDO: null,
++          PRECIO: 28740.39,
++        }),
++      ],
++      {
++        estacionesViasSentido: [{ codigoEstacion: '0004', via: '51M', sentido: 'VUELTA' }],
++        estacionesCatalogo: [
++          {
++            estacionId: ESTACION_DOCK,
++            estacionNombre: 'Dock Sud',
++            peajeId: 'peaje-aubasa',
++            peajeNombre: 'AUBASA',
++          },
++        ],
++      } as never,
++    );
++
++    expect(candidatos.length).toBe(1);
++    const c = candidatos[0] as {
++      fechaPasada?: string | null;
++      estacionNombre?: string | null;
++      peajeId?: string | null;
++      peajeNombre?: string | null;
++      cases?: number;
++    };
++    expect(c.fechaPasada).toBe('2026-07-31');
++    expect(c.estacionNombre).toBe('Dock Sud');
++    expect(c.peajeId).toBe('peaje-aubasa');
++    expect(c.peajeNombre).toBe('AUBASA');
++    expect(c.cases).toBe(2);
++    expect(candidatos[0].candidatePrice).toBe(28740.39);
++    expect(candidatos[0].directionConfidence).toBe('LANE_MAP');
++    expect(candidatos[0].sentidoSolicitado).toBe('VUELTA');
++    expect(candidatos[0].sourceLane).toBe('51M');
++  });
+ });
+ 
+ describe('optional SENTIDO and TARIFA_STATUS mapping keys', () => {
+   it('exposes SENTIDO and TARIFA_STATUS as mapped keys without making a legacy file invalid', () => {
+     expect(PASADA_COLUMN_KEYS).toContain('SENTIDO');
+     expect(PASADA_COLUMN_KEYS).toContain('TARIFA_STATUS');
+     expect(PASADA_COLUMNAS_OBLIGATORIAS).not.toContain('SENTIDO');
+     expect(PASADA_COLUMNAS_OBLIGATORIAS).not.toContain('TARIFA_STATUS');
+   });
+ });
+@@ -198,11 +317,296 @@ describe('TarifaRefreshServiceImpl', () => {
+     await service.analizar({
+       pasadas: filas,
+       documentos: [{ tipo: 'FC', rowIndexes: filas.map((_, i) => i) }],
+       configuraciones: [],
+     });
+     expect(preparar.calls.count()).toBe(1);
+     expect(preparar.calls.mostRecent().args[0].length).toBe(1);
+     expect(detectar.calls.mostRecent().args[0].length).toBe(1);
+     expect(adapter.obtenerPrecioComparable).not.toHaveBeenCalled();
+   });
++
++  it('sends fechaPasada to detect so the same price on two dates stays two candidates', async () => {
++    const { TestBed } = await import('@angular/core/testing');
++    const { of } = await import('rxjs');
++    const { TarifaRefreshServiceImpl } = await import('./tarifa-refresh.service');
++    const { PEAJES_TARIFARIO_SERVICE } = await import('../models/tarifario.contracts');
++    const { TarifaComparisonAdapterService } = await import('./tarifa-comparison-adapter.service');
++
++    const preparar = jasmine.createSpy('prepararRefresco').and.returnValue(
++      of([
++        {
++          id: 'ctx',
++          peajeId: 'p',
++          estacionId: ESTACION_DOCK,
++          categoria: 2,
++          status: 'NO_PICO',
++          sentido: 'AMBAS',
++          tarifaId: 't',
++          importe: 5300,
++          requiereNormalizacionIva: false,
++        },
++      ]),
++    );
++    const detectar = jasmine.createSpy('detectarRefresco').and.callFake((inputs: Array<{ id: string }>) =>
++      of(
++        inputs.map((item) => ({
++          id: item.id,
++          codigo: 'HISTORICAL_TARIFF_MATCH',
++          peajeId: 'p',
++          estacionId: ESTACION_DOCK,
++          categoria: 2,
++          status: 'NO_PICO',
++          sentidoSolicitado: 'AMBAS',
++          sentidoAplicado: 'AMBAS',
++          importeActual: 5300,
++          tarifaId: 't',
++          tarifaImporteId: 'ti-hist',
++          requiereNormalizacionIva: false,
++        })),
++      ),
++    );
++    TestBed.configureTestingModule({
++      providers: [
++        TarifaRefreshServiceImpl,
++        { provide: PEAJES_TARIFARIO_SERVICE, useValue: { prepararRefresco: preparar, detectarRefresco: detectar } },
++        {
++          provide: TarifaComparisonAdapterService,
++          useValue: jasmine.createSpyObj('TarifaComparisonAdapterService', ['obtenerPrecioComparable']),
++        },
++      ],
++    });
++    const service = TestBed.inject(TarifaRefreshServiceImpl);
++    const resumen = await service.analizar({
++      pasadas: [
++        pasada({ FECHA_HORA: '2026-06-01 08:00:00', PRECIO: 5300, SENTIDO: 'AMBAS' }),
++        pasada({ FECHA_HORA: '2026-09-01 08:00:00', PRECIO: 5300, SENTIDO: 'AMBAS' }),
++      ],
++      documentos: [{ tipo: 'FC', rowIndexes: [0, 1] }],
++      configuraciones: [],
++    });
++    const detectArgs = detectar.calls.mostRecent().args[0] as Array<{ fechaPasada?: string | null }>;
++    expect(detectArgs.length).toBe(2);
++    expect(detectArgs.map((c) => c.fechaPasada).sort()).toEqual(['2026-06-01', '2026-09-01']);
++    expect(resumen.candidatos.length).toBe(2);
++    expect(resumen.resultados.length).toBe(2);
++  });
++
++  it('calls TarifaComparisonAdapterService once and never applies a second IVA path', async () => {
++    const { TestBed } = await import('@angular/core/testing');
++    const { of } = await import('rxjs');
++    const { TarifaRefreshServiceImpl } = await import('./tarifa-refresh.service');
++    const { PEAJES_TARIFARIO_SERVICE } = await import('../models/tarifario.contracts');
++    const { TarifaComparisonAdapterService } = await import('./tarifa-comparison-adapter.service');
++
++    const configs = [{ id: 'cfg-iva' }] as never;
++    const preparar = jasmine.createSpy('prepararRefresco').and.returnValue(
++      of([
++        {
++          id: 'ctx',
++          peajeId: 'p',
++          estacionId: ESTACION_DOCK,
++          categoria: 2,
++          status: 'NO_PICO',
++          sentido: 'AMBAS',
++          tarifaId: 't',
++          importe: 9900,
++          requiereNormalizacionIva: true,
++        },
++      ]),
++    );
++    const detectar = jasmine.createSpy('detectarRefresco').and.returnValue(
++      of([
++        {
++          id: 'detect-iva',
++          codigo: 'CURRENT_TARIFF',
++          peajeId: 'p',
++          estacionId: ESTACION_DOCK,
++          categoria: 2,
++          status: 'NO_PICO',
++          sentidoSolicitado: 'AMBAS',
++          sentidoAplicado: 'AMBAS',
++          importeActual: 9900,
++          tarifaId: 't',
++          tarifaImporteId: 'ti',
++          requiereNormalizacionIva: true,
++        },
++      ]),
++    );
++    const adapter = jasmine.createSpyObj('TarifaComparisonAdapterService', ['obtenerPrecioComparable']);
++    adapter.obtenerPrecioComparable.and.returnValue(9900);
++    TestBed.configureTestingModule({
++      providers: [
++        TarifaRefreshServiceImpl,
++        { provide: PEAJES_TARIFARIO_SERVICE, useValue: { prepararRefresco: preparar, detectarRefresco: detectar } },
++        { provide: TarifaComparisonAdapterService, useValue: adapter },
++      ],
++    });
++    const service = TestBed.inject(TarifaRefreshServiceImpl);
++    const fila = pasada({ PRECIO: 11975.15, SENTIDO: 'AMBAS' });
++    await service.analizar({
++      pasadas: [fila],
++      documentos: [{ tipo: 'FC', rowIndexes: [0] }],
++      configuraciones: configs,
++    });
++    expect(adapter.obtenerPrecioComparable).toHaveBeenCalledTimes(1);
++    expect(adapter.obtenerPrecioComparable).toHaveBeenCalledWith(
++      jasmine.objectContaining({
++        precioDirecto: 11975.15,
++        requiereNormalizacionIva: true,
++        configuraciones: configs,
++      }),
++    );
++    const detectArg = detectar.calls.mostRecent().args[0][0] as {
++      precioDirecto: number;
++      precioNormalizado: number | null;
++    };
++    expect(detectArg.precioDirecto).toBe(11975.15);
++    expect(detectArg.precioNormalizado).toBe(9900);
++    expect(detectArg.precioNormalizado).not.toBe(Math.round((11975.15 / 1.21) * 100) / 100);
++  });
++
++  it('counts current, historical, category-correction, confirmed-new, unresolved and validity-change rows', async () => {
++    const { TestBed } = await import('@angular/core/testing');
++    const { of } = await import('rxjs');
++    const { TarifaRefreshServiceImpl } = await import('./tarifa-refresh.service');
++    const { PEAJES_TARIFARIO_SERVICE } = await import('../models/tarifario.contracts');
++    const { TarifaComparisonAdapterService } = await import('./tarifa-comparison-adapter.service');
++
++    const codes = [
++      'CURRENT_TARIFF',
++      'HISTORICAL_TARIFF_MATCH',
++      'CURRENT_CATEGORY_CORRECTION',
++      'NEW_TARIFF',
++      'REVIEW_RECORDED',
++    ] as const;
++    const preparar = jasmine.createSpy('prepararRefresco').and.returnValue(
++      of([
++        {
++          id: 'ctx',
++          peajeId: 'p',
++          estacionId: ESTACION_DOCK,
++          categoria: 2,
++          status: 'NO_PICO',
++          sentido: 'AMBAS',
++          tarifaId: 't',
++          importe: 1000,
++          requiereNormalizacionIva: false,
++        },
++      ]),
++    );
++    const detectar = jasmine.createSpy('detectarRefresco').and.callFake((inputs: Array<{ id: string }>) =>
++      of(
++        inputs.map((item, i) => ({
++          id: item.id,
++          codigo: codes[i],
++          peajeId: 'p',
++          estacionId: ESTACION_DOCK,
++          categoria: 2,
++          categoriaProveedor: 2,
++          categoriaCalculada: codes[i] === 'CURRENT_CATEGORY_CORRECTION' ? 1 : null,
++          status: 'NO_PICO',
++          sentidoSolicitado: 'AMBAS',
++          sentidoAplicado: 'AMBAS',
++          importeActual: 1000 + i,
++          tarifaId: 't',
++          tarifaImporteId: `ti-${i}`,
++          requiereNormalizacionIva: false,
++          fechaVigenciaInicio: i === 0 ? '2026-09-01' : i === 1 ? '2026-01-01' : null,
++          fechaVigenciaFin: i === 1 ? '2026-09-01' : null,
++        })),
++      ),
++    );
++    TestBed.configureTestingModule({
++      providers: [
++        TarifaRefreshServiceImpl,
++        { provide: PEAJES_TARIFARIO_SERVICE, useValue: { prepararRefresco: preparar, detectarRefresco: detectar } },
++        {
++          provide: TarifaComparisonAdapterService,
++          useValue: jasmine.createSpyObj('TarifaComparisonAdapterService', ['obtenerPrecioComparable']),
++        },
++      ],
++    });
++    const service = TestBed.inject(TarifaRefreshServiceImpl);
++    const resumen = await service.analizar({
++      pasadas: [
++        pasada({ PRECIO: 1000, SENTIDO: 'AMBAS' }),
++        pasada({ PRECIO: 2000, SENTIDO: 'AMBAS' }),
++        pasada({ PRECIO: 3000, SENTIDO: 'AMBAS' }),
++        pasada({ PRECIO: 4000, SENTIDO: 'AMBAS' }),
++        pasada({ PRECIO: 5000, SENTIDO: 'AMBAS' }),
++      ],
++      documentos: [{ tipo: 'FC', rowIndexes: [0, 1, 2, 3, 4] }],
++      configuraciones: [],
++    });
++    const counts = resumen as unknown as {
++      filasVigentes: number;
++      filasHistoricas: number;
++      filasCorreccionCategoria: number;
++      filasNuevasConfirmadas: number;
++      filasSinResolver: number;
++      filasCambioVigencia: number;
++      pendientes: number;
++    };
++    expect(counts.filasVigentes).toBe(1);
++    expect(counts.filasHistoricas).toBe(1);
++    expect(counts.filasCorreccionCategoria).toBe(1);
++    expect(counts.filasNuevasConfirmadas).toBe(0);
++    expect(counts.filasSinResolver).toBe(1);
++    expect(counts.filasCambioVigencia).toBe(1);
++    expect(counts.pendientes).toBe(1);
++  });
++
++  it('maps current/history category corrections and REVIEW_RECORDED as associable without touching pasadas.categoria', async () => {
++    const contracts = (await import('../models/tarifa-refresh.contracts')) as unknown as {
++      asociacionDesdeResultadoRefresco: (input: {
++        codigo: string;
++        tarifaImporteId: string | null;
++        categoriaProveedor?: number | null;
++        categoriaCalculada?: number | null;
++      }) => { tarifa_importe_id: string; codigo: 'AL_DIA' | 'HISTORICA' } | null;
++    };
++    const { asociacionDesdeResultadoRefresco } = contracts;
++    expect(
++      asociacionDesdeResultadoRefresco({
++        codigo: 'CURRENT_CATEGORY_CORRECTION',
++        tarifaImporteId: 'ti-cur',
++        categoriaProveedor: 3,
++        categoriaCalculada: 2,
++      }),
++    ).toEqual({ tarifa_importe_id: 'ti-cur', codigo: 'AL_DIA' });
++    expect(
++      asociacionDesdeResultadoRefresco({
++        codigo: 'HISTORICAL_CATEGORY_CORRECTION',
++        tarifaImporteId: 'ti-hist',
++        categoriaProveedor: 3,
++        categoriaCalculada: 2,
++      }),
++    ).toEqual({ tarifa_importe_id: 'ti-hist', codigo: 'HISTORICA' });
++    expect(
++      asociacionDesdeResultadoRefresco({
++        codigo: 'REVIEW_RECORDED',
++        tarifaImporteId: 'ti-rev',
++        categoriaProveedor: 3,
++        categoriaCalculada: null,
++      }),
++    ).toEqual({ tarifa_importe_id: 'ti-rev', codigo: 'HISTORICA' });
++    expect(
++      asociacionDesdeResultadoRefresco({
++        codigo: 'NEW_TARIFF',
++        tarifaImporteId: null,
++        categoriaProveedor: 3,
++        categoriaCalculada: null,
++      }),
++    ).toBeNull();
++    expect(
++      Object.keys(
++        asociacionDesdeResultadoRefresco({
++          codigo: 'CURRENT_TARIFF',
++          tarifaImporteId: 'ti',
++          categoriaProveedor: 3,
++          categoriaCalculada: null,
++        }) ?? {},
++      ),
++    ).not.toContain('categoria');
++  });
+ });
+diff --git a/ibarra-app/src/app/components/peajes/services/tarifa-refresh.service.ts b/ibarra-app/src/app/components/peajes/services/tarifa-refresh.service.ts
+index 1cf58bb..9824aba 100644
+--- a/ibarra-app/src/app/components/peajes/services/tarifa-refresh.service.ts
++++ b/ibarra-app/src/app/components/peajes/services/tarifa-refresh.service.ts
+@@ -1,27 +1,29 @@
+ import { Injectable, inject } from '@angular/core';
+ import { firstValueFrom } from 'rxjs';
+ import {
+   AnalisisRefrescoInput,
+   CandidatoRefrescoTarifa,
+   ResultadoDetectarRefresco,
+   ResumenRefrescoTarifas,
+   TARIFA_REFRESH_SERVICE,
+   TarifaRefreshService,
+   extraerCandidatosRefresco,
++  resumirFilasRefresco,
+ } from '../models/tarifa-refresh.contracts';
+ import {
+   CambioRefrescoTarifa,
+   DetectarRefrescoTarifaInput,
+   PEAJES_TARIFARIO_SERVICE,
+   PeajesTarifarioService,
+   PrepararRefrescoTarifaInput,
++  TarifaRefreshDecision,
+   TarifaRefrescoGuardada,
+ } from '../models/tarifario.contracts';
+ import { DocumentoTipo } from '../models/peajes.types';
+ import { TarifaComparisonAdapterService } from './tarifa-comparison-adapter.service';
+ 
+ function contextKey(c: {
+   estacionId: string;
+   categoria: number | null;
+   statusSolicitado: string | null;
+   sentidoSolicitado: string | null;
+@@ -42,71 +44,86 @@ function tiposPorIndice(
+   for (const doc of documentos) {
+     if (doc.omitido) continue;
+     const tipo: DocumentoTipo = doc.tipo === 'NC' ? 'NC' : 'FC';
+     for (const idx of doc.rowIndexes ?? []) {
+       if (idx >= 0 && idx < length) tipos[idx] = tipo;
+     }
+   }
+   return tipos;
+ }
+ 
++function resumenVacio(candidatos: CandidatoRefrescoTarifa[] = [], resultados: ResultadoDetectarRefresco[] = []): ResumenRefrescoTarifas {
++  return {
++    candidatos,
++    resultados,
++    ...resumirFilasRefresco(resultados),
++  };
++}
++
++function resultadoDesdeCandidato(
++  candidate: CandidatoRefrescoTarifa,
++  codigo: ResultadoDetectarRefresco['codigo'],
++): ResultadoDetectarRefresco {
++  return {
++    id: candidate.id,
++    codigo,
++    peajeId: candidate.peajeId,
++    estacionId: candidate.estacionId,
++    categoria: candidate.categoria,
++    categoriaProveedor: candidate.categoriaProveedor,
++    categoriaCalculada: candidate.categoriaCalculada,
++    status: candidate.statusSolicitado,
++    sentidoSolicitado: null,
++    sentidoAplicado: null,
++    importeActual: null,
++    tarifaId: null,
++    tarifaImporteId: null,
++    requiereNormalizacionIva: null,
++    diagnostico: null,
++    fechaVigenciaInicio: null,
++    fechaVigenciaFin: null,
++    fechaPasada: candidate.fechaPasada,
++    possibleMatches: [],
++    rowIndexes: candidate.rowIndexes,
++    directionConfidence: candidate.directionConfidence,
++    sourceLane: candidate.sourceLane,
++    candidatePrice: candidate.candidatePrice,
++  };
++}
++
+ @Injectable()
+ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
+   private readonly tarifario = inject(PEAJES_TARIFARIO_SERVICE);
+   private readonly adapter = inject(TarifaComparisonAdapterService);
+ 
+   async analizar(input: AnalisisRefrescoInput): Promise<ResumenRefrescoTarifas> {
+     const tipos = tiposPorIndice(input.pasadas.length, input.documentos);
+     const candidatos = extraerCandidatosRefresco(input.pasadas, {
+       tipoDocumento: tipos,
+       estacionesViasSentido: input.estacionesViasSentido,
++      documentos: input.documentos,
++      estacionesCatalogo: input.estacionesCatalogo,
+     });
+     if (!candidatos.length) {
+-      return {
+-        candidatos: [],
+-        resultados: [],
+-        filasVigentes: 0,
+-        filasHistoricas: 0,
+-        pendientes: 0,
+-        contextIncomplete: false,
+-      };
++      return resumenVacio();
+     }
+ 
+     const unresolvedCandidates = candidatos.filter((candidate) => candidate.sentidoSolicitado == null);
+     const resolvedCandidates = candidatos.filter((candidate) => candidate.sentidoSolicitado != null);
+-    const unresolvedResults: ResultadoDetectarRefresco[] = unresolvedCandidates.map((candidate) => ({
+-      id: candidate.id,
+-      codigo: candidate.unresolvedReason === 'CONFLICT' ? 'DIRECTION_CONFLICT' : 'DIRECTION_REQUIRED',
+-      peajeId: null,
+-      estacionId: candidate.estacionId,
+-      categoria: candidate.categoria,
+-      status: candidate.statusSolicitado,
+-      sentidoSolicitado: null,
+-      sentidoAplicado: null,
+-      importeActual: null,
+-      tarifaId: null,
+-      tarifaImporteId: null,
+-      requiereNormalizacionIva: null,
+-      rowIndexes: candidate.rowIndexes,
+-      directionConfidence: candidate.directionConfidence,
+-      sourceLane: candidate.sourceLane,
+-      candidatePrice: candidate.candidatePrice,
+-    }));
++    const unresolvedResults: ResultadoDetectarRefresco[] = unresolvedCandidates.map((candidate) =>
++      resultadoDesdeCandidato(
++        candidate,
++        candidate.unresolvedReason === 'CONFLICT' ? 'DIRECTION_CONFLICT' : 'DIRECTION_REQUIRED',
++      ),
++    );
+     if (!resolvedCandidates.length) {
+-      return {
+-        candidatos,
+-        resultados: unresolvedResults,
+-        filasVigentes: 0,
+-        filasHistoricas: 0,
+-        pendientes: unresolvedResults.reduce((sum, item) => sum + item.rowIndexes.length, 0),
+-        contextIncomplete: unresolvedResults.length > 0,
+-      };
++      return resumenVacio(candidatos, unresolvedResults);
+     }
+ 
+     const prepareSeen = new Set<string>();
+     const prepareInputs: PrepararRefrescoTarifaInput[] = [];
+     for (const c of resolvedCandidates) {
+       const key = contextKey(c);
+       if (prepareSeen.has(key)) continue;
+       prepareSeen.add(key);
+       prepareInputs.push({
+         id: key,
+@@ -152,88 +169,83 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
+       const ctx = contextKey(c);
+       const needsIva = ivaByContext.get(ctx) === true;
+       const comparable = needsIva
+         ? this.adapter.obtenerPrecioComparable({
+             precioDirecto: c.precioDirecto,
+             requiereNormalizacionIva: true,
+             fila: c.filaRepresentativa,
+             configuraciones: input.configuraciones,
+           })
+         : c.precioDirecto;
+-      const detectKey = `${ctx}|${comparable}`;
++      const detectKey = `${ctx}|${c.fechaPasada ?? ''}|${comparable}`;
+       const existing = detectToCandidates.get(detectKey);
+       if (existing) {
+         existing.push(c);
+         continue;
+       }
+       detectToCandidates.set(detectKey, [c]);
+       if (detectSeen.has(detectKey)) continue;
+       detectSeen.add(detectKey);
+       detectInputs.push({
+         id: detectKey,
+         estacionId: c.estacionId,
+         categoria: c.categoria,
++        categoriaProveedor: c.categoriaProveedor,
+         statusSolicitado: c.statusSolicitado,
+         sentidoSolicitado: c.sentidoSolicitado,
++        fechaPasada: c.fechaPasada,
+         precioDirecto: c.precioDirecto,
+         precioNormalizado: needsIva ? comparable : null,
+       });
+     }
+ 
+     const detected = await firstValueFrom(this.tarifario.detectarRefresco(detectInputs));
+     const resultados: ResultadoDetectarRefresco[] = detected.flatMap((item) => {
+       const group = detectToCandidates.get(item.id) ?? [];
+       const rowIndexes = group.flatMap((c) => c.rowIndexes);
++      const first = group[0];
+       return [
+         {
+           id: item.id,
+           codigo: item.codigo,
+           peajeId: item.peajeId,
+           estacionId: item.estacionId,
+-          categoria: item.categoria,
++          categoria: item.categoriaProveedor ?? item.categoria,
++          categoriaProveedor: item.categoriaProveedor ?? item.categoria,
++          categoriaCalculada: item.categoriaCalculada,
+           status: item.status,
+           sentidoSolicitado: item.sentidoSolicitado,
+           sentidoAplicado: item.sentidoAplicado,
+           importeActual: item.importeActual,
+           tarifaId: item.tarifaId,
+           tarifaImporteId: item.tarifaImporteId,
+           requiereNormalizacionIva: item.requiereNormalizacionIva,
++          diagnostico: item.diagnostico,
++          fechaVigenciaInicio: item.fechaVigenciaInicio,
++          fechaVigenciaFin: item.fechaVigenciaFin,
++          fechaPasada: first?.fechaPasada ?? null,
++          possibleMatches: item.possibleMatches,
+           rowIndexes,
+-          directionConfidence: group[0]?.directionConfidence,
+-          sourceLane: group[0]?.sourceLane,
+-          candidatePrice: group[0]?.candidatePrice,
++          directionConfidence: first?.directionConfidence,
++          sourceLane: first?.sourceLane,
++          candidatePrice: first?.candidatePrice,
+         },
+       ];
+     });
+     resultados.unshift(...unresolvedResults);
+ 
+-    const filasVigentes = resultados
+-      .filter((r) => r.codigo === 'CURRENT_TARIFF')
+-      .reduce((n, r) => n + r.rowIndexes.length, 0);
+-    const filasHistoricas = resultados
+-      .filter((r) => r.codigo === 'HISTORICAL_TARIFF_MATCH')
+-      .reduce((n, r) => n + r.rowIndexes.length, 0);
+-    const pendientes = resultados
+-      .filter((r) =>
+-        ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(
+-          r.codigo,
+-        ),
+-      )
+-      .reduce((n, r) => n + r.rowIndexes.length, 0);
+-
+     return {
+       candidatos,
+       resultados,
+-      filasVigentes,
+-      filasHistoricas,
+-      pendientes,
+-      contextIncomplete: resultados.some((r) => ['CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo)),
++      ...resumirFilasRefresco(resultados),
+     };
+   }
+ 
+-  async guardar(cambios: CambioRefrescoTarifa[]): Promise<TarifaRefrescoGuardada[]> {
++  async guardar(
++    cambios: Array<CambioRefrescoTarifa | TarifaRefreshDecision>,
++  ): Promise<TarifaRefrescoGuardada[]> {
+     return firstValueFrom(this.tarifario.guardarRefresco(cambios));
+   }
+ }
+ 
+ export { TARIFA_REFRESH_SERVICE };
+ export type { TarifaRefreshService };
+diff --git a/ibarra-app/src/app/components/peajes/wizard/mocks/tarifa-refresh.mock.ts b/ibarra-app/src/app/components/peajes/wizard/mocks/tarifa-refresh.mock.ts
+index 6dff3b1..045a674 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/mocks/tarifa-refresh.mock.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/mocks/tarifa-refresh.mock.ts
+@@ -1,19 +1,20 @@
+ import { Injectable } from '@angular/core';
+ import {
+   AnalisisRefrescoInput,
+   CandidatoRefrescoTarifa,
+   RefreshTarifaCodigo,
+   ResultadoDetectarRefresco,
+   ResumenRefrescoTarifas,
+   TarifaRefreshService,
+   extraerCandidatosRefresco,
++  resumirFilasRefresco,
+ } from '../../models/tarifa-refresh.contracts';
+ import { CambioRefrescoTarifa, TarifaRefrescoGuardada } from '../../models/tarifario.contracts';
+ 
+ export const ESTACION_DOCK_SUD = 'est-dock-sud';
+ export const SHARED_PRICE_NO_PICO = 25500;
+ export const SHARED_PRICE_PICO = 28740.39;
+ export const OUTLIER_PRICE_NO_PICO = 18000;
+ 
+ const CURRENT_NO_PICO = 11975.15;
+ const CURRENT_PICO = 14968.96;
+@@ -60,47 +61,42 @@ export class TarifaRefreshMockService implements TarifaRefreshService {
+   async analizar(input: AnalisisRefrescoInput): Promise<ResumenRefrescoTarifas> {
+     const candidatos = extraerCandidatosRefresco(input.pasadas, {
+       estacionesViasSentido: input.estacionesViasSentido,
+     });
+     const resultados: ResultadoDetectarRefresco[] = candidatos.map((c) => ({
+       id: c.id,
+       codigo: classify(c),
+       peajeId: 'peaje-aubasa',
+       estacionId: c.estacionId || ESTACION_DOCK_SUD,
+       categoria: c.categoria,
++      categoriaProveedor: c.categoriaProveedor,
++      categoriaCalculada: c.categoriaCalculada,
+       status: c.statusSolicitado,
+       sentidoSolicitado: c.sentidoSolicitado,
+       sentidoAplicado: c.sentidoSolicitado,
+       importeActual:
+         c.statusSolicitado === 'PICO'
+           ? CURRENT_PICO
+           : c.statusSolicitado === 'NO_PICO'
+             ? CURRENT_NO_PICO
+             : CURRENT_NO_PICO,
+       tarifaId: 'tarifa-dock',
+       tarifaImporteId: 'ti-current',
+       requiereNormalizacionIva: false,
++      fechaPasada: c.fechaPasada,
++      possibleMatches: [],
+       rowIndexes: c.rowIndexes,
+     }));
+     return {
+       candidatos,
+       resultados,
+-      filasVigentes: resultados.filter((r) => r.codigo === 'CURRENT_TARIFF').reduce((n, r) => n + r.rowIndexes.length, 0),
+-      filasHistoricas: resultados
+-        .filter((r) => r.codigo === 'HISTORICAL_TARIFF_MATCH')
+-        .reduce((n, r) => n + r.rowIndexes.length, 0),
+-      pendientes: resultados
+-        .filter((r) =>
+-          ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo),
+-        )
+-        .reduce((n, r) => n + r.rowIndexes.length, 0),
+-      contextIncomplete: resultados.some((r) => ['CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo)),
++      ...resumirFilasRefresco(resultados),
+     };
+   }
+ 
+   async guardar(cambios: CambioRefrescoTarifa[]): Promise<TarifaRefrescoGuardada[]> {
+     if (this.failNextSave) {
+       this.failNextSave = false;
+       throw new Error('No se pudieron guardar las tarifas.');
+     }
+     this.lastGuardado = cambios.map((c) => ({
+       peaje_id: c.peajeId,
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.spec.ts b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.spec.ts
+index 22ccd0d..c496277 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.spec.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.component.spec.ts
+@@ -17,20 +17,22 @@ import { TarifaRefreshDialogComponent } from './tarifa-refresh-dialog.component'
+ function pendiente(
+   estacionId: string,
+   opts: Partial<ResultadoDetectarRefresco> = {},
+ ): ResultadoDetectarRefresco {
+   return {
+     id: `${estacionId}-7`,
+     codigo: 'NEW_TARIFF',
+     peajeId: PEAJE_AUBASA,
+     estacionId,
+     categoria: 2,
++    categoriaProveedor: 2,
++    categoriaCalculada: null,
+     status: 'NO_PICO',
+     sentidoSolicitado: null,
+     sentidoAplicado: null,
+     importeActual: null,
+     tarifaId: null,
+     tarifaImporteId: null,
+     requiereNormalizacionIva: false,
+     rowIndexes: opts.rowIndexes ?? [0],
+     candidatePrice: opts.candidatePrice ?? 7000,
+     ...opts,
+@@ -38,28 +40,35 @@ function pendiente(
+ }
+ 
+ function candidato(
+   estacionId: string,
+   opts: Partial<CandidatoRefrescoTarifa> = {},
+ ): CandidatoRefrescoTarifa {
+   return {
+     id: `${estacionId}-7`,
+     estacionId,
+     categoria: 2,
++    categoriaProveedor: 2,
++    categoriaCalculada: null,
+     statusSolicitado: 'NO_PICO',
+     sentidoSolicitado: null,
+     directionConfidence: 'UNRESOLVED',
+     unresolvedReason: 'MISSING_MAPPING',
+     sourceStationCode: null,
+     sourceLane: null,
++    fechaPasada: null,
++    estacionNombre: null,
++    peajeId: null,
++    peajeNombre: null,
+     candidatePrice: opts.candidatePrice ?? 7000,
+     precioDirecto: opts.precioDirecto ?? opts.candidatePrice ?? 7000,
++    cases: (opts.rowIndexes ?? [0]).length,
+     filaRepresentativa: {},
+     rowIndexes: opts.rowIndexes ?? [0],
+     ...opts,
+   };
+ }
+ 
+ describe('TarifaRefreshDialogComponent', () => {
+   let fixture: ComponentFixture<TarifaRefreshDialogComponent>;
+   let component: TarifaRefreshDialogComponent;
+ 
+diff --git a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.spec.ts b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.spec.ts
+index 2ee5740..e26ec75 100644
+--- a/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.spec.ts
++++ b/ibarra-app/src/app/components/peajes/wizard/paso9-revision/tarifa-refresh-dialog.helpers.spec.ts
+@@ -32,47 +32,56 @@ function catalogo(
+   };
+ }
+ 
+ function pendiente(partial: Partial<ResultadoDetectarRefresco> & { estacionId: string }): ResultadoDetectarRefresco {
+   return {
+     id: partial.id ?? `${partial.estacionId}-7`,
+     codigo: partial.codigo ?? 'NEW_TARIFF',
+     peajeId: partial.peajeId ?? PEAJE,
+     estacionId: partial.estacionId,
+     categoria: partial.categoria ?? 7,
++    categoriaProveedor: partial.categoriaProveedor ?? partial.categoria ?? 7,
++    categoriaCalculada: partial.categoriaCalculada ?? null,
+     status: partial.status ?? 'NO_PICO',
+     sentidoSolicitado: partial.sentidoSolicitado ?? null,
+     sentidoAplicado: partial.sentidoAplicado ?? null,
+     importeActual: partial.importeActual ?? null,
+     tarifaId: partial.tarifaId ?? null,
+     tarifaImporteId: partial.tarifaImporteId ?? null,
+     requiereNormalizacionIva: partial.requiereNormalizacionIva ?? false,
+     rowIndexes: partial.rowIndexes ?? [0],
+     candidatePrice: partial.candidatePrice ?? 25500,
+   };
+ }
+ 
+ function candidato(
+   partial: Partial<CandidatoRefrescoTarifa> & { estacionId: string },
+ ): CandidatoRefrescoTarifa {
+   return {
+     id: partial.id ?? `${partial.estacionId}-7`,
+     estacionId: partial.estacionId,
+     categoria: partial.categoria ?? 7,
++    categoriaProveedor: partial.categoriaProveedor ?? partial.categoria ?? 7,
++    categoriaCalculada: partial.categoriaCalculada ?? null,
+     statusSolicitado: partial.statusSolicitado ?? 'NO_PICO',
+     sentidoSolicitado: partial.sentidoSolicitado ?? null,
+     directionConfidence: partial.directionConfidence ?? 'UNRESOLVED',
+     unresolvedReason: partial.unresolvedReason ?? 'MISSING_MAPPING',
+     sourceStationCode: partial.sourceStationCode ?? null,
+     sourceLane: partial.sourceLane ?? null,
++    fechaPasada: partial.fechaPasada ?? null,
++    estacionNombre: partial.estacionNombre ?? null,
++    peajeId: partial.peajeId ?? null,
++    peajeNombre: partial.peajeNombre ?? null,
+     candidatePrice: partial.candidatePrice ?? 25500,
+     precioDirecto: partial.precioDirecto ?? partial.candidatePrice ?? 25500,
++    cases: (partial.rowIndexes ?? [0]).length,
+     filaRepresentativa: partial.filaRepresentativa ?? {},
+     rowIndexes: partial.rowIndexes ?? [0],
+   };
+ }
+ 
+ describe('sentidoFamilyOf', () => {
+   it('clasifica AMBAS cuando el cat├ílogo ya tiene AMBAS', () => {
+     expect(sentidoFamilyOf(['AMBAS'])).toBe('AMBAS');
+     expect(sentidoFamilyOf(['IDA', 'AMBAS'])).toBe('AMBAS');
+   });

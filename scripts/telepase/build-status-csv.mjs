@@ -26,6 +26,7 @@ export const STATUS_CSV_HEADERS = [
   'hasDownloads',
   'fileFacturaPath',
   'filePasadasPath',
+  'fechaDescarga',
   'uploadFileStatus',
   'messageStatus',
 ];
@@ -116,6 +117,7 @@ export function buildStatusRecords(rows, options = {}) {
       hasDownloads: bothExist ? 'VERDADERO' : 'FALSO',
       fileFacturaPath,
       filePasadasPath,
+      fechaDescarga: row.downloadedAt || previous?.fechaDescarga || '',
       uploadFileStatus: previous?.uploadFileStatus ?? '',
       messageStatus: previous?.messageStatus ?? '',
     };
@@ -230,7 +232,7 @@ Build scripts/downloads/status.csv from scripts/telepase/rows.json.
 
 Options:
   --output <csv>  Output path (default: scripts/downloads/status.csv)
-  --no-merge      Ignore existing uploadFileStatus / Template values
+  --no-merge      Ignore existing uploadFileStatus / Template / fechaDescarga values
   --help          Show this help`);
 }
 
