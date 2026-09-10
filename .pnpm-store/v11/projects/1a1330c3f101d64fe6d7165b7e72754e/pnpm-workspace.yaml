@@ -1,8 +1,0 @@
-allowBuilds:
-  '@parcel/watcher': false
-  esbuild: false
-  lmdb: false
-  msgpackr-extract: false
-  netlify-cli: true
-  sharp: false
-  unix-dgram: false

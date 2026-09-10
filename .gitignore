@@ -1,2 +1,7 @@
 # Netlify CLI local state (site metadata; never commit)
 .netlify/
+
+# Local package store copies; never commit
+.pnpm-store/
+.pnpm-store.local-untracked/
+
