@@ -27,10 +27,14 @@ INSERT INTO public.tarifas (
   'NO_PICO', 1, 'IDA', timestamptz '2026-01-01 00:00:00+00'
 );
 
-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES (
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion,
+  diagnostico, fecha_vigencia_inicio, fecha_vigencia_fin
+) VALUES (
   '19990000-aaaa-4aa1-8aa1-000000000100',
   '19990000-aaaa-4aa1-8aa1-000000000020',
-  1000, timestamptz '2026-01-01 00:00:00+00'
+  1000, timestamptz '2026-01-01 00:00:00+00',
+  'CONFIRMADO', DATE '2026-01-01', DATE '2026-01-02'
 );
 SELECT is(
   (SELECT cases FROM public.tarifa_importe WHERE id = '19990000-aaaa-4aa1-8aa1-000000000100'),
@@ -38,10 +42,14 @@ SELECT is(
   'manual or catalogue history defaults to zero cases'
 );
 
-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, cases, fecha_aparicion) VALUES (
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, cases, fecha_aparicion,
+  diagnostico, fecha_vigencia_inicio
+) VALUES (
   '19990000-aaaa-4aa1-8aa1-000000000101',
   '19990000-aaaa-4aa1-8aa1-000000000020',
-  1100, 7, timestamptz '2026-01-02 00:00:00+00'
+  1100, 7, timestamptz '2026-01-02 00:00:00+00',
+  'CONFIRMADO', DATE '2026-01-02'
 );
 SELECT is(
   (SELECT cases FROM public.tarifa_importe WHERE id = '19990000-aaaa-4aa1-8aa1-000000000101'),
@@ -73,7 +81,7 @@ SELECT lives_ok(
       '19990000-aaaa-4aa1-8aa1-000000000001',
       '19990000-aaaa-4aa1-8aa1-000000000010',
       'IDA',
-      '[{"categoria":1,"status":"NO_PICO","importe":1200}]'::jsonb
+      '[{"categoria":1,"status":"NO_PICO","importe":1200,"fecha_vigencia_inicio":"2026-02-01"}]'::jsonb
     )$$,
   'manual tariff save succeeds'
 );
@@ -96,17 +104,21 @@ INSERT INTO public.tarifas (
   '19990000-aaaa-4aa1-8aa1-000000000010',
   'NO_PICO', 1, 'VUELTA', timestamptz '2026-01-01 00:00:00+00'
 );
-INSERT INTO public.tarifa_importe (id, tarifa_id, importe, fecha_aparicion) VALUES (
+INSERT INTO public.tarifa_importe (
+  id, tarifa_id, importe, fecha_aparicion,
+  diagnostico, fecha_vigencia_inicio
+) VALUES (
   '19990000-aaaa-4aa1-8aa1-000000000102',
   '19990000-aaaa-4aa1-8aa1-000000000021',
-  2000, timestamptz '2026-01-01 00:00:00+00'
+  2000, timestamptz '2026-01-01 00:00:00+00',
+  'CONFIRMADO', DATE '2026-01-01'
 );
 
 SELECT lives_ok(
   $$SELECT public.peajes_guardar_refresco_tarifas(
     '[
-      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"IDA","categoria":1,"status":"NO_PICO","importe":1300,"cases":3},
-      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"VUELTA","categoria":1,"status":"NO_PICO","importe":2100,"cases":5}
+      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"IDA","categoria":1,"status":"NO_PICO","importe":1300,"cases":3,"action":"CONFIRM_NEW","fecha_vigencia_inicio":"2026-03-01"},
+      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"VUELTA","categoria":1,"status":"NO_PICO","importe":2100,"cases":5,"action":"CONFIRM_NEW","fecha_vigencia_inicio":"2026-03-01"}
     ]'::jsonb
   )$$,
   'Paso 9 saves independent directional case snapshots'
@@ -122,8 +134,8 @@ SELECT ok(
 SELECT throws_ok(
   $$SELECT public.peajes_guardar_refresco_tarifas(
     '[
-      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"IDA","categoria":1,"status":"NO_PICO","importe":1400,"cases":4},
-      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"VUELTA","categoria":1,"status":"NO_PICO","importe":2200,"cases":1.5}
+      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"IDA","categoria":1,"status":"NO_PICO","importe":1400,"cases":4,"action":"CONFIRM_NEW","fecha_vigencia_inicio":"2026-04-01"},
+      {"peaje_id":"19990000-aaaa-4aa1-8aa1-000000000001","estacion_id":"19990000-aaaa-4aa1-8aa1-000000000010","sentido":"VUELTA","categoria":1,"status":"NO_PICO","importe":2200,"cases":1.5,"action":"CONFIRM_NEW","fecha_vigencia_inicio":"2026-04-01"}
     ]'::jsonb
   )$$,
   '23514', NULL,

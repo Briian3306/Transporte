@@ -8,9 +8,6 @@
   [closeOnBackdrop]="false"
   (closed)="close()"
 >
-  <p class="trd__perm" *ngIf="!canManage" role="alert">
-    Necesitás permiso peajes:manage para guardar tarifas nuevas.
-  </p>
   <p class="at__empty" *ngIf="loading">Cargando tarifario…</p>
 
   <section class="tf trd__editor" *ngFor="let grupo of grupos">
@@ -31,9 +28,10 @@
       Sentido: <strong>{{ familyLabel(grupo.family) }}</strong>
     </p>
 
-    <div class="trd__stations" *ngIf="grupo.opciones.length > 1">
+    <div class="trd__stations" *ngIf="grupo.detectedStations.length > 1">
       <app-checkbox-multi-select
         label="Estaciones con la misma tarifa"
+        hint="Las estaciones desmarcadas reciben un editor independiente."
         [options]="checkboxOptions(grupo)"
         [value]="grupo.seleccionadas"
         [disabled]="!canManage || saving"
@@ -44,26 +42,110 @@
       ></app-checkbox-multi-select>
     </div>
 
+    <div class="trd__date">
+      <app-date-range-picker
+        label="Vigente desde"
+        mode="single"
+        placeholder="dd/mm/aaaa"
+        [value]="grupo.vigenteDesde"
+        [disabled]="!canManage || saving"
+        (valueChange)="onVigenteDesde(grupo, $event)"
+      ></app-date-range-picker>
+    </div>
+
     <p class="at__error" *ngIf="grupo.family === 'SIN_TARIFARIO'" role="alert">
       No hay un tarifario cargado para esta estación. No se puede crear un sentido desde la carga.
     </p>
 
-    <ng-container *ngFor="let tabla of grupo.tablas">
-      <h4 class="trd__sentido-title" *ngIf="grupo.family === 'DIRECCIONAL'">{{ tabla.sentido }}</h4>
-      <app-tarifario-editor-board
-        *ngIf="!loading"
-        [rows]="tabla.rows"
-        [drafts]="tabla.drafts"
-        [detected]="tabla.detected"
-        [showAddCategoria]="false"
-        [allowAddCategoria]="false"
-        (draftChange)="onDraft(grupo, tabla, $event)"
-        (historyRequest)="openHistory(grupo, tabla, $event)"
-      ></app-tarifario-editor-board>
+    <section class="trd__rail" *ngIf="candidatesFor(grupo).length" aria-label="Candidatos detectados">
+      <h3 class="trd__rail-title">Candidatos detectados</h3>
+      <article class="trd__candidate" *ngFor="let cand of candidatesFor(grupo); trackBy: trackCandidate">
+        <p class="trd__trace" [style.--trd-trace]="cand.station.color">
+          <span class="trd__swatch" aria-hidden="true"></span>
+          <strong>{{ cand.station.estacionNombre }}</strong>
+        </p>
+        <p>Categoría proveedor {{ cand.categoriaProveedor ?? '—' }}</p>
+        <p *ngIf="cand.categoriaCalculada != null">Categoría calculada {{ cand.categoriaCalculada }}</p>
+        <p *ngIf="cand.possibleCategorias.length">posibles {{ cand.possibleCategorias.join(', ') }}</p>
+        <p>Importe detectado {{ cand.amount }} · {{ cand.cases }} casos</p>
+        <p>Status: {{ cand.status || 'sin status' }} · Sentido: {{ cand.sentido || 'sin sentido' }}</p>
+        <p *ngIf="cand.fechaPasada">Fecha pasada {{ cand.fechaPasada }}</p>
+        <p *ngIf="cand.vigencia && cand.vigencia !== cand.fechaPasada">Vigencia {{ cand.vigencia }}</p>
+        <p>{{ cand.reason }}</p>
+        <div class="trd__candidate-actions">
+          <button
+            type="button"
+            class="trd__btn"
+            [class.trd__btn--pressed]="armedAction(grupo, cand.candidateId) === 'CONFIRM_NEW'"
+            [attr.aria-pressed]="armedAction(grupo, cand.candidateId) === 'CONFIRM_NEW'"
+            [disabled]="!canManage || saving || !candidateCanArm(grupo, cand)"
+            (click)="confirmCandidate(grupo, cand.candidateId, 'CONFIRM_NEW')"
+          >
+            Confirmar como nueva
+          </button>
+          <button
+            type="button"
+            class="trd__btn"
+            [class.trd__btn--pressed]="armedAction(grupo, cand.candidateId) === 'MARK_REVIEW'"
+            [attr.aria-pressed]="armedAction(grupo, cand.candidateId) === 'MARK_REVIEW'"
+            [disabled]="!canManage || saving || !candidateCanArm(grupo, cand)"
+            (click)="confirmCandidate(grupo, cand.candidateId, 'MARK_REVIEW')"
+          >
+            Marcar para revisar
+          </button>
+        </div>
+      </article>
+    </section>
+
+    <ng-container *ngFor="let editor of grupo.editors">
+      <h3 class="trd__editor-title">
+        <span
+          class="trd__trace"
+          *ngFor="let station of editor.stations"
+          [style.--trd-trace]="station.color"
+        >
+          <span class="trd__swatch" aria-hidden="true"></span>
+          {{ station.estacionNombre }}
+        </span>
+      </h3>
+      <div class="trd__sentido-select" *ngIf="editor.sentidoRequiereEleccion">
+        <app-search-select
+          label="Sentido"
+          placeholder="Elegí IDA, VUELTA o AMBAS"
+          [options]="sentidoOptions"
+          [value]="editor.sentidoSeleccionado"
+          [showAllWhenEmpty]="true"
+          [disabled]="!canManage || saving"
+          (valueChange)="onSentidoChange(editor, $event)"
+        ></app-search-select>
+      </div>
+      <ng-container *ngFor="let tabla of editor.tablas">
+        <h4 class="trd__sentido-title" *ngIf="editor.family === 'DIRECCIONAL'">{{ tabla.sentido }}</h4>
+        <app-tarifario-editor-board
+          *ngIf="!loading"
+          [rows]="tabla.rows"
+          [drafts]="tabla.drafts"
+          [detected]="tabla.detected"
+          [currentStations]="tabla.currentStations"
+          [showAddCategoria]="false"
+          [allowAddCategoria]="false"
+          (draftChange)="onDraft(grupo, tabla, $event)"
+          (candidateSelected)="onCandidateSelected(grupo, editor, tabla, $event)"
+          (historyRequest)="openHistory(grupo, tabla, $event)"
+        ></app-tarifario-editor-board>
+      </ng-container>
     </ng-container>
   </section>
 
-  <p class="trd__error" *ngIf="error" role="alert">{{ error }}</p>
+  <p
+    class="trd__warn"
+    *ngFor="let warn of warnings"
+    [attr.data-warn]="warn.code"
+    [attr.role]="warn.code === 'revisar' ? 'status' : 'alert'"
+  >
+    {{ warn.message }}
+  </p>
+  <p class="trd__error" *ngIf="error && !hasOverlapWarning" role="alert">{{ error }}</p>
 
   <app-tarifario-historial-dialog
     [open]="historyOpen"

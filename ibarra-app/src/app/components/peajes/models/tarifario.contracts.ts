@@ -24,6 +24,10 @@ export interface TarifarioCurrentRow {
   importe: number | null;
   fecha_actualizacion: string | null;
   current_tarifa_importe_id: string | null;
+  fechaVigenciaInicio?: string | null;
+  fechaVigenciaFin?: string | null;
+  diagnostico?: string | null;
+  categoriaCalculada?: number | null;
 }
 
 export interface TarifarioFilters {
@@ -77,6 +81,10 @@ export interface TarifarioIdentidadExistente {
   current_tarifa_importe_id: string | null;
   importe: number | null;
   fecha_actualizacion: string | null;
+  fechaVigenciaInicio?: string | null;
+  fechaVigenciaFin?: string | null;
+  diagnostico?: string | null;
+  categoriaCalculada?: number | null;
 }
 
 export interface TarifarioEditorPayload {
@@ -92,6 +100,7 @@ export interface TarifarioImporteCambio {
   categoria: number;
   status: TarifaStatusPico;
   importe: number;
+  fechaVigenciaInicio?: string | null;
 }
 
 export interface TarifarioHistorialItem {
@@ -99,6 +108,10 @@ export interface TarifarioHistorialItem {
   importe: number;
   fecha_aparicion: string;
   es_actual: boolean;
+  fechaVigenciaInicio: string | null;
+  fechaVigenciaFin: string | null;
+  diagnostico: string | null;
+  categoriaCalculada: number | null;
 }
 
 export interface PrepararRefrescoTarifaInput {
@@ -125,8 +138,10 @@ export interface DetectarRefrescoTarifaInput {
   id: string;
   estacionId: string;
   categoria: number | null;
+  categoriaProveedor?: number | null;
   statusSolicitado: TarifaStatusPico | null;
   sentidoSolicitado: TarifaSentido | null;
+  fechaPasada?: string | null;
   precioDirecto: number;
   precioNormalizado: number | null;
 }
@@ -134,12 +149,30 @@ export interface DetectarRefrescoTarifaInput {
 export type RefreshTarifaCodigoRpc =
   | 'CURRENT_TARIFF'
   | 'HISTORICAL_TARIFF_MATCH'
+  | 'CURRENT_CATEGORY_CORRECTION'
+  | 'HISTORICAL_CATEGORY_CORRECTION'
   | 'NEW_TARIFF'
+  | 'AMBIGUOUS_TARIFF_MATCH'
   | 'STATUS_REQUIRED'
   | 'STATUS_AMBIGUOUS'
-  | 'CONTEXT_INCOMPLETE'
   | 'DIRECTION_REQUIRED'
-  | 'DIRECTION_CONFLICT';
+  | 'DIRECTION_CONFLICT'
+  | 'CONTEXT_INCOMPLETE'
+  | 'REVIEW_RECORDED';
+
+export interface TarifaMatchOption {
+  tarifaId: string;
+  tarifaImporteId: string;
+  categoria: number;
+  status: 'PICO' | 'NO_PICO';
+  sentido: 'IDA' | 'VUELTA' | 'AMBAS';
+  importe: number;
+  diagnostico: string | null;
+  fechaVigenciaInicio: string | null;
+  fechaVigenciaFin: string | null;
+  esActual: boolean;
+  errorRelativo: number;
+}
 
 export interface DetectarRefrescoTarifaItem {
   id: string;
@@ -147,6 +180,8 @@ export interface DetectarRefrescoTarifaItem {
   peajeId: string | null;
   estacionId: string;
   categoria: number | null;
+  categoriaProveedor: number | null;
+  categoriaCalculada: number | null;
   status: TarifaStatusPico | null;
   sentidoSolicitado: TarifaSentido | null;
   sentidoAplicado: TarifaSentido | null;
@@ -154,6 +189,10 @@ export interface DetectarRefrescoTarifaItem {
   tarifaId: string | null;
   tarifaImporteId: string | null;
   requiereNormalizacionIva: boolean | null;
+  diagnostico: string | null;
+  fechaVigenciaInicio: string | null;
+  fechaVigenciaFin: string | null;
+  possibleMatches: TarifaMatchOption[];
 }
 
 export interface CambioRefrescoTarifa {
@@ -164,6 +203,21 @@ export interface CambioRefrescoTarifa {
   status: TarifaStatusPico;
   importe: number;
   /** Immutable number of source pasadas that evidenced this price snapshot. */
+  cases: number;
+  requiereNormalizacionIva: boolean | null;
+}
+
+export interface TarifaRefreshDecision {
+  candidateId: string;
+  action: 'CONFIRM_NEW' | 'MARK_REVIEW';
+  peajeId: string;
+  estacionId: string;
+  categoriaProveedor: number;
+  categoriaCalculada: number | null;
+  status: 'PICO' | 'NO_PICO';
+  sentido: 'IDA' | 'VUELTA' | 'AMBAS';
+  importe: number;
+  fechaVigenciaInicio: string | null;
   cases: number;
   requiereNormalizacionIva: boolean | null;
 }
@@ -179,6 +233,15 @@ export interface TarifaRefrescoGuardada {
   nueva: number;
   tarifa_importe_id: string | null;
   accion: 'ACTUALIZADA' | 'IDENTIDAD_CREADA' | 'SIN_CAMBIO';
+  candidate_id?: string | null;
+  anterior_fin?: string | null;
+  fecha_vigencia_inicio?: string | null;
+  fecha_vigencia_fin?: string | null;
+  diagnostico?: string | null;
+  categoria_calculada?: number | null;
+  fechaVigenciaInicio?: string | null;
+  fechaVigenciaFin?: string | null;
+  categoriaCalculada?: number | null;
 }
 
 export interface PeajesTarifarioService {
@@ -201,7 +264,7 @@ export interface PeajesTarifarioService {
   detectarRefresco(
     candidatos: DetectarRefrescoTarifaInput[],
   ): Observable<DetectarRefrescoTarifaItem[]>;
-  guardarRefresco(cambios: CambioRefrescoTarifa[]): Observable<TarifaRefrescoGuardada[]>;
+  guardarRefresco(cambios: Array<CambioRefrescoTarifa | TarifaRefreshDecision>): Observable<TarifaRefrescoGuardada[]>;
 }
 
 export const PEAJES_TARIFARIO_SERVICE = new InjectionToken<PeajesTarifarioService>(

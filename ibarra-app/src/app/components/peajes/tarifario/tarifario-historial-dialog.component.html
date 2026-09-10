@@ -12,18 +12,24 @@
     <table class="at__table">
       <thead>
         <tr>
-          <th scope="col">Fecha</th>
+          <th scope="col">Desde</th>
+          <th scope="col">Hasta</th>
           <th scope="col" class="at__num">Importe</th>
-          <th scope="col">Actual</th>
+          <th scope="col">Diagnóstico</th>
+          <th scope="col">Categoría calculada</th>
+          <th scope="col">Vigente</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngIf="!rows.length">
-          <td colspan="3" class="at__empty">Esta tarifa todavía no tiene historial.</td>
+          <td colspan="6" class="at__empty">Esta tarifa todavía no tiene historial.</td>
         </tr>
         <tr *ngFor="let row of rows">
-          <td>{{ formatFecha(row.fecha_aparicion) }}</td>
+          <td>{{ formatVigencia(row.fechaVigenciaInicio) }}</td>
+          <td>{{ formatVigencia(row.fechaVigenciaFin) }}</td>
           <td class="at__num at__price">{{ formatImporte(row.importe) }}</td>
+          <td>{{ formatDiagnostico(row.diagnostico) }}</td>
+          <td>{{ formatCategoriaCalculada(row.categoriaCalculada) }}</td>
           <td>
             <span *ngIf="row.es_actual" class="at__badge at__badge--ok">Vigente</span>
           </td>

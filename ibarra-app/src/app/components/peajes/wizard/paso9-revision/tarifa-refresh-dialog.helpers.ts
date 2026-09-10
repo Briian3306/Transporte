@@ -34,6 +34,72 @@ export interface GrupoPendienteRefresco {
   itemsPorEstacion: Map<string, ResultadoDetectarRefresco[]>;
 }
 
+export const STATION_SESSION_PALETTE = [
+  '#6D28D9',
+  '#15803D',
+  '#0369A1',
+  '#B45309',
+  '#BE123C',
+  '#0F766E',
+] as const;
+
+export type StationSessionColor = (typeof STATION_SESSION_PALETTE)[number];
+
+export interface DetectedStation {
+  estacionId: string;
+  estacionNombre: string;
+  peajeId: string;
+  peajeNombre: string;
+  color: StationSessionColor;
+  family: SentidoFamily;
+}
+
+export interface SharedTariffGroupState {
+  detectedStations: readonly DetectedStation[];
+  sharedStationIds: readonly string[];
+}
+
+export interface EditorGroup {
+  stationIds: readonly string[];
+  stations: readonly DetectedStation[];
+}
+
+export interface StationTraceViewModel {
+  estacionId: string;
+  estacionNombre: string;
+  color: StationSessionColor;
+}
+
+export interface AutocompleteCandidate {
+  id: string;
+  estacionId: string;
+  estacionNombre: string;
+  amount: number;
+  categoria: number | null;
+  status: TarifaStatusPico | null;
+  sentido: TarifaSentido | null;
+}
+
+export interface IdentityCellPrefill {
+  categoria: number;
+  status: TarifaStatusPico;
+  sentido: TarifaSentido;
+  amount: number;
+}
+
+export interface CandidateTraceViewModel {
+  candidateId: string;
+  estacionId: string;
+  estacionNombre: string;
+  color: StationSessionColor;
+  amount: number;
+}
+
+export interface SafeAutocompleteAssignment {
+  visible: CandidateTraceViewModel[];
+  prefills: IdentityCellPrefill[];
+}
+
 const SENTIDO_ORDER: TarifaSentido[] = ['IDA', 'VUELTA', 'AMBAS'];
 
 export function sentidoFamilyOf(sentidosExistentes: readonly TarifaSentido[]): SentidoFamily {
@@ -173,4 +239,181 @@ function signaturesDe(
   const priceKey = String(precio);
   if (status) return [`${categoria}|${status}|${priceKey}`];
   return [`${categoria}|NO_PICO|${priceKey}`, `${categoria}|PICO|${priceKey}`];
+}
+
+export function buildDetectedStations(
+  imported: readonly ResultadoDetectarRefresco[],
+  catalogo: readonly EstacionCatalogoRefresco[] = [],
+): DetectedStation[] {
+  const byId = new Map(catalogo.map((row) => [row.estacionId, row]));
+  const seen = new Set<string>();
+  const stations: DetectedStation[] = [];
+  for (const item of imported) {
+    if (seen.has(item.estacionId)) continue;
+    seen.add(item.estacionId);
+    const row = byId.get(item.estacionId);
+    stations.push({
+      estacionId: item.estacionId,
+      estacionNombre: row?.estacionNombre || item.estacionId,
+      peajeId: item.peajeId || row?.peajeId || '',
+      peajeNombre: row?.peajeNombre || '',
+      color: STATION_SESSION_PALETTE[stations.length % STATION_SESSION_PALETTE.length],
+      family: sentidoFamilyOf(row?.sentidosExistentes ?? []),
+    });
+  }
+  return stations;
+}
+
+export function stationTraceViewModel(station: DetectedStation): StationTraceViewModel {
+  return {
+    estacionId: station.estacionId,
+    estacionNombre: station.estacionNombre,
+    color: station.color,
+  };
+}
+
+export function deriveEditorGroups(state: SharedTariffGroupState): EditorGroup[] {
+  const detected = uniqueDetectedStations(state.detectedStations);
+  const detectedIds = new Set(detected.map((station) => station.estacionId));
+  const sharedWanted = new Set(state.sharedStationIds.filter((id) => detectedIds.has(id)));
+
+  const clusters = new Map<string, DetectedStation[]>();
+  const clusterOrder: string[] = [];
+  for (const station of detected) {
+    if (!sharedWanted.has(station.estacionId)) continue;
+    const key = `${station.peajeId}|${station.family}`;
+    let cluster = clusters.get(key);
+    if (!cluster) {
+      cluster = [];
+      clusters.set(key, cluster);
+      clusterOrder.push(key);
+    }
+    cluster.push(station);
+  }
+
+  const sharedGroups: DetectedStation[][] = [];
+  const consumed = new Set<string>();
+  for (const key of clusterOrder) {
+    const members = clusters.get(key) ?? [];
+    if (members.length < 2) continue;
+    sharedGroups.push(members);
+    for (const member of members) consumed.add(member.estacionId);
+  }
+
+  const independents = detected.filter((station) => !consumed.has(station.estacionId));
+  return [...sharedGroups, ...independents.map((station) => [station])].map(toEditorGroup);
+}
+
+export function preserveIdentityDrafts(
+  drafts: Readonly<Record<string, string>>,
+  detectedStationIds: readonly string[],
+): Record<string, string> {
+  const allowed = new Set(detectedStationIds);
+  const next: Record<string, string> = {};
+  for (const [key, value] of Object.entries(drafts)) {
+    const separator = key.indexOf('|');
+    const estacionId = separator < 0 ? key : key.slice(0, separator);
+    if (allowed.has(estacionId)) next[key] = value;
+  }
+  return next;
+}
+
+export function assignSafeAutocomplete(
+  group: EditorGroup,
+  candidates: readonly AutocompleteCandidate[],
+): SafeAutocompleteAssignment {
+  const stationById = new Map(group.stations.map((station) => [station.estacionId, station]));
+  const visible: CandidateTraceViewModel[] = [];
+  for (const candidate of candidates) {
+    const station = stationById.get(candidate.estacionId);
+    if (!station) continue;
+    visible.push({
+      candidateId: candidate.id,
+      estacionId: candidate.estacionId,
+      estacionNombre: station.estacionNombre,
+      color: station.color,
+      amount: candidate.amount,
+    });
+  }
+
+  const mapped = candidates.filter(
+    (candidate) =>
+      stationById.has(candidate.estacionId) &&
+      candidate.categoria != null &&
+      candidate.status != null &&
+      candidate.sentido != null,
+  );
+
+  const cells = new Map<string, IdentityCellPrefill>();
+  for (const candidate of mapped) {
+    const cellKey = identityCellKey(candidate.categoria!, candidate.status!, candidate.sentido!);
+    if (!cells.has(cellKey)) {
+      cells.set(cellKey, {
+        categoria: candidate.categoria!,
+        status: candidate.status!,
+        sentido: candidate.sentido!,
+        amount: candidate.amount,
+      });
+    }
+  }
+
+  const prefills: IdentityCellPrefill[] = [];
+  for (const [cellKey, cell] of cells) {
+    const perStation = new Map<string, Set<number>>();
+    for (const candidate of mapped) {
+      if (identityCellKey(candidate.categoria!, candidate.status!, candidate.sentido!) !== cellKey) {
+        continue;
+      }
+      const amounts = perStation.get(candidate.estacionId) ?? new Set<number>();
+      amounts.add(candidate.amount);
+      perStation.set(candidate.estacionId, amounts);
+    }
+
+    let agreed: number | null = null;
+    let compatible = true;
+    for (const estacionId of group.stationIds) {
+      const amounts = perStation.get(estacionId);
+      if (!amounts || amounts.size !== 1) {
+        compatible = false;
+        break;
+      }
+      const amount = [...amounts][0];
+      if (agreed == null) agreed = amount;
+      else if (agreed !== amount) {
+        compatible = false;
+        break;
+      }
+    }
+    if (compatible && agreed != null) {
+      prefills.push({ ...cell, amount: agreed });
+    }
+  }
+
+  return { visible, prefills };
+}
+
+function uniqueDetectedStations(stations: readonly DetectedStation[]): DetectedStation[] {
+  const seen = new Set<string>();
+  const unique: DetectedStation[] = [];
+  for (const station of stations) {
+    if (seen.has(station.estacionId)) continue;
+    seen.add(station.estacionId);
+    unique.push(station);
+  }
+  return unique;
+}
+
+function toEditorGroup(stations: readonly DetectedStation[]): EditorGroup {
+  return {
+    stationIds: stations.map((station) => station.estacionId),
+    stations,
+  };
+}
+
+function identityCellKey(
+  categoria: number,
+  status: TarifaStatusPico,
+  sentido: TarifaSentido,
+): string {
+  return `${categoria}|${status}|${sentido}`;
 }

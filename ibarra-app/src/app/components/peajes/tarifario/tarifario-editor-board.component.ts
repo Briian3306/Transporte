@@ -12,6 +12,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import {
   TarifaStatusPico,
+  TarifarioEditorCell,
   TarifarioEditorDrafts,
   TarifarioEditorRow,
 } from '../models/tarifario.contracts';
@@ -27,14 +28,53 @@ import {
 export interface TarifarioDetectedAmount {
   valor: number;
   count: number;
+  estacionId?: string;
+  estacionNombre?: string;
+  color?: string;
+  candidateId?: string;
 }
 
 export type TarifarioDetectedMap = Record<string, TarifarioDetectedAmount[]>;
+
+export interface TarifarioStationCurrent {
+  estacionId: string;
+  estacionNombre: string;
+  color: string;
+  importe: number | null;
+}
+
+export type TarifarioCurrentStationMap = Record<string, TarifarioStationCurrent[]>;
+
+export interface TarifarioGroupedCurrentSingle {
+  kind: 'single';
+}
+
+export interface TarifarioGroupedCurrentShared {
+  kind: 'shared';
+  importe: number | null;
+  stations: TarifarioStationCurrent[];
+}
+
+export interface TarifarioGroupedCurrentSplit {
+  kind: 'split';
+  stations: TarifarioStationCurrent[];
+}
+
+export type TarifarioGroupedCurrent =
+  | TarifarioGroupedCurrentSingle
+  | TarifarioGroupedCurrentShared
+  | TarifarioGroupedCurrentSplit;
 
 export interface TarifarioDraftChange {
   categoria: number;
   status: TarifaStatusPico;
   value: string;
+}
+
+export interface TarifarioCandidateSelected {
+  categoria: number;
+  status: TarifaStatusPico;
+  candidate: TarifarioDetectedAmount;
 }
 
 export interface TarifarioHistoryRequest {
@@ -44,6 +84,16 @@ export interface TarifarioHistoryRequest {
 
 export function detectedCellKey(categoria: number, status: TarifaStatusPico): string {
   return `${categoria}:${status}`;
+}
+
+export function groupCurrentAmounts(
+  stations: readonly TarifarioStationCurrent[],
+): TarifarioGroupedCurrent {
+  if (!stations.length) return { kind: 'single' };
+  const importe = stations[0].importe;
+  const same = stations.every((station) => station.importe === importe);
+  if (same) return { kind: 'shared', importe, stations: [...stations] };
+  return { kind: 'split', stations: [...stations] };
 }
 
 @Component({
@@ -59,15 +109,22 @@ export class TarifarioEditorBoardComponent {
 
   readonly missing = MISSING_IMPORTE_LABEL;
   readonly categoriasMax = TARIFARIO_CATEGORIAS_MAX;
+  readonly lanes: ReadonlyArray<{ status: TarifaStatusPico; lane: 'nopico' | 'pico' }> = [
+    { status: 'NO_PICO', lane: 'nopico' },
+    { status: 'PICO', lane: 'pico' },
+  ];
+  private nuevoFocusKey: string | null = null;
 
   @Input() rows: TarifarioEditorRow[] = [];
   @Input() drafts: TarifarioEditorDrafts = {};
   @Input() detected: TarifarioDetectedMap = {};
+  @Input() currentStations: TarifarioCurrentStationMap = {};
   @Input() allowAddCategoria = true;
   @Input() categoriaCount = 0;
   @Input() showAddCategoria = true;
 
   @Output() readonly draftChange = new EventEmitter<TarifarioDraftChange>();
+  @Output() readonly candidateSelected = new EventEmitter<TarifarioCandidateSelected>();
   @Output() readonly historyRequest = new EventEmitter<TarifarioHistoryRequest>();
   @Output() readonly addCategoria = new EventEmitter<void>();
 
@@ -77,6 +134,26 @@ export class TarifarioEditorBoardComponent {
 
   displayFecha(iso: string | null | undefined): string {
     return formatFechaActualizacion(iso);
+  }
+
+  cellOf(row: TarifarioEditorRow, status: TarifaStatusPico): TarifarioEditorCell {
+    return status === 'NO_PICO' ? row.no_pico : row.pico;
+  }
+
+  currentView(row: TarifarioEditorRow, status: TarifaStatusPico): TarifarioGroupedCurrent {
+    return groupCurrentAmounts(this.currentStations[detectedCellKey(row.categoria, status)] ?? []);
+  }
+
+  actualImporte(row: TarifarioEditorRow, status: TarifaStatusPico): number | null {
+    const view = this.currentView(row, status);
+    if (view.kind === 'shared') return view.importe;
+    return this.cellOf(row, status).importe;
+  }
+
+  isActualMissing(row: TarifarioEditorRow, status: TarifaStatusPico): boolean {
+    const view = this.currentView(row, status);
+    if (view.kind === 'split') return false;
+    return this.actualImporte(row, status) == null;
   }
 
   detectedFor(categoria: number, status: TarifaStatusPico): TarifarioDetectedAmount[] {
@@ -110,9 +187,32 @@ export class TarifarioEditorBoardComponent {
     this.draftChange.emit({ categoria, status, value });
   }
 
+  selectCandidate(
+    categoria: number,
+    status: TarifaStatusPico,
+    candidate: TarifarioDetectedAmount,
+  ): void {
+    this.candidateSelected.emit({ categoria, status, candidate });
+  }
+
+  isNuevoFocused(categoria: number, status: TarifaStatusPico): boolean {
+    return this.nuevoFocusKey === detectedCellKey(categoria, status);
+  }
+
   selectNuevo(event: FocusEvent): void {
     const el = event.target as HTMLInputElement;
     queueMicrotask(() => el.select());
+  }
+
+  onNuevoFocus(event: FocusEvent, categoria: number, status: TarifaStatusPico): void {
+    this.nuevoFocusKey = detectedCellKey(categoria, status);
+    this.selectNuevo(event);
+  }
+
+  onNuevoBlur(categoria: number, status: TarifaStatusPico): void {
+    if (this.nuevoFocusKey === detectedCellKey(categoria, status)) {
+      this.nuevoFocusKey = null;
+    }
   }
 
   onNuevoKeydown(event: KeyboardEvent): void {

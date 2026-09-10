@@ -8,6 +8,7 @@ import {
   TARIFA_REFRESH_SERVICE,
   TarifaRefreshService,
   extraerCandidatosRefresco,
+  resumirFilasRefresco,
 } from '../models/tarifa-refresh.contracts';
 import {
   CambioRefrescoTarifa,
@@ -15,6 +16,7 @@ import {
   PEAJES_TARIFARIO_SERVICE,
   PeajesTarifarioService,
   PrepararRefrescoTarifaInput,
+  TarifaRefreshDecision,
   TarifaRefrescoGuardada,
 } from '../models/tarifario.contracts';
 import { DocumentoTipo } from '../models/peajes.types';
@@ -49,6 +51,45 @@ function tiposPorIndice(
   return tipos;
 }
 
+function resumenVacio(candidatos: CandidatoRefrescoTarifa[] = [], resultados: ResultadoDetectarRefresco[] = []): ResumenRefrescoTarifas {
+  return {
+    candidatos,
+    resultados,
+    ...resumirFilasRefresco(resultados),
+  };
+}
+
+function resultadoDesdeCandidato(
+  candidate: CandidatoRefrescoTarifa,
+  codigo: ResultadoDetectarRefresco['codigo'],
+): ResultadoDetectarRefresco {
+  return {
+    id: candidate.id,
+    codigo,
+    peajeId: candidate.peajeId,
+    estacionId: candidate.estacionId,
+    categoria: candidate.categoria,
+    categoriaProveedor: candidate.categoriaProveedor,
+    categoriaCalculada: candidate.categoriaCalculada,
+    status: candidate.statusSolicitado,
+    sentidoSolicitado: null,
+    sentidoAplicado: null,
+    importeActual: null,
+    tarifaId: null,
+    tarifaImporteId: null,
+    requiereNormalizacionIva: null,
+    diagnostico: null,
+    fechaVigenciaInicio: null,
+    fechaVigenciaFin: null,
+    fechaPasada: candidate.fechaPasada,
+    possibleMatches: [],
+    rowIndexes: candidate.rowIndexes,
+    directionConfidence: candidate.directionConfidence,
+    sourceLane: candidate.sourceLane,
+    candidatePrice: candidate.candidatePrice,
+  };
+}
+
 @Injectable()
 export class TarifaRefreshServiceImpl implements TarifaRefreshService {
   private readonly tarifario = inject(PEAJES_TARIFARIO_SERVICE);
@@ -59,47 +100,23 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
     const candidatos = extraerCandidatosRefresco(input.pasadas, {
       tipoDocumento: tipos,
       estacionesViasSentido: input.estacionesViasSentido,
+      documentos: input.documentos,
+      estacionesCatalogo: input.estacionesCatalogo,
     });
     if (!candidatos.length) {
-      return {
-        candidatos: [],
-        resultados: [],
-        filasVigentes: 0,
-        filasHistoricas: 0,
-        pendientes: 0,
-        contextIncomplete: false,
-      };
+      return resumenVacio();
     }
 
     const unresolvedCandidates = candidatos.filter((candidate) => candidate.sentidoSolicitado == null);
     const resolvedCandidates = candidatos.filter((candidate) => candidate.sentidoSolicitado != null);
-    const unresolvedResults: ResultadoDetectarRefresco[] = unresolvedCandidates.map((candidate) => ({
-      id: candidate.id,
-      codigo: candidate.unresolvedReason === 'CONFLICT' ? 'DIRECTION_CONFLICT' : 'DIRECTION_REQUIRED',
-      peajeId: null,
-      estacionId: candidate.estacionId,
-      categoria: candidate.categoria,
-      status: candidate.statusSolicitado,
-      sentidoSolicitado: null,
-      sentidoAplicado: null,
-      importeActual: null,
-      tarifaId: null,
-      tarifaImporteId: null,
-      requiereNormalizacionIva: null,
-      rowIndexes: candidate.rowIndexes,
-      directionConfidence: candidate.directionConfidence,
-      sourceLane: candidate.sourceLane,
-      candidatePrice: candidate.candidatePrice,
-    }));
+    const unresolvedResults: ResultadoDetectarRefresco[] = unresolvedCandidates.map((candidate) =>
+      resultadoDesdeCandidato(
+        candidate,
+        candidate.unresolvedReason === 'CONFLICT' ? 'DIRECTION_CONFLICT' : 'DIRECTION_REQUIRED',
+      ),
+    );
     if (!resolvedCandidates.length) {
-      return {
-        candidatos,
-        resultados: unresolvedResults,
-        filasVigentes: 0,
-        filasHistoricas: 0,
-        pendientes: unresolvedResults.reduce((sum, item) => sum + item.rowIndexes.length, 0),
-        contextIncomplete: unresolvedResults.length > 0,
-      };
+      return resumenVacio(candidatos, unresolvedResults);
     }
 
     const prepareSeen = new Set<string>();
@@ -159,7 +176,7 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
             configuraciones: input.configuraciones,
           })
         : c.precioDirecto;
-      const detectKey = `${ctx}|${comparable}`;
+      const detectKey = `${ctx}|${c.fechaPasada ?? ''}|${comparable}`;
       const existing = detectToCandidates.get(detectKey);
       if (existing) {
         existing.push(c);
@@ -172,8 +189,10 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
         id: detectKey,
         estacionId: c.estacionId,
         categoria: c.categoria,
+        categoriaProveedor: c.categoriaProveedor,
         statusSolicitado: c.statusSolicitado,
         sentidoSolicitado: c.sentidoSolicitado,
+        fechaPasada: c.fechaPasada,
         precioDirecto: c.precioDirecto,
         precioNormalizado: needsIva ? comparable : null,
       });
@@ -183,13 +202,16 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
     const resultados: ResultadoDetectarRefresco[] = detected.flatMap((item) => {
       const group = detectToCandidates.get(item.id) ?? [];
       const rowIndexes = group.flatMap((c) => c.rowIndexes);
+      const first = group[0];
       return [
         {
           id: item.id,
           codigo: item.codigo,
           peajeId: item.peajeId,
           estacionId: item.estacionId,
-          categoria: item.categoria,
+          categoria: item.categoriaProveedor ?? item.categoria,
+          categoriaProveedor: item.categoriaProveedor ?? item.categoria,
+          categoriaCalculada: item.categoriaCalculada,
           status: item.status,
           sentidoSolicitado: item.sentidoSolicitado,
           sentidoAplicado: item.sentidoAplicado,
@@ -197,40 +219,30 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
           tarifaId: item.tarifaId,
           tarifaImporteId: item.tarifaImporteId,
           requiereNormalizacionIva: item.requiereNormalizacionIva,
+          diagnostico: item.diagnostico,
+          fechaVigenciaInicio: item.fechaVigenciaInicio,
+          fechaVigenciaFin: item.fechaVigenciaFin,
+          fechaPasada: first?.fechaPasada ?? null,
+          possibleMatches: item.possibleMatches,
           rowIndexes,
-          directionConfidence: group[0]?.directionConfidence,
-          sourceLane: group[0]?.sourceLane,
-          candidatePrice: group[0]?.candidatePrice,
+          directionConfidence: first?.directionConfidence,
+          sourceLane: first?.sourceLane,
+          candidatePrice: first?.candidatePrice,
         },
       ];
     });
     resultados.unshift(...unresolvedResults);
 
-    const filasVigentes = resultados
-      .filter((r) => r.codigo === 'CURRENT_TARIFF')
-      .reduce((n, r) => n + r.rowIndexes.length, 0);
-    const filasHistoricas = resultados
-      .filter((r) => r.codigo === 'HISTORICAL_TARIFF_MATCH')
-      .reduce((n, r) => n + r.rowIndexes.length, 0);
-    const pendientes = resultados
-      .filter((r) =>
-        ['NEW_TARIFF', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(
-          r.codigo,
-        ),
-      )
-      .reduce((n, r) => n + r.rowIndexes.length, 0);
-
     return {
       candidatos,
       resultados,
-      filasVigentes,
-      filasHistoricas,
-      pendientes,
-      contextIncomplete: resultados.some((r) => ['CONTEXT_INCOMPLETE', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo)),
+      ...resumirFilasRefresco(resultados),
     };
   }
 
-  async guardar(cambios: CambioRefrescoTarifa[]): Promise<TarifaRefrescoGuardada[]> {
+  async guardar(
+    cambios: Array<CambioRefrescoTarifa | TarifaRefreshDecision>,
+  ): Promise<TarifaRefrescoGuardada[]> {
     return firstValueFrom(this.tarifario.guardarRefresco(cambios));
   }
 }

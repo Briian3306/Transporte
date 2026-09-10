@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
+import { DateRangePickerComponent } from '../../shared';
 import { PEAJES_TARIFARIO_SERVICE } from '../models/tarifario.contracts';
 import {
   TARIFARIO_CATEGORIAS_MAX,
@@ -72,12 +74,45 @@ describe('TarifarioEditorComponent', () => {
     component.setDraft(1, 'PICO', '');
     component.setDraft(2, 'NO_PICO', '7300');
     component.setDraft(2, 'PICO', '7900');
+    component.onVigenteDesde({ from: new Date(2026, 8, 1), to: null });
     await component.save();
     expect(spy).toHaveBeenCalledWith(PEAJE_AUBASA, ESTACION_HUDSON, 'IDA', [
-      { categoria: 1, status: 'NO_PICO', importe: 5800 },
-      { categoria: 2, status: 'NO_PICO', importe: 7300 },
-      { categoria: 2, status: 'PICO', importe: 7900 },
+      { categoria: 1, status: 'NO_PICO', importe: 5800, fechaVigenciaInicio: '2026-09-01' },
+      { categoria: 2, status: 'NO_PICO', importe: 7300, fechaVigenciaInicio: '2026-09-01' },
+      { categoria: 2, status: 'PICO', importe: 7900, fechaVigenciaInicio: '2026-09-01' },
     ]);
+  });
+
+  it('exige Vigente desde cuando hay New y no llama al RPC sin fecha', async () => {
+    const { component } = await setup('IDA');
+    const mock = TestBed.inject(PEAJES_TARIFARIO_SERVICE) as TarifarioMockService;
+    const spy = spyOn(mock, 'guardar').and.callThrough();
+    component.setDraft(1, 'NO_PICO', '5800');
+    await component.save();
+    expect(spy).not.toHaveBeenCalled();
+    expect(component.saveError).toContain('Vigente desde');
+  });
+
+  it('no llama al RPC si todos los New estan vacios aunque haya fecha', async () => {
+    const { component } = await setup('IDA');
+    const mock = TestBed.inject(PEAJES_TARIFARIO_SERVICE) as TarifarioMockService;
+    const spy = spyOn(mock, 'guardar').and.callThrough();
+    component.onVigenteDesde({ from: new Date(2026, 8, 1), to: null });
+    await component.save();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('muestra un solo picker Vigente desde y no pide fecha hasta', async () => {
+    const { fixture } = await setup('IDA');
+    const root = fixture.nativeElement as HTMLElement;
+    const pickerDe = fixture.debugElement.query(By.directive(DateRangePickerComponent));
+    expect(pickerDe).toBeTruthy();
+    expect(pickerDe?.componentInstance.mode).toBe('single');
+    expect(pickerDe?.componentInstance.label).toBe('Vigente desde');
+    expect(root.textContent).toContain('Vigente desde');
+    expect(root.textContent).not.toContain('Vigente hasta');
+    expect(root.textContent).not.toContain('Fecha hasta');
+    expect(root.querySelectorAll('app-date-range-picker').length).toBe(1);
   });
 
   it('no guarda si hay un New invalido', async () => {
@@ -104,10 +139,62 @@ describe('TarifarioEditorComponent', () => {
     const { component } = await setup('IDA');
     const before = component.rows.find((r) => r.categoria === 1)!.no_pico.fecha_actualizacion;
     component.setDraft(1, 'NO_PICO', '5800');
+    component.onVigenteDesde({ from: new Date(2026, 8, 1), to: null });
     await component.save();
     const after = component.rows.find((r) => r.categoria === 1)!.no_pico.fecha_actualizacion;
     expect(after).toBeTruthy();
     expect(after).not.toBe(before);
+  });
+
+  it('historial muestra vigencia, diagnostico y no inventa fechas desde fecha_aparicion', async () => {
+    const { fixture, component } = await setup('IDA');
+    const mock = TestBed.inject(PEAJES_TARIFARIO_SERVICE) as TarifarioMockService;
+    spyOn(mock, 'listarHistorial').and.returnValue(
+      (await import('rxjs')).of([
+        {
+          id: 'ti-new',
+          importe: 5800,
+          fecha_aparicion: '2025-08-21T00:00:00.000Z',
+          es_actual: true,
+          fechaVigenciaInicio: '2026-09-01',
+          fechaVigenciaFin: null,
+          diagnostico: 'CONFIRMADO',
+          categoriaCalculada: 2,
+        },
+        {
+          id: 'ti-legacy',
+          importe: 5000,
+          fecha_aparicion: '2024-01-15T00:00:00.000Z',
+          es_actual: false,
+          fechaVigenciaInicio: null,
+          fechaVigenciaFin: null,
+          diagnostico: null,
+          categoriaCalculada: null,
+        },
+      ]),
+    );
+    const cat1 = component.rows.find((r) => r.categoria === 1)!;
+    await component.openHistory(cat1, 'NO_PICO');
+    fixture.detectChanges();
+    const dialog = (fixture.nativeElement as HTMLElement).querySelector(
+      'app-tarifario-historial-dialog',
+    ) as HTMLElement;
+    const headers = Array.from(dialog.querySelectorAll('th')).map((th) => th.textContent?.trim());
+    expect(headers).toEqual([
+      'Desde',
+      'Hasta',
+      'Importe',
+      'Diagnóstico',
+      'Categoría calculada',
+      'Vigente',
+    ]);
+    expect(dialog.textContent).toContain('01/09/2026');
+    expect(dialog.textContent).toContain('CONFIRMADO');
+    expect(dialog.textContent).toContain('Sin fecha conocida');
+    expect(dialog.textContent).not.toContain('15/01/2024');
+    expect(dialog.textContent).not.toContain('21/08/2025');
+    expect(dialog.textContent).not.toContain('20/8/25');
+    expect(dialog.textContent).not.toContain('14/1/24');
   });
 
   it('Tab en NUEVO va al siguiente NUEVO y omite Historial', async () => {
