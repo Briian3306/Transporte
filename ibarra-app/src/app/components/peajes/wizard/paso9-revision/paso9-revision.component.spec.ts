@@ -371,6 +371,32 @@ describe('Paso9RevisionComponent', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
+  it('no vuelve a armar plantillas ni a listar tarifario en cada CD del diálogo', async () => {
+    const { ESTACION_DOCK_SUD } = await import('../mocks/tarifa-refresh.mock');
+    state.setPasadasEstandarizadas([
+      {
+        ...state.snapshot().pasadasEstandarizadas[0],
+        ESTACION_ID: ESTACION_DOCK_SUD,
+        PRECIO: 12500,
+        IMPORTE_NETO: 12500,
+        CATEGORIA: '2',
+        TARIFA_STATUS: 'NO_PICO',
+        SENTIDO: 'AMBAS',
+      },
+    ]);
+    await component.analizarTarifas();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const plantillaSpy = spyOn(state, 'toConfiguracionesPlantilla').and.callThrough();
+    const tarifario = TestBed.inject(PEAJES_TARIFARIO_SERVICE);
+    const listar = spyOn(tarifario, 'listar').and.callThrough();
+    fixture.detectChanges();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(plantillaSpy).not.toHaveBeenCalled();
+    expect(listar).not.toHaveBeenCalled();
+  });
+
   it('marca coincidencia histórica como informativa sin diálogo', async () => {
     const { ESTACION_DOCK_SUD } = await import('../mocks/tarifa-refresh.mock');
     state.setPasadasEstandarizadas([

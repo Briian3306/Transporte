@@ -150,9 +150,6 @@ export function reconocerEstacionEnCatalogo(
   const scoped = filtrarEstacionesPorEmpresa(estaciones, empresaId, peajes);
   const literales = scoped.filter((e) => estacionCoincideCodigoProveedorLiteral(e, valor));
   const exactas = scoped.filter((e) => estacionCoincideCodigoProveedor(e, valor));
-  // #region agent log
-  fetch('http://127.0.0.1:7497/ingest/f71cda72-2158-4367-a185-2d7eebc6703d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55cdc2'},body:JSON.stringify({sessionId:'55cdc2',runId:'pre-fix',hypothesisId:'B',location:'estacion-reconocimiento.helpers.ts:reconocerEstacionEnCatalogo',message:'catalog exact/partial match',data:{valor,empresaId:empresaId??null,scopedN:scoped.length,exactasNombres:exactas.map((e)=>e.nombre),exactasCodes:exactas.map((e)=>({nombre:e.nombre,codigos:e.codigos_proveedor??[]}))},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   if (literales.length === 1) {
     return {
       valorProveedor: valor,

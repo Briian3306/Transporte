@@ -4,8 +4,10 @@ import {
   ElementRef,
   EventEmitter,
   Input,
+  OnChanges,
   Output,
   QueryList,
+  SimpleChanges,
   ViewChild,
   ViewChildren,
 } from '@angular/core';
@@ -35,6 +37,8 @@ export interface TarifarioDetectedAmount {
   candidateId?: string;
   showIva?: boolean;
   ivaChecked?: boolean;
+  /** A matched tariff is informative only; selecting it must not create a draft. */
+  readOnly?: boolean;
 }
 
 export interface TarifarioReviewRow {
@@ -43,18 +47,14 @@ export interface TarifarioReviewRow {
   count: number;
   categoria: number | null;
   status: TarifaStatusPico | null;
-  sentido: TarifaSentido | null;
   estacionId?: string;
   estacionNombre?: string;
   color?: string;
-  showIva?: boolean;
-  ivaChecked?: boolean;
 }
 
-export interface TarifarioReviewIdentityChange {
+export interface TarifarioReviewStatusChange {
   candidateId: string;
   status: TarifaStatusPico | null;
-  sentido: TarifaSentido | null;
 }
 
 export interface TarifarioIvaChange {
@@ -131,7 +131,7 @@ export function groupCurrentAmounts(
   templateUrl: './tarifario-editor-board.component.html',
   styleUrls: ['./tarifario-editor-board.component.css'],
 })
-export class TarifarioEditorBoardComponent {
+export class TarifarioEditorBoardComponent implements OnChanges {
   @ViewChildren('nuevoInput') private readonly nuevoInputs?: QueryList<ElementRef<HTMLInputElement>>;
   @ViewChild('addCategoriaBtn') private readonly addCategoriaBtn?: ElementRef<HTMLButtonElement>;
 
@@ -142,6 +142,7 @@ export class TarifarioEditorBoardComponent {
     { status: 'PICO', lane: 'pico' },
   ];
   private nuevoFocusKey: string | null = null;
+  private currentViewCache = new Map<string, TarifarioGroupedCurrent>();
 
   @Input() rows: TarifarioEditorRow[] = [];
   @Input() drafts: TarifarioEditorDrafts = {};
@@ -156,11 +157,15 @@ export class TarifarioEditorBoardComponent {
   @Output() readonly candidateSelected = new EventEmitter<TarifarioCandidateSelected>();
   @Output() readonly historyRequest = new EventEmitter<TarifarioHistoryRequest>();
   @Output() readonly addCategoria = new EventEmitter<void>();
-  @Output() readonly reviewIdentityChange = new EventEmitter<TarifarioReviewIdentityChange>();
+  @Output() readonly reviewStatusChange = new EventEmitter<TarifarioReviewStatusChange>();
   @Output() readonly ivaChange = new EventEmitter<TarifarioIvaChange>();
 
-  readonly statusOptions: ReadonlyArray<TarifaStatusPico> = ['NO_PICO', 'PICO'];
-  readonly sentidoOptions: ReadonlyArray<TarifaSentido> = ['IDA', 'VUELTA', 'AMBAS'];
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['currentStations'] || changes['rows']) {
+      this.currentViewCache.clear();
+    }
+  }
 
   displayActual(value: number | null): string {
     return formatTarifaImporteDisplay(value);
@@ -175,7 +180,16 @@ export class TarifarioEditorBoardComponent {
   }
 
   currentView(row: TarifarioEditorRow, status: TarifaStatusPico): TarifarioGroupedCurrent {
-    return groupCurrentAmounts(this.currentStations[detectedCellKey(row.categoria, status)] ?? []);
+    const key = detectedCellKey(row.categoria, status);
+    const cached = this.currentViewCache.get(key);
+    if (cached) return cached;
+    const view = groupCurrentAmounts(this.currentStations[key] ?? []);
+    this.currentViewCache.set(key, view);
+    return view;
+  }
+
+  trackReview(_index: number, row: TarifarioReviewRow): string {
+    return row.candidateId;
   }
 
   actualImporte(row: TarifarioEditorRow, status: TarifaStatusPico): number | null {
@@ -198,14 +212,8 @@ export class TarifarioEditorBoardComponent {
     return `${formatTarifaImporte(item.valor)} (${item.count})`;
   }
 
-  onReviewStatus(row: TarifarioReviewRow, raw: string): void {
-    const status = raw === 'PICO' || raw === 'NO_PICO' ? raw : null;
-    this.reviewIdentityChange.emit({ candidateId: row.candidateId, status, sentido: row.sentido });
-  }
-
-  onReviewSentido(row: TarifarioReviewRow, raw: string): void {
-    const sentido = raw === 'IDA' || raw === 'VUELTA' || raw === 'AMBAS' ? raw : null;
-    this.reviewIdentityChange.emit({ candidateId: row.candidateId, status: row.status, sentido });
+  selectReviewStatus(row: TarifarioReviewRow, status: TarifaStatusPico): void {
+    this.reviewStatusChange.emit({ candidateId: row.candidateId, status });
   }
 
   onIvaInput(candidateId: string | undefined, event: Event): void {
@@ -245,6 +253,7 @@ export class TarifarioEditorBoardComponent {
     status: TarifaStatusPico,
     candidate: TarifarioDetectedAmount,
   ): void {
+    if (candidate.readOnly) return;
     this.candidateSelected.emit({ categoria, status, candidate });
   }
 

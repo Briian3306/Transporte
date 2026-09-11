@@ -30,7 +30,7 @@ Impedir que una carga confirme un precio nuevo, una corrección de categoría o 
 1. El frontend extrae candidatos **distintos** de las pasadas incluidas. Precio final visible/directo: `TARIFA_PESOS` si existe, si no `PRECIO`, y `IMPORTE_NETO` solo si no hay ninguno. No se parsea `TARIFA` crudo ni se redondea el candidato. Conserva `rowIndexes`, `fecha_pasada`, `categoria_proveedor` y sentido resuelto. El flag IVA no cambia el monto mostrado: solo manda `precio_normalizado` cuando el tarifario lo pide.
 2. `peajes_preparar_refresco_tarifas` resuelve identidades PICO/NO_PICO del contexto. **No** hace aritmética monetaria.
 3. El adapter Angular produce `precio_normalizado` **solo** si alguna identidad preparada tiene `requiere_normalizacion_iva = true`. SQL elige según el flag. Nunca divide por 1,21.
-4. `peajes_detectar_refresco_tarifas` clasifica cada candidato con helper privado `_peajes_tarifas_matching_candidatos` (todas las categorías de la estación, rangos de vigencia `[inicio, fin)`):
+4. `peajes_detectar_refresco_tarifas` clasifica cada candidato con helper privado `_peajes_tarifas_matching_candidatos` (todas las categorías, status y sentidos de la estación, rangos de vigencia `[inicio, fin)`). La tarifa existente es la fuente de verdad: un match único reutiliza también su status y sentido aunque difieran los valores del proveedor.
 
 | Código | Cuándo | Diálogo / Paso 9 |
 |--------|--------|------------------|
@@ -44,25 +44,33 @@ Impedir que una carga confirme un precio nuevo, una corrección de categoría o 
 | `DIRECTION_REQUIRED` / `DIRECTION_CONFLICT` | Sentido ausente o conflictivo | Bloquea hasta resolver sentido |
 | `CONTEXT_INCOMPLETE` | Sin estación o categoría | Bloquea confirmar |
 
-5. **Corrección de categoría:** `pasadas.categoria` (proveedor) **no cambia**. Un match cruzado único expone `categoria_calculada` en el resultado; matches ambiguos **nunca** la fijan solos.
+5. **Corrección de categoría:** `pasadas.categoria` (proveedor) **no cambia**. Para todos los matches de estación + precio dentro de la tolerancia, se elige la categoría numéricamente mayor; si la identidad de esa categoría es única, se expone como `categoria_calculada`. Si quedan varias identidades en la categoría mayor, el caso permanece ambiguo.
 6. **Agrupación de estaciones (UI):** checkbox multi-select agrupa estaciones que comparten el mismo borrador. Desmarcar una estación la deja **exactamente una vez** como editor independiente. Un guardado agrupado fan-out a identidades `tarifas`/`tarifa_importe` **independientes** con el mismo importe/fecha. Detectado muestra `$20.792,47 (3)`. Candidatos sin status/sentido van al **bloque final** del mismo tablero con selectores. Checkbox **Normalizar IVA** solo en identidades nuevas (hereda del tarifario, plantilla como fallback, override manual).
 7. **Guardado:** `peajes_guardar_refresco_tarifas` acepta `action`:
 
 | Acción | Efecto |
 |--------|--------|
 | `CONFIRM_NEW` | Solo si hay importe en **Nuevo** (tipeo o clic en Detectado) y **Vigente desde**. Cierra `fecha_vigencia_fin` del vigente en el nuevo inicio; inserta `CONFIRMADO`; promueve puntero si corresponde |
-| `MARK_REVIEW` | Automático cuando la identidad está completa y Nuevo está vacío. Inserta `diagnostico = REVISAR` sin vigencia; **no** cierra ni promueve. Si falta status/sentido, los selectores del bloque final son obligatorios antes de guardar |
+| `MARK_REVIEW` | Para un importe pendiente, el operador elige **No pico** o **Pico** en su fila de revisión. Esa elección no completa **Nuevo** ni mueve el importe a **Detectado**. La identidad se resuelve contra el tarifario activo: misma estación + status + sentido efectivo; se reutiliza la categoría mayor. Si no existe ese status, se usa la categoría mayor existente de la estación. Inserta `diagnostico = REVISAR` sin vigencia; **no** cierra ni promueve. |
 
-8. Paso 9 muestra resumen en seis bloques (coincidencias, nuevas confirmadas, correcciones, vigencia, revisar, pendientes) y **no continúa** mientras quede un candidato sin `CONFIRM_NEW`, asignación a Nuevo o `MARK_REVIEW` (este último puede emitirse al guardar si la identidad ya está completa).
+8. **Revalidar precios** no guarda ni cierra el diálogo. Reanaliza las tarifas actuales y los borradores `Nuevo` de la sesión; conserva los valores ingresados. Cada candidato resuelto con una identidad única sale de revisión y permanece visible, de solo lectura, en la celda **Detectado** de su categoría efectiva, status y sentido. El catálogo existente siempre precede a un borrador de sesión; en hits con el mismo precio elige la categoría mayor y conserva la revisión si esa categoría es ambigua. Paso 9 muestra resumen en seis bloques (coincidencias, nuevas confirmadas, correcciones, vigencia, revisar, pendientes) y **no continúa** mientras quede un candidato sin `CONFIRM_NEW`, asignación a Nuevo o `MARK_REVIEW` (este último puede emitirse al guardar si la identidad ya está completa).
 9. `peajes_confirmar_carga` no cambia de firma; persiste `pasadas.sentido` (default `AMBAS`).
+
+### Revisión por status
+
+Las filas de revisión no exponen selector de sentido ni normalización IVA. El sentido se determina internamente: familia `AMBAS` → `AMBAS`; familia direccional → `IDA`. Esto evita crear grupos `VUELTA` o `NULL` durante la revisión.
+
+Al elegir un status, el proveedor no decide la categoría. Por ejemplo, si el proveedor informa categoría 9 pero existe categoría 7 + `PICO` para esa estación, se reutiliza categoría 7 + `PICO`; no se crea categoría 9 + `PICO`. Si existen categorías 7 y 9 para `PICO`, se reutiliza 9. Si `PICO` no existe, se crea la identidad de revisión con la categoría activa mayor de la estación, manteniendo `current_tarifa_id = NULL`.
+
+`20260910195747_peajes_tarifario_ocultar_revision.sql` filtra `peajes_listar_tarifas_actuales` a identidades con `current_tarifa_id IS NOT NULL`, por lo que una identidad creada solamente para `REVISAR` no aparece en el Tarifario activo.
 
 ### Orden de matching (SQL)
 
 Por candidato, tras hits de monto ≤1% y vigencia compatible, excluyendo filas `REVISAR`:
 
-1. Mejor `dir_rank` (exacto > AMBAS > otro).
-2. Misma categoría vigente → histórico → otra categoría vigente → histórico.
-3. Dentro del bucket: menor `validity_rank`, luego ids estables.
+1. Elegir la categoría numéricamente mayor entre todos los hits de la estación.
+2. Si esa categoría tiene una única identidad, reutilizar su status, sentido, tarifa e importe; vigente precede a histórico.
+3. Si persisten varias identidades en la categoría mayor, devolver `AMBIGUOUS_TARIFF_MATCH` y no completar datos automáticamente.
 
 `possible_matches` lista alternativas compatibles con vigencia (F14-19); no incluye filas fuera del periodo de la pasada.
 
@@ -102,6 +110,7 @@ Migraciones:
 
 - F14-18: `20260908150000_peajes_refresh_tarifas_paso9.sql` (preparar/detectar/guardar base)
 - F14-19: `20260909181737_peajes_tarifa_vigencia_diagnostico.sql`, `20260909192938_peajes_tarifa_matching_correcciones.sql`
+- Follow-up Paso 9: `20260910195747_peajes_tarifario_ocultar_revision.sql` (production MCP version `20260911111515`)
 
 `SECURITY INVOKER`. `GRANT EXECUTE` a `authenticated, service_role`. Helpers `_peajes_tarifas_matching_candidatos`, `_peajes_aplicar_importe_guardado` no son API de producto.
 
@@ -157,7 +166,7 @@ npx ng build --configuration=development
 | pgTAP cases | `supabase/tests/peajes_tarifa_importe_cases_test.sql` |
 | Angular | helpers, dialog, Paso 9, refresh service, tarifario |
 
-**Estado (2026-09-10, CLI `feat/paso9-precio-final`):** pgTAP **Files=18 Tests=589 PASS** (sin writes a DESARROLLO). Angular: refresh/dialog/helpers/board **103 SUCCESS**; Paso 9 **21 SUCCESS**; `tsc` app+spec **EXIT 0**; `ng build --configuration=development` **EXIT 0** (NG8107 Paso 9 preexistente). AUSA-V3: `TARIFA_PESOS=20792.47` es el precio final visible/directo (no el `PRECIO` /1.31). Detectado `$20.792,47 (n)`; rail eliminado; no coincidentes completos → `MARK_REVIEW`. **Browser CSV AUSA:** no recorrido autenticado en esta sesión (formato cubierto por specs del tablero/diálogo).
+**Estado (2026-09-11):** pgTAP **Files=18 Tests=590 PASS**; TypeScript app/spec checks pass. Focused Karma compiles but ChromeHeadless cannot launch in this Windows environment (OS encryption/GPU cache failure), before executing tests. AUSA-V3: `TARIFA_PESOS=20792.47` is the visible/direct candidate (not `PRECIO` /1.31). Review status buttons remain separate from `Nuevo` and `Detectado`. Migration `20260910195747_peajes_tarifario_ocultar_revision.sql` was applied to production through Supabase MCP as `20260911111515`; the live function was verified to filter review-only identities.
 
 ## Notes
 
@@ -168,4 +177,4 @@ npx ng build --configuration=development
 
 ---
 
-> Última actualización: 2026-09-10 (precio final Paso 9 / REVISAR automático)
+> Última actualización: 2026-09-11 (revisión solo por status desplegada)

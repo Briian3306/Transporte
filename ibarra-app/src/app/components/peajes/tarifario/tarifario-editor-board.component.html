@@ -70,6 +70,7 @@
                 <button
                   type="button"
                   class="tf__detected-item"
+                  [disabled]="item.readOnly === true"
                   (click)="selectCandidate(row.categoria, lane.status, item)"
                 >
                   <span
@@ -119,7 +120,7 @@
           </td>
         </ng-container>
       </tr>
-      <tr *ngFor="let review of reviewRows" class="tf__review-row" data-role="revision">
+      <tr *ngFor="let review of reviewRows; trackBy: trackReview" class="tf__review-row" data-role="revision">
         <th class="tf__cat-cell" scope="row">{{ review.categoria ?? '—' }}</th>
         <td class="tf__review-cell" colspan="6">
           <div class="tf__review">
@@ -132,36 +133,25 @@
               <span class="tf__trace-name">{{ review.estacionNombre }}</span>
             </span>
             <span class="tf__detected-amount">{{ formatDetected(review) }}</span>
-            <label class="tf__review-field">
-              <span>Status</span>
-              <select
-                aria-label="Status de revisión"
-                [ngModel]="review.status ?? ''"
-                (ngModelChange)="onReviewStatus(review, $event)"
-              >
-                <option value="">Elegir</option>
-                <option *ngFor="let status of statusOptions" [value]="status">{{ status }}</option>
-              </select>
-            </label>
-            <label class="tf__review-field">
-              <span>Sentido</span>
-              <select
-                aria-label="Sentido de revisión"
-                [ngModel]="review.sentido ?? ''"
-                (ngModelChange)="onReviewSentido(review, $event)"
-              >
-                <option value="">Elegir</option>
-                <option *ngFor="let sentido of sentidoOptions" [value]="sentido">{{ sentido }}</option>
-              </select>
-            </label>
-            <label class="tf__iva" *ngIf="review.showIva">
-              <input
-                type="checkbox"
-                [checked]="review.ivaChecked === true"
-                (change)="onIvaInput(review.candidateId, $event)"
-              />
-              Normalizar IVA
-            </label>
+            <div class="tf__review-status" role="group" aria-label="Status de revisión">
+              <span class="tf__review-status-label">Status</span>
+              <button
+                type="button"
+                class="tf__review-status-btn"
+                [class.tf__review-status-btn--selected]="review.status === 'NO_PICO'"
+                [attr.aria-pressed]="review.status === 'NO_PICO'"
+                aria-label="Marcar como No pico"
+                (click)="selectReviewStatus(review, 'NO_PICO')"
+              >No pico</button>
+              <button
+                type="button"
+                class="tf__review-status-btn"
+                [class.tf__review-status-btn--selected]="review.status === 'PICO'"
+                [attr.aria-pressed]="review.status === 'PICO'"
+                aria-label="Marcar como Pico"
+                (click)="selectReviewStatus(review, 'PICO')"
+              >Pico</button>
+            </div>
           </div>
         </td>
       </tr>

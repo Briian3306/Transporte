@@ -244,9 +244,9 @@
 
   <app-tarifa-refresh-dialog
     [open]="refreshOpen"
-    [resultados]="resumenRefresco?.resultados ?? []"
-    [candidatos]="resumenRefresco?.candidatos ?? []"
-    [configuraciones]="state.toConfiguracionesPlantilla()"
+    [resultados]="dialogResultados"
+    [candidatos]="dialogCandidatos"
+    [configuraciones]="configuracionesPlantilla"
     [canManage]="canManageTarifas"
     (openChange)="refreshOpen = $event"
     (cancelled)="onRefreshCancelled()"

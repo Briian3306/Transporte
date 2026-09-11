@@ -2,6 +2,7 @@ import { Component, EventEmitter, Inject, Input, OnInit, Output, inject } from '
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import {
+  ConfiguracionPlantilla,
   ConfirmacionCargaResultado,
   Estacion,
   EstacionViaSentido,
@@ -27,6 +28,7 @@ import { TarifaRefreshDialogComponent } from './tarifa-refresh-dialog.component'
 import { TarifaValidationService, AsociacionTarifaImporte } from '../../services/tarifa-validation.service';
 import { GranularPermissionService } from '../../../../services/granular-permission.service';
 import {
+  CandidatoRefrescoTarifa,
   ResultadoDetectarRefresco,
   ResumenRefrescoTarifas,
   resumirFilasRefresco,
@@ -91,8 +93,12 @@ export class Paso9RevisionComponent implements OnInit {
   exitoAbierto = false;
   refreshOpen = false;
   resumenRefresco: ResumenRefrescoTarifas | null = null;
+  configuracionesPlantilla: ConfiguracionPlantilla[] = [];
   tarifasActualizadas: TarifaRefrescoGuardada[] = [];
   avisoAsociacion: string | null = null;
+
+  private readonly emptyResultados: ResultadoDetectarRefresco[] = [];
+  private readonly emptyCandidatos: CandidatoRefrescoTarifa[] = [];
 
   private pases: Pase[] = [];
   private patentes: Patente[] = [];
@@ -193,6 +199,14 @@ export class Paso9RevisionComponent implements OnInit {
     return `Se subieron ${this.registrosConfirmados} registros correctamente!`;
   }
 
+  get dialogResultados(): ResultadoDetectarRefresco[] {
+    return this.resumenRefresco?.resultados ?? this.emptyResultados;
+  }
+
+  get dialogCandidatos(): CandidatoRefrescoTarifa[] {
+    return this.resumenRefresco?.candidatos ?? this.emptyCandidatos;
+  }
+
   get canManageTarifas(): boolean {
     return this.permissions.hasPermission('peajes', 'manage');
   }
@@ -253,10 +267,12 @@ export class Paso9RevisionComponent implements OnInit {
   async analizarTarifas(): Promise<void> {
     this.analizando = true;
     try {
+      const configuraciones = this.state.toConfiguracionesPlantilla();
+      this.configuracionesPlantilla = configuraciones;
       const resumen = await this.refresh.analizar({
         pasadas: this.pasadas,
         documentos: this.documentosIncluidos,
-        configuraciones: this.state.toConfiguracionesPlantilla(),
+        configuraciones,
         estacionesViasSentido: this.estacionesViasSentido.map((row) => ({
           codigoEstacion: row.codigo_estacion,
           via: row.via,

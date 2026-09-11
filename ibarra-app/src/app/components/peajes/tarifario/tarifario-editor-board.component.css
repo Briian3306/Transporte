@@ -212,6 +212,10 @@
   outline-offset: 2px;
 }
 
+.tf__detected-item:disabled {
+  cursor: default;
+}
+
 .tf__detected-count {
   margin-left: 0.05rem;
   opacity: 0.75;
@@ -244,9 +248,14 @@
   gap: 0.65rem 0.9rem;
 }
 
-.tf__review-field {
-  display: grid;
-  gap: 0.15rem;
+.tf__review-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.tf__review-status-label {
+  margin-right: 0.2rem;
   color: var(--at-muted);
   font-size: 0.62rem;
   font-weight: 800;
@@ -254,17 +263,27 @@
   text-transform: uppercase;
 }
 
-.tf__review-field select {
-  min-width: 7.5rem;
-  padding: 0.28rem 0.4rem;
+.tf__review-status-btn {
+  min-height: 2rem;
+  padding: 0.28rem 0.55rem;
   border: 1px solid var(--at-line);
   border-radius: 0.4rem;
   background: #fff;
   color: var(--at-ink);
   font-size: 0.78rem;
   font-weight: 650;
-  text-transform: none;
-  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.tf__review-status-btn--selected {
+  border-color: var(--at-signal);
+  background: color-mix(in srgb, var(--at-signal) 12%, #fff);
+  color: var(--at-signal);
+}
+
+.tf__review-status-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--at-signal) 45%, transparent);
+  outline-offset: 2px;
 }
 
 .tf__add-row {

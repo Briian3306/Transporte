@@ -87,13 +87,13 @@
           [drafts]="tabla.drafts"
           [detected]="tabla.detected"
           [currentStations]="tabla.currentStations"
-          [reviewRows]="isLastTabla(editor, tabla) ? reviewRowsFor(grupo, editor) : []"
-          [showAddCategoria]="false"
+          [reviewRows]="tabla.reviewRows"
+          [showAddCategoria]="true"
           [allowAddCategoria]="false"
           (draftChange)="onDraft(grupo, tabla, $event)"
           (candidateSelected)="onCandidateSelected(grupo, editor, tabla, $event)"
           (historyRequest)="openHistory(grupo, tabla, $event)"
-          (reviewIdentityChange)="onReviewIdentityChange(grupo, $event)"
+          (reviewStatusChange)="onReviewStatusChange(grupo, $event)"
           (ivaChange)="onIvaChange(grupo, $event)"
         ></app-tarifario-editor-board>
       </ng-container>
@@ -123,8 +123,16 @@
     <button type="button" class="trd__btn" (click)="close()">Cancelar</button>
     <button
       type="button"
+      class="trd__btn"
+      [disabled]="!canManage || loading || saving || revalidating"
+      (click)="revalidarPrecios()"
+    >
+      {{ revalidating ? 'Revalidando…' : 'Revalidar precios' }}
+    </button>
+    <button
+      type="button"
       class="trd__btn trd__btn--primary"
-      [disabled]="!canManage || saving"
+      [disabled]="!canManage || saving || revalidating"
       (click)="guardar()"
     >
       {{ saving ? 'Guardando…' : 'Guardar cambios' }}

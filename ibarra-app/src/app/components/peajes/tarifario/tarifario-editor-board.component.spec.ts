@@ -202,6 +202,30 @@ describe('TarifarioEditorBoardComponent', () => {
     expect(component.draftValue(1, 'NO_PICO')).toBe('');
   });
 
+  it('muestra un detectado resuelto como solo lectura sin emitir una selección', () => {
+    const selected = jasmine.createSpy('candidateSelected');
+    component.candidateSelected.subscribe(selected);
+    component.detected = {
+      '1:NO_PICO': [
+        {
+          valor: 12500,
+          count: 12,
+          estacionId: 'dock',
+          estacionNombre: 'Dock Sud',
+          color: '#6D28D9',
+          candidateId: 'cand-resuelto',
+          readOnly: true,
+        } as unknown as (typeof component.detected)['1:NO_PICO'][number],
+      ],
+    };
+    fixture.detectChanges();
+
+    const item = (fixture.nativeElement as HTMLElement).querySelector('.tf__detected-item') as HTMLButtonElement;
+    expect(item.disabled).toBeTrue();
+    item.click();
+    expect(selected).not.toHaveBeenCalled();
+  });
+
   it('cuando los actuales agrupados coinciden muestra un monto y todos los nombres', () => {
     component.currentStations = {
       '1:NO_PICO': [
@@ -269,7 +293,7 @@ describe('TarifarioEditorBoardComponent', () => {
     expect(document.activeElement).toBe(inputs[1]);
   });
 
-  it('muestra filas finales de revisión con selectores de status/sentido y checkbox IVA', () => {
+  it('muestra la revisión con botones de status, sin sentido, IVA ni cambios de Nuevo', () => {
     component.reviewRows = [
       {
         candidateId: 'cand-rev',
@@ -277,11 +301,8 @@ describe('TarifarioEditorBoardComponent', () => {
         count: 3,
         categoria: 8,
         status: null,
-        sentido: null,
         estacionNombre: 'Varela',
         color: '#6D28D9',
-        showIva: true,
-        ivaChecked: false,
       },
     ];
     fixture.detectChanges();
@@ -290,11 +311,16 @@ describe('TarifarioEditorBoardComponent', () => {
     expect(review).toBeTruthy();
     expect(review.textContent).toContain('$20.792,47 (3)');
     expect(review.textContent).toContain('Varela');
-    expect(review.querySelector('select[aria-label="Status de revisión"]')).toBeTruthy();
-    expect(review.querySelector('select[aria-label="Sentido de revisión"]')).toBeTruthy();
-    const iva = review.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    expect(iva).toBeTruthy();
-    expect(iva.checked).toBeFalse();
+    const statusSpy = jasmine.createSpy('reviewStatusChange');
+    const draftSpy = jasmine.createSpy('draftChange');
+    component.reviewStatusChange.subscribe(statusSpy);
+    component.draftChange.subscribe(draftSpy);
+    const pico = review.querySelector('button[aria-label="Marcar como Pico"]') as HTMLButtonElement;
+    pico.click();
+    expect(statusSpy).toHaveBeenCalledWith({ candidateId: 'cand-rev', status: 'PICO' });
+    expect(draftSpy).not.toHaveBeenCalled();
+    expect(review.querySelector('select')).toBeNull();
+    expect(review.querySelector('input[type="checkbox"]')).toBeNull();
   });
 });
 

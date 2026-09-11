@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import {
   PEAJES_TARIFARIO_SERVICE,
   TarifaRefreshDecision,
   TarifaRefrescoGuardada,
+  TarifarioCurrentRow,
 } from '../../models/tarifario.contracts';
 import { TARIFA_REFRESH_SERVICE } from '../../models/tarifa-refresh.contracts';
 import {
@@ -74,11 +76,36 @@ function candidato(
   };
 }
 
+function catalogRow(
+  estacionId: string,
+  categoria: number,
+  status: 'PICO' | 'NO_PICO',
+  sentido: 'IDA' | 'VUELTA' | 'AMBAS',
+): TarifarioCurrentRow {
+  return {
+    tarifa_id: `tarifa-${estacionId}-${categoria}-${status}-${sentido}`,
+    peaje_id: PEAJE_AUBASA,
+    peaje_nombre: 'AUBASA',
+    estacion_id: estacionId,
+    estacion_nombre: estacionId.toUpperCase(),
+    categoria,
+    status,
+    sentido,
+    importe: 5000 + categoria,
+    fecha_actualizacion: '2026-09-10T00:00:00.000Z',
+    current_tarifa_importe_id: `importe-${estacionId}-${categoria}-${status}-${sentido}`,
+  };
+}
+
 describe('TarifaRefreshDialogComponent', () => {
   let fixture: ComponentFixture<TarifaRefreshDialogComponent>;
   let component: TarifaRefreshDialogComponent;
 
-  async function open(resultados: ResultadoDetectarRefresco[], candidatos: CandidatoRefrescoTarifa[]): Promise<void> {
+  async function open(
+    resultados: ResultadoDetectarRefresco[],
+    candidatos: CandidatoRefrescoTarifa[],
+    catalogRows?: TarifarioCurrentRow[],
+  ): Promise<void> {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TarifaRefreshDialogComponent],
@@ -89,6 +116,10 @@ describe('TarifaRefreshDialogComponent', () => {
     }).compileComponents();
     fixture = TestBed.createComponent(TarifaRefreshDialogComponent);
     component = fixture.componentInstance;
+    if (catalogRows) {
+      const tarifario = TestBed.inject(PEAJES_TARIFARIO_SERVICE) as TarifarioMockService;
+      spyOn(tarifario, 'listar').and.returnValue(of({ rows: catalogRows, total: catalogRows.length, page: 1, pageSize: 500 }));
+    }
     fixture.componentRef.setInput('canManage', true);
     fixture.componentRef.setInput('resultados', resultados);
     fixture.componentRef.setInput('candidatos', candidatos);
@@ -504,6 +535,85 @@ describe('TarifaRefreshDialogComponent', () => {
     });
     expect(tabla.drafts[2].no_pico).toBe('7000');
     expect(component.warnings.some((w) => w.code === 'precios')).toBeTrue();
+  });
+
+  it('keeps a selected review status out of Nuevo and saves the existing higher-priority identity', async () => {
+    await open(
+      [
+        pendiente(ESTACION_HUDSON, {
+          categoria: 9,
+          categoriaProveedor: 9,
+          status: null,
+          sentidoAplicado: 'VUELTA',
+          sentidoSolicitado: 'VUELTA',
+          candidatePrice: 16000,
+        }),
+      ],
+      [
+        candidato(ESTACION_HUDSON, {
+          categoria: 9,
+          categoriaProveedor: 9,
+          statusSolicitado: null,
+          sentidoSolicitado: 'VUELTA',
+          candidatePrice: 16000,
+          precioDirecto: 16000,
+        }),
+      ],
+      [catalogRow(ESTACION_HUDSON, 7, 'PICO', 'IDA')],
+    );
+    const grupo = component.grupos[0];
+    const candidateId = component.candidatesFor(grupo)[0].candidateId;
+    component.onReviewStatusChange(grupo, { candidateId, status: 'PICO' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const tabla = grupo.editors[0].tablas[0];
+    expect(tabla.drafts[7]?.pico ?? '').toBe('');
+    expect(Object.values(tabla.detected).flat().some((item) => item.candidateId === candidateId)).toBeFalse();
+    expect(tabla.reviewRows.find((item) => item.candidateId === candidateId)?.status).toBe('PICO');
+
+    const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE) as TarifaRefreshMockService;
+    const guardar = spyOn(refresh, 'guardar').and.callThrough();
+    await component.guardar();
+    const payload = guardar.calls.mostRecent().args[0] as TarifaRefreshDecision[];
+    expect(payload).toEqual(
+      jasmine.arrayContaining([
+        jasmine.objectContaining({
+          action: 'MARK_REVIEW',
+          categoriaProveedor: 9,
+          categoriaCalculada: 7,
+          status: 'PICO',
+          sentido: 'IDA',
+          importe: 16000,
+          fechaVigenciaInicio: null,
+        }),
+      ]),
+    );
+  });
+
+  it('uses the highest selected-status category, then the station highest category as fallback', async () => {
+    await open(
+      [pendiente(ESTACION_GUTIERREZ, { categoria: 3, categoriaProveedor: 3, status: null, candidatePrice: 10202.36 })],
+      [candidato(ESTACION_GUTIERREZ, { categoria: 3, categoriaProveedor: 3, statusSolicitado: null, candidatePrice: 10202.36, precioDirecto: 10202.36 })],
+      [
+        catalogRow(ESTACION_GUTIERREZ, 7, 'NO_PICO', 'AMBAS'),
+        catalogRow(ESTACION_GUTIERREZ, 8, 'NO_PICO', 'AMBAS'),
+        catalogRow(ESTACION_GUTIERREZ, 9, 'NO_PICO', 'AMBAS'),
+        catalogRow(ESTACION_GUTIERREZ, 7, 'PICO', 'AMBAS'),
+        catalogRow(ESTACION_GUTIERREZ, 9, 'PICO', 'AMBAS'),
+      ],
+    );
+    const grupo = component.grupos[0];
+    const candidateId = component.candidatesFor(grupo)[0].candidateId;
+    component.onReviewStatusChange(grupo, { candidateId, status: 'PICO' });
+    await fixture.whenStable();
+    const firstPayload = (component as unknown as { collectSaveDecisions(): TarifaRefreshDecision[] }).collectSaveDecisions();
+    expect(firstPayload[0]).toEqual(jasmine.objectContaining({ categoriaProveedor: 3, categoriaCalculada: 9, status: 'PICO', sentido: 'AMBAS' }));
+
+    grupo.reviewStatusByCandidate[candidateId] = 'PICO';
+    grupo.catalogRows = grupo.catalogRows.filter((row) => row.status !== 'PICO');
+    const fallbackPayload = (component as unknown as { collectSaveDecisions(): TarifaRefreshDecision[] }).collectSaveDecisions();
+    expect(fallbackPayload[0]).toEqual(jasmine.objectContaining({ categoriaProveedor: 3, categoriaCalculada: 9, status: 'PICO', sentido: 'AMBAS' }));
   });
 
   it('no infiere PICO/NO_PICO ni sentido por importe y deja tres precios visibles', async () => {
@@ -1120,5 +1230,243 @@ describe('TarifaRefreshDialogComponent', () => {
     expect(payload[0].action).toBe('MARK_REVIEW');
     expect(payload[0].categoriaProveedor).toBe(9);
     expect(payload[0].requiereNormalizacionIva).toBeTrue();
+  });
+
+  it('revalida precios con borradores sin guardar ni perder el valor ingresado', async () => {
+    await open(
+      [
+        pendiente(ESTACION_HUDSON, {
+          id: 'cand-a',
+          categoria: 2,
+          categoriaProveedor: 2,
+          candidatePrice: 7000,
+          rowIndexes: [0],
+          sentidoAplicado: 'IDA',
+          sentidoSolicitado: 'IDA',
+        }),
+        pendiente(ESTACION_HUDSON, {
+          id: 'cand-b',
+          categoria: 3,
+          categoriaProveedor: 3,
+          candidatePrice: 7000,
+          rowIndexes: [1],
+          sentidoAplicado: 'IDA',
+          sentidoSolicitado: 'IDA',
+        }),
+      ],
+      [
+        candidato(ESTACION_HUDSON, {
+          id: 'cand-a',
+          categoria: 2,
+          categoriaProveedor: 2,
+          candidatePrice: 7000,
+          precioDirecto: 7000,
+          rowIndexes: [0],
+          sentidoSolicitado: 'IDA',
+          directionConfidence: 'EXPLICIT',
+        }),
+        candidato(ESTACION_HUDSON, {
+          id: 'cand-b',
+          categoria: 3,
+          categoriaProveedor: 3,
+          candidatePrice: 7000,
+          precioDirecto: 7000,
+          rowIndexes: [1],
+          sentidoSolicitado: 'IDA',
+          directionConfidence: 'EXPLICIT',
+        }),
+      ],
+    );
+    const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE) as TarifaRefreshMockService;
+    const save = spyOn(refresh, 'guardar').and.callThrough();
+    const grupo = component.grupos[0];
+    const tabla = grupo.editors[0].tablas.find((item) => item.sentido === 'IDA') ?? grupo.tablas[0];
+    component.onDraft(grupo, tabla, { categoria: 3, status: 'NO_PICO', value: '7000' });
+
+    await component.revalidarPrecios();
+
+    expect(save).not.toHaveBeenCalled();
+    expect(tabla.drafts[3].no_pico).toBe('7000');
+    expect(component.candidatesFor(grupo)).toEqual([]);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Revalidar precios');
+  });
+
+  it('muestra en Detectado la categoría 9 del tarifario al revalidar precios AUSA de categorías 7, 8 y 9', async () => {
+    const precio = 13541.75;
+    const catalogRows: TarifarioCurrentRow[] = [7, 8, 9].map((categoria) => ({
+      tarifa_id: `tarifa-pb-${categoria}`,
+      peaje_id: PEAJE_AUBASA,
+      peaje_nombre: 'AUSA',
+      estacion_id: ESTACION_HUDSON,
+      estacion_nombre: 'PASEO DEL BAJO',
+      categoria,
+      status: 'NO_PICO',
+      sentido: 'IDA',
+      importe: 13541.74,
+      fecha_actualizacion: '2026-09-08T00:00:00Z',
+      current_tarifa_importe_id: `importe-pb-${categoria}`,
+    }));
+    const resultados = [7, 8, 9].map((categoria, index) =>
+      pendiente(ESTACION_HUDSON, {
+        id: `pb-${categoria}`,
+        categoria,
+        categoriaProveedor: categoria,
+        candidatePrice: precio,
+        rowIndexes: [index],
+        sentidoSolicitado: 'IDA',
+        sentidoAplicado: 'IDA',
+      }),
+    );
+    const candidatos = [7, 8, 9].map((categoria, index) =>
+      candidato(ESTACION_HUDSON, {
+        id: `pb-${categoria}`,
+        categoria,
+        categoriaProveedor: categoria,
+        candidatePrice: precio,
+        precioDirecto: precio,
+        rowIndexes: [index],
+        sentidoSolicitado: 'IDA',
+        directionConfidence: 'EXPLICIT',
+      }),
+    );
+    await open(resultados, candidatos, catalogRows);
+
+    const grupo = component.grupos[0];
+    const tabla = grupo.editors[0].tablas.find((item) => item.sentido === 'IDA')!;
+    component.onDraft(grupo, tabla, { categoria: 7, status: 'NO_PICO', value: String(precio) });
+    await component.revalidarPrecios();
+
+    const rebuilt = grupo.editors[0].tablas.find((item) => item.sentido === 'IDA')!;
+    expect(rebuilt.drafts[7].no_pico).toBe(String(precio));
+    expect(component.candidatesFor(grupo)).toEqual([]);
+    expect(rebuilt.detected['9:NO_PICO'].map((item) => item.candidateId)).toEqual(['pb-7', 'pb-8', 'pb-9']);
+    expect(rebuilt.detected['7:NO_PICO'] ?? []).toEqual([]);
+  });
+
+  it('muestra una corrección de categoría ya resuelta en Detectado sin volverla una fila de revisión', async () => {
+    await open(
+      [
+        pendiente(ESTACION_HUDSON, {
+          id: 'pendiente-7000',
+          candidatePrice: 7000,
+          sentidoSolicitado: 'IDA',
+          sentidoAplicado: 'IDA',
+        }),
+        pendiente(ESTACION_HUDSON, {
+          id: 'correccion-pb',
+          codigo: 'CURRENT_CATEGORY_CORRECTION',
+          categoria: 7,
+          categoriaProveedor: 7,
+          categoriaCalculada: 9,
+          candidatePrice: 13541.75,
+          status: 'NO_PICO',
+          sentidoSolicitado: 'IDA',
+          sentidoAplicado: 'IDA',
+          rowIndexes: [1],
+        }),
+      ],
+      [
+        candidato(ESTACION_HUDSON, {
+          id: 'pendiente-7000',
+          candidatePrice: 7000,
+          precioDirecto: 7000,
+          sentidoSolicitado: 'IDA',
+          directionConfidence: 'EXPLICIT',
+        }),
+        candidato(ESTACION_HUDSON, {
+          id: 'correccion-pb',
+          categoria: 7,
+          categoriaProveedor: 7,
+          candidatePrice: 13541.75,
+          precioDirecto: 13541.75,
+          sentidoSolicitado: 'IDA',
+          directionConfidence: 'EXPLICIT',
+          rowIndexes: [1],
+        }),
+      ],
+    );
+
+    const grupo = component.grupos[0];
+    const tabla = grupo.editors[0].tablas.find((item) => item.sentido === 'IDA')!;
+    expect(tabla.detected['9:NO_PICO'].map((item) => item.candidateId)).toContain('correccion-pb');
+    expect(tabla.detected['9:NO_PICO'][0].readOnly).toBeTrue();
+    expect(component.candidatesFor(grupo).map((item) => item.candidateId)).toEqual(['pendiente-7000']);
+  });
+
+  it('mantiene la tarifa para revisión si dos identidades del máximo nivel coinciden en precio', async () => {
+    const precio = 13541.75;
+    const catalogRows: TarifarioCurrentRow[] = ['NO_PICO', 'PICO'].map((status) => ({
+      tarifa_id: `tarifa-pb-9-${status}`,
+      peaje_id: PEAJE_AUBASA,
+      peaje_nombre: 'AUSA',
+      estacion_id: ESTACION_HUDSON,
+      estacion_nombre: 'PASEO DEL BAJO',
+      categoria: 9,
+      status: status as 'NO_PICO' | 'PICO',
+      sentido: 'IDA',
+      importe: 13541.74,
+      fecha_actualizacion: '2026-09-08T00:00:00Z',
+      current_tarifa_importe_id: `importe-pb-9-${status}`,
+    }));
+    await open(
+      [
+        pendiente(ESTACION_HUDSON, {
+          id: 'pb-ambigua',
+          categoria: 7,
+          categoriaProveedor: 7,
+          candidatePrice: precio,
+          sentidoSolicitado: 'IDA',
+          sentidoAplicado: 'IDA',
+        }),
+      ],
+      [
+        candidato(ESTACION_HUDSON, {
+          id: 'pb-ambigua',
+          categoria: 7,
+          categoriaProveedor: 7,
+          candidatePrice: precio,
+          precioDirecto: precio,
+          sentidoSolicitado: 'IDA',
+          directionConfidence: 'EXPLICIT',
+        }),
+      ],
+      catalogRows,
+    );
+
+    const grupo = component.grupos[0];
+    await component.revalidarPrecios();
+    expect(component.candidatesFor(grupo).map((item) => item.candidateId)).toEqual(['pb-ambigua']);
+    const tabla = grupo.editors[0].tablas.find((item) => item.sentido === 'IDA')!;
+    expect(tabla.detected['9:NO_PICO'] ?? []).toEqual([]);
+  });
+
+  it('no recarga el tarifario cuando llega un array nuevo de plantillas', async () => {
+    await open(
+      [pendiente(ESTACION_HUDSON, { sentidoAplicado: 'IDA', sentidoSolicitado: 'IDA' })],
+      [
+        candidato(ESTACION_HUDSON, {
+          sentidoSolicitado: 'IDA',
+          directionConfidence: 'EXPLICIT',
+        }),
+      ],
+    );
+    const tarifario = TestBed.inject(PEAJES_TARIFARIO_SERVICE);
+    const listar = spyOn(tarifario, 'listar').and.callThrough();
+    const obtener = spyOn(tarifario, 'obtenerEditor').and.callThrough();
+    fixture.componentRef.setInput('configuraciones', [
+      {
+        id: 'cfg-1',
+        plantilla_id: 'p-1',
+        nombre_columna: 'PRECIO',
+        orden: 1,
+        tipo: 'transformacion',
+        obligatoria: false,
+      },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(listar).not.toHaveBeenCalled();
+    expect(obtener).not.toHaveBeenCalled();
   });
 });

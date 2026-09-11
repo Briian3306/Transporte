@@ -1928,6 +1928,27 @@
       ]
     },
     {
+      "id": "F14-20",
+      "title": "Progressive Paso 9 tariff price revalidation",
+      "prd_refs": [
+        "docs/backend/peajes/refresh-tarifas-paso9.md"
+      ],
+      "agent_owner": "02-frontend-wizard-tablas",
+      "depends_on": ["F14-19"],
+      "status": "in_progress",
+      "verification": [
+        "Station + price matches use the inclusive 1% tolerance and select the highest compatible category.",
+        "A unique existing tariff supplies category, status and direction even when the provider disagrees.",
+        "Revalidar precios preserves drafts, does not persist or close, and moves only uniquely resolved candidates to the effective read-only Detectado cell.",
+        "Focused pgTAP and Angular dialog suites, TypeScript checks, and the development build are recorded before F14-20 is marked passing."
+      ],
+      "evidence": [
+        "2026-09-10: migrations 20260910180017 and 20260910183000 were applied to production through Supabase MCP as versions 20260910182814 and 20260910182926. The RPCs are SECURITY INVOKER with search_path=public, authenticated access, and no anon execution. The new pgTAP case is RED against the prior matcher; final local verification remains pending recovery of the Supabase CLI local-profile reset failure. No DESARROLLO writes and no commit.",
+        "2026-09-10: UI follow-up fixes detected-price placement without changing the production RPC: catalog price matches win over drafts, use the highest category, and remain in review when the highest category has multiple identities. AUSA/PASEO DEL BAJO $13,541.75 reported as categories 7/8/9 is rendered read-only in Detectado category 9. Revalidation retains drafts and moves newly unique matches from review to Detectado. Added dialog and board regression specs. tsc --noEmit -p tsconfig.spec.json and tsconfig.app.json EXIT 0. Focused Karma could compile but ChromeHeadless failed before executing due GPU process failure; development build was blocked by sandbox directory-read permissions. F14-20 remains in_progress; no production migration was added or applied for this UI defect.",
+        "2026-09-11: Status-only review follow-up. Review buttons No pico/Pico do not create Nuevo drafts or place unresolved values in Detectado. Save reuses the highest active category matching station, selected status, and effective direction (AMBAS, otherwise IDA); a missing selected-status identity falls back to the station highest category. Migration 20260910195747_peajes_tarifario_ocultar_revision.sql was applied through production Supabase MCP as 20260911111515 and hides current_tarifa_id IS NULL review parents from peajes_listar_tarifas_actuales. Live SQL verification returned active_list_filters_review_only=true. npx supabase test db EXIT 0 Files=18 Tests=590; tsc app/spec EXIT 0. Focused board/dialog Karma compiled but ChromeHeadless could not launch due Windows encryption/GPU-cache failures before tests executed. No commit."
+      ]
+    },
+    {
       "id": "F17-1",
       "title": "Contratos, motor de confianza y proxy Netlify OpenRouter (invoice AI)",
       "prd_refs": [

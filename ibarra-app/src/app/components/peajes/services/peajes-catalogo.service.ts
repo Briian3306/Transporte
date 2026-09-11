@@ -196,9 +196,6 @@ export class PeajesCatalogoSupabaseService implements PeajesCatalogoService {
         const exactas = this.estacionesUnicas(aliasRows ?? []).filter((row) =>
           estacionPerteneceAEmpresa(row, empresaId)
         );
-        // #region agent log
-        fetch('http://127.0.0.1:7497/ingest/f71cda72-2158-4367-a185-2d7eebc6703d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55cdc2'},body:JSON.stringify({sessionId:'55cdc2',runId:'pre-fix',hypothesisId:'A',location:'peajes-catalogo.service.ts:reconocerEstacion:aliases',message:'alias lookup for station code',data:{valor,empresaId:empresaId??null,variantes,aliasRowCount:(aliasRows??[]).length,exactasNombres:exactas.map((e)=>e.nombre),exactasIds:exactas.map((e)=>e.id),branch:exactas.length===1?'exacta-alias':exactas.length>1?'sugerencias-alias':'fallthrough-catalog'},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         const ranked = estacionesDesdeAliasFilas(
           (aliasRows ?? []) as Array<{
             valor_normalizado?: string | null;
@@ -207,9 +204,6 @@ export class PeajesCatalogoSupabaseService implements PeajesCatalogoService {
           valor,
           empresaId
         );
-        // #region agent log
-        fetch('http://127.0.0.1:7497/ingest/f71cda72-2158-4367-a185-2d7eebc6703d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55cdc2'},body:JSON.stringify({sessionId:'55cdc2',runId:'post-fix',hypothesisId:'A',location:'peajes-catalogo.service.ts:reconocerEstacion:ranked',message:'alias ranked literal-first',data:{valor,rankedNombres:ranked.map((e)=>e.nombre),rankedIds:ranked.map((e)=>e.id),rankedBranch:ranked.length===1?'exacta-alias':ranked.length>1?'sugerencias-alias':'fallthrough-catalog'},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         if (ranked.length === 1) {
           return {
             valorProveedor: valor,
