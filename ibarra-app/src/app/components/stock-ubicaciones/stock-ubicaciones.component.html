@@ -1,0 +1,226 @@
+<div class="ubicaciones-page">
+  <header class="page-head">
+    <div>
+      <button type="button" class="back-link" (click)="volver()">
+        <i class="fas fa-arrow-left"></i>
+        Volver a Depósitos
+      </button>
+      <h1>
+        <i class="fas fa-sitemap"></i>
+        Mapa del depósito
+      </h1>
+      <p class="subtitle">
+        {{ deposito?.nombre || 'Cargando…' }}
+        <span *ngIf="deposito?.ubicacion"> · {{ deposito?.ubicacion }}</span>
+      </p>
+    </div>
+    <button type="button" class="btn-primary" (click)="iniciarAlta(null)" [disabled]="loading">
+      <i class="fas fa-plus"></i>
+      Nueva zona
+    </button>
+  </header>
+
+  <div *ngIf="error" class="banner-error" role="alert">
+    <i class="fas fa-exclamation-circle"></i>
+    <span>{{ error }}</span>
+  </div>
+
+  <section class="guia" [class.guia-collapsada]="!mostrarGuia">
+    <button type="button" class="guia-toggle" (click)="mostrarGuia = !mostrarGuia">
+      <span>
+        <i class="fas fa-info-circle"></i>
+        Cómo armar las ubicaciones
+      </span>
+      <i class="fas" [class.fa-chevron-up]="mostrarGuia" [class.fa-chevron-down]="!mostrarGuia"></i>
+    </button>
+
+    <div *ngIf="mostrarGuia" class="guia-cuerpo">
+      <p class="guia-lead">
+        El depósito se recorre de afuera hacia adentro. Cada nivel cuelga del anterior y el código se concatena solo:
+        <strong>Z1-P3-E2-05</strong>.
+      </p>
+
+      <ol class="pasos">
+        <li *ngFor="let nivel of niveles; let i = index">
+          <span class="paso-num">{{ i + 1 }}</span>
+          <span class="paso-icono" [attr.data-tipo]="nivel.tipo"><i [class]="nivel.icono"></i></span>
+          <div>
+            <strong>{{ nivel.titulo }}</strong>
+            <p>{{ nivel.paraQue }}</p>
+            <code>{{ nivel.ejemplo }}</code>
+          </div>
+        </li>
+      </ol>
+
+      <ul class="tips">
+        <li>Empezá por una <strong>zona</strong> y usá <em>Agregar pasillo</em> sobre esa tarjeta. No hace falta crear los cuatro niveles si el depósito es chico: podés parar en pasillo o estante.</li>
+        <li>Usá códigos cortos y únicos entre hermanos (Z1, P3, E2, 05). El nombre puede ser más descriptivo.</li>
+        <li>Marcá <strong>Asignable a insumos</strong> en las ubicaciones que quieras usar en Depósitos. Por defecto solo las <strong>posiciones</strong> aparecen en el selector; zona, pasillo y estante sirven para armar el mapa.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div *ngIf="loading" class="estado-carga">
+    <i class="fas fa-spinner fa-spin"></i>
+    <p>Cargando el mapa de ubicaciones…</p>
+  </div>
+
+  <div *ngIf="!loading && nueva && !nueva.parent" class="form-alta form-alta-zona">
+    <ng-container *ngTemplateOutlet="formAlta"></ng-container>
+  </div>
+
+  <div *ngIf="!loading && ubicaciones.length === 0 && !nueva" class="vacio">
+    <div class="vacio-ilustro" aria-hidden="true">
+      <span>Z1</span>
+      <i class="fas fa-long-arrow-alt-right"></i>
+      <span>P3</span>
+      <i class="fas fa-long-arrow-alt-right"></i>
+      <span>E2</span>
+      <i class="fas fa-long-arrow-alt-right"></i>
+      <span>05</span>
+    </div>
+    <h2>Todavía no hay un mapa en este depósito</h2>
+    <p>Creá la primera zona (por ejemplo Nave A o Contenedor 3) y después colgá pasillos y estantes debajo.</p>
+    <button type="button" class="btn-primary" (click)="iniciarAlta(null)">
+      <i class="fas fa-plus"></i>
+      Crear primera zona
+    </button>
+  </div>
+
+  <ng-template #formAlta>
+    <div class="form-alta-card" *ngIf="nueva">
+      <div class="form-alta-head">
+        <span class="badge-tipo" [attr.data-tipo]="tipoNuevo()">{{ etiqueta(tipoNuevo()!) }}</span>
+        <p *ngIf="nueva.parent; else zonaNueva">
+          Dentro de <strong>{{ nueva.parent.codigo_completo }}</strong>
+          <span class="muted"> · {{ nueva.parent.nombre }}</span>
+        </p>
+        <ng-template #zonaNueva>
+          <p>Nivel raíz del depósito. El resto de ubicaciones va a colgar de esta zona.</p>
+        </ng-template>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Código
+          <input
+            [(ngModel)]="nueva.codigo"
+            [placeholder]="'Ej. ' + ayudaTipo(tipoNuevo()).codigo"
+            maxlength="30"
+            autocomplete="off">
+          <small>Corto y estable. Ejemplo: {{ ayudaTipo(tipoNuevo()).codigo }}</small>
+        </label>
+        <label>
+          Nombre
+          <input
+            [(ngModel)]="nueva.nombre"
+            [placeholder]="'Ej. ' + ayudaTipo(tipoNuevo()).nombre"
+            maxlength="255"
+            autocomplete="off">
+          <small>{{ ayudaTipo(tipoNuevo()).hint }}</small>
+        </label>
+      </div>
+
+      <p class="preview">
+        Código completo:
+        <strong>{{ previewCodigo() }}</strong>
+        <span *ngIf="nueva.nombre.trim()"> · {{ nueva.nombre.trim() }}</span>
+      </p>
+
+      <label class="check-asignable">
+        <input type="checkbox" [(ngModel)]="nueva.asignable">
+        <span>
+          Asignable a insumos
+          <small>Si está marcado, aparece en el selector de Depósitos para colgar un producto.</small>
+        </span>
+      </label>
+
+      <p *ngIf="formError" class="form-error">{{ formError }}</p>
+
+      <div class="form-actions">
+        <button type="button" class="btn-primary" (click)="guardarAlta()" [disabled]="guardando">
+          <i *ngIf="!guardando" class="fas fa-save"></i>
+          <i *ngIf="guardando" class="fas fa-spinner fa-spin"></i>
+          Guardar {{ etiqueta(tipoNuevo()!) | lowercase }}
+        </button>
+        <button type="button" class="btn-ghost" (click)="cancelarAlta()">Cancelar</button>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #nodoTpl let-nodo>
+    <article class="nodo" [attr.data-tipo]="nodo.tipo" [class.inactiva]="!nodo.activo">
+      <div class="nodo-main">
+        <span class="badge-tipo" [attr.data-tipo]="nodo.tipo">{{ etiqueta(nodo.tipo) }}</span>
+        <div class="nodo-textos">
+          <div class="nodo-codigo">{{ nodo.codigo_completo }}</div>
+          <div class="nodo-nombre">{{ nodo.nombre }}</div>
+          <div class="nodo-meta">
+            {{ nodo.insumos_count || 0 }}
+            {{ (nodo.insumos_count || 0) === 1 ? 'insumo asignado' : 'insumos asignados' }}
+            <span *ngIf="nodo.asignable" class="badge-asignable">asignable</span>
+            <span *ngIf="!nodo.activo"> · inactiva</span>
+          </div>
+        </div>
+        <div class="nodo-acciones">
+          <button
+            *ngIf="puedeAgregarHijo(nodo)"
+            type="button"
+            class="btn-add"
+            (click)="iniciarAlta(nodo)">
+            <i class="fas fa-plus"></i>
+            Agregar {{ tipoHijoLabel(nodo) | lowercase }}
+          </button>
+          <button type="button" class="btn-text" (click)="iniciarEdicion(nodo)">Editar</button>
+          <button type="button" class="btn-text" (click)="toggleAsignable(nodo)">
+            {{ nodo.asignable ? 'Quitar de insumos' : 'Habilitar para insumos' }}
+          </button>
+          <button type="button" class="btn-text" (click)="toggleActivo(nodo)">
+            {{ nodo.activo ? 'Desactivar' : 'Activar' }}
+          </button>
+        </div>
+      </div>
+
+      <p *ngIf="nodo.asignable" class="nodo-hint">
+        Esta ubicación aparece en Depósitos para asignarla a un insumo.
+      </p>
+      <p *ngIf="!nodo.asignable && (nodo.insumos_count || 0) > 0" class="nodo-hint">
+        Ya hay insumos acá; no se mueven. Solo deja de aparecer en el selector hasta que la habilites otra vez.
+      </p>
+      <p *ngIf="puedeAgregarHijo(nodo) && (!nodo.hijos || nodo.hijos.length === 0) && !(nueva && nueva.parent?.id === nodo.id)" class="nodo-hint">
+        Siguiente paso: agregá un {{ tipoHijoLabel(nodo) | lowercase }} dentro de {{ nodo.codigo_completo }}.
+      </p>
+
+      <div *ngIf="editandoId === nodo.id" class="form-alta form-inline">
+        <label>
+          Código
+          <input [(ngModel)]="editCodigo" maxlength="30">
+        </label>
+        <label>
+          Nombre
+          <input [(ngModel)]="editNombre" maxlength="255">
+        </label>
+        <div class="form-actions">
+          <button type="button" class="btn-primary" (click)="guardarEdicion(nodo)" [disabled]="guardando">Guardar</button>
+          <button type="button" class="btn-ghost" (click)="editandoId = null">Cancelar</button>
+        </div>
+      </div>
+
+      <div *ngIf="nueva && nueva.parent?.id === nodo.id" class="form-alta">
+        <ng-container *ngTemplateOutlet="formAlta"></ng-container>
+      </div>
+
+      <div *ngIf="nodo.hijos?.length" class="nodo-hijos">
+        <ng-container *ngFor="let hijo of nodo.hijos">
+          <ng-container *ngTemplateOutlet="nodoTpl; context: { $implicit: hijo }"></ng-container>
+        </ng-container>
+      </div>
+    </article>
+  </ng-template>
+
+  <div *ngIf="!loading" class="arbol">
+    <ng-container *ngFor="let zona of ubicaciones">
+      <ng-container *ngTemplateOutlet="nodoTpl; context: { $implicit: zona }"></ng-container>
+    </ng-container>
+  </div>
+</div>

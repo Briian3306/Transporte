@@ -10,9 +10,9 @@
     </div>
 
     <div class="header-actions">
-      <button class="btn btn-primary" (click)="navegarA('/stock/dashboard')">
+      <button class="btn btn-primary" (click)="volver()">
         <i class="fas fa-arrow-left"></i>
-        Volver al Dashboard
+        {{ depositoContexto ? 'Volver al depósito' : 'Volver al Dashboard' }}
       </button>
       <button class="btn btn-success" *ngIf="movimientosFiltrados.length > 0" (click)="exportarCSV()">
         <i class="fas fa-file-export"></i>
@@ -44,6 +44,13 @@
         <span class="stat-label">Salidas</span>
       </div>
     </div>
+    <div class="stat-item">
+      <i class="fas fa-balance-scale"></i>
+      <div>
+        <span class="stat-value">{{ totalAjustes }}</span>
+        <span class="stat-label">Ajustes</span>
+      </div>
+    </div>
   </div>
 
   <!-- Filtros -->
@@ -71,6 +78,7 @@
           <option value="todos">Todos</option>
           <option value="entrada">Entradas</option>
           <option value="salida">Salidas</option>
+          <option value="ajuste">Ajustes</option>
         </select>
       </div>
 
@@ -164,7 +172,7 @@
           <td>
             <span class="badge" [ngClass]="getTipoClass(movimiento.tipo)">
               <i [class]="getTipoIcon(movimiento.tipo)"></i>
-              {{ movimiento.tipo === 'entrada' ? 'Entrada' : 'Salida' }}
+              {{ etiquetaTipo(movimiento.tipo) }}
             </span>
           </td>
           <td>
@@ -179,8 +187,9 @@
           </td>
           <td class="text-center cantidad-cell">
             <strong [class.text-success]="movimiento.tipo === 'entrada'"
-                    [class.text-danger]="movimiento.tipo === 'salida'">
-              {{ movimiento.tipo === 'entrada' ? '+' : '-' }}{{ movimiento.cantidad }}
+                    [class.text-danger]="movimiento.tipo === 'salida'"
+                    [class.text-warning]="movimiento.tipo === 'ajuste'">
+              {{ movimiento.tipo === 'salida' ? '-' : '+' }}{{ movimiento.cantidad }}
             </strong>
           </td>
           <td>{{ movimiento.usuario_nombre }}</td>
@@ -202,6 +211,12 @@
                 </div>
               </div>
               <!-- Detalles de Salida -->
+              <div *ngIf="isAjuste(movimiento)">
+                <div class="detalle-item">
+                  <i class="fas fa-clipboard-check"></i>
+                  <span>Ajuste por auditoría</span>
+                </div>
+              </div>
               <div *ngIf="isSalida(movimiento)">
                 <div class="detalle-item">
                   <i class="fas fa-user"></i>

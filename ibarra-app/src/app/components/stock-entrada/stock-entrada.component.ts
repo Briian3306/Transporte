@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { StockService } from '../../services/stock.service';
 import { ApiIbarraService } from '../../services/api-ibarra.service';
 import { Deposito, RegistroEntradaDTO, ItemMovimiento } from '../../models/stock.model';
@@ -20,6 +20,9 @@ export class StockEntradaComponent implements OnInit {
   private stockService = inject(StockService);
   private apiService = inject(ApiIbarraService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+
+  depositoContexto: string | null = null;
 
   // Formulario principal
   entradaForm: FormGroup;
@@ -55,6 +58,7 @@ export class StockEntradaComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.depositoContexto = this.route.snapshot.queryParamMap.get('deposito');
     this.cargarDatos();
   }
 
@@ -69,6 +73,7 @@ export class StockEntradaComponent implements OnInit {
     this.stockService.getDepositos().subscribe({
       next: (depositos) => {
         this.depositos = depositos;
+        this.aplicarDepositoContexto();
       },
       error: (err) => {
         console.error('Error al cargar depósitos:', err);
@@ -189,6 +194,7 @@ export class StockEntradaComponent implements OnInit {
           this.itemForm.reset({ cantidad: 1, costo_unitario: 0 });
           this.items = [];
           this.success = null;
+          this.aplicarDepositoContexto();
         }, 2000);
       },
       error: (err) => {
@@ -239,6 +245,16 @@ export class StockEntradaComponent implements OnInit {
    * Cancela y vuelve atrás
    */
   cancelar(): void {
+    if (this.depositoContexto) {
+      this.router.navigate(['/stock/deposito', this.depositoContexto]);
+      return;
+    }
     this.router.navigate(['/stock/dashboard']);
+  }
+
+  private aplicarDepositoContexto(): void {
+    if (this.depositoContexto) {
+      this.entradaForm.patchValue({ deposito_id: this.depositoContexto });
+    }
   }
 }

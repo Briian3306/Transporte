@@ -40,7 +40,9 @@
 
 .header-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 /* Loading & Error */
@@ -276,6 +278,9 @@
 
 .alert-action {
   flex-shrink: 0;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .alertas-footer {
@@ -304,6 +309,77 @@
 .no-alertas small {
   font-size: 0.9rem;
   color: #95a5a6;
+}
+
+/* Depósitos */
+.depositos-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.depositos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.deposito-card {
+  text-align: left;
+  background: white;
+  border: 2px solid #e0e6ed;
+  border-radius: 12px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.deposito-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-color: #3498db;
+}
+
+.deposito-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.deposito-card-title {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.1rem;
+  color: #2c3e50;
+}
+
+.deposito-card-meta,
+.deposito-card-responsable,
+.deposito-card-alerta,
+.deposito-card-cta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.deposito-card-alerta {
+  color: #c0392b;
+  font-weight: 600;
+}
+
+.deposito-card-cta {
+  margin-top: auto;
+  color: #3498db;
+  font-weight: 600;
 }
 
 /* Accesos Rápidos */
@@ -467,6 +543,15 @@
 .btn-sm {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
+}
+
+.btn-secondary {
+  background: #7f8c8d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #636e72;
 }
 
 /* Responsive */

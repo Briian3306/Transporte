@@ -6,8 +6,11 @@ import {
   StockDeposito,
   EntradaStock,
   SalidaStock,
+  AjusteStock,
+  MovimientoStockAny,
   EstadisticasStock,
   AlertaStock,
+  AlertaStockPorDeposito,
   ResumenMovimientos,
   FiltrosMovimiento,
   RegistroEntradaDTO,
@@ -52,6 +55,9 @@ export class StockService {
 
     return stockItems.map(item => {
       const insumo = insumos.find(i => i.id === item.insumo_id);
+      const ubicacionCodigo = item.deposito_ubicaciones
+        ? [item.deposito_ubicaciones.codigo, item.deposito_ubicaciones.nombre].filter(Boolean).join(' · ')
+        : undefined;
       const stockEnriquecido: StockDeposito = {
         id: item.id,
         deposito_id: item.deposito_id,
@@ -59,13 +65,18 @@ export class StockService {
         insumo_id: item.insumo_id,
         insumo_nombre: insumo?.nombre,
         insumo_codigo: insumo?.codigo,
+        insumo_descripcion: insumo?.descripcion,
         categoria_nombre: insumo?.categoria?.nombre,
         unidad_medida: insumo?.unidad_medida,
         cantidad_actual: parseFloat(item.cantidad_actual),
         cantidad_minima: parseFloat(item.cantidad_minima),
         cantidad_maxima: parseFloat(item.cantidad_maxima),
         punto_reorden: parseFloat(item.punto_reorden),
-        ultima_actualizacion: new Date(item.updated_at)
+        ultima_actualizacion: new Date(item.updated_at),
+        is_active: item.is_active !== false,
+        ubicacion_id: item.ubicacion_id || null,
+        ubicacion_codigo: ubicacionCodigo,
+        ubicacion_nombre: item.deposito_ubicaciones?.nombre
       };
       stockEnriquecido.estado = this.calcularEstadoStock(stockEnriquecido);
       return stockEnriquecido;
@@ -123,7 +134,7 @@ export class StockService {
         const client = await this.supabaseService.getClient();
         const { data, error } = await client
           .from('stock_depositos')
-          .select('*, depositos(nombre)')
+          .select('*, depositos(nombre), deposito_ubicaciones(codigo, nombre)')
           .order('insumo_id', { ascending: true });
 
         if (error) throw new Error(error.message);
@@ -147,7 +158,7 @@ export class StockService {
         const client = await this.supabaseService.getClient();
         const { data, error } = await client
           .from('stock_depositos')
-          .select('*, depositos(nombre)')
+          .select('*, depositos(nombre), deposito_ubicaciones(codigo, nombre)')
           .eq('deposito_id', depositoId)
           .order('insumo_id', { ascending: true });
 
@@ -354,7 +365,7 @@ export class StockService {
   /**
    * Obtiene todos los movimientos
    */
-  getMovimientos(): Observable<(EntradaStock | SalidaStock)[]> {
+  getMovimientos(): Observable<MovimientoStockAny[]> {
     return from(
       this.supabaseService.executeWithRetry(async () => {
         const client = await this.supabaseService.getClient();
@@ -382,7 +393,9 @@ export class StockService {
             usuario_id: m.usuario_id,
             usuario_nombre: m.usuario_nombre,
             motivo: m.motivo,
-            observaciones: m.observaciones
+            observaciones: m.observaciones,
+            auditoria_id: m.auditoria_id,
+            ubicacion_id: m.ubicacion_id
           };
 
           if (m.tipo === 'entrada') {
@@ -393,6 +406,11 @@ export class StockService {
               costo_unitario: m.costo_unitario ? parseFloat(m.costo_unitario) : 0,
               costo_total: m.costo_total ? parseFloat(m.costo_total) : 0
             } as EntradaStock;
+          } else if (m.tipo === 'ajuste') {
+            return {
+              ...movimientoBase,
+              auditoria_id: m.auditoria_id
+            } as AjusteStock;
           } else {
             return {
               ...movimientoBase,
@@ -415,7 +433,7 @@ export class StockService {
   /**
    * Obtiene movimientos filtrados
    */
-  getMovimientosFiltrados(filtros: FiltrosMovimiento): Observable<(EntradaStock | SalidaStock)[]> {
+  getMovimientosFiltrados(filtros: FiltrosMovimiento): Observable<MovimientoStockAny[]> {
     return this.getMovimientos().pipe(
       map(movimientos => {
         let resultado = [...movimientos];
@@ -452,73 +470,30 @@ export class StockService {
   }
 
   /**
-   * Obtiene estadísticas generales
+   * Obtiene estadísticas generales desde la vista agregada
    */
   getEstadisticas(): Observable<EstadisticasStock> {
     return from(
       this.supabaseService.executeWithRetry(async () => {
         const client = await this.supabaseService.getClient();
+        const { data, error } = await client
+          .from('v_stock_dashboard_estadisticas')
+          .select('*')
+          .maybeSingle();
 
-        // Obtener stock
-        const { data: stockData } = await client
-          .from('stock_depositos')
-          .select('*');
-
-        const stock = await this.enriquecerStock(stockData || []);
-
-        // Obtener movimientos del mes
-        const inicioMes = new Date();
-        inicioMes.setDate(1);
-        inicioMes.setHours(0, 0, 0, 0);
-
-        const { data: movimientosData } = await client
-          .from('movimientos_stock')
-          .select('tipo')
-          .gte('fecha', inicioMes.toISOString());
-
-        const movimientosMes = movimientosData || [];
-        const entradasMes = movimientosMes.filter(m => m.tipo === 'entrada').length;
-        const salidasMes = movimientosMes.filter(m => m.tipo === 'salida').length;
-
-        // Calcular estadísticas
-        const itemsCriticos = stock.filter(s => s.estado === 'critico').length;
-        const itemsBajoMinimo = stock.filter(s => s.estado === 'bajo').length;
-        const itemsSobreMaximo = stock.filter(s => s.estado === 'excedido').length;
-
-        // Calcular valor total
-        const { data: entradasRecientes } = await client
-          .from('movimientos_stock')
-          .select('insumo_id, costo_unitario')
-          .eq('tipo', 'entrada')
-          .order('fecha', { ascending: false })
-          .limit(100);
-
-        let valorTotal = 0;
-        stock.forEach(s => {
-          const ultimaEntrada = entradasRecientes?.find((e: any) => e.insumo_id === s.insumo_id);
-          if (ultimaEntrada && ultimaEntrada.costo_unitario) {
-            valorTotal += s.cantidad_actual * parseFloat(ultimaEntrada.costo_unitario);
-          }
-        });
-
-        // Contar depósitos
-        const { data: depositosData } = await client
-          .from('depositos')
-          .select('id')
-          .eq('activo', true);
-
-        const insumosUnicos = new Set(stock.map(s => s.insumo_id));
+        if (error) throw new Error(error.message);
 
         return {
-          total_insumos: insumosUnicos.size,
-          total_depositos: depositosData?.length || 0,
-          valor_total: valorTotal,
-          items_criticos: itemsCriticos,
-          items_bajo_minimo: itemsBajoMinimo,
-          items_sobre_maximo: itemsSobreMaximo,
-          movimientos_mes: movimientosMes.length,
-          entradas_mes: entradasMes,
-          salidas_mes: salidasMes
+          total_insumos: Number(data?.total_insumos) || 0,
+          total_depositos: Number(data?.total_depositos) || 0,
+          valor_total: Number(data?.valor_total) || 0,
+          items_criticos: Number(data?.items_criticos) || 0,
+          items_bajo_minimo: Number(data?.items_bajo_minimo) || 0,
+          items_sobre_maximo: Number(data?.items_sobre_maximo) || 0,
+          movimientos_mes: Number(data?.movimientos_mes) || 0,
+          entradas_mes: Number(data?.entradas_mes) || 0,
+          salidas_mes: Number(data?.salidas_mes) || 0,
+          ajustes_mes: Number(data?.ajustes_mes) || 0
         };
       })
     ).pipe(
@@ -533,8 +508,35 @@ export class StockService {
           items_sobre_maximo: 0,
           movimientos_mes: 0,
           entradas_mes: 0,
-          salidas_mes: 0
+          salidas_mes: 0,
+          ajustes_mes: 0
         });
+      })
+    );
+  }
+
+  /**
+   * Conteo de alertas por depósito (vista agregada, sin bajar el stock completo)
+   */
+  getAlertasPorDeposito(): Observable<AlertaStockPorDeposito[]> {
+    return from(
+      this.supabaseService.executeWithRetry(async () => {
+        const client = await this.supabaseService.getClient();
+        const { data, error } = await client
+          .from('v_stock_alertas_por_deposito')
+          .select('deposito_id, total_alertas');
+
+        if (error) throw new Error(error.message);
+
+        return (data || []).map((row: any) => ({
+          deposito_id: row.deposito_id,
+          total_alertas: Number(row.total_alertas) || 0
+        }));
+      })
+    ).pipe(
+      catchError(error => {
+        console.error('Error al obtener alertas por depósito:', error);
+        return of([]);
       })
     );
   }
@@ -707,7 +709,7 @@ export class StockService {
           .from('stock_depositos')
           .update(parametros)
           .eq('id', stockId)
-          .select('*, depositos(nombre)')
+          .select('*, depositos(nombre), deposito_ubicaciones(codigo, nombre)')
           .single();
 
         if (error) throw new Error(error.message);

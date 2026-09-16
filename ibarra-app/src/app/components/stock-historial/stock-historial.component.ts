@@ -1,9 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { StockService } from '../../services/stock.service';
-import { Deposito, EntradaStock, SalidaStock, FiltrosMovimiento } from '../../models/stock.model';
+import { Deposito, EntradaStock, SalidaStock, AjusteStock, MovimientoStockAny, FiltrosMovimiento } from '../../models/stock.model';
 import { Insumo } from '../../models/chofer.model';
 import { ApiIbarraService } from '../../services/api-ibarra.service';
 
@@ -18,16 +18,19 @@ export class StockHistorialComponent implements OnInit {
   private stockService = inject(StockService);
   private apiService = inject(ApiIbarraService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+
+  depositoContexto: string | null = null;
 
   // Datos
-  movimientos: (EntradaStock | SalidaStock)[] = [];
-  movimientosFiltrados: (EntradaStock | SalidaStock)[] = [];
+  movimientos: MovimientoStockAny[] = [];
+  movimientosFiltrados: MovimientoStockAny[] = [];
   depositos: Deposito[] = [];
   insumos: Insumo[] = [];
 
   // Filtros
   filtros: FiltrosMovimiento = {};
-  filtroTipo: 'todos' | 'entrada' | 'salida' = 'todos';
+  filtroTipo: 'todos' | 'entrada' | 'salida' | 'ajuste' = 'todos';
   filtroDepositoId = '';
   filtroInsumoId = '';
   filtroFechaDesde = '';
@@ -43,7 +46,7 @@ export class StockHistorialComponent implements OnInit {
   get totalPaginas(): number {
     return Math.ceil(this.movimientosFiltrados.length / this.itemsPorPagina);
   }
-  get movimientosPaginados(): (EntradaStock | SalidaStock)[] {
+  get movimientosPaginados(): MovimientoStockAny[] {
     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
     const fin = inicio + this.itemsPorPagina;
     return this.movimientosFiltrados.slice(inicio, fin);
@@ -68,6 +71,10 @@ export class StockHistorialComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.depositoContexto = this.route.snapshot.queryParamMap.get('deposito');
+    if (this.depositoContexto) {
+      this.filtroDepositoId = this.depositoContexto;
+    }
     this.cargarDatos();
   }
 
@@ -176,29 +183,41 @@ export class StockHistorialComponent implements OnInit {
   /**
    * Verifica si un movimiento es entrada
    */
-  isEntrada(movimiento: EntradaStock | SalidaStock): movimiento is EntradaStock {
+  get totalAjustes(): number {
+    return this.movimientosFiltrados.filter(m => m.tipo === 'ajuste').length;
+  }
+
+  isEntrada(movimiento: MovimientoStockAny): movimiento is EntradaStock {
     return movimiento.tipo === 'entrada';
   }
 
-  /**
-   * Verifica si un movimiento es salida
-   */
-  isSalida(movimiento: EntradaStock | SalidaStock): movimiento is SalidaStock {
+  isSalida(movimiento: MovimientoStockAny): movimiento is SalidaStock {
     return movimiento.tipo === 'salida';
+  }
+
+  isAjuste(movimiento: MovimientoStockAny): movimiento is AjusteStock {
+    return movimiento.tipo === 'ajuste';
   }
 
   /**
    * Obtiene la clase CSS para el tipo de movimiento
    */
   getTipoClass(tipo: string): string {
-    return tipo === 'entrada' ? 'badge-success' : 'badge-danger';
+    if (tipo === 'entrada') return 'badge-success';
+    if (tipo === 'ajuste') return 'badge-warning';
+    return 'badge-danger';
   }
 
-  /**
-   * Obtiene el icono para el tipo de movimiento
-   */
   getTipoIcon(tipo: string): string {
-    return tipo === 'entrada' ? 'fas fa-arrow-down' : 'fas fa-arrow-up';
+    if (tipo === 'entrada') return 'fas fa-arrow-down';
+    if (tipo === 'ajuste') return 'fas fa-balance-scale';
+    return 'fas fa-arrow-up';
+  }
+
+  etiquetaTipo(tipo: string): string {
+    if (tipo === 'entrada') return 'Entrada';
+    if (tipo === 'ajuste') return 'Ajuste';
+    return 'Salida';
   }
 
   /**
@@ -219,6 +238,14 @@ export class StockHistorialComponent implements OnInit {
    */
   navegarA(ruta: string): void {
     this.router.navigate([ruta]);
+  }
+
+  volver(): void {
+    if (this.depositoContexto) {
+      this.router.navigate(['/stock/deposito', this.depositoContexto]);
+      return;
+    }
+    this.router.navigate(['/stock/dashboard']);
   }
 
   /**

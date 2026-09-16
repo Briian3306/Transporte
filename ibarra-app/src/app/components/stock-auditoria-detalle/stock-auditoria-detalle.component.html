@@ -1,0 +1,147 @@
+<div class="min-h-screen bg-gray-50 p-6" *ngIf="!loading && auditoria">
+  <button (click)="volver()" class="text-gray-600 mb-4 inline-flex items-center">
+    <i class="fas fa-arrow-left mr-2"></i> Volver
+  </button>
+
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Auditoría {{ auditoria.tipo }}</h1>
+      <p class="text-gray-600">{{ auditoria.deposito_nombre }} · {{ auditoria.estado }}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button (click)="exportarCSV()" class="px-4 py-2 bg-blue-600 text-white rounded-lg">CSV</button>
+      <button (click)="exportarPDF()" class="px-4 py-2 bg-red-600 text-white rounded-lg">PDF</button>
+      <button *ngIf="enCurso && auditoria.tipo === 'parcial'" (click)="abrirAgregar()" class="px-4 py-2 bg-teal-600 text-white rounded-lg">
+        Agregar items
+      </button>
+      <button *ngIf="enCurso" (click)="cancelar()" class="px-4 py-2 border rounded-lg">Cancelar auditoría</button>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="mb-4 p-4 bg-red-50 text-red-800 rounded-lg">{{ error }}</div>
+
+  <div class="bg-white rounded-lg shadow p-5 mb-6">
+    <div class="flex justify-between text-sm mb-2">
+      <span>Controlados {{ auditoria.items_controlados }} / {{ auditoria.total_items }}</span>
+      <span>{{ progreso }}%</span>
+    </div>
+    <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+      <div class="h-full bg-blue-600" [style.width.%]="progreso"></div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-sm">
+      <div>Desvíos: <strong>{{ auditoria.items_con_desvio }}</strong></div>
+      <div>No encontrados: <strong>{{ auditoria.items_no_encontrados }}</strong></div>
+      <div>Pendientes: <strong>{{ pendientes }}</strong></div>
+      <div>Cobertura depósito: <strong>{{ resumen?.items_controlados || 0 }}/{{ resumen?.items_deposito || 0 }}</strong></div>
+    </div>
+  </div>
+
+  <label class="inline-flex items-center mb-3 text-sm">
+    <input type="checkbox" [(ngModel)]="soloPendientes" class="mr-2">
+    Solo pendientes
+  </label>
+
+  <div class="bg-white rounded-lg shadow overflow-x-auto mb-6">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+        <tr>
+          <th class="px-3 py-2 text-left">Insumo</th>
+          <th class="px-3 py-2 text-left">Ubicación</th>
+          <th class="px-3 py-2 text-center">Sistema</th>
+          <th class="px-3 py-2 text-center">Contada</th>
+          <th class="px-3 py-2 text-center">Desvío</th>
+          <th class="px-3 py-2">Estado</th>
+          <th class="px-3 py-2">Motivo</th>
+          <th class="px-3 py-2">Control</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of itemsVisibles" class="border-t" [class.bg-yellow-50]="!item.controlado">
+          <td class="px-3 py-2">
+            <div class="font-medium">{{ item.insumo_nombre }}</div>
+            <div class="text-xs text-gray-500">{{ item.insumo_codigo }}</div>
+          </td>
+          <td class="px-3 py-2">{{ item.ubicacion_codigo || '-' }}</td>
+          <td class="px-3 py-2 text-center">{{ item.cantidad_sistema }}</td>
+          <td class="px-3 py-2 text-center">
+            <ng-container *ngIf="enCurso; else contadaReadonly">
+              <input
+                type="number"
+                min="0"
+                class="w-24 px-2 py-1 border rounded"
+                [(ngModel)]="borradores[item.id].cantidad_contada"
+                [disabled]="borradores[item.id].estado_item === 'no_encontrado'">
+            </ng-container>
+            <ng-template #contadaReadonly>{{ item.cantidad_contada ?? '-' }}</ng-template>
+          </td>
+          <td class="px-3 py-2 text-center font-semibold"
+              [class.text-red-600]="(item.desvio || 0) !== 0"
+              [class.text-green-600]="item.desvio === 0">
+            {{ item.desvio == null ? '-' : item.desvio }}
+          </td>
+          <td class="px-3 py-2">
+            <select *ngIf="enCurso" [(ngModel)]="borradores[item.id].estado_item" class="px-2 py-1 border rounded">
+              <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
+            </select>
+            <span *ngIf="!enCurso" class="px-2 py-1 rounded-full text-xs" [class.bg-green-100]="item.estado_item === 'ok'" [class.bg-red-100]="item.estado_item !== 'ok'">
+              {{ etiquetaEstado(item.estado_item) }}
+            </span>
+          </td>
+          <td class="px-3 py-2">
+            <input *ngIf="enCurso" [(ngModel)]="borradores[item.id].motivo" class="w-full px-2 py-1 border rounded" placeholder="Motivo">
+            <span *ngIf="!enCurso">{{ item.motivo_desvio || '-' }}</span>
+            <div *ngIf="item.controlado" class="text-xs text-gray-500 mt-1">
+              {{ item.controlado_por_nombre }} · {{ item.controlado_at | date:'short' }}
+            </div>
+          </td>
+          <td class="px-3 py-2 text-center">
+            <span *ngIf="item.controlado" class="text-green-700 text-xs font-semibold">Controlado</span>
+            <button *ngIf="enCurso" (click)="controlar(item)" [disabled]="guardando" class="px-3 py-1 bg-blue-600 text-white rounded">
+              {{ item.controlado ? 'Actualizar' : 'Marcar' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="mostrarAgregar" class="bg-white rounded-lg shadow p-5 mb-6">
+    <h3 class="font-semibold mb-3">Agregar items a la auditoría parcial</h3>
+    <div class="max-h-64 overflow-y-auto border rounded mb-3">
+      <label *ngFor="let s of stockDisponible" class="flex items-center gap-2 px-3 py-2 border-b text-sm">
+        <input type="checkbox" [checked]="seleccionAgregar.has(s.id)" (change)="toggleAgregar(s.id)">
+        {{ s.insumo_nombre }} · {{ s.cantidad_actual }}
+      </label>
+    </div>
+    <button (click)="agregarSeleccionados()" [disabled]="seleccionAgregar.size === 0" class="px-4 py-2 bg-teal-600 text-white rounded-lg disabled:opacity-50">
+      Agregar {{ seleccionAgregar.size }}
+    </button>
+  </div>
+
+  <div *ngIf="resumen" class="bg-white rounded-lg shadow p-5 mb-6">
+    <h3 class="font-semibold mb-3">Reporte de desvíos</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+      <div>OK: {{ resumen.items_ok }}</div>
+      <div>Con desvío: {{ resumen.items_con_desvio }}</div>
+      <div>No encontrados: {{ resumen.items_no_encontrados }}</div>
+      <div>Deteriorados: {{ resumen.items_deteriorados }}</div>
+      <div>Desvío neto: {{ resumen.desvio_neto }}</div>
+      <div>% desvío: {{ resumen.porcentaje_desvio | number:'1.0-1' }}%</div>
+    </div>
+  </div>
+
+  <div *ngIf="enCurso" class="bg-white rounded-lg shadow p-5">
+    <label class="inline-flex items-center mb-3">
+      <input type="checkbox" [(ngModel)]="aplicarAjustes" class="mr-2" [disabled]="pendientes > 0">
+      Aplicar ajustes de stock al cerrar
+    </label>
+    <p *ngIf="pendientes > 0" class="text-sm text-red-600 mb-3">Faltan {{ pendientes }} items por controlar</p>
+    <button (click)="cerrar()" [disabled]="pendientes > 0 || guardando" class="px-6 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50">
+      Cerrar auditoría
+    </button>
+  </div>
+</div>
+
+<div *ngIf="loading" class="p-12 text-center">
+  <i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i>
+</div>

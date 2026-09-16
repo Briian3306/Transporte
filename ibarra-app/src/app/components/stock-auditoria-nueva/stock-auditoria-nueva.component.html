@@ -1,0 +1,79 @@
+<div class="min-h-screen bg-gray-50 p-6">
+  <button (click)="cancelar()" class="text-gray-600 mb-4 inline-flex items-center">
+    <i class="fas fa-arrow-left mr-2"></i> Volver
+  </button>
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">
+    Nueva auditoría {{ tipo }}
+  </h1>
+  <p class="text-gray-600 mb-6">{{ deposito?.nombre }}</p>
+
+  <div *ngIf="error" class="mb-4 p-4 bg-red-50 text-red-800 rounded-lg">{{ error }}</div>
+  <div *ngIf="loading" class="py-12 text-center"><i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i></div>
+
+  <div *ngIf="!loading && tipo === 'total'" class="bg-white rounded-lg shadow p-6 max-w-2xl">
+    <p class="mb-2">Se controlarán <strong>{{ itemsTotales }}</strong> items del depósito.</p>
+    <p class="text-sm text-gray-500 mb-6">
+      {{ config?.incluir_sin_stock === false ? 'No se incluyen items con cantidad 0.' : 'Incluye items sin stock.' }}
+      No se podrá cerrar hasta controlar el 100%.
+    </p>
+    <button (click)="iniciar()" [disabled]="iniciando" class="px-6 py-2 bg-blue-600 text-white rounded-lg">
+      {{ iniciando ? 'Iniciando...' : 'Iniciar auditoría total' }}
+    </button>
+  </div>
+
+  <div *ngIf="!loading && tipo === 'parcial'" class="bg-white rounded-lg shadow p-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+      <input [(ngModel)]="filtroTexto" (ngModelChange)="aplicarFiltros()" placeholder="Buscar insumo..." class="px-3 py-2 border rounded-lg">
+      <select [(ngModel)]="filtroCategoria" (ngModelChange)="aplicarFiltros()" class="px-3 py-2 border rounded-lg">
+        <option value="">Todas las categorías</option>
+        <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+      </select>
+      <select [(ngModel)]="filtroUbicacion" (ngModelChange)="aplicarFiltros()" class="px-3 py-2 border rounded-lg">
+        <option value="">Todas las ubicaciones</option>
+        <option value="sin">Sin ubicación</option>
+        <option *ngFor="let u of ubicaciones" [value]="u.id">{{ u.codigo_completo }}</option>
+      </select>
+      <select [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()" class="px-3 py-2 border rounded-lg">
+        <option value="todos">Todos los estados</option>
+        <option value="normal">Normal</option>
+        <option value="bajo">Bajo</option>
+        <option value="critico">Crítico</option>
+        <option value="excedido">Excedido</option>
+      </select>
+    </div>
+
+    <div class="flex justify-between items-center mb-3">
+      <button type="button" (click)="toggleTodosFiltrados()" class="text-sm text-blue-700">Seleccionar filtrados</button>
+      <span class="text-sm text-gray-600">{{ seleccion.size }} seleccionados</span>
+    </div>
+
+    <div class="overflow-x-auto max-h-[28rem] overflow-y-auto border rounded-lg">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-3 py-2"></th>
+            <th class="px-3 py-2 text-left">Insumo</th>
+            <th class="px-3 py-2 text-left">Ubicación</th>
+            <th class="px-3 py-2 text-center">Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of stockFiltrado" class="border-t">
+            <td class="px-3 py-2">
+              <input type="checkbox" [checked]="seleccion.has(item.id)" (change)="toggle(item.id)">
+            </td>
+            <td class="px-3 py-2">{{ item.insumo_nombre }}</td>
+            <td class="px-3 py-2">{{ item.ubicacion_codigo || '-' }}</td>
+            <td class="px-3 py-2 text-center">{{ item.cantidad_actual }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4">
+      <button (click)="iniciar()" [disabled]="iniciando || seleccion.size === 0" class="px-6 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50">
+        {{ iniciando ? 'Iniciando...' : ('Iniciar con ' + seleccion.size + ' items') }}
+      </button>
+    </div>
+  </div>
+</div>

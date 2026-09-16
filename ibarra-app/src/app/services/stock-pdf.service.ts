@@ -1,7 +1,11 @@
 import { Injectable } from '@angular/core';
 import { PdfService } from './pdf.service';
-import { Deposito, StockDeposito } from '../models/stock.model';
+import { Deposito, StockDeposito, AuditoriaStock, ResumenDesviosAuditoria } from '../models/stock.model';
 import { Content, TableCell, ContentTable } from 'pdfmake/interfaces';
+import {
+  buildKanbanCartelDefinition,
+  buildKanbanCartelFilename,
+} from './stock-kanban-pdf';
 
 /**
  * Servicio específico para generar PDFs de Stock
@@ -13,6 +17,19 @@ import { Content, TableCell, ContentTable } from 'pdfmake/interfaces';
 export class StockPdfService {
 
   constructor(private pdfService: PdfService) { }
+
+  /**
+   * Genera y descarga un cartel kanban 100x60 mm del insumo
+   */
+  generateKanbanCartelPdf(item: StockDeposito, deposito: Deposito): void {
+      this.pdfService.generateAndDownload(
+      buildKanbanCartelDefinition(item, {
+        nombre: deposito.nombre,
+        ubicacion: item.ubicacion_codigo || deposito.ubicacion,
+      }),
+      buildKanbanCartelFilename(item, deposito.nombre),
+    );
+  }
 
   /**
    * Genera y descarga un PDF del stock del depósito
@@ -302,6 +319,59 @@ export class StockPdfService {
     const nombreDeposito = deposito.nombre.replace(/\s+/g, '_');
     
     return `${fechaFormateada}_Stock_${nombreDeposito}.pdf`;
+  }
+
+  generateAuditoriaPdf(auditoria: AuditoriaStock, resumen: ResumenDesviosAuditoria): void {
+    const content: Content[] = [];
+    content.push(
+      this.pdfService.createHeader({
+        leftText: 'TRANSPORTE IBARRA S.A.',
+        centerText: `AUDITORÍA DE STOCK - ${auditoria.tipo.toUpperCase()}`,
+        rightText: auditoria.estado.toUpperCase()
+      })
+    );
+
+    const info = this.pdfService.createInfoSection({
+      items: [
+        { label: 'Depósito', value: auditoria.deposito_nombre || '-' },
+        { label: 'Tipo', value: auditoria.tipo },
+        { label: 'Inicio', value: this.pdfService.formatDate(auditoria.fecha_inicio.toISOString()) },
+        { label: 'Cobertura', value: `${resumen.items_controlados}/${resumen.items_deposito} items del depósito` },
+        { label: 'Desvíos', value: String(resumen.items_con_desvio) },
+        { label: 'No encontrados', value: String(resumen.items_no_encontrados) }
+      ],
+      columns: 2
+    });
+    content.push(...info);
+
+    const headers: TableCell[] = [
+      { text: 'INSUMO', style: 'tableHeader', fontSize: 8 },
+      { text: 'UBICACIÓN', style: 'tableHeader', fontSize: 8 },
+      { text: 'SIST.', style: 'tableHeader', alignment: 'center', fontSize: 8 },
+      { text: 'CONT.', style: 'tableHeader', alignment: 'center', fontSize: 8 },
+      { text: 'DESVÍO', style: 'tableHeader', alignment: 'center', fontSize: 8 },
+      { text: 'ESTADO', style: 'tableHeader', alignment: 'center', fontSize: 8 }
+    ];
+
+    const body: TableCell[][] = (auditoria.items || []).map((item) => [
+      { text: item.insumo_nombre || '-', fontSize: 8 },
+      { text: item.ubicacion_codigo || '-', fontSize: 7 },
+      { text: String(item.cantidad_sistema), alignment: 'center', fontSize: 8 },
+      { text: item.cantidad_contada == null ? '-' : String(item.cantidad_contada), alignment: 'center', fontSize: 8 },
+      { text: item.desvio == null ? '-' : String(item.desvio), alignment: 'center', fontSize: 8 },
+      { text: item.estado_item, alignment: 'center', fontSize: 7 }
+    ]);
+
+    content.push({ text: 'DETALLE DE CONTROL', style: 'sectionTitle', margin: [0, 8, 0, 5] });
+    content.push(this.pdfService.createTable({
+      widths: ['28%', '18%', '12%', '12%', '12%', '18%'],
+      headers,
+      body
+    }));
+
+    const fecha = new Date();
+    const stamp = `${fecha.getFullYear()}${String(fecha.getMonth() + 1).padStart(2, '0')}${String(fecha.getDate()).padStart(2, '0')}`;
+    this.pdfService.generateAndDownload({ content }, `${stamp}_Auditoria_${auditoria.tipo}.pdf`);
   }
 }
 

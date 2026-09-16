@@ -161,7 +161,7 @@
         <ul>
           <li *ngFor="let d of documentosIncluidos">
             <strong>{{ d.factura || '(sin número)' }}</strong>
-            · {{ d.rowIndexes?.length || 0 }} pasadas
+            · {{ d.rowIndexes.length }} pasadas
           </li>
         </ul>
       </div>

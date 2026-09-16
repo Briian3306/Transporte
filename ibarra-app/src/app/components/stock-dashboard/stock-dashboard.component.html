@@ -1,19 +1,14 @@
 <div class="stock-dashboard">
-  <!-- Header -->
   <div class="dashboard-header">
     <div class="header-content">
       <h1 class="page-title">
         <i class="fas fa-warehouse"></i>
         Gestión de Stock
       </h1>
-      <p class="page-subtitle">Panel de control y métricas de inventario</p>
+      <p class="page-subtitle">Panel de control, depósitos y métricas de inventario</p>
     </div>
 
     <div class="header-actions">
-      <button class="btn btn-primary" (click)="navegarA('/stock/depositos')">
-        <i class="fas fa-warehouse"></i>
-        Ver Depósitos
-      </button>
       <button class="btn btn-success" (click)="navegarA('/stock/entrada')">
         <i class="fas fa-plus-circle"></i>
         Nueva Entrada
@@ -22,27 +17,30 @@
         <i class="fas fa-minus-circle"></i>
         Nueva Salida
       </button>
+      <button class="btn btn-secondary" (click)="navegarA('/stock/historial')">
+        <i class="fas fa-history"></i>
+        Historial
+      </button>
+      <button class="btn btn-secondary" (click)="navegarA('/stock/auditorias')">
+        <i class="fas fa-clipboard-check"></i>
+        Auditorías
+      </button>
     </div>
   </div>
 
-  <!-- Loading -->
   <div *ngIf="loading" class="loading-container">
     <div class="spinner"></div>
     <p>Cargando datos del stock...</p>
   </div>
 
-  <!-- Error -->
   <div *ngIf="error && !loading" class="error-container">
     <i class="fas fa-exclamation-circle"></i>
     <p>{{ error }}</p>
     <button class="btn btn-primary" (click)="cargarDatos()">Reintentar</button>
   </div>
 
-  <!-- Contenido -->
   <div *ngIf="!loading && !error" class="dashboard-content">
-    <!-- Tarjetas de Estadísticas -->
     <div class="stats-grid">
-      <!-- Total Insumos -->
       <div class="stat-card" [ngClass]="getCardClass('insumos')">
         <div class="stat-icon">
           <i [class]="getCardIcon('insumos')"></i>
@@ -54,7 +52,6 @@
         </div>
       </div>
 
-      <!-- Valor Total -->
       <div class="stat-card" [ngClass]="getCardClass('valor')">
         <div class="stat-icon">
           <i [class]="getCardIcon('valor')"></i>
@@ -66,7 +63,6 @@
         </div>
       </div>
 
-      <!-- Items Críticos -->
       <div class="stat-card" [ngClass]="getCardClass('criticos')">
         <div class="stat-icon">
           <i [class]="getCardIcon('criticos')"></i>
@@ -78,7 +74,6 @@
         </div>
       </div>
 
-      <!-- Movimientos del Mes -->
       <div class="stat-card" [ngClass]="getCardClass('movimientos')">
         <div class="stat-icon">
           <i [class]="getCardIcon('movimientos')"></i>
@@ -89,78 +84,97 @@
           <small class="stat-detail">
             <i class="fas fa-arrow-up text-success"></i> {{ estadisticas?.entradas_mes || 0 }}
             <i class="fas fa-arrow-down text-danger"></i> {{ estadisticas?.salidas_mes || 0 }}
+            <span *ngIf="estadisticas?.ajustes_mes"> · {{ estadisticas?.ajustes_mes }} ajustes</span>
           </small>
         </div>
       </div>
     </div>
 
-    <!-- Alertas de Stock -->
-    <div class="alertas-section">
+    <div class="depositos-section">
       <div class="section-header">
         <h2 class="section-title">
-          <i class="fas fa-bell"></i>
-          Alertas de Stock
+          <i class="fas fa-warehouse"></i>
+          Depósitos
         </h2>
-        <span class="badge badge-danger" *ngIf="alertas.length > 0">
-          {{ alertas.length }}
-        </span>
+        <button class="btn btn-success btn-sm" (click)="navegarA('/stock/deposito/nuevo')">
+          <i class="fas fa-plus"></i>
+          Nuevo Depósito
+        </button>
       </div>
 
-      <div class="alertas-container" *ngIf="alertasVisibles.length > 0; else noAlertas">
-        <div
-          *ngFor="let alerta of alertasVisibles"
-          class="alert"
-          [ngClass]="getAlertClass(alerta.severidad)"
-        >
-          <div class="alert-icon">
-            <i [class]="getAlertIcon(alerta.severidad)"></i>
+      <div *ngIf="depositos.length > 0; else sinDepositos" class="depositos-grid">
+        <button
+          *ngFor="let deposito of depositos"
+          type="button"
+          class="deposito-card"
+          (click)="verDeposito(deposito)">
+          <div class="deposito-card-header">
+            <div>
+              <h3 class="deposito-card-title">{{ deposito.nombre }}</h3>
+              <p class="deposito-card-meta">
+                <i class="fas fa-map-marker-alt"></i>
+                {{ deposito.ubicacion }}
+              </p>
+            </div>
+            <span
+              *ngIf="getAlertasDeposito(deposito.id) > 0"
+              class="badge badge-danger">
+              {{ getAlertasDeposito(deposito.id) }}
+            </span>
           </div>
-          <div class="alert-content">
-            <h4 class="alert-title">{{ alerta.mensaje }}</h4>
-            <p class="alert-details">
-              <strong>Depósito:</strong> {{ alerta.deposito_nombre }} |
-              <strong>Insumo:</strong> {{ alerta.insumo_nombre }} |
-              <strong>Cantidad:</strong> {{ alerta.cantidad_actual }} / {{ alerta.cantidad_referencia }}
-            </p>
-          </div>
-          <div class="alert-action">
-            <button class="btn btn-sm btn-primary" (click)="navegarA('/stock/entrada')">
-              <i class="fas fa-plus"></i>
-              Reabastecer
-            </button>
-          </div>
-        </div>
-
-        <div class="alertas-footer" *ngIf="alertas.length > maxAlertasVisibles">
-          <button class="btn btn-link" (click)="navegarA('/stock/depositos')">
-            Ver todas las alertas ({{ alertas.length }})
+          <p class="deposito-card-responsable">
+            <i class="fas fa-user"></i>
+            {{ deposito.responsable || 'Sin responsable' }}
+          </p>
+          <p *ngIf="getAuditoriaVencidaDeposito(deposito.id) as vencida" class="deposito-card-alerta">
+            <i class="fas fa-clipboard-check"></i>
+            Auditoría vencida · {{ vencida.dias_vencida }} día(s)
+          </p>
+          <span class="deposito-card-cta">
+            Ver depósito
             <i class="fas fa-arrow-right"></i>
-          </button>
-        </div>
+          </span>
+        </button>
       </div>
 
-      <ng-template #noAlertas>
+      <ng-template #sinDepositos>
         <div class="no-alertas">
-          <i class="fas fa-check-circle"></i>
-          <p>No hay alertas de stock en este momento</p>
-          <small>Todos los insumos están en niveles óptimos</small>
+          <i class="fas fa-warehouse"></i>
+          <p>No hay depósitos cargados</p>
+          <small>Creá el primero para empezar a gestionar el inventario</small>
         </div>
       </ng-template>
     </div>
 
-    <!-- Accesos Rápidos -->
+    <div class="alertas-section" *ngIf="auditoriasVencidas.length > 0">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="fas fa-clipboard-check"></i>
+          Auditorías vencidas
+        </h2>
+      </div>
+      <div class="alertas-container">
+        <div *ngFor="let item of auditoriasVencidas" class="alert alert-warning">
+          <div class="alert-content">
+            <h4 class="alert-title">Auditoría vencida en {{ item.deposito_nombre }}</h4>
+            <p class="alert-details">Programada para {{ item.proxima_fecha }} · {{ item.dias_vencida }} día(s) de atraso</p>
+          </div>
+          <div class="alert-action">
+            <button class="btn btn-sm btn-primary" (click)="navegarA('/stock/auditorias', { deposito: item.deposito_id })">
+              Ver auditorías
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="quick-access-section">
       <h2 class="section-title">
         <i class="fas fa-bolt"></i>
         Accesos Rápidos
       </h2>
-      
-      <div class="quick-access-grid">
-        <button class="quick-access-card" (click)="navegarA('/stock/depositos')">
-          <i class="fas fa-warehouse"></i>
-          <span>Ver Depósitos</span>
-        </button>
 
+      <div class="quick-access-grid">
         <button class="quick-access-card" (click)="navegarA('/stock/entrada')">
           <i class="fas fa-arrow-circle-down"></i>
           <span>Registrar Entrada</span>
@@ -169,6 +183,11 @@
         <button class="quick-access-card" (click)="navegarA('/stock/salida')">
           <i class="fas fa-arrow-circle-up"></i>
           <span>Registrar Salida</span>
+        </button>
+
+        <button class="quick-access-card" (click)="navegarA('/stock/auditorias')">
+          <i class="fas fa-clipboard-check"></i>
+          <span>Auditorías</span>
         </button>
 
         <button class="quick-access-card" (click)="navegarA('/stock/historial')">

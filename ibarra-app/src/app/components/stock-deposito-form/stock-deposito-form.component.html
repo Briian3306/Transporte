@@ -1,6 +1,5 @@
 <div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
   <div class="max-w-3xl mx-auto">
-    <!-- Header -->
     <div class="mb-8">
       <button
         (click)="onCancel()"
@@ -10,16 +9,17 @@
       </button>
       <h1 class="text-3xl font-bold text-gray-900">
         <i class="fas fa-warehouse mr-3 text-blue-600"></i>
-        Nuevo Depósito
+        {{ titulo }}
       </h1>
-      <p class="mt-2 text-gray-600">Complete los datos del nuevo depósito de stock</p>
+      <p class="mt-2 text-gray-600">
+        {{ modoEdicion ? 'Actualice los datos del depósito y la periodicidad de auditorías' : 'Complete los datos del nuevo depósito de stock' }}
+      </p>
     </div>
 
-    <!-- Mensajes de Estado -->
     <div *ngIf="success" class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start">
       <i class="fas fa-check-circle text-green-600 mt-0.5 mr-3"></i>
       <div>
-        <p class="font-medium text-green-900">¡Depósito creado exitosamente!</p>
+        <p class="font-medium text-green-900">¡Depósito guardado exitosamente!</p>
         <p class="text-sm text-green-700 mt-1">Redirigiendo a la lista de depósitos...</p>
       </div>
     </div>
@@ -27,88 +27,75 @@
     <div *ngIf="error" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
       <i class="fas fa-exclamation-circle text-red-600 mt-0.5 mr-3"></i>
       <div>
-        <p class="font-medium text-red-900">Error al crear depósito</p>
+        <p class="font-medium text-red-900">Error al guardar depósito</p>
         <p class="text-sm text-red-700 mt-1">{{ error }}</p>
       </div>
     </div>
 
-    <!-- Formulario -->
-    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <div *ngIf="loadingDatos" class="bg-white rounded-lg shadow p-12 text-center">
+      <i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-3"></i>
+      <p class="text-gray-600">Cargando depósito...</p>
+    </div>
+
+    <div *ngIf="!loadingDatos" class="bg-white shadow-lg rounded-lg overflow-hidden">
       <form [formGroup]="depositoForm" (ngSubmit)="onSubmit()">
         <div class="p-6 space-y-6">
-          <!-- Nombre -->
           <div>
-            <label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">
-              Nombre del Depósito *
-            </label>
+            <label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">Nombre del Depósito *</label>
             <input
               type="text"
               id="nombre"
               formControlName="nombre"
-              [class.border-red-500]="isFieldInvalid('nombre')"
-              [class.border-gray-300]="!isFieldInvalid('nombre')"
-              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              [class.border-red-500]="isFieldInvalid(depositoForm, 'nombre')"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Ej: Depósito Central">
-            <p *ngIf="isFieldInvalid('nombre')" class="mt-1 text-sm text-red-600">
-              {{ getFieldError('nombre') }}
+            <p *ngIf="isFieldInvalid(depositoForm, 'nombre')" class="mt-1 text-sm text-red-600">
+              {{ getFieldError(depositoForm, 'nombre') }}
             </p>
           </div>
 
-          <!-- Descripción -->
           <div>
-            <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-2">
-              Descripción *
-            </label>
+            <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
             <textarea
               id="descripcion"
               formControlName="descripcion"
               rows="3"
-              [class.border-red-500]="isFieldInvalid('descripcion')"
-              [class.border-gray-300]="!isFieldInvalid('descripcion')"
-              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+              [class.border-red-500]="isFieldInvalid(depositoForm, 'descripcion')"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
               placeholder="Descripción del depósito, características, etc."></textarea>
-            <p *ngIf="isFieldInvalid('descripcion')" class="mt-1 text-sm text-red-600">
-              {{ getFieldError('descripcion') }}
+            <p *ngIf="isFieldInvalid(depositoForm, 'descripcion')" class="mt-1 text-sm text-red-600">
+              {{ getFieldError(depositoForm, 'descripcion') }}
             </p>
           </div>
 
-          <!-- Ubicación -->
           <div>
-            <label for="ubicacion" class="block text-sm font-medium text-gray-700 mb-2">
-              Ubicación *
-            </label>
+            <label for="ubicacion" class="block text-sm font-medium text-gray-700 mb-2">Ubicación (dirección) *</label>
             <input
               type="text"
               id="ubicacion"
               formControlName="ubicacion"
-              [class.border-red-500]="isFieldInvalid('ubicacion')"
-              [class.border-gray-300]="!isFieldInvalid('ubicacion')"
-              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              [class.border-red-500]="isFieldInvalid(depositoForm, 'ubicacion')"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Ej: Calle Principal 123, Bodega A">
-            <p *ngIf="isFieldInvalid('ubicacion')" class="mt-1 text-sm text-red-600">
-              {{ getFieldError('ubicacion') }}
+            <p *ngIf="isFieldInvalid(depositoForm, 'ubicacion')" class="mt-1 text-sm text-red-600">
+              {{ getFieldError(depositoForm, 'ubicacion') }}
             </p>
           </div>
 
-          <!-- Responsable -->
           <div>
-            <label for="responsable" class="block text-sm font-medium text-gray-700 mb-2">
-              Responsable *
-            </label>
+            <label for="responsable" class="block text-sm font-medium text-gray-700 mb-2">Responsable *</label>
             <input
               type="text"
               id="responsable"
               formControlName="responsable"
-              [class.border-red-500]="isFieldInvalid('responsable')"
-              [class.border-gray-300]="!isFieldInvalid('responsable')"
-              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              [class.border-red-500]="isFieldInvalid(depositoForm, 'responsable')"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Nombre del responsable del depósito">
-            <p *ngIf="isFieldInvalid('responsable')" class="mt-1 text-sm text-red-600">
-              {{ getFieldError('responsable') }}
+            <p *ngIf="isFieldInvalid(depositoForm, 'responsable')" class="mt-1 text-sm text-red-600">
+              {{ getFieldError(depositoForm, 'responsable') }}
             </p>
           </div>
 
-          <!-- Estado Activo -->
           <div class="flex items-center">
             <input
               type="checkbox"
@@ -119,40 +106,104 @@
               Depósito activo
             </label>
           </div>
+        </div>
 
-          <!-- Nota informativa -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div class="flex items-start">
-              <i class="fas fa-info-circle text-blue-600 mt-0.5 mr-3"></i>
-              <div class="text-sm text-blue-800">
-                <p class="font-medium">Información importante:</p>
-                <ul class="mt-2 space-y-1 list-disc list-inside">
-                  <li>Los campos marcados con * son obligatorios</li>
-                  <li>Después de crear el depósito, podrá agregar insumos y configurar stock mínimo/máximo</li>
-                  <li>Un depósito inactivo no permitirá realizar movimientos de stock</li>
-                </ul>
-              </div>
+        <div class="border-t border-gray-200 p-6 space-y-6" [formGroup]="auditoriaForm">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900">
+              <i class="fas fa-clipboard-check mr-2 text-blue-600"></i>
+              Auditorías del depósito
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">
+              La periodicidad aplica a la auditoría total. Las parciales se pueden iniciar en cualquier momento.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Periodicidad *</label>
+              <select
+                formControlName="periodicidad"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option *ngFor="let p of periodicidades" [value]="p.value">{{ p.label }}</option>
+              </select>
             </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Intervalo (días)</label>
+              <input
+                type="number"
+                min="1"
+                formControlName="intervalo_dias"
+                [readOnly]="!esPersonalizada"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Días de aviso previo</label>
+              <input
+                type="number"
+                min="0"
+                formControlName="dias_aviso_previo"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tolerancia de desvío (%)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                formControlName="tolerancia_desvio_pct"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Responsable de auditoría</label>
+              <input
+                type="text"
+                formControlName="responsable"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Opcional">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Próxima auditoría total</label>
+              <input
+                type="date"
+                formControlName="proxima_fecha"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-4">
+            <label class="inline-flex items-center text-sm text-gray-700">
+              <input type="checkbox" formControlName="incluir_sin_stock" class="h-4 w-4 text-blue-600 rounded mr-2">
+              Incluir items sin stock en la auditoría total
+            </label>
+            <label class="inline-flex items-center text-sm text-gray-700">
+              <input type="checkbox" formControlName="activo" class="h-4 w-4 text-blue-600 rounded mr-2">
+              Recordatorios de auditoría activos
+            </label>
           </div>
         </div>
 
-        <!-- Botones de Acción -->
         <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3 border-t border-gray-200">
           <button
             type="button"
             (click)="onCancel()"
             [disabled]="loading"
-            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50">
             <i class="fas fa-times mr-2"></i>
             Cancelar
           </button>
           <button
             type="submit"
-            [disabled]="loading || depositoForm.invalid"
-            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            [disabled]="loading || depositoForm.invalid || auditoriaForm.invalid"
+            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
             <i *ngIf="!loading" class="fas fa-save mr-2"></i>
             <i *ngIf="loading" class="fas fa-spinner fa-spin mr-2"></i>
-            {{ loading ? 'Guardando...' : 'Crear Depósito' }}
+            {{ loading ? 'Guardando...' : (modoEdicion ? 'Guardar cambios' : 'Crear Depósito') }}
           </button>
         </div>
       </form>

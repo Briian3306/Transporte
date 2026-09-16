@@ -96,11 +96,16 @@ const ROUTE_PERMISSIONS: { [key: string]: PermissionRequirement } = {
   
   // Stock
   '/stock/dashboard': { module: 'stock', action: 'read' },
-  '/stock/depositos': { module: 'stock', action: 'read' },
   '/stock/deposito/nuevo': { module: 'stock', action: 'create' },
+  '/stock/deposito/:id': { module: 'stock', action: 'read' },
+  '/stock/deposito/:id/editar': { module: 'stock', action: 'manage' },
+  '/stock/deposito/:id/ubicaciones': { module: 'stock', action: 'manage' },
   '/stock/entrada': { module: 'stock', action: 'create' },
   '/stock/salida': { module: 'stock', action: 'create' },
   '/stock/historial': { module: 'stock', action: 'read' },
+  '/stock/auditorias': { module: 'stock', action: 'read' },
+  '/stock/auditoria/nueva/:depositoId': { module: 'stock', action: 'create' },
+  '/stock/auditoria/:id': { module: 'stock', action: 'create' },
 
   // Peajes: requisitos compuestos por perfil operativo o administrativo
   ...PEAJES_ROUTE_PERMISSIONS,

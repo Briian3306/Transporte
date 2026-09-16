@@ -1,0 +1,330 @@
+<div class="stock-depositos">
+  <div class="page-header">
+    <div class="header-content">
+      <button type="button" class="back-link" (click)="volver()">
+        <i class="fas fa-arrow-left"></i>
+        Volver a depósitos
+      </button>
+      <h1 class="page-title">{{ deposito?.nombre || 'Depósito' }}</h1>
+      <p class="page-meta" *ngIf="deposito && metaLinea">{{ metaLinea }}</p>
+    </div>
+
+    <div class="header-actions" *ngIf="deposito">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="navegarA('/stock/entrada', { deposito: deposito.id })">
+        <i class="fas fa-plus"></i>
+        Ingreso
+      </button>
+      <button
+        type="button"
+        class="btn btn-ghost"
+        (click)="navegarA('/stock/salida', { deposito: deposito.id })">
+        <i class="fas fa-minus"></i>
+        Egreso
+      </button>
+
+      <div class="menu-wrap" #menuMas>
+        <button
+          type="button"
+          class="btn btn-ghost"
+          (click)="toggleMenu('mas', $event)"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="menuAbierto === 'mas'">
+          Más
+          <i class="fas fa-chevron-down chevron" [class.open]="menuAbierto === 'mas'"></i>
+        </button>
+        <div class="menu" *ngIf="menuAbierto === 'mas'" role="menu">
+          <button type="button" role="menuitem" (click)="navegarA('/stock/deposito/' + deposito.id + '/ubicaciones')">
+            <i class="fas fa-sitemap"></i>
+            Ubicaciones
+          </button>
+          <button type="button" role="menuitem" (click)="navegarA('/stock/auditorias', { deposito: deposito.id })">
+            <i class="fas fa-clipboard-check"></i>
+            Auditorías
+          </button>
+          <button type="button" role="menuitem" (click)="navegarA('/stock/historial', { deposito: deposito.id })">
+            <i class="fas fa-history"></i>
+            Historial
+          </button>
+          <div class="menu-sep"></div>
+          <button type="button" role="menuitem" (click)="navegarA('/stock/deposito/' + deposito.id + '/editar')">
+            <i class="fas fa-pen"></i>
+            Editar depósito
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading" class="filtros-section">
+    <div class="filtros-container">
+      <div class="filtro-item">
+        <label for="filtroTexto">
+          <i class="fas fa-search"></i>
+          Buscar
+        </label>
+        <input
+          id="filtroTexto"
+          type="text"
+          [(ngModel)]="filtroTexto"
+          (ngModelChange)="aplicarFiltros()"
+          placeholder="Buscar por insumo, código o categoría..."
+          class="form-input">
+      </div>
+
+      <div class="filtro-item">
+        <label for="filtroEstado">
+          <i class="fas fa-filter"></i>
+          Estado
+        </label>
+        <select
+          id="filtroEstado"
+          [(ngModel)]="filtroEstado"
+          (ngModelChange)="aplicarFiltros()"
+          class="form-select">
+          <option value="todos">Todos</option>
+          <option value="normal">Normal</option>
+          <option value="bajo">Bajo Mínimo</option>
+          <option value="critico">Crítico</option>
+          <option value="excedido">Sobre Máximo</option>
+        </select>
+      </div>
+
+      <div class="filtro-item">
+        <label for="filtroUbicacion">
+          <i class="fas fa-map-marker-alt"></i>
+          Ubicación
+        </label>
+        <select
+          id="filtroUbicacion"
+          [(ngModel)]="filtroUbicacion"
+          (ngModelChange)="aplicarFiltros()"
+          class="form-select">
+          <option value="">Todas</option>
+          <option value="sin">Sin ubicación</option>
+          <option *ngFor="let ubi of ubicacionesFiltro" [value]="ubi.id">
+            {{ ubi.codigo_completo }} · {{ ubi.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filtro-item filtro-actions">
+        <button type="button" class="btn btn-ghost" (click)="limpiarFiltros()">
+          <i class="fas fa-times"></i>
+          Limpiar
+        </button>
+        <div class="menu-wrap" #menuExportar>
+          <button
+            type="button"
+            class="btn btn-ghost"
+            (click)="toggleMenu('exportar', $event)"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="menuAbierto === 'exportar'">
+            <i class="fas fa-download"></i>
+            Exportar
+            <i class="fas fa-chevron-down chevron" [class.open]="menuAbierto === 'exportar'"></i>
+          </button>
+          <div class="menu menu-end" *ngIf="menuAbierto === 'exportar'" role="menu">
+            <button type="button" role="menuitem" (click)="exportarPDF()">
+              <i class="fas fa-file-pdf"></i>
+              PDF
+            </button>
+            <button type="button" role="menuitem" (click)="exportarCSV()">
+              <i class="fas fa-file-csv"></i>
+              CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filtros-resumen">
+      Mostrando <strong>{{ stockFiltrado.length }}</strong> de <strong>{{ stock.length }}</strong> items
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando datos del stock...</p>
+  </div>
+
+  <div *ngIf="error && !loading" class="error-container">
+    <i class="fas fa-exclamation-circle"></i>
+    <p>{{ error }}</p>
+    <button class="btn btn-primary" (click)="deposito ? cargarStock(deposito.id) : volver()">
+      Reintentar
+    </button>
+  </div>
+
+  <div *ngIf="!loading && !error && stockPaginado.length > 0" class="stock-table-container">
+    <table class="stock-table">
+      <thead>
+        <tr>
+          <th>Insumo</th>
+          <th>Código</th>
+          <th>Categoría</th>
+          <th>Ubicación</th>
+          <th class="text-center">Cantidad</th>
+          <th class="text-center">Mínimo</th>
+          <th class="text-center">Máximo</th>
+          <th>Nivel</th>
+          <th class="text-center">Estado</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let item of stockPaginado">
+          <tr *ngIf="!estaEditando(item)" [class.row-critical]="item.estado === 'critico'">
+            <td>
+              <div class="insumo-cell">
+                <strong>{{ item.insumo_nombre }}</strong>
+              </div>
+            </td>
+            <td>
+              <span class="codigo-badge">{{ item.insumo_codigo || 'N/A' }}</span>
+            </td>
+            <td>{{ item.categoria_nombre }}</td>
+            <td>{{ item.ubicacion_codigo || 'Sin asignar' }}</td>
+            <td class="text-center">
+              <strong>{{ item.cantidad_actual }}</strong>
+              <span class="text-muted">{{ item.unidad_medida }}</span>
+            </td>
+            <td class="text-center">{{ item.cantidad_minima }}</td>
+            <td class="text-center">{{ item.cantidad_maxima }}</td>
+            <td>
+              <div class="progress-container">
+                <div class="progress-bar" [ngClass]="getProgressClass(item)">
+                  <div class="progress-fill" [style.width.%]="getPorcentajeStock(item)"></div>
+                </div>
+                <span class="progress-label">{{ getPorcentajeStock(item) | number: '1.0-0' }}%</span>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="badge" [ngClass]="getEstadoClass(item.estado)">
+                <i [class]="getEstadoIcon(item.estado)"></i>
+                {{ getEstadoTexto(item.estado) }}
+              </span>
+            </td>
+            <td class="text-center">
+              <div class="row-actions">
+                <button
+                  type="button"
+                  class="icon-btn"
+                  (click)="iniciarEdicion(item)"
+                  title="Editar parámetros de stock">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button
+                  type="button"
+                  class="icon-btn"
+                  (click)="imprimirCartel(item)"
+                  title="Imprimir cartel kanban">
+                  <i class="fas fa-print"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="estaEditando(item)" class="edit-row">
+            <td colspan="10">
+              <div class="edit-panel">
+                <div class="edit-panel-header">
+                  <h4>
+                    <i class="fas fa-edit"></i>
+                    Editando parámetros de stock: {{ item.insumo_nombre }}
+                  </h4>
+                  <button class="icon-btn" (click)="cancelarEdicion()">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+
+                <div class="edit-grid">
+                  <div class="filtro-item">
+                    <label>Cantidad Mínima *</label>
+                    <input
+                      type="number"
+                      [(ngModel)]="stockEditado!.cantidad_minima"
+                      min="0"
+                      class="form-input">
+                  </div>
+                  <div class="filtro-item">
+                    <label>Cantidad Máxima *</label>
+                    <input
+                      type="number"
+                      [(ngModel)]="stockEditado!.cantidad_maxima"
+                      min="0"
+                      class="form-input">
+                  </div>
+                  <div class="filtro-item">
+                    <label>Punto de Reorden</label>
+                    <input
+                      type="number"
+                      [(ngModel)]="stockEditado!.punto_reorden"
+                      min="0"
+                      class="form-input">
+                  </div>
+                  <div class="filtro-item">
+                    <label>Ubicación</label>
+                    <select [(ngModel)]="stockEditado!.ubicacion_id" class="form-select">
+                      <option [ngValue]="null">Sin ubicación</option>
+                      <option *ngFor="let ubi of ubicacionesParaAsignar(item)" [ngValue]="ubi.id">
+                        {{ ubi.codigo_completo }} · {{ ubi.nombre }}{{ ubi.asignable ? '' : ' (actual, no habilitada)' }}
+                      </option>
+                    </select>
+                    <span class="text-muted">Solo aparecen las ubicaciones marcadas como asignables en el mapa del depósito.</span>
+                  </div>
+                </div>
+
+                <div class="edit-actions">
+                  <button
+                    type="button"
+                    class="btn btn-ghost"
+                    (click)="cancelarEdicion()"
+                    [disabled]="guardandoEdicion">
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    (click)="guardarEdicion(item)"
+                    [disabled]="guardandoEdicion">
+                    <i [class]="guardandoEdicion ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
+                    {{ guardandoEdicion ? 'Guardando...' : 'Guardar Cambios' }}
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="!loading && !error && stockFiltrado.length === 0" class="no-results">
+    <i class="fas fa-inbox"></i>
+    <p>No se encontraron items en el stock</p>
+    <button class="btn btn-primary" (click)="limpiarFiltros()">
+      Limpiar Filtros
+    </button>
+  </div>
+
+  <div *ngIf="!loading && !error && totalPaginas > 1" class="pagination">
+    <button
+      class="pagination-btn"
+      (click)="cambiarPagina(paginaActual - 1)"
+      [disabled]="paginaActual === 1">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <span class="pagination-info">
+      Página <strong>{{ paginaActual }}</strong> de <strong>{{ totalPaginas }}</strong>
+    </span>
+    <button
+      class="pagination-btn"
+      (click)="cambiarPagina(paginaActual + 1)"
+      [disabled]="paginaActual === totalPaginas">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>

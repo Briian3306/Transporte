@@ -19,11 +19,15 @@ import { FlotaComponent } from './components/flota/flota.component';
 import { NeumaticosRegistroComponent } from './components/neumaticos-registro/neumaticos-registro.component';
 import { AccessDeniedComponent } from './components/access-denied/access-denied.component';
 import { StockDashboardComponent } from './components/stock-dashboard/stock-dashboard.component';
-import { StockDepositosComponent } from './components/stock-depositos/stock-depositos.component';
+import { StockDepositoDetalleComponent } from './components/stock-deposito-detalle/stock-deposito-detalle.component';
 import { StockDepositoFormComponent } from './components/stock-deposito-form/stock-deposito-form.component';
+import { StockUbicacionesComponent } from './components/stock-ubicaciones/stock-ubicaciones.component';
 import { StockEntradaComponent } from './components/stock-entrada/stock-entrada.component';
 import { StockSalidaComponent } from './components/stock-salida/stock-salida.component';
 import { StockHistorialComponent } from './components/stock-historial/stock-historial.component';
+import { StockAuditoriasComponent } from './components/stock-auditorias/stock-auditorias.component';
+import { StockAuditoriaNuevaComponent } from './components/stock-auditoria-nueva/stock-auditoria-nueva.component';
+import { StockAuditoriaDetalleComponent } from './components/stock-auditoria-detalle/stock-auditoria-detalle.component';
 import { AuthGuard, LoginGuard } from './guards/auth.guard';
 import { PermissionGuard } from './guards/permission.guard';
 
@@ -147,27 +151,57 @@ export const routes: Routes = [
   },
   { 
     path: 'stock/depositos', 
-    component: StockDepositosComponent,
-    canActivate: [PermissionGuard]
+    redirectTo: '/stock/dashboard',
+    pathMatch: 'full'
   },
-  { 
-    path: 'stock/deposito/nuevo', 
+  {
+    path: 'stock/deposito/nuevo',
     component: StockDepositoFormComponent,
     canActivate: [PermissionGuard]
   },
-  { 
-    path: 'stock/entrada', 
+  {
+    path: 'stock/deposito/:id',
+    component: StockDepositoDetalleComponent,
+    canActivate: [PermissionGuard]
+  },
+  {
+    path: 'stock/deposito/:id/editar',
+    component: StockDepositoFormComponent,
+    canActivate: [PermissionGuard]
+  },
+  {
+    path: 'stock/deposito/:id/ubicaciones',
+    component: StockUbicacionesComponent,
+    canActivate: [PermissionGuard]
+  },
+  {
+    path: 'stock/entrada',
     component: StockEntradaComponent,
     canActivate: [PermissionGuard]
   },
-  { 
-    path: 'stock/salida', 
+  {
+    path: 'stock/salida',
     component: StockSalidaComponent,
     canActivate: [PermissionGuard]
   },
-  { 
-    path: 'stock/historial', 
+  {
+    path: 'stock/historial',
     component: StockHistorialComponent,
+    canActivate: [PermissionGuard]
+  },
+  {
+    path: 'stock/auditorias',
+    component: StockAuditoriasComponent,
+    canActivate: [PermissionGuard]
+  },
+  {
+    path: 'stock/auditoria/nueva/:depositoId',
+    component: StockAuditoriaNuevaComponent,
+    canActivate: [PermissionGuard]
+  },
+  {
+    path: 'stock/auditoria/:id',
+    component: StockAuditoriaDetalleComponent,
     canActivate: [PermissionGuard]
   },
 
