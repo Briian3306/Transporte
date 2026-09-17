@@ -1,12 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, from, of } from 'rxjs';
-import { map, catchError, switchMap } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import {
   Deposito,
   StockDeposito,
   EntradaStock,
   SalidaStock,
-  AjusteStock,
   MovimientoStockAny,
   EstadisticasStock,
   AlertaStock,
@@ -15,10 +14,12 @@ import {
   FiltrosMovimiento,
   RegistroEntradaDTO,
   RegistroSalidaDTO,
+  RegistroTransferenciaDTO,
   EstadoStock
 } from '../models/stock.model';
 import { SupabaseService } from './supabase.service';
 import { ApiIbarraService } from './api-ibarra.service';
+import { mapMovimientoRow, resumirMovimientosPorDia } from './stock-movimientos.util';
 
 @Injectable({
   providedIn: 'root'
@@ -135,6 +136,7 @@ export class StockService {
         const { data, error } = await client
           .from('stock_depositos')
           .select('*, depositos(nombre), deposito_ubicaciones(codigo, nombre)')
+          .eq('is_active', true)
           .order('insumo_id', { ascending: true });
 
         if (error) throw new Error(error.message);
@@ -160,6 +162,7 @@ export class StockService {
           .from('stock_depositos')
           .select('*, depositos(nombre), deposito_ubicaciones(codigo, nombre)')
           .eq('deposito_id', depositoId)
+          .eq('is_active', true)
           .order('insumo_id', { ascending: true });
 
         if (error) throw new Error(error.message);
@@ -363,6 +366,50 @@ export class StockService {
   }
 
   /**
+   * Transfiere insumos de un depósito a otro en una sola transacción
+   */
+  registrarTransferencia(transferencia: RegistroTransferenciaDTO): Observable<string> {
+    return from(
+      this.supabaseService.executeWithRetry(async () => {
+        const usuario = await this.usuarioActual();
+        const client = await this.supabaseService.getClient();
+        const { data, error } = await client.rpc('stock_transferir', {
+          p_deposito_origen_id: transferencia.deposito_origen_id,
+          p_deposito_destino_id: transferencia.deposito_destino_id,
+          p_items: transferencia.items.map(item => ({
+            insumo_id: item.insumo_id,
+            cantidad: item.cantidad
+          })),
+          p_motivo: transferencia.motivo,
+          p_observaciones: transferencia.observaciones || null,
+          p_usuario_id: usuario.id,
+          p_usuario_nombre: usuario.nombre
+        });
+
+        if (error) throw new Error(error.message);
+        return data as string;
+      })
+    );
+  }
+
+  /**
+   * Da de baja un insumo del depósito (solo si la cantidad es 0)
+   */
+  desactivarInsumoDeposito(stockDepositoId: string): Observable<string> {
+    return from(
+      this.supabaseService.executeWithRetry(async () => {
+        const client = await this.supabaseService.getClient();
+        const { data, error } = await client.rpc('stock_desactivar_insumo_deposito', {
+          p_stock_deposito_id: stockDepositoId
+        });
+
+        if (error) throw new Error(error.message);
+        return data as string;
+      })
+    );
+  }
+
+  /**
    * Obtiene todos los movimientos
    */
   getMovimientos(): Observable<MovimientoStockAny[]> {
@@ -371,55 +418,23 @@ export class StockService {
         const client = await this.supabaseService.getClient();
         const { data, error } = await client
           .from('movimientos_stock')
-          .select('*, depositos(nombre)')
+          .select(`
+            *,
+            depositos!movimientos_stock_deposito_id_fkey(nombre),
+            deposito_contraparte:depositos!movimientos_stock_deposito_contraparte_id_fkey(nombre)
+          `)
           .order('fecha', { ascending: false });
 
         if (error) throw new Error(error.message);
 
-        // Enriquecer con información de insumos
         const insumos = await this.apiService.getInsumos().toPromise();
-        
+
         return (data || []).map((m: any) => {
           const insumo = insumos?.find(i => i.id === m.insumo_id);
-          const movimientoBase = {
-            id: m.id,
-            tipo: m.tipo,
-            deposito_id: m.deposito_id,
-            deposito_nombre: m.depositos?.nombre,
-            insumo_id: m.insumo_id,
-            insumo_nombre: insumo?.nombre,
-            cantidad: parseFloat(m.cantidad),
-            fecha: new Date(m.fecha),
-            usuario_id: m.usuario_id,
-            usuario_nombre: m.usuario_nombre,
-            motivo: m.motivo,
-            observaciones: m.observaciones,
-            auditoria_id: m.auditoria_id,
-            ubicacion_id: m.ubicacion_id
-          };
-
-          if (m.tipo === 'entrada') {
-            return {
-              ...movimientoBase,
-              proveedor: m.proveedor,
-              numero_factura: m.numero_factura,
-              costo_unitario: m.costo_unitario ? parseFloat(m.costo_unitario) : 0,
-              costo_total: m.costo_total ? parseFloat(m.costo_total) : 0
-            } as EntradaStock;
-          } else if (m.tipo === 'ajuste') {
-            return {
-              ...movimientoBase,
-              auditoria_id: m.auditoria_id
-            } as AjusteStock;
-          } else {
-            return {
-              ...movimientoBase,
-              solicitante: m.solicitante,
-              recurso_tipo: m.recurso_tipo,
-              recurso_id: m.recurso_id,
-              recurso_nombre: m.recurso_nombre
-            } as SalidaStock;
-          }
+          return mapMovimientoRow({
+            ...m,
+            insumo_nombre: insumo?.nombre
+          });
         });
       })
     ).pipe(
@@ -493,7 +508,8 @@ export class StockService {
           movimientos_mes: Number(data?.movimientos_mes) || 0,
           entradas_mes: Number(data?.entradas_mes) || 0,
           salidas_mes: Number(data?.salidas_mes) || 0,
-          ajustes_mes: Number(data?.ajustes_mes) || 0
+          ajustes_mes: Number(data?.ajustes_mes) || 0,
+          transferencias_mes: Number(data?.transferencias_mes) || 0
         };
       })
     ).pipe(
@@ -509,7 +525,8 @@ export class StockService {
           movimientos_mes: 0,
           entradas_mes: 0,
           salidas_mes: 0,
-          ajustes_mes: 0
+          ajustes_mes: 0,
+          transferencias_mes: 0
         });
       })
     );
@@ -609,44 +626,7 @@ export class StockService {
    */
   getResumenMovimientos(dias: number = 30): Observable<ResumenMovimientos[]> {
     return this.getMovimientos().pipe(
-      map(movimientos => {
-        const ahora = new Date();
-        const fechaInicio = new Date(ahora);
-        fechaInicio.setDate(fechaInicio.getDate() - dias);
-
-        const movimientosFiltrados = movimientos.filter(m => m.fecha >= fechaInicio);
-
-        // Agrupar por día
-        const resumenPorDia = new Map<string, ResumenMovimientos>();
-
-        movimientosFiltrados.forEach(m => {
-          const fechaKey = m.fecha.toISOString().split('T')[0];
-          
-          if (!resumenPorDia.has(fechaKey)) {
-            resumenPorDia.set(fechaKey, {
-              fecha: new Date(fechaKey),
-              entradas: 0,
-              salidas: 0,
-              entradas_cantidad: 0,
-              salidas_cantidad: 0
-            });
-          }
-
-          const resumen = resumenPorDia.get(fechaKey)!;
-          if (m.tipo === 'entrada') {
-            resumen.entradas++;
-            resumen.entradas_cantidad += m.cantidad;
-          } else {
-            resumen.salidas++;
-            resumen.salidas_cantidad += m.cantidad;
-          }
-        });
-
-        // Convertir a array y ordenar por fecha
-        return Array.from(resumenPorDia.values()).sort((a, b) => 
-          a.fecha.getTime() - b.fecha.getTime()
-        );
-      })
+      map(movimientos => resumirMovimientosPorDia(movimientos, dias))
     );
   }
 
@@ -762,5 +742,16 @@ export class StockService {
         throw error;
       })
     );
+  }
+
+  private async usuarioActual(): Promise<{ id: string; nombre: string }> {
+    const user = await this.supabaseService.getCurrentUser();
+    return {
+      id: user?.id || 'unknown',
+      nombre:
+        (user?.user_metadata?.['full_name'] as string) ||
+        user?.email ||
+        'Usuario'
+    };
   }
 }

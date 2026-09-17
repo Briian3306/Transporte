@@ -7,12 +7,13 @@ import { forkJoin } from 'rxjs';
 import { StockService } from '../../services/stock.service';
 import { StockPdfService } from '../../services/stock-pdf.service';
 import { StockUbicacionesService } from '../../services/stock-ubicaciones.service';
+import { GranularPermissionDirective } from '../../directives/granular-permission.directive';
 import { Deposito, DepositoUbicacion, StockDeposito } from '../../models/stock.model';
 
 @Component({
   selector: 'app-stock-deposito-detalle',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, GranularPermissionDirective],
   templateUrl: './stock-deposito-detalle.component.html',
   styleUrl: './stock-deposito-detalle.component.css'
 })
@@ -44,6 +45,7 @@ export class StockDepositoDetalleComponent implements OnInit {
     ubicacion_id: string | null;
   } | null = null;
   guardandoEdicion = false;
+  quitandoStockId: string | null = null;
 
   paginaActual = 1;
   itemsPorPagina = 20;
@@ -359,5 +361,44 @@ export class StockDepositoDetalleComponent implements OnInit {
 
   estaEditando(item: StockDeposito): boolean {
     return this.editandoStock === item.id;
+  }
+
+  tituloQuitar(item: StockDeposito): string {
+    if (!this.puedeQuitar(item)) {
+      return 'Solo se puede quitar cuando la cantidad es 0. Hacé una salida o transferencia primero.';
+    }
+    return 'Quitar insumo del depósito';
+  }
+
+  puedeQuitar(item: StockDeposito): boolean {
+    return item.cantidad_actual === 0;
+  }
+
+  quitarInsumo(item: StockDeposito): void {
+    if (item.cantidad_actual !== 0 || this.quitandoStockId) {
+      return;
+    }
+
+    const nombre = item.insumo_nombre || 'este insumo';
+    const confirmar = window.confirm(
+      `¿Quitar ${nombre} de este depósito? El historial se conserva. Si vuelve a ingresar, reaparecerá.`
+    );
+    if (!confirmar) {
+      return;
+    }
+
+    this.quitandoStockId = item.id;
+    this.stockService.desactivarInsumoDeposito(item.id).subscribe({
+      next: () => {
+        this.stock = this.stock.filter(s => s.id !== item.id);
+        this.aplicarFiltros();
+        this.quitandoStockId = null;
+      },
+      error: (err) => {
+        console.error('Error al quitar insumo:', err);
+        alert(err?.message || 'No se pudo quitar el insumo del depósito');
+        this.quitandoStockId = null;
+      }
+    });
   }
 }

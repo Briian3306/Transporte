@@ -51,6 +51,13 @@
         <span class="stat-label">Ajustes</span>
       </div>
     </div>
+    <div class="stat-item info">
+      <i class="fas fa-exchange-alt"></i>
+      <div>
+        <span class="stat-value">{{ totalTransferencias }}</span>
+        <span class="stat-label">Transferencias</span>
+      </div>
+    </div>
   </div>
 
   <!-- Filtros -->
@@ -79,6 +86,7 @@
           <option value="entrada">Entradas</option>
           <option value="salida">Salidas</option>
           <option value="ajuste">Ajustes</option>
+          <option value="transferencia">Transferencias</option>
         </select>
       </div>
 
@@ -186,10 +194,11 @@
             </div>
           </td>
           <td class="text-center cantidad-cell">
-            <strong [class.text-success]="movimiento.tipo === 'entrada'"
-                    [class.text-danger]="movimiento.tipo === 'salida'"
-                    [class.text-warning]="movimiento.tipo === 'ajuste'">
-              {{ movimiento.tipo === 'salida' ? '-' : '+' }}{{ movimiento.cantidad }}
+            <strong [class.text-success]="esIngreso(movimiento)"
+                    [class.text-danger]="esEgreso(movimiento)"
+                    [class.text-warning]="movimiento.tipo === 'ajuste'"
+                    [class.text-info]="movimiento.tipo === 'transferencia'">
+              {{ signoCantidad(movimiento) }}{{ movimiento.cantidad }}
             </strong>
           </td>
           <td>{{ movimiento.usuario_nombre }}</td>
@@ -215,6 +224,12 @@
                 <div class="detalle-item">
                   <i class="fas fa-clipboard-check"></i>
                   <span>Ajuste por auditoría</span>
+                </div>
+              </div>
+              <div *ngIf="isTransferencia(movimiento)">
+                <div class="detalle-item">
+                  <i class="fas fa-exchange-alt"></i>
+                  <span>{{ detalleTransferencia(movimiento) }}</span>
                 </div>
               </div>
               <div *ngIf="isSalida(movimiento)">

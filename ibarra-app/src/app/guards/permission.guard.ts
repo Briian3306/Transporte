@@ -102,6 +102,7 @@ const ROUTE_PERMISSIONS: { [key: string]: PermissionRequirement } = {
   '/stock/deposito/:id/ubicaciones': { module: 'stock', action: 'manage' },
   '/stock/entrada': { module: 'stock', action: 'create' },
   '/stock/salida': { module: 'stock', action: 'create' },
+  '/stock/transferencia': { module: 'stock', action: 'create' },
   '/stock/historial': { module: 'stock', action: 'read' },
   '/stock/auditorias': { module: 'stock', action: 'read' },
   '/stock/auditoria/nueva/:depositoId': { module: 'stock', action: 'create' },

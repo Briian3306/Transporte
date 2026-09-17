@@ -72,6 +72,10 @@
   border-left-color: #e74c3c;
 }
 
+.stat-item.info {
+  border-left-color: #3498db;
+}
+
 .stat-item i {
   font-size: 1.5rem;
   color: #3498db;
@@ -318,6 +322,24 @@
 .badge-danger {
   background: #f8d7da;
   color: #721c24;
+}
+
+.badge-warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.badge-info {
+  background: #d6eaf8;
+  color: #1a5276;
+}
+
+.text-warning {
+  color: #f39c12;
+}
+
+.text-info {
+  color: #3498db;
 }
 
 /* Paginación */

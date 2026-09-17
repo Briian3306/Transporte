@@ -572,6 +572,16 @@
   color: #2c3e50;
 }
 
+.icon-btn-danger:hover:not(:disabled),
+.icon-btn-danger:focus-visible:not(:disabled) {
+  color: #c0392b;
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .edit-row {
   background: #f0f8ff;
 }

@@ -1,7 +1,8 @@
 import { TemplateResourceType } from './checklist-template.model';
 
 // Tipo de movimiento de stock
-export type TipoMovimiento = 'entrada' | 'salida' | 'ajuste';
+export type TipoMovimiento = 'entrada' | 'salida' | 'ajuste' | 'transferencia';
+export type SentidoTransferencia = 'origen' | 'destino';
 
 // Tipo de alerta de stock
 export type TipoAlerta = 'minimo' | 'maximo' | 'critico';
@@ -97,7 +98,18 @@ export interface AjusteStock extends MovimientoStock {
   auditoria_id: string;
 }
 
-export type MovimientoStockAny = EntradaStock | SalidaStock | AjusteStock;
+/**
+ * Movimiento de traslado interno entre depósitos (una pata origen o destino)
+ */
+export interface TransferenciaStock extends MovimientoStock {
+  tipo: 'transferencia';
+  transferencia_id: string;
+  deposito_contraparte_id: string;
+  deposito_contraparte_nombre?: string;
+  transferencia_sentido: SentidoTransferencia;
+}
+
+export type MovimientoStockAny = EntradaStock | SalidaStock | AjusteStock | TransferenciaStock;
 
 /**
  * Estadísticas generales del stock
@@ -113,6 +125,7 @@ export interface EstadisticasStock {
   entradas_mes: number;
   salidas_mes: number;
   ajustes_mes?: number;
+  transferencias_mes?: number;
 }
 
 /**
@@ -197,6 +210,17 @@ export interface RegistroSalidaDTO {
   recurso_tipo?: TemplateResourceType;
   recurso_id?: string;
   recurso_nombre?: string;
+}
+
+/**
+ * DTO para registrar una transferencia entre depósitos
+ */
+export interface RegistroTransferenciaDTO {
+  deposito_origen_id: string;
+  deposito_destino_id: string;
+  items: ItemMovimiento[];
+  motivo: string;
+  observaciones?: string;
 }
 
 export type TipoUbicacion = 'zona' | 'pasillo' | 'estante' | 'posicion';

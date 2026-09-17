@@ -24,6 +24,7 @@ import { StockDepositoFormComponent } from './components/stock-deposito-form/sto
 import { StockUbicacionesComponent } from './components/stock-ubicaciones/stock-ubicaciones.component';
 import { StockEntradaComponent } from './components/stock-entrada/stock-entrada.component';
 import { StockSalidaComponent } from './components/stock-salida/stock-salida.component';
+import { StockTransferenciaComponent } from './components/stock-transferencia/stock-transferencia.component';
 import { StockHistorialComponent } from './components/stock-historial/stock-historial.component';
 import { StockAuditoriasComponent } from './components/stock-auditorias/stock-auditorias.component';
 import { StockAuditoriaNuevaComponent } from './components/stock-auditoria-nueva/stock-auditoria-nueva.component';
@@ -182,6 +183,11 @@ export const routes: Routes = [
   {
     path: 'stock/salida',
     component: StockSalidaComponent,
+    canActivate: [PermissionGuard]
+  },
+  {
+    path: 'stock/transferencia',
+    component: StockTransferenciaComponent,
     canActivate: [PermissionGuard]
   },
   {

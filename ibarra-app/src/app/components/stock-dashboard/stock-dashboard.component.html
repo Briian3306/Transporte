@@ -17,6 +17,10 @@
         <i class="fas fa-minus-circle"></i>
         Nueva Salida
       </button>
+      <button class="btn btn-info" (click)="navegarA('/stock/transferencia')">
+        <i class="fas fa-exchange-alt"></i>
+        Transferencia
+      </button>
       <button class="btn btn-secondary" (click)="navegarA('/stock/historial')">
         <i class="fas fa-history"></i>
         Historial
@@ -85,6 +89,7 @@
             <i class="fas fa-arrow-up text-success"></i> {{ estadisticas?.entradas_mes || 0 }}
             <i class="fas fa-arrow-down text-danger"></i> {{ estadisticas?.salidas_mes || 0 }}
             <span *ngIf="estadisticas?.ajustes_mes"> · {{ estadisticas?.ajustes_mes }} ajustes</span>
+            <span *ngIf="estadisticas?.transferencias_mes"> · {{ estadisticas?.transferencias_mes }} transferencias</span>
           </small>
         </div>
       </div>
@@ -183,6 +188,11 @@
         <button class="quick-access-card" (click)="navegarA('/stock/salida')">
           <i class="fas fa-arrow-circle-up"></i>
           <span>Registrar Salida</span>
+        </button>
+
+        <button class="quick-access-card" (click)="navegarA('/stock/transferencia')">
+          <i class="fas fa-exchange-alt"></i>
+          <span>Transferir</span>
         </button>
 
         <button class="quick-access-card" (click)="navegarA('/stock/auditorias')">

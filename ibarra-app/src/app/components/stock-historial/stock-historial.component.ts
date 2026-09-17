@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StockService } from '../../services/stock.service';
-import { Deposito, EntradaStock, SalidaStock, AjusteStock, MovimientoStockAny, FiltrosMovimiento } from '../../models/stock.model';
+import { Deposito, EntradaStock, SalidaStock, AjusteStock, TransferenciaStock, MovimientoStockAny, FiltrosMovimiento } from '../../models/stock.model';
 import { Insumo } from '../../models/chofer.model';
 import { ApiIbarraService } from '../../services/api-ibarra.service';
+import { etiquetaTransferencia, signoCantidadMovimiento } from '../../services/stock-movimientos.util';
 
 @Component({
   selector: 'app-stock-historial',
@@ -30,7 +31,7 @@ export class StockHistorialComponent implements OnInit {
 
   // Filtros
   filtros: FiltrosMovimiento = {};
-  filtroTipo: 'todos' | 'entrada' | 'salida' | 'ajuste' = 'todos';
+  filtroTipo: 'todos' | 'entrada' | 'salida' | 'ajuste' | 'transferencia' = 'todos';
   filtroDepositoId = '';
   filtroInsumoId = '';
   filtroFechaDesde = '';
@@ -180,11 +181,12 @@ export class StockHistorialComponent implements OnInit {
     }
   }
 
-  /**
-   * Verifica si un movimiento es entrada
-   */
   get totalAjustes(): number {
     return this.movimientosFiltrados.filter(m => m.tipo === 'ajuste').length;
+  }
+
+  get totalTransferencias(): number {
+    return this.movimientosFiltrados.filter(m => m.tipo === 'transferencia').length;
   }
 
   isEntrada(movimiento: MovimientoStockAny): movimiento is EntradaStock {
@@ -199,24 +201,47 @@ export class StockHistorialComponent implements OnInit {
     return movimiento.tipo === 'ajuste';
   }
 
+  isTransferencia(movimiento: MovimientoStockAny): movimiento is TransferenciaStock {
+    return movimiento.tipo === 'transferencia';
+  }
+
+  signoCantidad(movimiento: MovimientoStockAny): '+' | '-' {
+    return signoCantidadMovimiento(movimiento);
+  }
+
+  esIngreso(movimiento: MovimientoStockAny): boolean {
+    return this.signoCantidad(movimiento) === '+';
+  }
+
+  esEgreso(movimiento: MovimientoStockAny): boolean {
+    return this.signoCantidad(movimiento) === '-' && movimiento.tipo !== 'ajuste';
+  }
+
+  detalleTransferencia(movimiento: TransferenciaStock): string {
+    return etiquetaTransferencia(movimiento);
+  }
+
   /**
    * Obtiene la clase CSS para el tipo de movimiento
    */
   getTipoClass(tipo: string): string {
     if (tipo === 'entrada') return 'badge-success';
     if (tipo === 'ajuste') return 'badge-warning';
+    if (tipo === 'transferencia') return 'badge-info';
     return 'badge-danger';
   }
 
   getTipoIcon(tipo: string): string {
     if (tipo === 'entrada') return 'fas fa-arrow-down';
     if (tipo === 'ajuste') return 'fas fa-balance-scale';
+    if (tipo === 'transferencia') return 'fas fa-exchange-alt';
     return 'fas fa-arrow-up';
   }
 
   etiquetaTipo(tipo: string): string {
     if (tipo === 'entrada') return 'Entrada';
     if (tipo === 'ajuste') return 'Ajuste';
+    if (tipo === 'transferencia') return 'Transferencia';
     return 'Salida';
   }
 
@@ -274,7 +299,8 @@ export class StockHistorialComponent implements OnInit {
       'Factura',
       'Costo',
       'Solicitante',
-      'Recurso'
+      'Recurso',
+      'Contraparte'
     ];
 
     const rows = this.movimientosFiltrados.map(m => {
@@ -291,7 +317,8 @@ export class StockHistorialComponent implements OnInit {
         isEntrada ? m.numero_factura : '',
         isEntrada ? m.costo_total?.toString() || '' : '',
         this.isSalida(m) ? m.solicitante : '',
-        this.isSalida(m) ? m.recurso_nombre || '' : ''
+        this.isSalida(m) ? m.recurso_nombre || '' : '',
+        this.isTransferencia(m) ? this.detalleTransferencia(m) : ''
       ];
     });
 
