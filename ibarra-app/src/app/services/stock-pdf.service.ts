@@ -5,6 +5,8 @@ import { Content, TableCell, ContentTable } from 'pdfmake/interfaces';
 import {
   buildKanbanCartelDefinition,
   buildKanbanCartelFilename,
+  buildKanbanHojasDefinition,
+  buildKanbanHojasFilename,
 } from './stock-kanban-pdf';
 
 /**
@@ -28,6 +30,21 @@ export class StockPdfService {
         ubicacion: item.ubicacion_codigo || deposito.ubicacion,
       }),
       buildKanbanCartelFilename(item, deposito.nombre),
+    );
+  }
+
+  /**
+   * Genera un PDF A4 con hasta 8 kanban de 100x60 mm por hoja
+   */
+  generateKanbanHojasPdf(items: StockDeposito[], deposito: Deposito): void {
+    if (items.length === 0) return;
+
+    this.pdfService.generateAndDownload(
+      buildKanbanHojasDefinition(items, {
+        nombre: deposito.nombre,
+        ubicacion: deposito.ubicacion,
+      }),
+      buildKanbanHojasFilename(deposito.nombre, items.length),
     );
   }
 

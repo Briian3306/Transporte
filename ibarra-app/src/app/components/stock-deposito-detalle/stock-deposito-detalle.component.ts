@@ -50,6 +50,7 @@ export class StockDepositoDetalleComponent implements OnInit {
   paginaActual = 1;
   itemsPorPagina = 20;
   menuAbierto: 'mas' | 'exportar' | null = null;
+  kanbanSeleccion = new Set<string>();
 
   @ViewChild('menuMas') menuMas?: ElementRef<HTMLElement>;
   @ViewChild('menuExportar') menuExportar?: ElementRef<HTMLElement>;
@@ -90,6 +91,7 @@ export class StockDepositoDetalleComponent implements OnInit {
     this.error = null;
     this.deposito = null;
     this.cancelarEdicion();
+    this.kanbanSeleccion = new Set();
 
     this.stockService.getDepositoById(id).subscribe({
       next: (deposito) => {
@@ -159,6 +161,9 @@ export class StockDepositoDetalleComponent implements OnInit {
 
     this.stockFiltrado = resultado;
     this.paginaActual = 1;
+    this.kanbanSeleccion = new Set(
+      [...this.kanbanSeleccion].filter((id) => resultado.some((item) => item.id === id)),
+    );
   }
 
   limpiarFiltros(): void {
@@ -248,12 +253,24 @@ export class StockDepositoDetalleComponent implements OnInit {
     this.router.navigate(['/stock/dashboard']);
   }
 
+  get stockParaExportar(): StockDeposito[] {
+    if (this.kanbanSeleccion.size === 0) return this.stockFiltrado;
+    return this.stockFiltrado.filter((item) => this.kanbanSeleccion.has(item.id));
+  }
+
+  get etiquetaExportacion(): string {
+    if (this.kanbanSeleccionCount > 0) {
+      return `${this.kanbanSeleccionCount} seleccionado${this.kanbanSeleccionCount === 1 ? '' : 's'}`;
+    }
+    return `${this.stockFiltrado.length} filtrado${this.stockFiltrado.length === 1 ? '' : 's'}`;
+  }
+
   exportarCSV(): void {
     if (!this.deposito) return;
     this.cerrarMenus();
 
     const headers = ['Insumo', 'Código', 'Categoría', 'Cantidad', 'Mínimo', 'Máximo', 'Unidad', 'Estado'];
-    const rows = this.stockFiltrado.map(s => [
+    const rows = this.stockParaExportar.map(s => [
       s.insumo_nombre || '',
       s.insumo_codigo || '',
       s.categoria_nombre || '',
@@ -277,12 +294,62 @@ export class StockDepositoDetalleComponent implements OnInit {
   exportarPDF(): void {
     if (!this.deposito) return;
     this.cerrarMenus();
-    this.stockPdfService.generateStockDepositoPdf(this.deposito, this.stockFiltrado);
+    this.stockPdfService.generateStockDepositoPdf(this.deposito, this.stockParaExportar);
   }
 
   imprimirCartel(item: StockDeposito): void {
     if (!this.deposito) return;
     this.stockPdfService.generateKanbanCartelPdf(item, this.deposito);
+  }
+
+  get kanbanSeleccionCount(): number {
+    return this.kanbanSeleccion.size;
+  }
+
+  get paginaKanbanEstado(): 'none' | 'some' | 'all' {
+    const ids = this.stockPaginado.map((item) => item.id);
+    if (ids.length === 0) return 'none';
+    const seleccionados = ids.filter((id) => this.kanbanSeleccion.has(id)).length;
+    if (seleccionados === 0) return 'none';
+    if (seleccionados === ids.length) return 'all';
+    return 'some';
+  }
+
+  estaKanbanSeleccionado(item: StockDeposito): boolean {
+    return this.kanbanSeleccion.has(item.id);
+  }
+
+  toggleKanban(item: StockDeposito): void {
+    const next = new Set(this.kanbanSeleccion);
+    if (next.has(item.id)) next.delete(item.id);
+    else next.add(item.id);
+    this.kanbanSeleccion = next;
+  }
+
+  togglePaginaKanban(): void {
+    const ids = this.stockPaginado.map((item) => item.id);
+    const next = new Set(this.kanbanSeleccion);
+    if (ids.length > 0 && ids.every((id) => next.has(id))) {
+      ids.forEach((id) => next.delete(id));
+    } else {
+      ids.forEach((id) => next.add(id));
+    }
+    this.kanbanSeleccion = next;
+  }
+
+  seleccionarKanbanFiltrados(): void {
+    this.kanbanSeleccion = new Set(this.stockFiltrado.map((item) => item.id));
+  }
+
+  limpiarKanbanSeleccion(): void {
+    this.kanbanSeleccion = new Set();
+  }
+
+  imprimirKanbanSeleccionados(): void {
+    if (!this.deposito) return;
+    const items = this.stockFiltrado.filter((item) => this.kanbanSeleccion.has(item.id));
+    if (items.length === 0) return;
+    this.stockPdfService.generateKanbanHojasPdf(items, this.deposito);
   }
 
   iniciarEdicion(item: StockDeposito): void {

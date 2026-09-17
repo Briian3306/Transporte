@@ -122,33 +122,66 @@
           <i class="fas fa-times"></i>
           Limpiar
         </button>
-        <div class="menu-wrap" #menuExportar>
-          <button
-            type="button"
-            class="btn btn-ghost"
-            (click)="toggleMenu('exportar', $event)"
-            aria-haspopup="menu"
-            [attr.aria-expanded]="menuAbierto === 'exportar'">
-            <i class="fas fa-download"></i>
-            Exportar
-            <i class="fas fa-chevron-down chevron" [class.open]="menuAbierto === 'exportar'"></i>
-          </button>
-          <div class="menu menu-end" *ngIf="menuAbierto === 'exportar'" role="menu">
-            <button type="button" role="menuitem" (click)="exportarPDF()">
-              <i class="fas fa-file-pdf"></i>
-              PDF
-            </button>
-            <button type="button" role="menuitem" (click)="exportarCSV()">
-              <i class="fas fa-file-csv"></i>
-              CSV
-            </button>
-          </div>
-        </div>
       </div>
     </div>
+  </div>
 
-    <div class="filtros-resumen">
-      Mostrando <strong>{{ stockFiltrado.length }}</strong> de <strong>{{ stock.length }}</strong> items
+  <div *ngIf="!loading && !error && stockFiltrado.length > 0" class="kanban-bar">
+    <label class="kanban-check">
+      <input
+        type="checkbox"
+        [checked]="paginaKanbanEstado === 'all'"
+        [indeterminate]="paginaKanbanEstado === 'some'"
+        (change)="togglePaginaKanban()"
+        [attr.aria-label]="'Seleccionar kanban de esta página'">
+      Esta página
+    </label>
+    <button type="button" class="kanban-link" (click)="seleccionarKanbanFiltrados()">
+      Seleccionar filtrados ({{ stockFiltrado.length }})
+    </button>
+    <button
+      type="button"
+      class="kanban-link"
+      (click)="limpiarKanbanSeleccion()"
+      [disabled]="kanbanSeleccionCount === 0">
+      Limpiar
+    </button>
+    <p class="kanban-bar-meta">
+      <strong>{{ kanbanSeleccionCount }}</strong> seleccionados
+    </p>
+    <div class="kanban-bar-actions">
+      <div class="menu-wrap" #menuExportar>
+        <button
+          type="button"
+          class="btn btn-ghost"
+          (click)="toggleMenu('exportar', $event)"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="menuAbierto === 'exportar'">
+          <i class="fas fa-download"></i>
+          Exportar
+          <i class="fas fa-chevron-down chevron" [class.open]="menuAbierto === 'exportar'"></i>
+        </button>
+        <div class="menu menu-end" *ngIf="menuAbierto === 'exportar'" role="menu">
+          <button type="button" role="menuitem" (click)="exportarPDF()">
+            <i class="fas fa-file-pdf"></i>
+            PDF
+            <span class="menu-hint">{{ etiquetaExportacion }}</span>
+          </button>
+          <button type="button" role="menuitem" (click)="exportarCSV()">
+            <i class="fas fa-file-csv"></i>
+            CSV
+            <span class="menu-hint">{{ etiquetaExportacion }}</span>
+          </button>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="btn btn-ghost"
+        [disabled]="kanbanSeleccionCount === 0"
+        (click)="imprimirKanbanSeleccionados()">
+        <i class="fas fa-print"></i>
+        Imprimir
+      </button>
     </div>
   </div>
 
@@ -169,6 +202,14 @@
     <table class="stock-table">
       <thead>
         <tr>
+          <th class="col-check">
+            <input
+              type="checkbox"
+              [checked]="paginaKanbanEstado === 'all'"
+              [indeterminate]="paginaKanbanEstado === 'some'"
+              (change)="togglePaginaKanban()"
+              [attr.aria-label]="'Seleccionar kanban de esta página'">
+          </th>
           <th>Insumo</th>
           <th>Código</th>
           <th>Categoría</th>
@@ -184,6 +225,13 @@
       <tbody>
         <ng-container *ngFor="let item of stockPaginado">
           <tr *ngIf="!estaEditando(item)" [class.row-critical]="item.estado === 'critico'">
+            <td class="col-check">
+              <input
+                type="checkbox"
+                [checked]="estaKanbanSeleccionado(item)"
+                (change)="toggleKanban(item)"
+                [attr.aria-label]="'Seleccionar kanban de ' + item.insumo_nombre">
+            </td>
             <td>
               <div class="insumo-cell">
                 <strong>{{ item.insumo_nombre }}</strong>
@@ -227,7 +275,7 @@
                   type="button"
                   class="icon-btn"
                   (click)="imprimirCartel(item)"
-                  title="Imprimir cartel kanban">
+                  title="Imprimir cartel 100×60 mm">
                   <i class="fas fa-print"></i>
                 </button>
                 <button
@@ -247,7 +295,7 @@
           </tr>
 
           <tr *ngIf="estaEditando(item)" class="edit-row">
-            <td colspan="10">
+            <td colspan="11">
               <div class="edit-panel">
                 <div class="edit-panel-header">
                   <h4>
@@ -319,6 +367,13 @@
         </ng-container>
       </tbody>
     </table>
+  </div>
+
+  <div *ngIf="!loading && !error && stockFiltrado.length > 0" class="filtros-resumen">
+    Mostrando <strong>{{ stockFiltrado.length }}</strong> de <strong>{{ stock.length }}</strong> items
+    <ng-container *ngIf="kanbanSeleccionCount > 0">
+      · <strong>{{ kanbanSeleccionCount }}</strong> seleccionados
+    </ng-container>
   </div>
 
   <div *ngIf="!loading && !error && stockFiltrado.length === 0" class="no-results">

@@ -5,6 +5,9 @@ import { IBARRA_LOGO_DATA_URL } from './ibarra-logo-data';
 const KANBAN_WIDTH_MM = 100;
 const KANBAN_HEIGHT_MM = 60;
 const KANBAN_MARGIN_MM = 2.2;
+const KANBAN_HOJA_WIDTH_MM = 210;
+const KANBAN_HOJA_HEIGHT_MM = 297;
+const KANBAN_HOJA_GAP_MM = 3;
 
 const COLOR = {
   red: '#C41E2A',
@@ -48,6 +51,27 @@ export function buildKanbanCartelFilename(
     : `insumo-${item.insumo_id}`;
   const deposito = sanitizeFilenamePart(depositoNombre);
   return `kanban_${codigo}_${deposito}.pdf`;
+}
+
+export function buildKanbanHojasFilename(
+  depositoNombre: string,
+  cantidad: number,
+): string {
+  const deposito = sanitizeFilenamePart(depositoNombre);
+  return `kanban_hoja_${deposito}_${cantidad}.pdf`;
+}
+
+export function layoutKanbanHojas(cantidad: number): {
+  columnas: number;
+  filas: number;
+  porHoja: number;
+  hojas: number;
+} {
+  const columnas = Math.floor(KANBAN_HOJA_WIDTH_MM / KANBAN_WIDTH_MM);
+  const filas = Math.floor(KANBAN_HOJA_HEIGHT_MM / KANBAN_HEIGHT_MM);
+  const porHoja = columnas * filas;
+  const hojas = cantidad <= 0 ? 0 : Math.ceil(cantidad / porHoja);
+  return { columnas, filas, porHoja, hojas };
 }
 
 function formatCantidad(valor: number): string {
@@ -241,6 +265,143 @@ function footerCell(kind: 'pin' | 'box', label: string, value: string): Content 
   };
 }
 
+function kanbanCardNodes(
+  item: StockDeposito,
+  deposito: { nombre: string; ubicacion?: string },
+): Content[] {
+  const codigo = item.insumo_codigo?.trim() || `INS-${item.insumo_id}`;
+  const nombre = item.insumo_nombre?.trim() || 'Insumo sin nombre';
+  const categoria = item.categoria_nombre?.trim() || 'Sin categoría';
+  const descripcion = item.insumo_descripcion?.trim() || 'Sin descripción';
+  const unidad = item.unidad_medida?.trim() || 'u';
+  const ubicacion =
+    item.ubicacion_codigo?.trim() ||
+    deposito.ubicacion?.trim() ||
+    deposito.nombre?.trim() ||
+    'Sin ubicación';
+
+  return [
+    {
+      columns: [
+        {
+          svg: headerSvg(categoria),
+          width: mmToPt(78),
+          height: mmToPt(10.5),
+        },
+        {
+          image: IBARRA_LOGO_DATA_URL,
+          fit: [mmToPt(13), mmToPt(13)],
+          alignment: 'right',
+          margin: [0, 3, 2, 0],
+        },
+      ],
+      columnGap: 2,
+      margin: [0, 0, 0, 2],
+    },
+    {
+      columns: [
+        {
+          width: '63%',
+          stack: [
+            fieldRow('barcode', 'CÓDIGO', codigo),
+            fieldRow('box', 'NOMBRE', nombre),
+            fieldRow('doc', 'DESCRIPCIÓN', descripcion),
+          ],
+        },
+        {
+          width: 1,
+          table: {
+            widths: [1],
+            heights: [mmToPt(22)],
+            body: [[{ text: '', fillColor: COLOR.line }]],
+          },
+          layout: 'noBorders',
+          margin: [3, 4, 3, 0],
+        },
+        {
+          width: '*',
+          stack: [
+            metricCard('up', 'CANT. MÍNIMA', formatCantidad(item.cantidad_minima), COLOR.min, COLOR.minBg),
+            metricCard('down', 'CANT. MÁXIMA', formatCantidad(item.cantidad_maxima), COLOR.max, COLOR.maxBg),
+          ],
+          margin: [0, 2, 0, 0],
+        },
+      ],
+    },
+    {
+      table: {
+        widths: ['*', 10, '*'],
+        body: [
+          [
+            footerCell('pin', 'UBICACIÓN', ubicacion),
+            {
+              fillColor: COLOR.footer,
+              canvas: [
+                {
+                  type: 'line',
+                  x1: 5,
+                  y1: 3,
+                  x2: 5,
+                  y2: 18,
+                  lineWidth: 0.6,
+                  lineColor: '#D5DBE4',
+                },
+              ],
+            },
+            footerCell('box', 'UNIDAD DE MEDIDA', unidad),
+          ],
+        ],
+      },
+      layout: 'noBorders',
+      margin: [0, 1, 0, 0],
+    },
+  ];
+}
+
+function kanbanHojaCelda(
+  item: StockDeposito,
+  deposito: { nombre: string; ubicacion?: string },
+): { stack: Content[] } {
+  const cardW = mmToPt(KANBAN_WIDTH_MM);
+  const cardH = mmToPt(KANBAN_HEIGHT_MM);
+  const inner = mmToPt(KANBAN_MARGIN_MM);
+  const innerW = cardW - inner * 2;
+
+  return {
+    stack: [
+      {
+        canvas: [
+          {
+            type: 'rect',
+            x: 0.6,
+            y: 0.6,
+            w: cardW - 1.2,
+            h: cardH - 1.2,
+            r: 7,
+            lineWidth: 1.05,
+            lineColor: COLOR.border,
+          },
+        ],
+      },
+      {
+        margin: [inner, inner - cardH, inner, 0],
+        table: {
+          widths: [innerW],
+          body: [[{ stack: kanbanCardNodes(item, deposito) }]],
+        },
+        layout: {
+          hLineWidth: () => 0,
+          vLineWidth: () => 0,
+          paddingLeft: () => 0,
+          paddingRight: () => 0,
+          paddingTop: () => 0,
+          paddingBottom: () => 0,
+        },
+      },
+    ],
+  };
+}
+
 export function buildKanbanCartelDefinition(
   item: StockDeposito,
   deposito: { nombre: string; ubicacion?: string },
@@ -248,12 +409,6 @@ export function buildKanbanCartelDefinition(
   const margin = mmToPt(KANBAN_MARGIN_MM);
   const pageWidth = mmToPt(KANBAN_WIDTH_MM);
   const pageHeight = mmToPt(KANBAN_HEIGHT_MM);
-  const codigo = item.insumo_codigo?.trim() || `INS-${item.insumo_id}`;
-  const nombre = item.insumo_nombre?.trim() || 'Insumo sin nombre';
-  const categoria = item.categoria_nombre?.trim() || 'Sin categoría';
-  const descripcion = item.insumo_descripcion?.trim() || 'Sin descripción';
-  const unidad = item.unidad_medida?.trim() || 'u';
-  const ubicacion = deposito.ubicacion?.trim() || deposito.nombre?.trim() || 'Sin ubicación';
 
   return {
     pageSize: { width: pageWidth, height: pageHeight },
@@ -268,83 +423,68 @@ export function buildKanbanCartelDefinition(
     content: [
       {
         unbreakable: true,
-        stack: [
-          {
-            columns: [
-              {
-                svg: headerSvg(categoria),
-                width: mmToPt(78),
-                height: mmToPt(10.5),
-              },
-              {
-                image: IBARRA_LOGO_DATA_URL,
-                fit: [mmToPt(13), mmToPt(13)],
-                alignment: 'right',
-                margin: [0, 3, 2, 0],
-              },
-            ],
-            columnGap: 2,
-            margin: [0, 0, 0, 2],
-          },
-          {
-            columns: [
-              {
-                width: '63%',
-                stack: [
-                  fieldRow('barcode', 'CÓDIGO', codigo),
-                  fieldRow('box', 'NOMBRE', nombre),
-                  fieldRow('doc', 'DESCRIPCIÓN', descripcion),
-                ],
-              },
-              {
-                width: 1,
-                table: {
-                  widths: [1],
-                  heights: [mmToPt(22)],
-                  body: [[{ text: '', fillColor: COLOR.line }]],
-                },
-                layout: 'noBorders',
-                margin: [3, 4, 3, 0],
-              },
-              {
-                width: '*',
-                stack: [
-                  metricCard('up', 'CANT. MÍNIMA', formatCantidad(item.cantidad_minima), COLOR.min, COLOR.minBg),
-                  metricCard('down', 'CANT. MÁXIMA', formatCantidad(item.cantidad_maxima), COLOR.max, COLOR.maxBg),
-                ],
-                margin: [0, 2, 0, 0],
-              },
-            ],
-          },
-          {
-            table: {
-              widths: ['*', 10, '*'],
-              body: [
-                [
-                  footerCell('pin', 'UBICACIÓN', ubicacion),
-                  {
-                    fillColor: COLOR.footer,
-                    canvas: [
-                      {
-                        type: 'line',
-                        x1: 5,
-                        y1: 3,
-                        x2: 5,
-                        y2: 18,
-                        lineWidth: 0.6,
-                        lineColor: '#D5DBE4',
-                      },
-                    ],
-                  },
-                  footerCell('box', 'UNIDAD DE MEDIDA', unidad),
-                ],
-              ],
-            },
-            layout: 'noBorders',
-            margin: [0, 1, 0, 0],
-          },
-        ],
+        stack: kanbanCardNodes(item, deposito),
       },
     ],
+  };
+}
+
+export function buildKanbanHojasDefinition(
+  items: StockDeposito[],
+  deposito: { nombre: string; ubicacion?: string },
+): TDocumentDefinitions {
+  const { columnas, filas, porHoja } = layoutKanbanHojas(Math.max(items.length, 1));
+  const cardW = mmToPt(KANBAN_WIDTH_MM);
+  const cardH = mmToPt(KANBAN_HEIGHT_MM);
+  const gap = mmToPt(KANBAN_HOJA_GAP_MM);
+  const gridW = columnas * cardW + (columnas - 1) * gap;
+  const gridH = filas * cardH + (filas - 1) * gap;
+  const pageW = mmToPt(KANBAN_HOJA_WIDTH_MM);
+  const pageH = mmToPt(KANBAN_HOJA_HEIGHT_MM);
+  const marginX = Math.max((pageW - gridW) / 2, 0);
+  const marginY = Math.max((pageH - gridH) / 2, 0);
+
+  const content: Content[] = [];
+  const grupos: StockDeposito[][] = [];
+  if (items.length === 0) {
+    grupos.push([]);
+  } else {
+    for (let i = 0; i < items.length; i += porHoja) {
+      grupos.push(items.slice(i, i + porHoja));
+    }
+  }
+
+  grupos.forEach((grupo, pageIndex) => {
+    content.push({
+      text: ' ',
+      fontSize: 1,
+      color: '#FFFFFF',
+      pageBreak: pageIndex === 0 ? undefined : 'before',
+    });
+
+    grupo.forEach((item, slot) => {
+      const col = slot % columnas;
+      const row = Math.floor(slot / columnas);
+      const tarjeta = kanbanHojaCelda(item, deposito);
+      content.push({
+        absolutePosition: {
+          x: marginX + col * (cardW + gap),
+          y: marginY + row * (cardH + gap),
+        },
+        columns: [
+          {
+            width: cardW,
+            stack: tarjeta.stack,
+          },
+        ],
+      });
+    });
+  });
+
+  return {
+    pageSize: 'A4',
+    pageOrientation: 'portrait',
+    pageMargins: [0, 0, 0, 0],
+    content,
   };
 }
