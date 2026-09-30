@@ -27,6 +27,7 @@ import {
   PeajesTarifarioService,
 } from '../models/tarifario.contracts';
 import { TarifaStatusBadgeComponent } from '../auditoria-tarifas/tarifa-status-badge.component';
+import { TarifarioManageDialogComponent } from './tarifario-manage-dialog.component';
 import {
   MISSING_IMPORTE_LABEL,
   TARIFARIO_STATUS_CATALOG,
@@ -45,6 +46,7 @@ import {
     SearchSelectComponent,
     FilterChipRailComponent,
     TarifaStatusBadgeComponent,
+    TarifarioManageDialogComponent,
   ],
   templateUrl: './tarifario-list.component.html',
   styleUrls: ['../shared/peajes-list-shell.css', './tarifario-list.component.css'],
@@ -67,6 +69,10 @@ export class TarifarioListComponent implements OnInit, OnDestroy {
   sortKey = 'estacion_nombre';
   sortDirection: 'asc' | 'desc' = 'asc';
   filters: TarifarioFilters = {};
+  manageDialogOpen = false;
+  manageInitialPeajeId = '';
+  manageInitialEstacionId = '';
+  manageInitialSentido: TarifaSentido = 'AMBAS';
 
   peajes: Peaje[] = [];
   estaciones: Estacion[] = [];
@@ -116,6 +122,9 @@ export class TarifarioListComponent implements OnInit, OnDestroy {
     }
     if (this.filters.q_estacion) {
       chips.push({ id: 'q_estacion', label: `Estación: ${this.filters.q_estacion}` });
+    }
+    if (this.filters.enabled !== undefined && this.filters.enabled !== null) {
+      chips.push({ id: 'enabled', label: this.filters.enabled ? 'Habilitadas' : 'Deshabilitadas' });
     }
     return chips;
   }
@@ -226,6 +235,14 @@ export class TarifarioListComponent implements OnInit, OnDestroy {
     this.patchFilters({ q_estacion: value.trim() || undefined });
   }
 
+  onEnabled(enabled: boolean | null): void {
+    this.patchFilters({ enabled: enabled ?? undefined });
+  }
+
+  isEnabledFilterActive(enabled: boolean | null): boolean {
+    return (this.filters.enabled ?? null) === enabled;
+  }
+
   removeChip(id: string): void {
     if (id === 'peaje_ids') this.patchFilters({ peaje_ids: undefined });
     else if (id === 'estacion_ids') this.patchFilters({ estacion_ids: undefined });
@@ -233,6 +250,7 @@ export class TarifarioListComponent implements OnInit, OnDestroy {
     else if (id === 'status') this.patchFilters({ status: undefined });
     else if (id === 'sentidos') this.patchFilters({ sentidos: undefined });
     else if (id === 'q_estacion') this.patchFilters({ q_estacion: undefined });
+    else if (id === 'enabled') this.patchFilters({ enabled: undefined });
   }
 
   clearFilters(): void {
@@ -282,7 +300,27 @@ export class TarifarioListComponent implements OnInit, OnDestroy {
   }
 
   formatFecha(row: TarifarioCurrentRow): string {
-    return formatFechaActualizacion(row.fecha_actualizacion);
+    return row.fechaVigenciaInicio ? formatFechaActualizacion(row.fechaVigenciaInicio) : 'Sin fecha conocida';
+  }
+
+  get manageStations(): Array<{ id: string; name: string; peajeId: string; family: 'AMBAS' | 'DIRECCIONAL' }> {
+    return this.estaciones.map((station) => ({ id: station.id, name: station.nombre, peajeId: station.peaje_id, family: 'AMBAS' }));
+  }
+
+  openManageDialog(row?: TarifarioCurrentRow): void {
+    this.manageDialogOpen = true;
+    this.manageInitialPeajeId = row?.peaje_id ?? this.filters.peaje_ids?.[0] ?? this.peajes[0]?.id ?? '';
+    this.manageInitialEstacionId = row?.estacion_id ?? '';
+    this.manageInitialSentido = row?.sentido ?? 'AMBAS';
+  }
+
+  closeManageDialog(): void {
+    this.manageDialogOpen = false;
+  }
+
+  async refreshAfterManage(): Promise<void> {
+    this.manageDialogOpen = false;
+    await this.loadRows();
   }
 
   emptyMessage(): string {

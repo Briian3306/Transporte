@@ -1,0 +1,80 @@
+<div class="tm-backdrop" *ngIf="open" role="presentation">
+  <section class="tm-dialog" role="dialog" aria-modal="true" aria-labelledby="tm-title">
+    <header class="tm-header">
+      <div>
+        <p class="tm-eyebrow">Módulo Peajes · {{ mode === 'refresh' ? 'Paso 9' : 'Tarifario' }}</p>
+        <h2 id="tm-title">{{ mode === 'refresh' ? 'Revisar tarifas' : 'Cargar tarifario' }}</h2>
+        <p class="tm-sub">Agrupá estaciones compatibles para compartir un importe sin perder sus identidades.</p>
+      </div>
+      <button type="button" class="tm-close" (click)="close()" aria-label="Cerrar">×</button>
+    </header>
+
+    <div class="tm-toolbar">
+      <label>
+        <span>Peaje</span>
+        <select [(ngModel)]="peajeId" (ngModelChange)="openSession()" [disabled]="saving">
+          <option *ngFor="let peaje of peajes" [ngValue]="peaje.id">{{ peaje.nombre }}</option>
+        </select>
+      </label>
+      <app-date-range-picker
+        label="Vigente desde"
+        mode="single"
+        placeholder="dd/mm/aaaa"
+        [value]="vigenteDesde"
+        [disabled]="saving"
+        (valueChange)="vigenteDesde = { from: $event.from, to: null }"
+      ></app-date-range-picker>
+    </div>
+
+    <div class="tm-group-picker" *ngIf="availableStations.length">
+      <div>
+        <strong>Agregar grupo de tarifa</strong>
+        <p>Seleccioná dos o más estaciones libres del mismo peaje y familia.</p>
+      </div>
+      <div class="tm-station-options">
+        <label *ngFor="let station of availableStations" class="tm-check">
+          <input type="checkbox" [checked]="selectedStationIds.includes(station.id)" (change)="toggleStation(station.id, $any($event.target).checked)" />
+          <span>{{ station.name }}</span>
+        </label>
+      </div>
+      <button type="button" class="tm-button tm-button--quiet" [disabled]="selectedStationIds.length < 2" (click)="addGroup()">Agregar grupo</button>
+    </div>
+
+    <p class="tm-error" *ngIf="error" role="alert">{{ error }}</p>
+
+    <div class="tm-groups">
+      <article class="tm-group" *ngFor="let group of groups; trackBy: trackGroup">
+        <header class="tm-group-header">
+          <div>
+            <span class="tm-group-kicker">Grupo de tarifa</span>
+            <h3>{{ group.stationIds.length }} estación{{ group.stationIds.length === 1 ? '' : 'es' }} · {{ group.family }}</h3>
+          </div>
+          <div class="tm-members">
+            <span *ngFor="let stationId of group.stationIds" class="tm-member">
+              {{ stationName(stationId) }}
+              <button *ngIf="group.stationIds.length > 1" type="button" (click)="removeStation(group, stationId)" [attr.aria-label]="'Quitar ' + stationId">×</button>
+            </span>
+          </div>
+        </header>
+        <p class="tm-error" *ngIf="group.error" role="alert">{{ group.error }}</p>
+        <app-tarifario-editor-board
+          [rows]="group.rows"
+          [drafts]="group.drafts"
+          [allowAddCategoria]="canAddCategoria(group)"
+          [categoriaCount]="group.rows.length"
+          [nextCategoria]="nextCategory(group).categoria"
+          [nextCategoryAction]="nextCategory(group).action"
+          [draftCategories]="group.addedDraftCategories"
+          (draftChange)="onDraftChange(group, $event)"
+          (addCategoria)="addCategoria(group)"
+          (categoryStateChange)="onCategoryStateChange(group, $event)"
+        ></app-tarifario-editor-board>
+      </article>
+    </div>
+
+    <footer class="tm-footer">
+      <button type="button" class="tm-button tm-button--quiet" (click)="close()">Cancelar</button>
+      <button type="button" class="tm-button tm-button--primary" [disabled]="!canSave" (click)="save()">{{ saving ? 'Guardando…' : 'Guardar grupos' }}</button>
+    </footer>
+  </section>
+</div>

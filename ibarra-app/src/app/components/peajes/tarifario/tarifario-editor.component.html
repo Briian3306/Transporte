@@ -27,9 +27,13 @@
     [drafts]="drafts"
     [allowAddCategoria]="canAddCategoria"
     [categoriaCount]="categoriaCount"
+    [nextCategoria]="nextCategory.categoria"
+    [nextCategoryAction]="nextCategory.action"
+    [draftCategories]="addedDraftCategories"
     (draftChange)="onDraftChange($event)"
     (historyRequest)="openHistory($event.row, $event.status)"
     (addCategoria)="addCategoria()"
+    (categoryStateChange)="onCategoryStateChange($event)"
   ></app-tarifario-editor-board>
 
   <div class="tf__date" *ngIf="!loading && !error">

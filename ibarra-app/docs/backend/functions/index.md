@@ -40,7 +40,7 @@ Ofrecer un índice rápido nombre → módulo → documento de detalle, sin dupl
 | `peajes_resolver_tarifas_actuales` | peajes | Batch: resuelve config v2 vigente (sentido, puntero, flag IVA) | [tarifas-tarifa-importe](../peajes/tarifas-tarifa-importe.md) |
 | `peajes_validar_tarifas_actuales` | peajes | Batch: tolerancia 1% inclusiva vs importe current/histórico | [tarifas-tarifa-importe](../peajes/tarifas-tarifa-importe.md) |
 | `peajes_asociar_pasadas_tarifa_importe` | peajes | Asocia `tarifa_importe_id` solo AL_DIA/HISTORICA (no cableado post-carga) | [tarifas-tarifa-importe](../peajes/tarifas-tarifa-importe.md) |
-| `peajes_backfill_pasadas_tarifa_importe` | peajes | Backfill `tarifa_importe_id` por linaje 1:1 | [tarifas-tarifa-importe](../peajes/tarifas-tarifa-importe.md) |
+| `peajes_backfill_pasadas_tarifa_importe` | peajes | Backfill `tarifa_importe_id` (NULL): linaje, LEAST+status, IDA 1%, insert histórico `no_coincide` | [tarifas-tarifa-importe](../peajes/tarifas-tarifa-importe.md) |
 | `peajes_listar_tarifas_actuales` | peajes | Listado paginado de importes vigentes | [tarifario](../peajes/tarifario.md) |
 | `peajes_obtener_tarifario_editor` | peajes | Tablero dual peaje+estación+sentido | [tarifario](../peajes/tarifario.md) |
 | `peajes_guardar_tarifas_actuales` | peajes | Append importes actuales (ruta Tarifario) | [tarifario](../peajes/tarifario.md) |
@@ -48,6 +48,7 @@ Ofrecer un índice rápido nombre → módulo → documento de detalle, sin dupl
 | `peajes_preparar_refresco_tarifas` | peajes | Contextos PICO/NO_PICO + flag IVA (Paso 9) | [refresh-tarifas-paso9](../peajes/refresh-tarifas-paso9.md) |
 | `peajes_detectar_refresco_tarifas` | peajes | Clasifica current / histórico / nuevo (1%) | [refresh-tarifas-paso9](../peajes/refresh-tarifas-paso9.md) |
 | `peajes_guardar_refresco_tarifas` | peajes | Append transaccional del refresco Paso 9 | [refresh-tarifas-paso9](../peajes/refresh-tarifas-paso9.md) |
+| `peajes_buscar_historial_importes` | peajes | Historial por peaje+estación+categoría efectiva+importe (1%) | [refresh-tarifas-paso9](../peajes/refresh-tarifas-paso9.md) |
 | `peajes_listar_pasadas` | peajes | Listado paginado gestión | [gestion-pasadas](../peajes/gestion-pasadas.md) |
 | `peajes_listar_estaciones_pendientes` | peajes | Agregado estaciones PENDING (coords) | [estaciones-pendientes](../peajes/estaciones-pendientes.md) |
 | `peajes_crear_pasada` | peajes | Alta manual pasada | [gestion-pasadas](../peajes/gestion-pasadas.md) |
@@ -71,4 +72,4 @@ Helpers internos / triggers de `updated_at` (`peajes_set_updated_at`) no se list
 
 ---
 
-> Última actualización: 2026-09-08
+> Última actualización: 2026-09-15

@@ -4,9 +4,10 @@ description: >-
   Implements Supabase backend changes (RPC, SQL functions, views, triggers,
   policies, RLS, migrations) and Angular services that call Supabase for the
   Peajes / Transporte Ibarra project. Canonical flow: Supabase CLI (testing) ->
-  DESARROLLO (remote). No separate staging/prod in this workflow. Documents
-  SQL/RPC under docs/backend/ (not docs/08-sql/). Requires skill supabase
-  and supabase-postgres-best-practices for SQL. Does not replace
+  DESARROLLO (remote). Git files in supabase/migrations/ are the source of
+  truth for migration version IDs. No separate staging/prod in this workflow.
+  Documents SQL/RPC under docs/backend/ (not docs/08-sql/). Requires skill
+  supabase and supabase-postgres-best-practices for SQL. Does not replace
   backend-documenter or backend-tester.
 ---
 
@@ -28,6 +29,7 @@ DESARROLLO (remote)   =  development remote only
 
 There is **no** staging/prod split in this flow. See [entornos.md](entornos.md).
 
+**Source of truth for migration identity:** git files in `supabase/migrations/<YYYYMMDDHHMMSS>_<name>.sql`. The version ID is the filename timestamp. Local CLI and DESARROLLO `schema_migrations` must store that same ID. MCP is not the source of truth for versions or for SQL testing.
 
 ## Main responsibility
 
@@ -46,12 +48,14 @@ After implementation, run:
 
 **CLI rule:** from `ibarra-app/`, prefer `npx supabase` (npm lockfile). Do not assume global `supabase` or `pnpm supabase`.
 
-Before any `--linked` command, confirm the ref **and** read [historial-migraciones.md](historial-migraciones.md) (CLI vs MCP timestamps):
+Before any `--linked` command, confirm the ref **and** read [historial-migraciones.md](historial-migraciones.md):
 
 ```powershell
 Get-Content supabase\.temp\project-ref
 # DESARROLLO expected: kfffigvyvtzyczeiadxh
 ```
+
+If `npx supabase projects list` does not include `kfffigvyvtzyczeiadxh`, the CLI token is the wrong org. Relink / `npx supabase login` before pushing. Never invent a second project ref (no OrdenCompra).
 
 ## Required companion skills
 
@@ -77,11 +81,30 @@ You must not:
 - Edit shared models/contracts owned by agent 00
 - Reuse `checklist_templates` / `ChecklistTemplateService`
 - Use MCP remote as the source of truth for testing (CLI is)
-- Call MCP `apply_migration` when the SQL file already exists in `supabase/migrations/` (creates a second timestamp; use `db push --linked`)
 - Apply `db reset --linked` to DESARROLLO
 - Commit secrets / `service_role` / Bearer tokens
 
-## Standard local cycle
+## Canonical schema-change flow
+
+Git filenames are the source of truth. Create them with the CLI; never invent timestamps by hand.
+
+```text
+need change the schema
+        ↓
+npx supabase migration new <nombre>
+        ↓
+editar archivo SQL
+        ↓
+npx supabase db reset --local --no-seed
+        ↓
+npx supabase test db
+        ↓
+npx supabase db push --linked --dry-run
+        ↓
+npx supabase db push --linked
+```
+
+After local tests, restore app data with `pnpm seed:local` unless the session is pgTAP-only. DESARROLLO push still requires explicit user authorization.
 
 ```powershell
 cd ibarra-app
@@ -89,28 +112,75 @@ npx supabase start --ignore-health-check
 npx supabase migration new nombre_del_cambio
 # edit supabase/migrations/<timestamp>_nombre_del_cambio.sql
 
-# 1) Schema + pgTAP (no Auth, no pasadas, no tarifario v2)
 npx supabase db reset --local --no-seed
 npx supabase test db
-
-# 2) Restore CLI data the app needs (Kong guard + Auth/RBAC/pasadas + tarifas v2 ETL)
 pnpm seed:local
+
+# DESARROLLO (user OK)
+Get-Content supabase\.temp\project-ref
+npx supabase db push --linked --dry-run
+npx supabase db push --linked
 ```
 
 `pnpm seed:local` is: `ensure-supabase-local` → `scripts/seed-local.mjs` → `node scripts/peajes-catalogo-audit/migrate-tarifario-v2.mjs --load-local`.
 
 Do **not** stop after `--no-seed`. That leaves empty `tarifas` / `tarifa_importe` / `_stg_precio_last` and no Francis login. Tarifario v2 is a Node ETL (workbook), not a file in `config.toml` `[db.seed]`. Never put `--load-local` against DESARROLLO.
 
-DESARROLLO (only after CLI green + user authorization when required). Align history first ([historial-migraciones.md](historial-migraciones.md)), then:
+After a DESARROLLO push, restore local CLI the same way (`db reset --local --no-seed` + `pnpm seed:local`) if the app will be used. Do not leave the Docker DB on `--no-seed` only.
 
-```powershell
-npx supabase link --project-ref kfffigvyvtzyczeiadxh
-Get-Content supabase\.temp\project-ref
-npx supabase db push --linked --dry-run
-npx supabase db push --linked
+## Forbidden
+
+- Use MCP `apply_migration` when a local file already exists in `supabase/migrations/`
+- Use MCP `execute_sql` for DDL on the remote
+- Use MCP as an automatic fallback if `db push` fails
+- Invent timestamps manually (always `npx supabase migration new <nombre>`)
+- Change DESARROLLO schema before the change passed locally (`db reset --local --no-seed` + `npx supabase test db`)
+- `db reset --linked` against DESARROLLO
+- OrdenCompra project refs
+
+## MCP — allowed (inspect only)
+
+MCP is for reading DESARROLLO, not for deploying schema.
+
+- `list_migrations`
+- `list_tables` / inspect tables
+- `execute_sql` **SELECT** only
+- Validate remote objects exist
+- `get_advisors`
+- Investigate drift (compare remote versions vs git filenames)
+
+Do not use MCP `apply_migration`, `execute_sql` DDL, or writes to `schema_migrations` as the deploy path.
+
+## If `db push` returns 403
+
+**Stop the deployment.** Do not use MCP as fallback.
+The org is `biwtzryhjnrfotytnied`
+1. Confirm `supabase\.temp\project-ref` is `kfffigvyvtzyczeiadxh`.
+2. Run `npx supabase projects list`. DESARROLLO (`Check-list` / `kfffigvyvtzyczeiadxh`) must appear and be linked.
+3. If it does not: `npx supabase login` with an org member that can write this project, then `npx supabase link --project-ref kfffigvyvtzyczeiadxh`.
+4. Retry `db push --linked --dry-run` only after the CLI account is correct.
+
+Do not invent a second project ref. Do not fall back to MCP `apply_migration`.
+
+## Emergency MCP apply (same session only)
+
+Only with **explicit** user authorization, and only after the 403/auth investigation above. This is not the default path.
+
+MCP `apply_migration` generates its own timestamp (`T_mcp`), which will desync git. Repair history in the **same session** so the remote ID matches the local filename (`T_local`):
+
+```text
+Emergency MCP apply
+        ↓
+obtener T_mcp (list_migrations)
+        ↓
+npx supabase migration repair --linked --status reverted <T_mcp>
+        ↓
+npx supabase migration repair --linked --status applied <T_local>
+        ↓
+npx supabase migration list --linked
 ```
 
-After push, restore local CLI the same as step 2 (`db reset --local --no-seed` + `pnpm seed:local`). Do not leave the Docker DB on `--no-seed` only.
+Confirm a single ID per change, equal to the git filename. If you skip the repair, the next `db push` will fail. Details: [historial-migraciones.md](historial-migraciones.md).
 
 ## SQL / RPC documentation
 
@@ -125,10 +195,11 @@ Every change → `docs/backend/` (see [plantilla-sql-task.md](plantilla-sql-task
 ## Completion checklist
 
 - [ ] [entornos.md](entornos.md) followed (CLI = testing)
-- [ ] Migration in `supabase/migrations/`
+- [ ] Migration in `supabase/migrations/` created with `migration new` (no hand-invented timestamp)
 - [ ] CLI rebuild + tests green (`db reset --local --no-seed` + `test db`)
 - [ ] After `--no-seed` (and after DESARROLLO push), `pnpm seed:local` unless the session is pgTAP-only
-- [ ] `--linked` history aligned per [historial-migraciones.md](historial-migraciones.md) (no MCP duplicate timestamps)
+- [ ] DESARROLLO applied with `db push --linked` (filename timestamp), not MCP `apply_migration`
+- [ ] `--linked` history aligned per [historial-migraciones.md](historial-migraciones.md)
 - [ ] `docs/backend/` updated (catalog + peajes detail as needed)
 - [ ] No OrdenCompra refs used
 - [ ] No secrets in migrations/docs

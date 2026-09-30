@@ -11,9 +11,13 @@ import {
   TarifaSentido,
   TarifaStatusPico,
   TarifarioCurrentRow,
+  TarifarioCategoriaEstadoCambio,
+  TarifarioGroupChange,
   TarifarioEditorPayload,
   TarifarioFilters,
   TarifarioHistorialItem,
+  TarifarioHistorialImporteConsulta,
+  TarifarioHistorialImporteHit,
   TarifarioIdentidadExistente,
   TarifarioImporteCambio,
   TarifarioListParams,
@@ -46,6 +50,7 @@ interface TarifaIdentidad {
   sentido: TarifaSentido;
   current_tarifa_id: string | null;
   fecha_actualizacion: string | null;
+  enabled: boolean;
 }
 
 interface TarifaImporteRow {
@@ -113,6 +118,7 @@ function seedState(): { tarifas: TarifaIdentidad[]; importes: TarifaImporteRow[]
       sentido,
       current_tarifa_id: currentId,
       fecha_actualizacion: now,
+      enabled: true,
     });
     importes.push(...extras, {
       id: currentId,
@@ -254,6 +260,7 @@ export class TarifarioMockService implements PeajesTarifarioService {
           sentido,
           current_tarifa_id: null,
           fecha_actualizacion: null,
+          enabled: true,
         };
         this.tarifas.push(tarifa);
       }
@@ -281,6 +288,38 @@ export class TarifarioMockService implements PeajesTarifarioService {
     return of({ actualizadas: cambios.length });
   }
 
+  guardarGrupos(cambios: TarifarioGroupChange[]): Observable<{ actualizadas: number }> {
+    for (const cambio of cambios) {
+      this.guardar(cambio.peajeId, cambio.estacionId, cambio.sentido, [{
+        categoria: cambio.categoria,
+        status: cambio.status,
+        importe: cambio.importe,
+        fechaVigenciaInicio: cambio.fechaVigenciaInicio,
+      }]);
+    }
+    return of({ actualizadas: cambios.length });
+  }
+
+  actualizarEstadoCategorias(
+    cambios: TarifarioCategoriaEstadoCambio[],
+  ): Observable<Array<{ tarifaId: string; enabled: boolean }>> {
+    const result: Array<{ tarifaId: string; enabled: boolean }> = [];
+    for (const cambio of cambios) {
+      for (const tarifa of this.tarifas) {
+        if (
+          tarifa.peaje_id === cambio.peajeId &&
+          tarifa.estacion_id === cambio.estacionId &&
+          tarifa.sentido === cambio.sentido &&
+          tarifa.categoria === cambio.categoria
+        ) {
+          tarifa.enabled = cambio.enabled;
+          result.push({ tarifaId: tarifa.id, enabled: tarifa.enabled });
+        }
+      }
+    }
+    return of(result);
+  }
+
   listarHistorial(tarifaId: string): Observable<TarifarioHistorialItem[]> {
     const tarifa = this.tarifas.find((t) => t.id === tarifaId);
     const rows = this.importes
@@ -299,6 +338,12 @@ export class TarifarioMockService implements PeajesTarifarioService {
     return of(rows);
   }
 
+  buscarHistorialImportes(
+    consultas: TarifarioHistorialImporteConsulta[],
+  ): Observable<TarifarioHistorialImporteHit[]> {
+    return of(consultas.map((consulta) => this.matchHistorialImporte(consulta)));
+  }
+
   prepararRefresco(
     _candidatos: PrepararRefrescoTarifaInput[],
   ): Observable<PrepararRefrescoTarifaItem[]> {
@@ -315,6 +360,76 @@ export class TarifarioMockService implements PeajesTarifarioService {
     return throwError(() => new Error('guardarRefresco no implementado'));
   }
 
+  private matchHistorialImporte(
+    consulta: TarifarioHistorialImporteConsulta,
+  ): TarifarioHistorialImporteHit {
+    const empty: TarifarioHistorialImporteHit = {
+      estacionId: consulta.estacionId,
+      importeConsultado: consulta.importe,
+      countIdentities: 0,
+      matches: [],
+      tarifaId: null,
+      categoria: null,
+      status: null,
+      sentido: null,
+      importe: null,
+      fechaVigenciaInicio: null,
+      fechaVigenciaFin: null,
+      esActual: null,
+      diagnostico: null,
+      enabled: null,
+    };
+    if (!(consulta.importe > 0)) return empty;
+    if (consulta.categoria == null) return empty;
+    const hits: Array<{ tarifa: TarifaIdentidad; row: TarifaImporteRow }> = [];
+    for (const tarifa of this.tarifas) {
+      if (!tarifa.enabled) continue;
+      if (tarifa.estacion_id !== consulta.estacionId) continue;
+      if (consulta.peajeId && tarifa.peaje_id !== consulta.peajeId) continue;
+      if (tarifa.categoria !== consulta.categoria) continue;
+      const matching = this.importes.filter(
+        (row) =>
+          row.tarifa_id === tarifa.id &&
+          row.importe > 0 &&
+          row.diagnostico !== 'REVISAR' &&
+          Math.abs(consulta.importe - row.importe) / row.importe <= 0.01,
+      );
+      if (!matching.length) continue;
+      matching.sort((a, b) => {
+        const aCurrent = tarifa.current_tarifa_id === a.id ? 1 : 0;
+        const bCurrent = tarifa.current_tarifa_id === b.id ? 1 : 0;
+        if (aCurrent !== bCurrent) return bCurrent - aCurrent;
+        return a.fecha_aparicion < b.fecha_aparicion ? 1 : a.fecha_aparicion > b.fecha_aparicion ? -1 : 0;
+      });
+      hits.push({ tarifa, row: matching[0] });
+    }
+    if (!hits.length) return empty;
+    const matches = hits.map((hit) => ({
+      tarifaId: hit.tarifa.id,
+      categoria: hit.tarifa.categoria,
+      status: hit.tarifa.status,
+      sentido: hit.tarifa.sentido,
+      importe: hit.row.importe,
+    }));
+    const unique = hits.length === 1 ? hits[0] : null;
+    return {
+      estacionId: consulta.estacionId,
+      importeConsultado: consulta.importe,
+      countIdentities: hits.length,
+      matches,
+      tarifaId: unique?.tarifa.id ?? null,
+      categoria: unique?.tarifa.categoria ?? null,
+      status: unique?.tarifa.status ?? null,
+      sentido: unique?.tarifa.sentido ?? null,
+      importe: unique?.row.importe ?? null,
+      fechaVigenciaInicio: unique?.row.fecha_vigencia_inicio ?? null,
+      fechaVigenciaFin: unique?.row.fecha_vigencia_fin ?? null,
+      esActual: unique ? unique.tarifa.current_tarifa_id === unique.row.id : null,
+      diagnostico: unique?.row.diagnostico ?? null,
+      enabled: unique?.tarifa.enabled ?? null,
+    };
+  }
+
   private toExistente(t: TarifaIdentidad): TarifarioIdentidadExistente {
     const current = this.importes.find((i) => i.id === t.current_tarifa_id);
     return {
@@ -324,6 +439,7 @@ export class TarifarioMockService implements PeajesTarifarioService {
       current_tarifa_importe_id: t.current_tarifa_id,
       importe: current?.importe ?? null,
       fecha_actualizacion: t.fecha_actualizacion,
+      enabled: t.enabled,
     };
   }
 
@@ -344,6 +460,7 @@ export class TarifarioMockService implements PeajesTarifarioService {
         importe: current?.importe ?? null,
         fecha_actualizacion: t.fecha_actualizacion,
         current_tarifa_importe_id: t.current_tarifa_id,
+        enabled: t.enabled,
       };
     });
   }
@@ -363,6 +480,7 @@ function matchesFilters(row: TarifarioCurrentRow, filters?: TarifarioFilters): b
     const q = filters.q_estacion.trim().toLowerCase();
     if (q && !row.estacion_nombre.toLowerCase().includes(q)) return false;
   }
+  if (filters.enabled !== undefined && filters.enabled !== null && row.enabled !== filters.enabled) return false;
   return true;
 }
 

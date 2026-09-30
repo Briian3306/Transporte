@@ -136,6 +136,48 @@ describe('PeajesTarifarioSupabaseService', () => {
     expect(out[1].categoriaCalculada).toBeNull();
   });
 
+  it('buscarHistorialImportes llama peajes_buscar_historial_importes con categoría efectiva', async () => {
+    rpcSpy.and.resolveTo({
+      data: [
+        {
+          estacion_id: 'e',
+          importe_consultado: 8464.0075,
+          count_identities: 1,
+          matches: [
+            {
+              tarifa_id: 't7',
+              categoria: 7,
+              status: 'NO_PICO',
+              sentido: 'AMBAS',
+              importe: 8464.0075,
+            },
+          ],
+          tarifa_id: 't7',
+          categoria: 7,
+          status: 'NO_PICO',
+          sentido: 'AMBAS',
+          importe: 8464.0075,
+          fecha_vigencia_inicio: '2026-08-01',
+          fecha_vigencia_fin: '2026-09-01',
+          es_actual: false,
+          diagnostico: 'CONFIRMADO',
+          enabled: true,
+        },
+      ],
+      error: null,
+    });
+    const out = await firstValueFrom(
+      service.buscarHistorialImportes([{ estacionId: 'e', importe: 8464.0075, peajeId: 'p', categoria: 7 }]),
+    );
+    expect(rpcSpy).toHaveBeenCalledWith('peajes_buscar_historial_importes', {
+      p_candidatos: [{ estacion_id: 'e', importe: 8464.0075, peaje_id: 'p', categoria: 7 }],
+    });
+    expect(out[0].categoria).toBe(7);
+    expect(out[0].matches).toEqual([
+      jasmine.objectContaining({ tarifaId: 't7', categoria: 7, status: 'NO_PICO' }),
+    ]);
+  });
+
   it('listar mapea vigencia y diagnostico del precio actual', async () => {
     rpcSpy.and.resolveTo({
       data: {
@@ -475,6 +517,7 @@ describe('PeajesTarifarioSupabaseService', () => {
           fecha_vigencia_fin: null,
           diagnostico: 'CONFIRMADO',
           categoria_calculada: 2,
+          no_coincide_con_tarifario: true,
         },
       ],
       error: null,
@@ -491,7 +534,7 @@ describe('PeajesTarifarioSupabaseService', () => {
       importe: 12500,
       fechaVigenciaInicio: '2026-09-01',
       cases: 4,
-      requiereNormalizacionIva: false,
+      noCoincideConTarifario: true,
     };
     const out = await firstValueFrom(service.guardarRefresco([decision] as never));
     expect(rpcSpy).toHaveBeenCalledWith('peajes_guardar_refresco_tarifas', {
@@ -508,12 +551,13 @@ describe('PeajesTarifarioSupabaseService', () => {
           importe: 12500,
           fecha_vigencia_inicio: '2026-09-01',
           cases: 4,
-          requiere_normalizacion_iva: false,
+          no_coincide_con_tarifario: true,
         }),
       ],
     });
     expect((out[0] as { diagnostico?: string | null }).diagnostico).toBe('CONFIRMADO');
     expect((out[0] as { fechaVigenciaInicio?: string | null }).fechaVigenciaInicio).toBe('2026-09-01');
     expect((out[0] as { categoriaCalculada?: number | null }).categoriaCalculada).toBe(2);
+    expect((out[0] as { noCoincideConTarifario?: boolean }).noCoincideConTarifario).toBeTrue();
   });
 });

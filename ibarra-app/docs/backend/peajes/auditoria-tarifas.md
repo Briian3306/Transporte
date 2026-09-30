@@ -35,7 +35,7 @@ Exponer el motor de diagnóstico (capa 1), la confirmación humana de status (ca
 |------------|-----------|
 | `PeajesCargaSupabaseService.confirmarCarga` | `peajes_confirmar_carga` (hook SQL) + `.rpc` idempotente `peajes_normalizar_tarifas` |
 | `PeajesAuditoriaTarifasSupabaseService` | listar / confirmar / marcar / grupos / recalcular / catálogo |
-| Power BI `pwbi_pasadas` | `Categoria`, `Categoria_Calculated`, `Categoria_Calculated_Boolean`, `Tarifa_Normalizada_ID`, `Tarifa_Status`, `Estacion_Geocodificacion_Status` |
+| Power BI `pwbi_pasadas` | `Categoria`, `Categoria_Calculated` (vía v2 si hay FK), `Tarifa_Normalizada_ID` (legado), `Tarifa_Status` (`COALESCE` v2/`pasadas.tarifa_status`), `Estacion_Geocodificacion_Status` |
 | Power BI `pwbi_tarifas` | dimensión `tarifas_normalizadas`; relación `Tarifa_Normalizada_ID` |
 
 ## Tables

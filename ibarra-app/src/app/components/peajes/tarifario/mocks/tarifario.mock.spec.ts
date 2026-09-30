@@ -110,4 +110,23 @@ describe('TarifarioMockService', () => {
     expect(hist.length).toBe(1);
     expect(hist[0].es_actual).toBeTrue();
   });
+
+  it('buscarHistorialImportes acota a la categoría pedida cuando 6 y 7 comparten el importe', async () => {
+    await firstValueFrom(
+      mock.guardar(PEAJE_AUBASA, ESTACION_HUDSON, 'IDA', [
+        { categoria: 6, status: 'NO_PICO', importe: 8464.0075 },
+        { categoria: 7, status: 'NO_PICO', importe: 8464.0075 },
+      ]),
+    );
+    const withoutCat = await firstValueFrom(
+      mock.buscarHistorialImportes([{ estacionId: ESTACION_HUDSON, importe: 8464.0075 }]),
+    );
+    expect(withoutCat[0].countIdentities).toBe(0);
+    const hits = await firstValueFrom(
+      mock.buscarHistorialImportes([{ estacionId: ESTACION_HUDSON, importe: 8464.0075, categoria: 6 }]),
+    );
+    expect(hits[0].countIdentities).toBe(1);
+    expect(hits[0].categoria).toBe(6);
+    expect(hits[0].matches.every((match) => match.categoria === 6)).toBeTrue();
+  });
 });

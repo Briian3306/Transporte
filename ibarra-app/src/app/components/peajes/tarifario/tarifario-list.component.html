@@ -8,6 +8,10 @@
       </p>
     </div>
     <div class="at__header-actions">
+      <button type="button" class="at__btn at__btn--primary" (click)="openManageDialog()">
+        <i class="fas fa-upload" aria-hidden="true"></i>
+        Cargar tarifario
+      </button>
       <a routerLink="/peajes" class="at__link">
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
         Volver
@@ -78,6 +82,13 @@
     >{{ code === 'NO_PICO' ? 'No pico' : 'Pico' }}</button>
   </div>
 
+  <div class="at__status-rail" aria-label="Filtrar por estado de categoría">
+    <span class="at__status-rail-label">Estado</span>
+    <button type="button" class="at__status-chip" [class.at__status-chip--active]="isEnabledFilterActive(null)" (click)="onEnabled(null)">Todas</button>
+    <button type="button" class="at__status-chip" [class.at__status-chip--active]="isEnabledFilterActive(true)" (click)="onEnabled(true)">Habilitadas</button>
+    <button type="button" class="at__status-chip" [class.at__status-chip--active]="isEnabledFilterActive(false)" (click)="onEnabled(false)">Deshabilitadas</button>
+  </div>
+
   <p class="at__error" *ngIf="error" role="alert">{{ error }}</p>
 
   <div class="at__table-wrap" [attr.aria-busy]="loading">
@@ -89,9 +100,10 @@
           <th scope="col" class="at__col--mobile-hide" [attr.aria-sort]="ariaSort('peaje_nombre')"><button type="button" class="at__sort" (click)="onSort('peaje_nombre')">Peaje</button></th>
           <th scope="col" class="at__col--mobile-hide" [attr.aria-sort]="ariaSort('categoria')"><button type="button" class="at__sort" (click)="onSort('categoria')">Categoría</button></th>
           <th scope="col" class="at__num" [attr.aria-sort]="ariaSort('importe')"><button type="button" class="at__sort" (click)="onSort('importe')">Importe</button></th>
-          <th scope="col" class="at__col--mobile-hide" [attr.aria-sort]="ariaSort('fecha_actualizacion')"><button type="button" class="at__sort" (click)="onSort('fecha_actualizacion')">Fecha actualización</button></th>
+          <th scope="col" class="at__col--mobile-hide" [attr.aria-sort]="ariaSort('fecha_vigencia_inicio')"><button type="button" class="at__sort" (click)="onSort('fecha_vigencia_inicio')">Fecha vigencia</button></th>
           <th scope="col" [attr.aria-sort]="ariaSort('status')"><button type="button" class="at__sort" (click)="onSort('status')">Status</button></th>
           <th scope="col" [attr.aria-sort]="ariaSort('sentido')"><button type="button" class="at__sort" (click)="onSort('sentido')">Sentido</button></th>
+          <th scope="col">Estado</th>
           <th scope="col" class="at__th-actions">Acciones</th>
         </tr>
       </thead>
@@ -101,14 +113,15 @@
           <td class="at__col--mobile-hide" data-label="Peaje">{{ row.peaje_nombre }}</td>
           <td class="at__col--mobile-hide" data-label="Categoría">{{ row.categoria }}</td>
           <td class="at__num at__price" data-label="Importe">{{ formatImporte(row) }}</td>
-          <td class="at__col--mobile-hide" data-label="Fecha actualización">{{ formatFecha(row) }}</td>
+          <td class="at__col--mobile-hide" data-label="Fecha vigencia">{{ formatFecha(row) }}</td>
           <td data-label="Status"><app-tarifa-status-badge [codigo]="row.status" [catalogo]="statusCatalog"></app-tarifa-status-badge></td>
           <td data-label="Sentido"><span class="at__badge at__badge--neutral">{{ row.sentido }}</span></td>
+          <td data-label="Estado"><span class="at__badge" [class.at__badge--neutral]="row.enabled === false"><span aria-hidden="true">●</span> {{ row.enabled === false ? 'Deshabilitada' : 'Habilitada' }}</span></td>
           <td class="at__actions">
-            <a class="at__action" [routerLink]="editorHref(row)">
+            <button type="button" class="at__action" (click)="openManageDialog(row)">
               <i class="fas fa-pen" aria-hidden="true"></i>
               Editar
-            </a>
+            </button>
           </td>
         </tr>
       </tbody>
@@ -123,6 +136,17 @@
   </footer>
 
   <ng-template #emptyOrLoading>
-    <tbody><tr><td colspan="8" class="at__empty">{{ emptyMessage() }}</td></tr></tbody>
+    <tbody><tr><td colspan="9" class="at__empty">{{ emptyMessage() }}</td></tr></tbody>
   </ng-template>
+
+  <app-tarifario-manage-dialog
+    [open]="manageDialogOpen"
+    [peajes]="peajes"
+    [stations]="manageStations"
+    [initialPeajeId]="manageInitialPeajeId"
+    [initialEstacionId]="manageInitialEstacionId"
+    [initialSentido]="manageInitialSentido"
+    (closed)="closeManageDialog()"
+    (saved)="refreshAfterManage()"
+  ></app-tarifario-manage-dialog>
 </div>

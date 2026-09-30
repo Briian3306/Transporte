@@ -10,7 +10,7 @@
 >
   <p class="at__empty" *ngIf="loading">Cargando tarifario…</p>
 
-  <section class="tf trd__editor" *ngFor="let grupo of grupos">
+  <section class="tf trd__editor" *ngFor="let grupo of grupos; trackBy: trackGrupo">
     <header class="at__header">
       <div>
         <p class="at__eyebrow">Módulo Peajes · Tarifario</p>
@@ -29,16 +29,29 @@
     </p>
 
     <div class="trd__stations" *ngIf="grupo.detectedStations.length > 1">
+      <label class="trd__group-count">
+        <span>Grupos de tarifa</span>
+        <input
+          type="number"
+          min="1"
+          [max]="maxGroupCount(grupo)"
+          [value]="grupo.groupCount"
+          [disabled]="!canManage || saving"
+          aria-label="Grupos de tarifa"
+          (input)="onGroupCountChange(grupo, $any($event.target).value)"
+        />
+      </label>
       <app-checkbox-multi-select
+        *ngFor="let slot of grupo.sharedSlots; let i = index; trackBy: trackSlot"
         label="Estaciones con la misma tarifa"
-        hint="Las estaciones desmarcadas reciben un editor independiente."
-        [options]="checkboxOptions(grupo)"
-        [value]="grupo.seleccionadas"
+        [hint]="'Grupo ' + (i + 1) + ' de ' + grupo.groupCount + '. Las estaciones desmarcadas reciben un editor independiente.'"
+        [options]="checkboxOptions(grupo, i)"
+        [value]="slot"
         [disabled]="!canManage || saving"
         [modalPopover]="true"
         [maxCount]="6"
         placeholder="Elegir estaciones"
-        (valueChange)="onSeleccionChange(grupo, $event)"
+        (valueChange)="onSeleccionChange(grupo, i, $event)"
       ></app-checkbox-multi-select>
     </div>
 
@@ -57,7 +70,7 @@
       No hay un tarifario cargado para esta estación. No se puede crear un sentido desde la carga.
     </p>
 
-    <ng-container *ngFor="let editor of grupo.editors">
+    <ng-container *ngFor="let editor of grupo.editors; trackBy: trackEditor">
       <h3 class="trd__editor-title">
         <span
           class="trd__trace"
@@ -79,7 +92,7 @@
           (valueChange)="onSentidoChange(editor, $event)"
         ></app-search-select>
       </div>
-      <ng-container *ngFor="let tabla of editor.tablas">
+      <ng-container *ngFor="let tabla of editor.tablas; trackBy: trackTabla">
         <h4 class="trd__sentido-title" *ngIf="editor.family === 'DIRECCIONAL'">{{ tabla.sentido }}</h4>
         <app-tarifario-editor-board
           *ngIf="!loading"
@@ -89,12 +102,19 @@
           [currentStations]="tabla.currentStations"
           [reviewRows]="tabla.reviewRows"
           [showAddCategoria]="true"
-          [allowAddCategoria]="false"
+          [allowAddCategoria]="canAddCategoria(tabla)"
+          [nextCategoria]="nextCategory(tabla).categoria"
+          [nextCategoryAction]="nextCategory(tabla).action"
+          [draftCategories]="tabla.addedDraftCategories ?? []"
           (draftChange)="onDraft(grupo, tabla, $event)"
+          (addCategoria)="addCategoria(grupo, tabla)"
           (candidateSelected)="onCandidateSelected(grupo, editor, tabla, $event)"
           (historyRequest)="openHistory(grupo, tabla, $event)"
           (reviewStatusChange)="onReviewStatusChange(grupo, $event)"
+          (reviewCategoryChange)="onReviewCategoryChange(grupo, $event)"
+          (bulkReviewStatus)="onBulkReviewStatus(grupo, editor, $event)"
           (ivaChange)="onIvaChange(grupo, $event)"
+          (categoryStateChange)="onCategoryStateChange(grupo, tabla, $event)"
         ></app-tarifario-editor-board>
       </ng-container>
     </ng-container>
@@ -119,23 +139,25 @@
     (closed)="historyOpen = false"
   ></app-tarifario-historial-dialog>
 
-  <div appDialogActions>
-    <button type="button" class="trd__btn" (click)="close()">Cancelar</button>
-    <button
-      type="button"
-      class="trd__btn"
-      [disabled]="!canManage || loading || saving || revalidating"
-      (click)="revalidarPrecios()"
-    >
-      {{ revalidating ? 'Revalidando…' : 'Revalidar precios' }}
-    </button>
-    <button
-      type="button"
-      class="trd__btn trd__btn--primary"
-      [disabled]="!canManage || saving || revalidating"
-      (click)="guardar()"
-    >
-      {{ saving ? 'Guardando…' : 'Guardar cambios' }}
-    </button>
+  <div appDialogActions class="trd__actions">
+    <button type="button" class="trd__btn trd__btn--ghost" (click)="close()">Cancelar</button>
+    <div class="trd__actions-primary">
+      <button
+        type="button"
+        class="trd__btn"
+        [disabled]="!canManage || loading || saving || revalidating"
+        (click)="revalidarPrecios()"
+      >
+        {{ revalidating ? 'Revalidando…' : 'Revalidar precios' }}
+      </button>
+      <button
+        type="button"
+        class="trd__btn trd__btn--primary"
+        [disabled]="!canManage || saving || revalidating"
+        (click)="guardar()"
+      >
+        {{ saving ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
+    </div>
   </div>
 </app-dialog>

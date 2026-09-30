@@ -107,21 +107,18 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
       return resumenVacio();
     }
 
-    const unresolvedCandidates = candidatos.filter((candidate) => candidate.sentidoSolicitado == null);
-    const resolvedCandidates = candidatos.filter((candidate) => candidate.sentidoSolicitado != null);
-    const unresolvedResults: ResultadoDetectarRefresco[] = unresolvedCandidates.map((candidate) =>
-      resultadoDesdeCandidato(
-        candidate,
-        candidate.unresolvedReason === 'CONFLICT' ? 'DIRECTION_CONFLICT' : 'DIRECTION_REQUIRED',
-      ),
+    const conflictCandidates = candidatos.filter((candidate) => candidate.unresolvedReason === 'CONFLICT');
+    const detectCandidates = candidatos.filter((candidate) => candidate.unresolvedReason !== 'CONFLICT');
+    const conflictResults: ResultadoDetectarRefresco[] = conflictCandidates.map((candidate) =>
+      resultadoDesdeCandidato(candidate, 'DIRECTION_CONFLICT'),
     );
-    if (!resolvedCandidates.length) {
-      return resumenVacio(candidatos, unresolvedResults);
+    if (!detectCandidates.length) {
+      return resumenVacio(candidatos, conflictResults);
     }
 
     const prepareSeen = new Set<string>();
     const prepareInputs: PrepararRefrescoTarifaInput[] = [];
-    for (const c of resolvedCandidates) {
+    for (const c of detectCandidates) {
       const key = contextKey(c);
       if (prepareSeen.has(key)) continue;
       prepareSeen.add(key);
@@ -165,7 +162,7 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
     const detectInputs: DetectarRefrescoTarifaInput[] = [];
     const detectToCandidates = new Map<string, CandidatoRefrescoTarifa[]>();
 
-    for (const c of resolvedCandidates) {
+    for (const c of detectCandidates) {
       const ctx = contextKey(c);
       const needsIva = ivaByContext.get(ctx) === true;
       const comparable = needsIva
@@ -231,7 +228,7 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
         },
       ];
     });
-    resultados.unshift(...unresolvedResults);
+    resultados.unshift(...conflictResults);
 
     return {
       candidatos,

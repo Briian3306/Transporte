@@ -2,17 +2,30 @@ import { CandidatoRefrescoTarifa, ResultadoDetectarRefresco } from '../../models
 import { TarifaSentido, TarifaStatusPico } from '../../models/tarifario.contracts';
 import {
   agruparPendientesPorPeajeYFamilia,
+  applySharedSlotSelection,
   assignSafeAutocomplete,
   buildDetectedStations,
+  checkboxOptionsForSlot,
   deriveEditorGroups,
   familySentidos,
   heuristicaSeleccionInicial,
   interseccionSentidos,
+  maxSharedGroupCount,
   preserveIdentityDrafts,
   resolverRequiereNormalizacionIva,
   plantillaSugiereNormalizacionIva,
+  resizeSharedSlots,
   sentidoFamilyOf,
+  sharedSlotsToTarifarioGroups,
   stationTraceViewModel,
+  STATION_SESSION_PALETTE,
+  uniqueHighestCategoryIdentity,
+  uniqueIdentityForCategory,
+  uniqueHistoryIdentity,
+  resolveCategoriaEfectiva,
+  confirmNewVigenciaPreflight,
+  hasDistinctPriceClusters,
+  mergeLeftoversByIdentity,
   type AutocompleteCandidate,
   type DetectedStation,
   type EstacionCatalogoRefresco,
@@ -411,6 +424,82 @@ describe('deriveEditorGroups', () => {
   });
 });
 
+describe('explicit TarifarioStationGroup membership', () => {
+  it('keeps two manual groups and returns unassigned stations to singleton editors', () => {
+    const detectedStations: DetectedStation[] = [
+      { estacionId: DOCK, estacionNombre: 'Dock', peajeId: PEAJE, peajeNombre: 'AUBASA', color: STATION_SESSION_PALETTE[0], family: 'AMBAS' },
+      { estacionId: HUDSON, estacionNombre: 'Hudson', peajeId: PEAJE, peajeNombre: 'AUBASA', color: STATION_SESSION_PALETTE[1], family: 'AMBAS' },
+      { estacionId: GUTIERREZ, estacionNombre: 'Gutiérrez', peajeId: PEAJE, peajeNombre: 'AUBASA', color: STATION_SESSION_PALETTE[2], family: 'AMBAS' },
+    ];
+    const groups = deriveEditorGroups({
+      detectedStations,
+      groups: [
+        { id: 'g1', stationIds: [DOCK, HUDSON], family: 'AMBAS' },
+      ],
+    });
+    expect(groups.map((group) => group.stationIds)).toEqual([[DOCK, HUDSON], [GUTIERREZ]]);
+  });
+
+  it('two exclusive slots of four stations derive two shared editors and no singletons', () => {
+    const detectedStations: DetectedStation[] = [
+      directionalStation(DOCK, 'DOCK SUD', PALETTE[0]),
+      directionalStation(HUDSON, 'HUDSON', PALETTE[1]),
+      directionalStation(GUTIERREZ, 'GUTIERREZ', PALETTE[2]),
+      directionalStation(BERNAL, 'BERNAL', PALETTE[3]),
+    ];
+    expect(
+      groupIds({
+        detectedStations,
+        groups: sharedSlotsToTarifarioGroups([[DOCK, HUDSON], [GUTIERREZ, BERNAL]], 'DIRECCIONAL'),
+      }),
+    ).toEqual([[DOCK, HUDSON], [GUTIERREZ, BERNAL]]);
+  });
+});
+
+describe('shared tariff group slots', () => {
+  it('caps group count at floor(stations / 2), never below 1', () => {
+    expect(maxSharedGroupCount(0)).toBe(1);
+    expect(maxSharedGroupCount(1)).toBe(1);
+    expect(maxSharedGroupCount(2)).toBe(1);
+    expect(maxSharedGroupCount(3)).toBe(1);
+    expect(maxSharedGroupCount(4)).toBe(2);
+    expect(maxSharedGroupCount(5)).toBe(2);
+  });
+
+  it('pads empty slots when raising N and drops extra slots when lowering N', () => {
+    expect(resizeSharedSlots([[DOCK, HUDSON]], 2)).toEqual([[DOCK, HUDSON], []]);
+    expect(resizeSharedSlots([[DOCK, HUDSON], [GUTIERREZ, BERNAL]], 1)).toEqual([[DOCK, HUDSON]]);
+  });
+
+  it('keeps station membership exclusive across slots', () => {
+    const next = applySharedSlotSelection(
+      [[DOCK, HUDSON], [GUTIERREZ]],
+      1,
+      [GUTIERREZ, HUDSON, BERNAL],
+    );
+    expect(next).toEqual([[DOCK, HUDSON], [GUTIERREZ, BERNAL]]);
+  });
+
+  it('disables stations already used in another slot', () => {
+    const stations: DetectedStation[] = [
+      directionalStation(DOCK, 'DOCK SUD', PALETTE[0]),
+      directionalStation(HUDSON, 'HUDSON', PALETTE[1]),
+      directionalStation(GUTIERREZ, 'GUTIERREZ', PALETTE[2]),
+    ];
+    const options = checkboxOptionsForSlot(stations, [[DOCK, HUDSON], []], 1);
+    expect(options.find((option) => option.value === DOCK)?.disabled).toBeTrue();
+    expect(options.find((option) => option.value === HUDSON)?.disabled).toBeTrue();
+    expect(options.find((option) => option.value === GUTIERREZ)?.disabled).toBeFalsy();
+    expect(options.find((option) => option.value === GUTIERREZ)?.label).toBe('GUTIERREZ');
+  });
+
+  it('does not convert a slot with fewer than two stations into a shared Tarifario group', () => {
+    expect(sharedSlotsToTarifarioGroups([[DOCK], [HUDSON, GUTIERREZ]], 'AMBAS')).toEqual([
+      jasmine.objectContaining({ stationIds: [HUDSON, GUTIERREZ], family: 'AMBAS' }),
+    ]);
+  });
+});
+
 describe('preserveIdentityDrafts', () => {
   it('cambiar el agrupamiento no descarta drafts de identidades de estación no afectadas', () => {
     const drafts = {
@@ -517,6 +606,203 @@ describe('assignSafeAutocomplete', () => {
     ]);
     expect(assigned.prefills).toEqual([]);
     expect(assigned.visible.length).toBe(1);
+  });
+});
+
+describe('uniqueHighestCategoryIdentity', () => {
+  it('no elige una categoría mayor si hay hits en más de una categoría', () => {
+    expect(
+      uniqueHighestCategoryIdentity([
+        { key: 'cat6', categoria: 6, status: 'NO_PICO', sentido: 'AMBAS' },
+        { key: 'cat7', categoria: 7, status: 'NO_PICO', sentido: 'AMBAS' },
+      ]),
+    ).toBeNull();
+  });
+
+  it('queda ambiguo si la categoría tiene dos identidades', () => {
+    expect(
+      uniqueHighestCategoryIdentity([
+        { key: 'np', categoria: 7, status: 'NO_PICO', sentido: 'AMBAS' },
+        { key: 'pico', categoria: 7, status: 'PICO', sentido: 'AMBAS' },
+      ]),
+    ).toBeNull();
+  });
+});
+
+describe('uniqueIdentityForCategory', () => {
+  it('filtra a la categoría efectiva y no sube a la máxima', () => {
+    const match = uniqueIdentityForCategory(
+      [
+        { key: 'cat6', categoria: 6, status: 'NO_PICO', sentido: 'AMBAS' },
+        { key: 'cat7', categoria: 7, status: 'NO_PICO', sentido: 'AMBAS' },
+      ],
+      6,
+    );
+    expect(match?.categoria).toBe(6);
+    expect(match?.key).toBe('cat6');
+  });
+});
+
+describe('resolveCategoriaEfectiva', () => {
+  const rows = [
+    { estacion_id: 'est-1', categoria: 5, enabled: true },
+    { estacion_id: 'est-1', categoria: 2, enabled: true },
+    { estacion_id: 'est-2', categoria: 9, enabled: true },
+  ];
+
+  it('capea 8 a la máxima 5 de la estación', () => {
+    expect(resolveCategoriaEfectiva(8, rows, 'est-1')).toBe(5);
+  });
+
+  it('conserva una categoría menor que la máxima', () => {
+    expect(resolveCategoriaEfectiva(3, rows, 'est-1')).toBe(3);
+  });
+
+  it('devuelve null si el proveedor no informa categoría', () => {
+    expect(resolveCategoriaEfectiva(null, rows, 'est-1')).toBeNull();
+  });
+});
+
+describe('uniqueHistoryIdentity', () => {
+  const hit = {
+    estacionId: 'est-1',
+    importeConsultado: 8464.0075,
+    countIdentities: 1,
+    matches: [
+      { tarifaId: 't6', categoria: 6, status: 'NO_PICO' as const, sentido: 'AMBAS' as const, importe: 8464.0075 },
+      { tarifaId: 't7', categoria: 7, status: 'NO_PICO' as const, sentido: 'AMBAS' as const, importe: 8464.0075 },
+    ],
+    tarifaId: 't7',
+    categoria: 7,
+    status: 'NO_PICO' as const,
+    sentido: 'AMBAS' as const,
+    importe: 8464.0075,
+    fechaVigenciaInicio: '2026-08-01',
+    fechaVigenciaFin: '2026-09-01',
+    esActual: false,
+    diagnostico: 'CONFIRMADO',
+    enabled: true,
+  };
+
+  it('sin categoría efectiva queda ambiguo si hay más de una categoría', () => {
+    expect(uniqueHistoryIdentity({ ...hit, matches: hit.matches })).toBeNull();
+  });
+
+  it('reutiliza solo la categoría efectiva pedida', () => {
+    expect(uniqueHistoryIdentity({ ...hit, matches: hit.matches }, 'NO_PICO', 6)).toEqual({
+      categoria: 6,
+      status: 'NO_PICO',
+      sentido: 'AMBAS',
+    });
+  });
+
+  it('al elegir Pico filtra esa categoría y no crea una identidad gemela', () => {
+    const ambiguous = {
+      ...hit,
+      countIdentities: 2,
+      tarifaId: null,
+      categoria: null,
+      status: null,
+      matches: [
+        { tarifaId: 't7np', categoria: 7, status: 'NO_PICO' as const, sentido: 'AMBAS' as const, importe: 8464.0075 },
+        { tarifaId: 't7p', categoria: 7, status: 'PICO' as const, sentido: 'AMBAS' as const, importe: 8464.0075 },
+      ],
+    };
+    expect(uniqueHistoryIdentity(ambiguous, 'PICO', 7)).toEqual({
+      categoria: 7,
+      status: 'PICO',
+      sentido: 'AMBAS',
+    });
+  });
+});
+
+describe('confirmNewVigenciaPreflight', () => {
+  it('omite CONFIRM_NEW cuando el importe ya es el vigente', () => {
+    expect(
+      confirmNewVigenciaPreflight({
+        importe: 8464.0075,
+        fechaVigenciaInicio: '2026-09-01',
+        catalog: {
+          importe: 8464,
+          fechaVigenciaInicio: '2026-08-01',
+          estacionNombre: 'Gutiérrez',
+          categoria: 7,
+          status: 'NO_PICO',
+        },
+      }).kind,
+    ).toBe('omit');
+  });
+
+  it('no omite CONFIRM_NEW cuando hay que persistir un no-match con el mismo importe', () => {
+    expect(
+      confirmNewVigenciaPreflight({
+        importe: 8464.0075,
+        fechaVigenciaInicio: '2026-09-01',
+        forcePersist: true,
+        catalog: {
+          importe: 8464,
+          fechaVigenciaInicio: '2026-08-01',
+          estacionNombre: 'Gutiérrez',
+          categoria: 7,
+          status: 'NO_PICO',
+        },
+      }).kind,
+    ).toBe('ok');
+  });
+
+  it('bloquea un inicio anterior al vigente si el importe es distinto', () => {
+    const result = confirmNewVigenciaPreflight({
+      importe: 8464.0075,
+      fechaVigenciaInicio: '2026-08-01',
+      catalog: {
+        importe: 9200,
+        fechaVigenciaInicio: '2026-09-01',
+        estacionNombre: 'Gutiérrez',
+        categoria: 7,
+        status: 'NO_PICO',
+      },
+    });
+    expect(result.kind).toBe('error');
+    if (result.kind === 'error') {
+      expect(result.message).toContain('Gutiérrez');
+      expect(result.message).toContain('cat. 7');
+    }
+  });
+});
+
+describe('mergeLeftoversByIdentity', () => {
+  it('une importes de la misma identidad dentro del 1% y suma casos', () => {
+    const result = mergeLeftoversByIdentity([
+      { identityKey: 'ruta20|6|NO_PICO', amount: 6961.8, cases: 3, id: 'a' },
+      { identityKey: 'ruta20|6|NO_PICO', amount: 6961.8025, cases: 5, id: 'b' },
+      { identityKey: 'pilar|6|NO_PICO', amount: 6961.8, cases: 2, id: 'c' },
+    ]);
+    expect(result.conflict).toBeNull();
+    expect(result.merged.length).toBe(2);
+    const ruta20 = result.merged.find((item) => item.identityKey === 'ruta20|6|NO_PICO');
+    expect(ruta20?.cases).toBe(8);
+    expect(ruta20?.id).toBe('b');
+    expect(ruta20?.amount).toBe(6961.8025);
+  });
+
+  it('conserva importes distintos de la misma identidad como leftovers separados', () => {
+    const result = mergeLeftoversByIdentity([
+      { identityKey: 'arroyo|6|NO_PICO', amount: 6772.21, cases: 1, id: 'a', fechaPasada: '2026-08-03' },
+      { identityKey: 'arroyo|6|NO_PICO', amount: 6961.8, cases: 1, id: 'b', fechaPasada: '2026-08-07' },
+    ]);
+    expect(result.conflict).toBeNull();
+    expect(result.merged.map((item) => item.amount)).toEqual([6772.21, 6961.8]);
+    expect(result.merged.map((item) => item.id)).toEqual(['a', 'b']);
+  });
+});
+
+describe('hasDistinctPriceClusters', () => {
+  it('trata 6961.8 y 6961.8025 como el mismo importe', () => {
+    expect(hasDistinctPriceClusters([6961.8, 6961.8025])).toBeFalse();
+  });
+
+  it('detecta 6772.21 vs 6961.8 como conflicto', () => {
+    expect(hasDistinctPriceClusters([6772.21, 6961.8])).toBeTrue();
   });
 });
 

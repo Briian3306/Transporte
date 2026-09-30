@@ -63,9 +63,16 @@ Ejemplo de frontera observado en Cruzado: `31 427,15` vs `31 500,00` ≈ 0,2
 
 RPC `peajes_asociar_pasadas_tarifa_importe`: escribe `pasadas.tarifa_importe_id` solo para `AL_DIA` / `HISTORICA`; no toca `tarifa_normalizada_id`; no inserta historial; es idempotente. El método de servicio `asociarTrasConfirmacion` existe. **No** se invoca tras `peajes_confirmar_carga`: la carga sigue llamando `peajes_normalizar_tarifas`.
 
-### Backfill de linaje
+### Backfill de linaje y status
 
-`peajes_backfill_pasadas_tarifa_importe()` actualiza `tarifa_importe_id` solo con linaje 1:1. Pasadas sin linaje o con linaje no único quedan `NULL`. Tras `db reset --local --no-seed`, `pasadas` está vacía (conteos 0/0/0). El volumen real no está verificado fuera de pgTAP.
+`peajes_backfill_pasadas_tarifa_importe()` rellena `pasadas.tarifa_importe_id` **solo si está NULL** (no pisa el v2 de la semana 14-sep ni otras asociaciones). Cuatro pases:
+
+1. Linaje 1:1 `tarifas_normalizadas_id`.
+2. Identidad única `LEAST(categoría recibida, max estación)` + `pasadas.tarifa_status` ∈ {PICO, NO_PICO} + sentido F14-16 → importe existente (1% único, si no current, si no el más reciente).
+3. Leftover `sentido = AMBAS` sin identidad AMBAS → IDA + precio a 1% único.
+4. Leftover restante: crea identidad IDA si falta (`current_tarifa_id` NULL) e inserta `tarifa_importe` `REVISAR` / `no_coincide_con_tarifario = true` **sin vigencia** (no promociona current; no usa `_peajes_aplicar_importe_guardado` en `CONFIRM_NEW`). Idempotente: no duplica un importe IDA a 1%.
+
+No toca `tarifa_normalizada_id`. No infiere PICO/NO_PICO por hora. Inspección previa (solo SELECT): `supabase/scripts/pwbi_pasadas_backfill_inspect.sql`. Tras `db reset --local --no-seed`, `pasadas` está vacía; el volumen real se cubre al aplicar la migración en DESARROLLO.
 
 ### Vigencia y diagnóstico (F14-19)
 
@@ -111,11 +118,11 @@ Detalle de columnas: [06-tablas/peajes/tarifas-tarifa-importe.md](../../06-tabla
 |---------|------|------------|---------|-------------|
 | `_peajes_tarifas_montos_candidatos` | helper STABLE | estación, categoría, status, sentido | relation | Montos vigente+historial (F14-16/18 Paso 8). |
 | `_peajes_tarifas_matching_candidatos` | helper STABLE | estación, categoría, sentido, status, **fecha_pasada**, precios | relation | Candidatos vigentes+historial **todas las categorías** con rank de vigencia (F14-19 refresh). |
-| `_peajes_aplicar_importe_guardado` | helper VOLATILE | tarifa, importe, cases, diagnostico, inicio, cat_calc | table | Cierre + append CONFIRMADO o append REVISAR (F14-19). |
+| `_peajes_aplicar_importe_guardado` | helper VOLATILE | tarifa, importe, cases, diagnostico, inicio, cat_calc, no_coincide | table | Cierre + append CONFIRMADO o append REVISAR. Persiste `no_coincide_con_tarifario`. |
 | `peajes_resolver_tarifas_actuales` | RPC STABLE | `p_pasadas jsonb` (arreglo) | jsonb arreglo | Resuelve config + puntero + `importe` + flag IVA. Conserva `idx` / orden. No muta. Firma pública intacta. |
 | `peajes_validar_tarifas_actuales` | RPC STABLE | `p_pasadas jsonb` | jsonb arreglo | Elige precio según flag; aplica 1% inclusivo. No divide por 1,21. Firma pública intacta. |
 | `peajes_asociar_pasadas_tarifa_importe` | RPC VOLATILE | `p_asociaciones jsonb` | void | Asocia solo `AL_DIA`/`HISTORICA`. Idempotente. |
-| `peajes_backfill_pasadas_tarifa_importe` | RPC VOLATILE | — | void | Backfill por linaje único. |
+| `peajes_backfill_pasadas_tarifa_importe` | RPC VOLATILE | — | void | Backfill NULL: linaje 1:1, LEAST+status, IDA 1%, insert IDA histórico `no_coincide`. |
 | `peajes_trg_tarifa_importe_immutable` | trigger | — | trigger | Bloquea DELETE y UPDATE de negocio; permite un cierre de `fecha_vigencia_fin` (F14-19). |
 | `peajes_trg_tarifa_importe_promote` | trigger | — | trigger | Promociona puntero solo CONFIRMADO con inicio; REVISAR/legado no promueven (F14-19). |
 
@@ -162,23 +169,24 @@ Detalle de columnas: [06-tablas/peajes/tarifas-tarifa-importe.md](../../06-tabla
 
 | Tipo | Archivo / comando | Escenario |
 |------|-------------------|-----------|
-| `supabase_db_test` | `supabase/tests/peajes_f14_tarifas_importe_test.sql` | Schema, puntero, matching, linaje, cutover, backfill |
+| `supabase_db_test` | `supabase/tests/peajes_f14_tarifas_importe_test.sql` | Schema, puntero, matching, linaje, cutover, backfill T7 |
+| `supabase_db_test` | **`supabase/tests/peajes_backfill_pasadas_status_test.sql`** | Pass 1–4: linaje, LEAST, IDA 1%, insert 11975 no pisa current 14968, no pisa FK existente |
 | `supabase_db_test` | **`supabase/tests/peajes_tarifa_vigencia_test.sql`** | Vigencia, REVISAR, overlap, promote, legado null (F14-19) |
-| `supabase_db_test` | `supabase/tests/peajes_pwbi_views_test.sql` | `pwbi_tarifas` intacta + `pwbi_tarifas_v2` |
+| `supabase_db_test` | `supabase/tests/peajes_pwbi_views_test.sql` | `pwbi_tarifas` intacta + `pwbi_tarifas_v2` + COALESCE `Tarifa_Status` |
 | Node | `scripts/peajes-catalogo-audit/*.test.mjs` | ETL, linaje, tolerancia 0,23% / 1% / >1% |
 | `angular_spec` | adapter + `tarifa-validation.service` + `paso8-validacion` | Flag IVA, batch, no bloqueo |
 
-**Estado:** verificado en CLI local (Task 12 / F14-19 close-out, 2026-09-10). DESARROLLO: migraciones F14-19 aplicadas vía MCP con ids locales.
+**Estado:** backfill status verificado en CLI local 2026-09-15. DESARROLLO **no** actualizado (`db push --linked` pendiente de autorización).
 
-**Comando ejecutado:** desde `ibarra-app/`: `npx supabase test db`; focused `ng test` refresh/Paso9/tarifario/dialog/helpers; `tsc --noEmit` app+spec.
+**Comando ejecutado:** desde `ibarra-app/`: `npx supabase db reset --local --no-seed`; `npx supabase test db`. Sesión pgTAP-only (sin `pnpm seed:local`).
 
-**Resultado:** pgTAP **Files=18 Tests=589 EXIT 0**; Angular focused **172 SUCCESS**; tsc **EXIT 0**. Browser Paso 9 no recorrido (deferido).
+**Resultado:** pgTAP **Files=22 Tests=650 EXIT 0** (`peajes_backfill_pasadas_status_test.sql` y `peajes_pwbi_views_test.sql` incluidos).
 
-**Evidencia:** `feature_list.json` → F14-19; `docs/claude-progress.md`; [refresh-tarifas-paso9.md](./refresh-tarifas-paso9.md).
+**Evidencia:** `feature_list.json` → F14-16; `docs/claude-progress.md`.
 
 ## Notes
 
-- Código: `supabase/migrations/20260907*_peajes_tarifas_v2_*.sql`, `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`, **`20260909181737_peajes_tarifa_vigencia_diagnostico.sql`**, **`20260909192938_peajes_tarifa_matching_correcciones.sql`**, helper refresh en `20260908150000_peajes_refresh_tarifas_paso9.sql` (reemplazado en F14-19)
+- Código: `supabase/migrations/20260907*_peajes_tarifas_v2_*.sql`, `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`, **`20260915120326_peajes_backfill_pasadas_tarifa_importe_status.sql`**, **`20260909181737_peajes_tarifa_vigencia_diagnostico.sql`**, **`20260909192938_peajes_tarifa_matching_correcciones.sql`**, helper refresh en `20260908150000_peajes_refresh_tarifas_paso9.sql` (reemplazado en F14-19)
 - Refresh Paso 9: [refresh-tarifas-paso9.md](./refresh-tarifas-paso9.md)
 - Angular: `src/app/components/peajes/services/tarifa-comparison-adapter.service.ts`, `tarifa-validation.service.ts`, `wizard/paso8-validacion/`
 - Legado: [auditoria-tarifas.md](./auditoria-tarifas.md)
@@ -189,11 +197,11 @@ Detalle de columnas: [06-tablas/peajes/tarifas-tarifa-importe.md](../../06-tabla
 ## Límites y diferidos
 
 1. **`asociarTrasConfirmacion` no está cableado** después de confirmar la carga. El hook de `peajes_confirmar_carga` sigue llamando `peajes_normalizar_tarifas`.
-2. **Backfill de volumen real** de `pasadas.tarifa_importe_id` no está probado fuera de fixtures pgTAP (`--no-seed` deja pasadas 0/0/0).
+2. **Backfill de volumen real** de `pasadas.tarifa_importe_id`: la migración `20260915120326` ejecuta `SELECT peajes_backfill_pasadas_tarifa_importe()` al aplicar. CLI `--no-seed` sigue con pasadas 0/0/0; DESARROLLO requiere `db push --linked` autorizado.
 3. **`pwbi_tarifas_v2` no es un clon** de `pwbi_tarifas`: no expone `Peaje_Nombre`, `Estacion_Nombre`, `hora_*` ni `fecha_aparicion` del current. El LEFT JOIN puede dejar `Importe` NULL si el puntero falta o no pertenece al padre. `pwbi_tarifas` **no** fue reemplazada.
 4. **`_stg_precio_last`** es staging local, no catálogo de runtime.
 5. **No hay DROP** de readers, tablas, triggers, FKs ni firmas RPC legado. `tarifas_normalizadas` permanece queryable con su FK original.
 
 ---
 
-> Última actualización: 2026-09-10 (F14-19)
+> Última actualización: 2026-09-15

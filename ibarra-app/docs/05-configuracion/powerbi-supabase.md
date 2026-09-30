@@ -11,6 +11,7 @@ Proyecto: **DESARROLLO** `SUPABASE_URL` (Check-list).
 - [Resumen](#resumen)
 - [Credenciales](#credenciales)
 - [Endpoints de las vistas `pwbi_*`](#endpoints-de-las-vistas-pwbi_)
+- [Modelo de tarifas v2](#modelo-de-tarifas-v2)
 - [Pasos en Power BI Desktop (Web)](#pasos-en-power-bi-desktop-web)
 - [Power Query M (recomendado)](#power-query-m-recomendado)
 - [Tipos de columnas (obligatorio)](#tipos-de-columnas-obligatorio)
@@ -53,7 +54,33 @@ Authorization: Bearer <anon_key>
 | `pwbi_patentes` | Dimensión | `https://SUPABASE_URL.supabase.co/rest/v1/pwbi_patentes?select=*` |
 | `pwbi_documentos` | Dimensión | `https://SUPABASE_URL.supabase.co/rest/v1/pwbi_documentos?select=*` |
 | `pwbi_tarifas` | Dimensión | `https://SUPABASE_URL.supabase.co/rest/v1/pwbi_tarifas?select=*` |
+| `pwbi_tarifas_v2` | Dimensión | `https://SUPABASE_URL.supabase.co/rest/v1/pwbi_tarifas_v2?select=*` |
 | `pwbi_pasadas` | Hecho | `https://SUPABASE_URL.supabase.co/rest/v1/pwbi_pasadas?select=*` |
+
+## Modelo de tarifas v2
+
+Las vistas Power BI usan el modelo nuevo:
+
+```text
+pasadas.tarifa_importe_id
+        ↓
+tarifa_importe.tarifa_id
+        ↓
+tarifas.id
+```
+
+En `pwbi_pasadas`, `Tarifa_Status` (`PICO` o `NO_PICO`) es `COALESCE(tarifas.status, pasadas.tarifa_status)`. El join v2 usa `pasadas.tarifa_importe_id` → `tarifa_importe` → `tarifas`. Si la pasada no tiene FK v2, Power BI conserva el PICO/NO_PICO legado de `pasadas.tarifa_status`. No hay lookup dimensional LATERAL ni JOIN a `tarifas_normalizadas`.
+
+`pwbi_tarifas_v2` conserva sus columnas actuales y agrega metadata informativa de `tarifa_importe`:
+
+| Columna | Origen | Tipo Power Query | Significado |
+|---------|--------|------------------|-------------|
+| `fecha_vigencia_inicio` | `tarifa_importe.fecha_vigencia_inicio` | `type date` | Inicio histórico informado para el importe |
+| `fecha_vigencia_fin` | `tarifa_importe.fecha_vigencia_fin` | `type date` | Fin histórico informado para el importe |
+| `no_coincide_con_tarifario` | `tarifa_importe.no_coincide_con_tarifario` | `type logical` | Indica que el importe no coincidió con el tarifario |
+| `tarifa_vigente` | `tarifas.id` | `type logical` | `true` si existe la identidad en `public.tarifas`; `false` si no existe |
+
+`tarifa_vigente` depende únicamente de la existencia de la tarifa en `public.tarifas`. No se calcula con `fecha_vigencia_inicio`, `fecha_vigencia_fin`, `enabled` ni `current_tarifa_id`. Las fechas y `no_coincide_con_tarifario` se exponen solo como información del historial de `tarifa_importe`.
 
 Detalle de columnas: [pwbi-views.md](../backend/peajes/pwbi-views.md).
 

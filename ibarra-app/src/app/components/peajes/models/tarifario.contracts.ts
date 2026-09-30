@@ -11,6 +11,31 @@ export type TarifaCategoria = (typeof TARIFA_CATEGORIAS)[number];
 
 export type TarifaSentido = 'IDA' | 'VUELTA' | 'AMBAS';
 export type TarifaStatusPico = 'PICO' | 'NO_PICO';
+export type TarifaEstado = 'ENABLED' | 'DISABLED';
+
+export interface TarifarioStationGroup {
+  id: string;
+  stationIds: string[];
+  family: 'AMBAS' | 'DIRECCIONAL';
+}
+
+export interface TarifarioGroupChange {
+  peajeId: string;
+  estacionId: string;
+  sentido: TarifaSentido;
+  categoria: number;
+  status: TarifaStatusPico;
+  importe: number;
+  fechaVigenciaInicio: string;
+}
+
+export interface TarifarioCategoriaEstadoCambio {
+  peajeId: string;
+  estacionId: string;
+  sentido: TarifaSentido;
+  categoria: number;
+  enabled: boolean;
+}
 
 export interface TarifarioCurrentRow {
   tarifa_id: string;
@@ -24,6 +49,7 @@ export interface TarifarioCurrentRow {
   importe: number | null;
   fecha_actualizacion: string | null;
   current_tarifa_importe_id: string | null;
+  enabled?: boolean;
   fechaVigenciaInicio?: string | null;
   fechaVigenciaFin?: string | null;
   diagnostico?: string | null;
@@ -37,6 +63,7 @@ export interface TarifarioFilters {
   status?: TarifaStatusPico[];
   sentidos?: TarifaSentido[];
   q_estacion?: string | null;
+  enabled?: boolean | null;
 }
 
 export interface TarifarioListParams {
@@ -66,6 +93,7 @@ export interface TarifarioEditorCell {
   current_tarifa_importe_id: string | null;
   importe: number | null;
   fecha_actualizacion: string | null;
+  enabled?: boolean;
 }
 
 export interface TarifarioEditorRow {
@@ -81,6 +109,7 @@ export interface TarifarioIdentidadExistente {
   current_tarifa_importe_id: string | null;
   importe: number | null;
   fecha_actualizacion: string | null;
+  enabled?: boolean;
   fechaVigenciaInicio?: string | null;
   fechaVigenciaFin?: string | null;
   diagnostico?: string | null;
@@ -101,6 +130,38 @@ export interface TarifarioImporteCambio {
   status: TarifaStatusPico;
   importe: number;
   fechaVigenciaInicio?: string | null;
+}
+
+export interface TarifarioHistorialImporteConsulta {
+  estacionId: string;
+  importe: number;
+  peajeId?: string;
+  categoria?: number | null;
+}
+
+export interface TarifarioHistorialImporteMatch {
+  tarifaId: string;
+  categoria: number;
+  status: TarifaStatusPico;
+  sentido: TarifaSentido;
+  importe: number;
+}
+
+export interface TarifarioHistorialImporteHit {
+  estacionId: string;
+  importeConsultado: number;
+  countIdentities: number;
+  matches: TarifarioHistorialImporteMatch[];
+  tarifaId: string | null;
+  categoria: number | null;
+  status: TarifaStatusPico | null;
+  sentido: TarifaSentido | null;
+  importe: number | null;
+  fechaVigenciaInicio: string | null;
+  fechaVigenciaFin: string | null;
+  esActual: boolean | null;
+  diagnostico: string | null;
+  enabled: boolean | null;
 }
 
 export interface TarifarioHistorialItem {
@@ -212,7 +273,7 @@ export interface TarifaRefreshDecision {
   action: 'CONFIRM_NEW' | 'MARK_REVIEW';
   peajeId: string;
   estacionId: string;
-  categoriaProveedor: number;
+  categoriaProveedor: number | null;
   categoriaCalculada: number | null;
   status: 'PICO' | 'NO_PICO';
   sentido: 'IDA' | 'VUELTA' | 'AMBAS';
@@ -220,6 +281,7 @@ export interface TarifaRefreshDecision {
   fechaVigenciaInicio: string | null;
   cases: number;
   requiereNormalizacionIva: boolean | null;
+  noCoincideConTarifario?: boolean;
 }
 
 export interface TarifaRefrescoGuardada {
@@ -242,6 +304,7 @@ export interface TarifaRefrescoGuardada {
   fechaVigenciaInicio?: string | null;
   fechaVigenciaFin?: string | null;
   categoriaCalculada?: number | null;
+  noCoincideConTarifario?: boolean;
 }
 
 export interface PeajesTarifarioService {
@@ -258,6 +321,9 @@ export interface PeajesTarifarioService {
     cambios: TarifarioImporteCambio[],
   ): Observable<{ actualizadas: number }>;
   listarHistorial(tarifaId: string): Observable<TarifarioHistorialItem[]>;
+  buscarHistorialImportes(
+    consultas: TarifarioHistorialImporteConsulta[],
+  ): Observable<TarifarioHistorialImporteHit[]>;
   prepararRefresco(
     candidatos: PrepararRefrescoTarifaInput[],
   ): Observable<PrepararRefrescoTarifaItem[]>;
@@ -265,6 +331,10 @@ export interface PeajesTarifarioService {
     candidatos: DetectarRefrescoTarifaInput[],
   ): Observable<DetectarRefrescoTarifaItem[]>;
   guardarRefresco(cambios: Array<CambioRefrescoTarifa | TarifaRefreshDecision>): Observable<TarifaRefrescoGuardada[]>;
+  guardarGrupos(cambios: TarifarioGroupChange[]): Observable<{ actualizadas: number }>;
+  actualizarEstadoCategorias(
+    cambios: TarifarioCategoriaEstadoCambio[],
+  ): Observable<Array<{ tarifaId: string; enabled: boolean }>>;
 }
 
 export const PEAJES_TARIFARIO_SERVICE = new InjectionToken<PeajesTarifarioService>(

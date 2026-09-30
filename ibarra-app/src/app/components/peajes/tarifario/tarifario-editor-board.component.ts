@@ -22,11 +22,13 @@ import {
 import {
   MISSING_IMPORTE_LABEL,
   TARIFARIO_CATEGORIAS_MAX,
-  collectDraftErrores,
   formatFechaActualizacion,
   formatTarifaImporte,
   formatTarifaImporteDisplay,
+  isBlankTarifaImporteInput,
+  parseTarifaImporte,
 } from './tarifario.helpers';
+import { categoryStateForIdentities } from './tarifario-groups.helpers';
 
 export interface TarifarioDetectedAmount {
   valor: number;
@@ -50,11 +52,18 @@ export interface TarifarioReviewRow {
   estacionId?: string;
   estacionNombre?: string;
   color?: string;
+  requiresCategoriaInput?: boolean;
+  categoriaError?: string | null;
 }
 
 export interface TarifarioReviewStatusChange {
   candidateId: string;
   status: TarifaStatusPico | null;
+}
+
+export interface TarifarioReviewCategoryChange {
+  candidateId: string;
+  categoria: number | null;
 }
 
 export interface TarifarioIvaChange {
@@ -110,6 +119,12 @@ export interface TarifarioHistoryRequest {
   status: TarifaStatusPico;
 }
 
+export interface TarifarioCategoryStateChange {
+  categoria: number;
+  enabled: boolean;
+  tarifaIds: string[];
+}
+
 export function detectedCellKey(categoria: number, status: TarifaStatusPico): string {
   return `${categoria}:${status}`;
 }
@@ -143,6 +158,14 @@ export class TarifarioEditorBoardComponent implements OnChanges {
   ];
   private nuevoFocusKey: string | null = null;
   private currentViewCache = new Map<string, TarifarioGroupedCurrent>();
+  private currentViewStations: TarifarioCurrentStationMap | null = null;
+  private currentViewRows: TarifarioEditorRow[] | null = null;
+  private visibleRowsSource: {
+    rows: TarifarioEditorRow[];
+    drafts: TarifarioEditorDrafts;
+    draftCategories: number[];
+  } | null = null;
+  private cachedVisibleRows: TarifarioEditorRow[] = [];
 
   @Input() rows: TarifarioEditorRow[] = [];
   @Input() drafts: TarifarioEditorDrafts = {};
@@ -151,6 +174,10 @@ export class TarifarioEditorBoardComponent implements OnChanges {
   @Input() reviewRows: TarifarioReviewRow[] = [];
   @Input() allowAddCategoria = true;
   @Input() categoriaCount = 0;
+  @Input() nextCategoria = 0;
+  @Input() nextCategoryAction: 'ENABLE' | 'DRAFT' | 'NONE' = 'NONE';
+  /** Categories explicitly opened by Add Category, including still-empty drafts. */
+  @Input() draftCategories: number[] = [];
   @Input() showAddCategoria = true;
 
   @Output() readonly draftChange = new EventEmitter<TarifarioDraftChange>();
@@ -158,13 +185,29 @@ export class TarifarioEditorBoardComponent implements OnChanges {
   @Output() readonly historyRequest = new EventEmitter<TarifarioHistoryRequest>();
   @Output() readonly addCategoria = new EventEmitter<void>();
   @Output() readonly reviewStatusChange = new EventEmitter<TarifarioReviewStatusChange>();
+  @Output() readonly reviewCategoryChange = new EventEmitter<TarifarioReviewCategoryChange>();
+  @Output() readonly bulkReviewStatus = new EventEmitter<TarifaStatusPico>();
   @Output() readonly ivaChange = new EventEmitter<TarifarioIvaChange>();
+  @Output() readonly categoryStateChange = new EventEmitter<TarifarioCategoryStateChange>();
 
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['currentStations'] || changes['rows']) {
       this.currentViewCache.clear();
+      this.currentViewStations = null;
+      this.currentViewRows = null;
     }
+    if (changes['rows'] || changes['drafts'] || changes['draftCategories']) {
+      this.visibleRowsSource = null;
+    }
+  }
+
+  trackCategoria(_index: number, row: TarifarioEditorRow): number {
+    return row.categoria;
+  }
+
+  get visibleRowList(): TarifarioEditorRow[] {
+    return this.syncVisibleRows();
   }
 
   displayActual(value: number | null): string {
@@ -180,6 +223,11 @@ export class TarifarioEditorBoardComponent implements OnChanges {
   }
 
   currentView(row: TarifarioEditorRow, status: TarifaStatusPico): TarifarioGroupedCurrent {
+    if (this.currentViewStations !== this.currentStations || this.currentViewRows !== this.rows) {
+      this.currentViewCache.clear();
+      this.currentViewStations = this.currentStations;
+      this.currentViewRows = this.rows;
+    }
     const key = detectedCellKey(row.categoria, status);
     const cached = this.currentViewCache.get(key);
     if (cached) return cached;
@@ -216,6 +264,32 @@ export class TarifarioEditorBoardComponent implements OnChanges {
     this.reviewStatusChange.emit({ candidateId: row.candidateId, status });
   }
 
+  onReviewCategoryInput(row: TarifarioReviewRow, raw: string): void {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      this.reviewCategoryChange.emit({ candidateId: row.candidateId, categoria: null });
+      return;
+    }
+    const parsed = Number(trimmed.replace(',', '.'));
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 10) {
+      this.reviewCategoryChange.emit({ candidateId: row.candidateId, categoria: null });
+      return;
+    }
+    this.reviewCategoryChange.emit({ candidateId: row.candidateId, categoria: parsed });
+  }
+
+  reviewCategoryValue(row: TarifarioReviewRow): string {
+    return row.categoria == null ? '' : String(row.categoria);
+  }
+
+  reviewCategoryInvalid(row: TarifarioReviewRow): boolean {
+    return row.requiresCategoriaInput === true && (row.categoria == null || !!row.categoriaError);
+  }
+
+  applyAllReviewStatus(status: TarifaStatusPico): void {
+    this.bulkReviewStatus.emit(status);
+  }
+
   onIvaInput(candidateId: string | undefined, event: Event): void {
     this.onIvaToggle(candidateId, (event.target as HTMLInputElement).checked);
   }
@@ -233,9 +307,10 @@ export class TarifarioEditorBoardComponent implements OnChanges {
   }
 
   isInvalid(categoria: number, status: TarifaStatusPico): boolean {
-    return collectDraftErrores(this.rows, this.drafts).some(
-      (error) => error.categoria === categoria && error.status === status,
-    );
+    const draft = this.drafts[categoria];
+    if (!draft) return false;
+    const raw = status === 'NO_PICO' ? draft.no_pico : draft.pico;
+    return !isBlankTarifaImporteInput(raw) && parseTarifaImporte(raw) == null;
   }
 
   draftValue(categoria: number, status: TarifaStatusPico): string {
@@ -313,5 +388,113 @@ export class TarifarioEditorBoardComponent implements OnChanges {
   emitAddCategoria(): void {
     if (!this.allowAddCategoria) return;
     this.addCategoria.emit();
+  }
+
+  isEnabled(row: TarifarioEditorRow, status: TarifaStatusPico): boolean {
+    return this.cellOf(row, status).enabled !== false;
+  }
+
+  categoryState(row: TarifarioEditorRow) {
+    return categoryStateForIdentities([
+      { categoria: row.categoria, enabled: this.isEnabled(row, 'NO_PICO'), tarifaId: row.no_pico.tarifa_id },
+      { categoria: row.categoria, enabled: this.isEnabled(row, 'PICO'), tarifaId: row.pico.tarifa_id },
+    ], row.categoria);
+  }
+
+  categoryActionLabel(row: TarifarioEditorRow): string {
+    return this.categoryState(row).enabled ? 'Deshabilitar' : 'Habilitar';
+  }
+
+  categoryActionTitle(row: TarifarioEditorRow): string {
+    return `${this.categoryActionLabel(row)} categoría ${row.categoria}`;
+  }
+
+  toggleCategoryState(row: TarifarioEditorRow): void {
+    const state = this.categoryState(row);
+    if (!state.hasExisting) return;
+    this.categoryStateChange.emit({
+      categoria: row.categoria,
+      enabled: !state.enabled,
+      tarifaIds: state.tarifaIds,
+    });
+  }
+
+  lastPersistedCategoryIndex(): number {
+    const rows = this.visibleRowList;
+    let last = -1;
+    rows.forEach((row, index) => {
+      if (row.no_pico.tarifa_id || row.pico.tarifa_id) last = index;
+    });
+    return last >= 0 ? last : rows.length - 1;
+  }
+
+  shouldRenderAddRow(index: number): boolean {
+    return this.showAddCategoria && index === this.lastPersistedCategoryIndex();
+  }
+
+  addCategoryLabel(): string {
+    if (!this.nextCategoria) return 'Agregar categoría';
+    return this.nextCategoryAction === 'ENABLE'
+      ? `Habilitar categoría ${this.nextCategoria}`
+      : `Agregar categoría ${this.nextCategoria}`;
+  }
+
+  addCategoryHint(): string {
+    if (!this.allowAddCategoria) return 'Ya están las 10 categorías.';
+    return this.nextCategoryAction === 'ENABLE'
+      ? 'La categoría existe deshabilitada y se habilitarán PICO y NO_PICO.'
+      : 'Tab o + · Enter. Máximo 10 categorías.';
+  }
+
+  /**
+   * Backend rows may include historical disabled identities and a materialized
+   * category range. Keep those records in memory for matching/re-enable, but
+   * only render active identities or categories explicitly opened by Add.
+   */
+  visibleRows(): TarifarioEditorRow[] {
+    return this.syncVisibleRows();
+  }
+
+  private syncVisibleRows(): TarifarioEditorRow[] {
+    if (
+      this.visibleRowsSource?.rows === this.rows &&
+      this.visibleRowsSource?.drafts === this.drafts &&
+      this.visibleRowsSource?.draftCategories === this.draftCategories
+    ) {
+      return this.cachedVisibleRows;
+    }
+    this.visibleRowsSource = {
+      rows: this.rows,
+      drafts: this.drafts,
+      draftCategories: this.draftCategories,
+    };
+    this.cachedVisibleRows = this.computeVisibleRows();
+    return this.cachedVisibleRows;
+  }
+
+  private computeVisibleRows(): TarifarioEditorRow[] {
+    const highestVisibleCategory = this.rows.reduce((max, row) => {
+      const hasEnabledIdentity = [row.no_pico, row.pico].some(
+        (cell) => !!cell.tarifa_id && cell.enabled !== false,
+      );
+      const explicitlyOpened = this.draftCategories.includes(row.categoria);
+      return hasEnabledIdentity || explicitlyOpened
+        ? Math.max(max, row.categoria)
+        : max;
+    }, 0);
+
+    return this.rows.filter((row) => {
+      if (row.categoria > highestVisibleCategory) return false;
+      const hasExistingIdentity = !!row.no_pico.tarifa_id || !!row.pico.tarifa_id;
+      const hasEnabledIdentity = [row.no_pico, row.pico].some(
+        (cell) => !!cell.tarifa_id && cell.enabled !== false,
+      );
+      const explicitlyOpened = this.draftCategories.includes(row.categoria);
+
+      // Keep unconfigured rows inside the leading category range so the
+      // board remains 1, 2, 3…; trim only trailing materialized blanks.
+      // Disabled identities stay hidden until Agregar / Habilitar.
+      return !hasExistingIdentity || hasEnabledIdentity || explicitlyOpened;
+    });
   }
 }

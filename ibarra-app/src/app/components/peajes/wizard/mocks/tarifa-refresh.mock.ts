@@ -118,7 +118,7 @@ export class TarifaRefreshMockService implements TarifaRefreshService {
     }
     this.decisiones = cambios.filter(isRefreshDecision);
     this.lastGuardado = cambios.map((c) => {
-      const categoria = isRefreshDecision(c) ? (c.categoriaCalculada ?? c.categoriaProveedor) : c.categoria;
+      const categoria = (isRefreshDecision(c) ? (c.categoriaCalculada ?? c.categoriaProveedor) : c.categoria) ?? 0;
       const review = isRefreshDecision(c) && c.action === 'MARK_REVIEW';
       return {
         peaje_id: c.peajeId,

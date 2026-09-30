@@ -375,6 +375,67 @@ describe('TarifaRefreshServiceImpl', () => {
     expect(adapter.obtenerPrecioComparable).not.toHaveBeenCalled();
   });
 
+  it('still detects when SENTIDO is missing so a unique catalog match can close Paso 9', async () => {
+    const { TestBed } = await import('@angular/core/testing');
+    const { of } = await import('rxjs');
+    const { TarifaRefreshServiceImpl } = await import('./tarifa-refresh.service');
+    const { PEAJES_TARIFARIO_SERVICE } = await import('../models/tarifario.contracts');
+    const { TarifaComparisonAdapterService } = await import('./tarifa-comparison-adapter.service');
+
+    const preparar = jasmine.createSpy('prepararRefresco').and.returnValue(
+      of([
+        {
+          id: 'ctx',
+          peajeId: 'p',
+          estacionId: ESTACION_DOCK,
+          categoria: 2,
+          status: 'NO_PICO',
+          sentido: 'AMBAS',
+          tarifaId: 't',
+          importe: 11975.15,
+          requiereNormalizacionIva: false,
+        },
+      ]),
+    );
+    const detectar = jasmine.createSpy('detectarRefresco').and.callFake((inputs: Array<{ id: string }>) =>
+      of(
+        inputs.map((item) => ({
+          id: item.id,
+          codigo: 'HISTORICAL_TARIFF_MATCH',
+          peajeId: 'p',
+          estacionId: ESTACION_DOCK,
+          categoria: 2,
+          status: 'NO_PICO',
+          sentidoSolicitado: null,
+          sentidoAplicado: 'AMBAS',
+          importeActual: 11975.15,
+          tarifaId: 't',
+          tarifaImporteId: 'ti-hist',
+          requiereNormalizacionIva: false,
+        })),
+      ),
+    );
+    TestBed.configureTestingModule({
+      providers: [
+        TarifaRefreshServiceImpl,
+        { provide: PEAJES_TARIFARIO_SERVICE, useValue: { prepararRefresco: preparar, detectarRefresco: detectar } },
+        {
+          provide: TarifaComparisonAdapterService,
+          useValue: jasmine.createSpyObj('TarifaComparisonAdapterService', ['obtenerPrecioComparable']),
+        },
+      ],
+    });
+    const service = TestBed.inject(TarifaRefreshServiceImpl);
+    const resumen = await service.analizar({
+      pasadas: [pasada({ PRECIO: 11975.15, SENTIDO: null })],
+      documentos: [{ tipo: 'FC', rowIndexes: [0] }],
+      configuraciones: [],
+    });
+    expect(detectar).toHaveBeenCalled();
+    expect(resumen.resultados.map((row) => row.codigo)).toEqual(['HISTORICAL_TARIFF_MATCH']);
+    expect(resumen.resultados.some((row) => row.codigo === 'DIRECTION_REQUIRED')).toBeFalse();
+  });
+
   it('sends fechaPasada to detect so the same price on two dates stays two candidates', async () => {
     const { TestBed } = await import('@angular/core/testing');
     const { of } = await import('rxjs');

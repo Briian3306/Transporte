@@ -15,7 +15,12 @@ import {
   TarifaStatusPico,
   TarifarioCurrentRow,
   TarifarioEditorPayload,
+  TarifarioCategoriaEstadoCambio,
+  TarifarioGroupChange,
   TarifarioHistorialItem,
+  TarifarioHistorialImporteConsulta,
+  TarifarioHistorialImporteHit,
+  TarifarioHistorialImporteMatch,
   TarifarioIdentidadExistente,
   TarifarioImporteCambio,
   TarifarioListParams,
@@ -56,6 +61,7 @@ function mapListRow(raw: Record<string, unknown>): TarifarioCurrentRow {
       raw['current_tarifa_importe_id'] == null
         ? null
         : String(raw['current_tarifa_importe_id']),
+    enabled: raw['enabled'] == null ? true : Boolean(raw['enabled']),
     ...mapVigenciaDiagnostico(raw),
   };
 }
@@ -72,6 +78,7 @@ function mapExistente(raw: Record<string, unknown>): TarifarioIdentidadExistente
     importe: asNullableNumber(raw['importe']),
     fecha_actualizacion:
       raw['fecha_actualizacion'] == null ? null : String(raw['fecha_actualizacion']),
+    enabled: raw['enabled'] == null ? true : Boolean(raw['enabled']),
     ...mapVigenciaDiagnostico(raw),
   };
 }
@@ -209,6 +216,7 @@ function mapGuardado(raw: Record<string, unknown>): TarifaRefrescoGuardada {
     fechaVigenciaInicio: fechaInicio,
     fechaVigenciaFin: fechaFin,
     categoriaCalculada,
+    noCoincideConTarifario: Boolean(pickRaw(raw, 'no_coincide_con_tarifario', 'noCoincideConTarifario')),
   };
 }
 
@@ -219,6 +227,47 @@ function mapHistorial(raw: Record<string, unknown>): TarifarioHistorialItem {
     fecha_aparicion: String(raw['fecha_aparicion'] ?? ''),
     es_actual: Boolean(raw['es_actual']),
     ...mapVigenciaDiagnostico(raw),
+  };
+}
+
+function mapHistorialImporteMatch(raw: Record<string, unknown>): TarifarioHistorialImporteMatch {
+  return {
+    tarifaId: String(pickRaw(raw, 'tarifa_id', 'tarifaId') ?? ''),
+    categoria: asNumber(pickRaw(raw, 'categoria', 'categoria')),
+    status: String(pickRaw(raw, 'status', 'status')) as TarifaStatusPico,
+    sentido: String(pickRaw(raw, 'sentido', 'sentido')) as TarifaSentido,
+    importe: asNumber(pickRaw(raw, 'importe', 'importe')),
+  };
+}
+
+function mapHistorialImporteHit(raw: Record<string, unknown>): TarifarioHistorialImporteHit {
+  const matchesRaw = pickRaw(raw, 'matches', 'matches');
+  const matches = Array.isArray(matchesRaw)
+    ? (matchesRaw as Record<string, unknown>[]).map(mapHistorialImporteMatch)
+    : [];
+  const tarifaIdRaw = pickRaw(raw, 'tarifa_id', 'tarifaId');
+  const categoriaRaw = pickRaw(raw, 'categoria', 'categoria');
+  const statusRaw = pickRaw(raw, 'status', 'status');
+  const sentidoRaw = pickRaw(raw, 'sentido', 'sentido');
+  const importeRaw = pickRaw(raw, 'importe', 'importe');
+  const esActualRaw = pickRaw(raw, 'es_actual', 'esActual');
+  const enabledRaw = pickRaw(raw, 'enabled', 'enabled');
+  const diagnosticoRaw = pickRaw(raw, 'diagnostico', 'diagnostico');
+  return {
+    estacionId: String(pickRaw(raw, 'estacion_id', 'estacionId') ?? ''),
+    importeConsultado: asNumber(pickRaw(raw, 'importe_consultado', 'importeConsultado')),
+    countIdentities: Number(pickRaw(raw, 'count_identities', 'countIdentities') ?? 0),
+    matches,
+    tarifaId: tarifaIdRaw == null ? null : String(tarifaIdRaw),
+    categoria: categoriaRaw == null ? null : asNumber(categoriaRaw),
+    status: statusRaw == null ? null : (String(statusRaw) as TarifaStatusPico),
+    sentido: sentidoRaw == null ? null : (String(sentidoRaw) as TarifaSentido),
+    importe: importeRaw == null ? null : asNumber(importeRaw),
+    fechaVigenciaInicio: asDateString(pickRaw(raw, 'fecha_vigencia_inicio', 'fechaVigenciaInicio')),
+    fechaVigenciaFin: asDateString(pickRaw(raw, 'fecha_vigencia_fin', 'fechaVigenciaFin')),
+    esActual: esActualRaw == null ? null : Boolean(esActualRaw),
+    diagnostico: diagnosticoRaw == null ? null : String(diagnosticoRaw),
+    enabled: enabledRaw == null ? null : Boolean(enabledRaw),
   };
 }
 
@@ -242,6 +291,7 @@ function mapCambioRpc(c: CambioRefrescoTarifa | TarifaRefreshDecision): Record<s
       fecha_vigencia_inicio: c.fechaVigenciaInicio,
       cases: c.cases,
       requiere_normalizacion_iva: c.requiereNormalizacionIva,
+      no_coincide_con_tarifario: c.noCoincideConTarifario === true,
     };
   }
   return {
@@ -348,6 +398,26 @@ export class PeajesTarifarioSupabaseService implements PeajesTarifarioService {
     );
   }
 
+  buscarHistorialImportes(
+    consultas: TarifarioHistorialImporteConsulta[],
+  ): Observable<TarifarioHistorialImporteHit[]> {
+    return from(
+      this.supabase.executeWithRetry(async () => {
+        const client = await this.supabase.getClient();
+        const { data, error } = await client.rpc('peajes_buscar_historial_importes', {
+          p_candidatos: consultas.map((item) => ({
+            estacion_id: item.estacionId,
+            importe: item.importe,
+            ...(item.peajeId ? { peaje_id: item.peajeId } : {}),
+            ...(item.categoria != null ? { categoria: item.categoria } : {}),
+          })),
+        });
+        if (error) throw error;
+        return ((data ?? []) as Record<string, unknown>[]).map(mapHistorialImporteHit);
+      }),
+    );
+  }
+
   prepararRefresco(
     candidatos: PrepararRefrescoTarifaInput[],
   ): Observable<PrepararRefrescoTarifaItem[]> {
@@ -405,6 +475,51 @@ export class PeajesTarifarioSupabaseService implements PeajesTarifarioService {
         });
         if (error) throw error;
         return ((data ?? []) as Record<string, unknown>[]).map(mapGuardado);
+      }),
+    );
+  }
+
+  guardarGrupos(cambios: TarifarioGroupChange[]): Observable<{ actualizadas: number }> {
+    return from(
+      this.supabase.executeWithRetry(async () => {
+        const client = await this.supabase.getClient();
+        const { data, error } = await client.rpc('peajes_guardar_tarifario_grupos', {
+          p_cambios: cambios.map((cambio) => ({
+            peaje_id: cambio.peajeId,
+            estacion_id: cambio.estacionId,
+            sentido: cambio.sentido,
+            categoria: cambio.categoria,
+            status: cambio.status,
+            importe: cambio.importe,
+            fecha_vigencia_inicio: cambio.fechaVigenciaInicio,
+          })),
+        });
+        if (error) throw error;
+        return { actualizadas: Number((data as { actualizadas?: number } | null)?.actualizadas ?? 0) };
+      }),
+    );
+  }
+
+  actualizarEstadoCategorias(
+    cambios: TarifarioCategoriaEstadoCambio[],
+  ): Observable<Array<{ tarifaId: string; enabled: boolean }>> {
+    return from(
+      this.supabase.executeWithRetry(async () => {
+        const client = await this.supabase.getClient();
+        const { data, error } = await client.rpc('peajes_actualizar_estado_categorias', {
+          p_cambios: cambios.map((cambio) => ({
+            peaje_id: cambio.peajeId,
+            estacion_id: cambio.estacionId,
+            sentido: cambio.sentido,
+            categoria: cambio.categoria,
+            enabled: cambio.enabled,
+          })),
+        });
+        if (error) throw error;
+        return ((data ?? []) as Record<string, unknown>[]).map((row) => ({
+          tarifaId: String(row['tarifa_id'] ?? row['tarifaId'] ?? ''),
+          enabled: Boolean(row['enabled']),
+        }));
       }),
     );
   }

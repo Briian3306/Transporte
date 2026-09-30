@@ -37,7 +37,7 @@ Detalle de RPCs y flujos backend del dominio Peajes (documentos FC|NC, pasadas, 
 - Migración F13: `supabase/migrations/20260807140000_peajes_documentos_tipo_nc.sql`
 - Migración F08-2: `supabase/migrations/20260810142350_peajes_listar_estaciones_pendientes.sql`
 - Migración Power BI: `20260810194113_peajes_pwbi_views.sql` + `20260811121811_peajes_pwbi_documentos.sql` + `20260818131012_peajes_pwbi_tarifas.sql` + `20260902163000_peajes_tarifas_fecha_aparicion.sql`
-- Migración F14-16: `20260907100000`…`20260907103000_peajes_tarifas_v2_*` + `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`
+- Migración F14-16: `20260907100000`…`20260907103000_peajes_tarifas_v2_*` + `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql` + `20260915120326_peajes_backfill_pasadas_tarifa_importe_status.sql`
 - Migración F14-17: `20260908140000_peajes_tarifario_rpcs.sql`
 - Migración F14-18: `20260908150000_peajes_refresh_tarifas_paso9.sql`
 

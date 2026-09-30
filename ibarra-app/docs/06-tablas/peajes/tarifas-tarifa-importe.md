@@ -75,6 +75,7 @@ Historial de importes auditados de una configuración. `status` / `categoria` no
 | `fecha_vigencia_inicio` | date | Sí | Inicio calendario **inclusivo** de vigencia confirmada. `NULL` = desconocida o fila `REVISAR`. **No** se backfill desde `fecha_aparicion`. |
 | `fecha_vigencia_fin` | date | Sí | Fin calendario **exclusivo**. `NULL` = intervalo abierto o desconocido. Solo puede cerrarse una vez vía UPDATE permitido por trigger. |
 | `diagnostico` | text | Sí | Snapshot: `MUESTRA_INSUFICIENTE` \| `TARIFA_UNICA` \| `CATEGORIA` \| `POSIBLE_HORARIO` \| `REVISAR` \| `CONFIRMADO`. Backfill único desde `tarifas_normalizadas.diagnostico` en migración F14-19. |
+| `no_coincide_con_tarifario` | boolean | No, default false | TRUE cuando el importe no matcheó el tarifario (camino REVISAR / input manual). Inmutable. |
 | `tarifas_normalizadas_id` | uuid FK | Sí | Linaje 1:1 hacia `tarifas_normalizadas`. `NULL` = monto solo en el tarifario cruzado o detectado después. `ON DELETE SET NULL`. Unique parcial cuando no es NULL. |
 | `created_at` / `updated_at` | timestamptz | No | Auditoría de insert. `updated_at` permanece escribible; columnas de negocio no. |
 
@@ -112,7 +113,7 @@ FK compuesto `tarifas_current_pointer_fkey`: `(tarifas.id, current_tarifa_id) �
 Trigger `trg_tarifa_importe_immutable` (`BEFORE UPDATE OR DELETE`):
 
 - Prohíbe `DELETE`.
-- Prohíbe `UPDATE` de columnas de negocio (`id`, `tarifa_id`, `importe`, estadísticas incluido `cases`, `fecha_aparicion`, `diagnostico`, `fecha_vigencia_inicio`, linaje, `created_at`).
+- Prohíbe `UPDATE` de columnas de negocio (`id`, `tarifa_id`, `importe`, estadísticas incluido `cases`, `fecha_aparicion`, `diagnostico`, `fecha_vigencia_inicio`, linaje, `created_at`, `no_coincide_con_tarifario`).
 - **Permite** un único cierre: `fecha_vigencia_fin` de `NULL` a fecha (F14-19). Cualquier otro cambio de fin → excepción.
 
 Trigger `trg_tarifa_importe_promote` (`AFTER INSERT`):
@@ -133,7 +134,7 @@ Implementado por el ETL `scripts/peajes-catalogo-audit/migrate-tarifario-v2.mjs`
 - El ETL conserva `cases` de la fuente auditada; si un importe no tiene evidencia de pasadas, guarda `0`.
 - El ETL rechaza un ID legado mapeado a más de un importe, un historial con más de un padre, o un `TARIFA_ID` de Cross inexistente.
 
-El backfill `peajes_backfill_pasadas_tarifa_importe()` escribe `pasadas.tarifa_importe_id` **solo** cuando `pasadas.tarifa_normalizada_id` tiene exactamente un `tarifa_importe.tarifas_normalizadas_id`. No inventa historial. No reescribe `tarifa_normalizada_id`. Volumen real de pasadas no está probado fuera de fixtures pgTAP: un `db reset --local --no-seed` deja `pasadas` vacía (0/0/0).
+El backfill `peajes_backfill_pasadas_tarifa_importe()` escribe `pasadas.tarifa_importe_id` **solo si está NULL**. Pases: linaje 1:1; identidad `LEAST`+PICO/NO_PICO; leftover AMBAS → IDA 1%; leftover restante → identidad IDA (si falta) + `tarifa_importe` `REVISAR`/`no_coincide` sin vigencia (no promociona current). No reescribe `tarifa_normalizada_id`. Inspección: `supabase/scripts/pwbi_pasadas_backfill_inspect.sql`. `db reset --local --no-seed` deja `pasadas` vacía (0/0/0).
 
 ---
 
@@ -145,12 +146,12 @@ El backfill `peajes_backfill_pasadas_tarifa_importe()` escribe `pasadas.tarifa_i
 
 ## Referencias
 
-- Migraciones: `supabase/migrations/20260907100000_peajes_tarifas_v2_schema.sql`, …, `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`, **`20260909181737_peajes_tarifa_vigencia_diagnostico.sql`**, **`20260909192938_peajes_tarifa_matching_correcciones.sql`**
+- Migraciones: `supabase/migrations/20260907100000_peajes_tarifas_v2_schema.sql`, …, `20260908100000_peajes_backfill_pasadas_tarifa_importe.sql`, **`20260915120326_peajes_backfill_pasadas_tarifa_importe_status.sql`**, **`20260909181737_peajes_tarifa_vigencia_diagnostico.sql`**, **`20260909192938_peajes_tarifa_matching_correcciones.sql`**
 - Compatibilidad legado: [tarifas-normalizadas.md](./tarifas-normalizadas.md)
 - RPCs y Paso 8: [backend/peajes/tarifas-tarifa-importe.md](../../backend/peajes/tarifas-tarifa-importe.md)
 - Vista Power BI paralela: [pwbi-views.md](../../backend/peajes/pwbi-views.md)
-- Tests: `supabase/tests/peajes_f14_tarifas_importe_test.sql`, **`peajes_tarifa_vigencia_test.sql`**
+- Tests: `supabase/tests/peajes_f14_tarifas_importe_test.sql`, **`peajes_backfill_pasadas_status_test.sql`**, **`peajes_tarifa_vigencia_test.sql`**
 
 ---
 
-> Última actualización: 2026-09-10 (F14-19 vigencia/diagnóstico)
+> Última actualización: 2026-09-15

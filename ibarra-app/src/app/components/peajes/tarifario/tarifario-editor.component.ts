@@ -13,9 +13,11 @@ import {
   TarifarioEditorRow,
   TarifarioHistorialItem,
   TarifarioIdentidadExistente,
+  TarifarioCategoriaEstadoCambio,
 } from '../models/tarifario.contracts';
 import {
   TarifarioDraftChange,
+  TarifarioCategoryStateChange,
   TarifarioEditorBoardComponent,
 } from './tarifario-editor-board.component';
 import { TarifarioHistorialDialogComponent } from './tarifario-historial-dialog.component';
@@ -31,6 +33,7 @@ import {
   formatTarifaImporteDisplay,
   isTarifaSentido,
 } from './tarifario.helpers';
+import { nextCategoryAction, type CategoryAction } from './tarifario-groups.helpers';
 
 @Component({
   selector: 'app-tarifario-editor',
@@ -62,6 +65,7 @@ export class TarifarioEditorComponent implements OnInit {
   drafts: TarifarioEditorDrafts = {};
   private existentes: TarifarioIdentidadExistente[] = [];
   categoriaCount = 0;
+  addedDraftCategories: number[] = [];
 
   historyOpen = false;
   historyTitle = '';
@@ -114,6 +118,7 @@ export class TarifarioEditorComponent implements OnInit {
     this.estacionId = estacionId;
     this.sentido = sentidoRaw;
     this.categoriaCount = 0;
+    this.addedDraftCategories = [];
     this.drafts = {};
     this.loading = true;
     this.error = null;
@@ -130,7 +135,11 @@ export class TarifarioEditorComponent implements OnInit {
   }
 
   get canAddCategoria(): boolean {
-    return this.categoriaCount < TARIFARIO_CATEGORIAS_MAX && !this.loading;
+    return !this.loading && this.nextCategory.action !== 'NONE';
+  }
+
+  get nextCategory(): CategoryAction {
+    return nextCategoryAction(this.categoryIdentities(), TARIFARIO_CATEGORIAS_MAX, this.draftCategories());
   }
 
   private applyEditorPayload(payload: TarifarioEditorPayload): void {
@@ -163,9 +172,27 @@ export class TarifarioEditorComponent implements OnInit {
     return formatFechaActualizacion(iso);
   }
 
-  addCategoria(): void {
+  async addCategoria(): Promise<void> {
     if (!this.canAddCategoria) return;
-    this.categoriaCount += 1;
+    const next = this.nextCategory;
+    if (next.action === 'ENABLE' && this.sentido) {
+      try {
+        await firstValueFrom(this.tarifario.actualizarEstadoCategorias([{
+          peajeId: this.peajeId,
+          estacionId: this.estacionId,
+          sentido: this.sentido,
+          categoria: next.categoria,
+          enabled: true,
+        }]));
+        await this.load();
+      } catch {
+        this.saveError = 'No se pudo habilitar la categoría existente.';
+      }
+      return;
+    }
+    if (next.action !== 'DRAFT') return;
+    this.addedDraftCategories = [...new Set([...this.addedDraftCategories, next.categoria])];
+    this.categoriaCount = Math.max(this.categoriaCount, next.categoria);
     this.rebuildRows();
   }
 
@@ -228,6 +255,35 @@ export class TarifarioEditorComponent implements OnInit {
     } finally {
       this.saving = false;
     }
+  }
+
+  async onCategoryStateChange(change: TarifarioCategoryStateChange): Promise<void> {
+    if (!this.sentido) return;
+    const payload: TarifarioCategoriaEstadoCambio = {
+      peajeId: this.peajeId,
+      estacionId: this.estacionId,
+      sentido: this.sentido,
+      categoria: change.categoria,
+      enabled: change.enabled,
+    };
+    try {
+      await firstValueFrom(this.tarifario.actualizarEstadoCategorias([payload]));
+      await this.load();
+    } catch {
+      this.saveError = 'No se pudo actualizar el estado de la categoría. El valor anterior se conserva.';
+    }
+  }
+
+  private categoryIdentities() {
+    return this.rows.flatMap((row) => [row.no_pico, row.pico].map((cell) => ({
+      categoria: row.categoria,
+      enabled: cell.enabled !== false,
+      tarifaId: cell.tarifa_id,
+    })));
+  }
+
+  private draftCategories(): number[] {
+    return this.addedDraftCategories;
   }
 
   async openHistory(row: TarifarioEditorRow, status: TarifaStatusPico): Promise<void> {

@@ -5,6 +5,7 @@
         <th class="tf__cat" rowspan="2">Categoría</th>
         <th class="tf__lane tf__lane--nopico" colspan="3">NO_PICO</th>
         <th class="tf__lane tf__lane--pico" colspan="3">PICO</th>
+        <th class="tf__actions-head" rowspan="2">Acciones</th>
       </tr>
       <tr>
         <th class="tf__sub">Actual</th>
@@ -16,7 +17,8 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let row of rows">
+      <ng-container *ngFor="let row of visibleRowList; let rowIndex = index; trackBy: trackCategoria">
+      <tr>
         <th class="tf__cat-cell" scope="row">{{ row.categoria }}</th>
         <ng-container *ngFor="let lane of lanes">
           <td
@@ -116,13 +118,115 @@
               [class.tf__input--focus]="isNuevoFocused(row.categoria, lane.status)"
               [attr.aria-invalid]="isInvalid(row.categoria, lane.status)"
               [attr.aria-label]="'Nuevo ' + lane.status + ' categoría ' + row.categoria"
+              [disabled]="!isEnabled(row, lane.status)"
             />
           </td>
         </ng-container>
+        <td class="tf__actions-cell">
+          <button
+            *ngIf="categoryState(row).hasExisting"
+            type="button"
+            class="tf__state-btn"
+            (click)="toggleCategoryState(row)"
+            [attr.title]="categoryActionTitle(row)"
+            [attr.aria-label]="categoryActionTitle(row)"
+          >
+            <i [class]="categoryState(row).enabled ? 'fas fa-trash' : 'fas fa-rotate-left'" aria-hidden="true"></i>
+          </button>
+        </td>
+      </tr>
+      <tr class="tf__add-row" *ngIf="shouldRenderAddRow(rowIndex)">
+        <td colspan="8">
+          <div class="tf__add-content">
+            <button
+              #addCategoriaBtn
+              type="button"
+              class="tf__add"
+              [disabled]="!allowAddCategoria"
+              [attr.aria-keyshortcuts]="'+'"
+              [attr.aria-label]="addCategoryLabel()"
+              (click)="emitAddCategoria()"
+            >
+              <i class="fas fa-plus" aria-hidden="true"></i>
+              {{ addCategoryLabel() }}
+            </button>
+            <span class="tf__add-hint">{{ addCategoryHint() }}</span>
+          </div>
+        </td>
+      </tr>
+      </ng-container>
+      <tr class="tf__add-row" *ngIf="visibleRowList.length === 0 && showAddCategoria">
+        <td colspan="8">
+          <div class="tf__add-content">
+            <button
+              #addCategoriaBtn
+              type="button"
+              class="tf__add"
+              [disabled]="!allowAddCategoria"
+              [attr.aria-keyshortcuts]="'+'"
+              [attr.aria-label]="addCategoryLabel()"
+              (click)="emitAddCategoria()"
+            >
+              <i class="fas fa-plus" aria-hidden="true"></i>
+              {{ addCategoryLabel() }}
+            </button>
+            <span class="tf__add-hint">{{ addCategoryHint() }}</span>
+          </div>
+        </td>
+      </tr>
+      <tr *ngIf="reviewRows.length" class="tf__review-toolbar" data-role="revision-toolbar">
+        <td colspan="8">
+          <div class="tf__review-bulk">
+            <button
+              type="button"
+              class="tf__review-status-btn"
+              aria-label="Marcar todas como No pico"
+              (click)="applyAllReviewStatus('NO_PICO')"
+            >Todas No pico</button>
+            <button
+              type="button"
+              class="tf__review-status-btn"
+              aria-label="Marcar todas como Pico"
+              (click)="applyAllReviewStatus('PICO')"
+            >Todas Pico</button>
+          </div>
+        </td>
       </tr>
       <tr *ngFor="let review of reviewRows; trackBy: trackReview" class="tf__review-row" data-role="revision">
-        <th class="tf__cat-cell" scope="row">{{ review.categoria ?? '—' }}</th>
-        <td class="tf__review-cell" colspan="6">
+        <th class="tf__cat-cell" scope="row">
+          <label
+            *ngIf="review.requiresCategoriaInput"
+            class="tf__review-cat"
+            [attr.for]="'tf-review-cat-' + review.candidateId"
+          >
+            <span class="tf__review-cat-label">Categoría</span>
+            <input
+              class="tf__input tf__review-cat-input"
+              type="number"
+              min="0"
+              max="10"
+              step="1"
+              inputmode="numeric"
+              [id]="'tf-review-cat-' + review.candidateId"
+              [name]="'review-categoria-' + review.candidateId"
+              [value]="reviewCategoryValue(review)"
+              [attr.aria-invalid]="reviewCategoryInvalid(review)"
+              [attr.aria-describedby]="review.categoriaError ? 'tf-review-cat-err-' + review.candidateId : null"
+              aria-label="Categoría de 0 a 10"
+              required
+              (change)="onReviewCategoryInput(review, $any($event.target).value)"
+              (blur)="onReviewCategoryInput(review, $any($event.target).value)"
+            />
+            <span
+              *ngIf="review.categoriaError"
+              class="tf__review-cat-error"
+              [id]="'tf-review-cat-err-' + review.candidateId"
+              role="alert"
+            >{{ review.categoriaError }}</span>
+          </label>
+          <ng-container *ngIf="!review.requiresCategoriaInput">{{ review.categoria ?? '—' }}</ng-container>
+        </th>
+        <td class="tf__review-cell" colspan="7">
           <div class="tf__review">
             <span
               class="tf__trace"
@@ -157,21 +261,4 @@
       </tr>
     </tbody>
   </table>
-  <div class="tf__add-row" *ngIf="showAddCategoria">
-    <button
-      #addCategoriaBtn
-      type="button"
-      class="tf__add"
-      [disabled]="!allowAddCategoria"
-      [attr.aria-keyshortcuts]="'+'"
-      [attr.aria-label]="'Agregar categoría ' + (categoriaCount + 1) + ' de ' + categoriasMax"
-      (click)="emitAddCategoria()"
-    >
-      <i class="fas fa-plus" aria-hidden="true"></i>
-      Agregar categoría
-    </button>
-    <span class="tf__add-hint">
-      {{ allowAddCategoria ? 'Tab o + · Enter. Máximo ' + categoriasMax + '.' : 'Ya están las ' + categoriasMax + ' categorías.' }}
-    </span>
-  </div>
 </section>

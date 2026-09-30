@@ -89,7 +89,7 @@ Tablero dual (no pestañas), breadcrumb `PEAJE > ESTACION > SENTIDO`. Encabezado
 - Contexto sin identidades: éxito; tablero vacío y **Agregar categoría**. Agregar suma hasta 10.
 - IDA no carga VUELTA ni AMBAS. AMBAS es un sentido real.
 
-El mismo tablero (`TarifarioEditorBoardComponent`) se reutiliza en el diálogo de refresh Paso 9 con columnas Actual / Detectado / Nuevo. En Detectado el monto sale `$20.792,47 (3)` (clic copia a Nuevo). Candidatos sin PICO/NO_PICO o sentido van a filas finales del tablero con selectores y checkbox IVA solo para identidades nuevas. El tarifario standalone no usa Detectado ni esas filas. Ver [refresh-tarifas-paso9.md](../../backend/peajes/refresh-tarifas-paso9.md).
+El mismo tablero (`TarifarioEditorBoardComponent`) se reutiliza en el diálogo de refresh Paso 9 con columnas Actual / Detectado / Nuevo. En Detectado el monto sale `$20.792,47 (3)` (clic copia a Nuevo). **Pico / No pico** en una fila de revisión no escribe la última categoría: confirma la **categoría efectiva** o, si no hay match, `CONFIRM_NEW` con el precio y `no_coincide_con_tarifario`. Si el proveedor no trae categoría, la fila muestra un input 0–10 obligatorio junto a Pico/No pico. Una categoría deshabilitada no se muestra ni entra al match; solo reaparece si el operador pulsa **Agregar categoría** / **Habilitar categoría N**. Guardar re-habilita esas identidades con `peajes_actualizar_estado_categorias` antes de escribir importes. Ver [refresh-tarifas-paso9.md](../../backend/peajes/refresh-tarifas-paso9.md).
 
 ---
 
@@ -160,6 +160,12 @@ pnpm exec ng test --include="**/peajes-tarifario.service.spec.ts" --watch=false 
 pnpm exec ng test --include="**/peajes/tarifario/**/*.spec.ts" --watch=false --browsers=ChromeHeadless
 pnpm seed:local
 ```
+
+**2026-09-14 (categoría efectiva):** Pico/No pico confirma `LEAST(recibida, máxima)` o el input 0–10; leftover sin match persiste precio + `no_coincide_con_tarifario`. Revalidar: un Nuevo tipeado (incluida categoría agregada) gana al cap del catálogo y absorbe leftovers del mismo importe. pgTAP **Files=21 Tests=623 PASS**; Karma diálogo+helpers+tablero+servicio+mock **164 SUCCESS**.
+
+**2026-09-11 (Paso 9 disable + revalidar):** Categoría deshabilitada oculta salvo Agregar/Habilitar; Revalidar un clic (Nuevo gana al catálogo); Guardar muestra el `message` del RPC. Specs diálogo+tablero+helpers.
+
+**2026-09-11 (Paso 9 Pico confirma):** Pico/No pico en revisión escribe Nuevo si la celda está vacía; el payload de refresh es una fila por celda. RPC sin cambios.
 
 **2026-09-10 (precio final Paso 9):** Detectado `$importe (casos)`; filas de revisión con selectores status/sentido y checkbox IVA. Specs tablero + diálogo de refresh. pgTAP global **589 PASS**. Tarifario de ruta sin cambios de schema.
 
