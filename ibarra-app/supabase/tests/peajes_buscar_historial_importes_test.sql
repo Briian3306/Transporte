@@ -1,6 +1,6 @@
 -- F14-21 Paso 9: amount-led history lookup scoped to categoria efectiva.
 BEGIN;
-SELECT plan(10);
+SELECT plan(13);
 
 SELECT has_function(
   'public',
@@ -53,13 +53,13 @@ SELECT is(
     SELECT (e->>'count_identities')::int
     FROM jsonb_array_elements(
       public.peajes_buscar_historial_importes(
-        '[{"estacion_id":"21500000-aaaa-4aa1-8aa1-000000000010","importe":8464.0075}]'::jsonb
+        '[{"estacion_id":"21500000-aaaa-4aa1-8aa1-000000000010","importe":9200}]'::jsonb
       )
     ) e
     LIMIT 1
   ),
   0,
-  'historial without categoria returns no identities'
+  'history lookup requires an effective category'
 );
 
 SELECT is(
@@ -67,13 +67,13 @@ SELECT is(
     SELECT (e->>'status')
     FROM jsonb_array_elements(
       public.peajes_buscar_historial_importes(
-        '[{"estacion_id":"21500000-aaaa-4aa1-8aa1-000000000010","importe":8464.0075,"categoria":7}]'::jsonb
+        '[{"estacion_id":"21500000-aaaa-4aa1-8aa1-000000000010","importe":9200,"categoria":7}]'::jsonb
       )
     ) e
     LIMIT 1
   ),
   'NO_PICO',
-  'unique historical amount inherits NO_PICO at the requested category'
+  'unique historical amount returns its status in the requested effective category'
 );
 
 SELECT is(
@@ -81,13 +81,27 @@ SELECT is(
     SELECT (e->>'count_identities')::int
     FROM jsonb_array_elements(
       public.peajes_buscar_historial_importes(
-        '[{"estacion_id":"21500000-aaaa-4aa1-8aa1-000000000010","importe":8464.01,"categoria":7}]'::jsonb
+        '[{"estacion_id":"21500000-aaaa-4aa1-8aa1-000000000010","importe":9200.01,"categoria":7}]'::jsonb
       )
     ) e
     LIMIT 1
   ),
   1,
-  'unique match stays unique within 1 percent even when current importe differs'
+  'unique history match stays within 1 percent and the effective category'
+);
+
+SELECT is(
+  (
+    SELECT (e->>'count_identities')::int
+    FROM jsonb_array_elements(
+      public.peajes_buscar_historial_importes(
+        '[{"estacion_id":"21500000-aaaa-4aa1-8aa1-000000000010","importe":9200,"categoria":6}]'::jsonb
+      )
+    ) e
+    LIMIT 1
+  ),
+  0,
+  'historical price in another category does not match the effective category'
 );
 
 SELECT is(
@@ -134,20 +148,44 @@ SELECT is(
 
 SELECT is(
   (
-    SELECT jsonb_build_object(
-      'categoria', (e->>'categoria')::int,
-      'match_count', jsonb_array_length(COALESCE(e->'matches', '[]'::jsonb)),
-      'match_cat', (e->'matches'->0->>'categoria')::int
-    )
+    SELECT (e->>'count_identities')::int
     FROM jsonb_array_elements(
       public.peajes_buscar_historial_importes(
-        '[{"estacion_id":"21500000-aaaa-4aa1-8aa1-000000000010","importe":8464.0075,"categoria":6}]'::jsonb
+        '[{"estacion_id":"21500000-aaaa-4aa1-8aa1-000000000010","importe":8464.0075,"categoria":7}]'::jsonb
       )
     ) e
     LIMIT 1
   ),
-  '{"categoria": 6, "match_count": 1, "match_cat": 6}'::jsonb,
-  'querying cat 6 does not return the sibling cat 7 with the same amount'
+  1,
+  'same price in another category does not make the requested history category ambiguous'
+);
+
+SELECT is(
+  (
+    SELECT (e->>'categoria')::int
+    FROM jsonb_array_elements(
+      public.peajes_buscar_historial_importes(
+        '[{"estacion_id":"21500000-aaaa-4aa1-8aa1-000000000010","importe":9200,"categoria":7}]'::jsonb
+      )
+    ) e
+    LIMIT 1
+  ),
+  7,
+  'returned category is the uniquely matching effective category'
+);
+
+SELECT is(
+  (
+    SELECT (e->>'count_identities')::int
+    FROM jsonb_array_elements(
+      public.peajes_buscar_historial_importes(
+        '[{"estacion_id":"21500000-aaaa-4aa1-8aa1-000000000010","importe":5430.70,"categoria":7}]'::jsonb
+      )
+    ) e
+    LIMIT 1
+  ),
+  0,
+  'an amount with no matching tariff remains unresolved'
 );
 
 SELECT is(

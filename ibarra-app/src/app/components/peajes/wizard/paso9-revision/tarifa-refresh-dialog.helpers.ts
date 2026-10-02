@@ -614,7 +614,7 @@ export interface HighestIdentityOption {
   sentido: TarifaSentido;
 }
 
-/** Paso 9: unique identity among 1% hits at one category. No fallback across categories. */
+/** Paso 9: unique identity among 1% price hits. */
 export function uniqueHighestCategoryIdentity<T extends HighestIdentityOption>(
   matches: readonly T[],
 ): T | null {
@@ -629,8 +629,6 @@ export function uniqueIdentityForCategory<T extends HighestIdentityOption>(
   const scoped =
     categoria == null ? matches : matches.filter((option) => option.categoria === categoria);
   if (!scoped.length) return null;
-  const categories = new Set(scoped.map((option) => option.categoria));
-  if (categories.size !== 1) return null;
   if (new Set(scoped.map((option) => option.key)).size !== 1) return null;
   return scoped[0] ?? null;
 }
@@ -699,8 +697,10 @@ export function uniqueHistoryIdentity(
   categoria?: number | null,
 ): { categoria: number; status: TarifaStatusPico; sentido: TarifaSentido } | null {
   const top = historyMatchesForCategory(hit, status, categoria);
-  if (new Set(top.map((match) => match.tarifaId)).size !== 1) return null;
-  const [match] = top;
+  const identities = new Map(top.map((match) => [match.tarifaId, match]));
+  if (identities.size !== 1) return null;
+  const [match] = identities.values();
+  if (!match) return null;
   return { categoria: match.categoria, status: match.status, sentido: match.sentido };
 }
 

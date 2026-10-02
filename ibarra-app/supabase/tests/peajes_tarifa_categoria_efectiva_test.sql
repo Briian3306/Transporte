@@ -98,8 +98,8 @@ SELECT is(
     ) e
     LIMIT 1
   ),
-  'CONTEXT_INCOMPLETE',
-  'missing provider category waits for user input'
+  'CURRENT_CATEGORY_CORRECTION',
+  'a unique price can resolve the category when provider category is missing'
 );
 
 SELECT is(
@@ -127,7 +127,7 @@ SELECT is(
     LIMIT 1
   ),
   1,
-  'historial searches only the requested category at that station'
+  'history finds the matching identity even when the requested category is different'
 );
 
 SELECT is(
@@ -141,7 +141,7 @@ SELECT is(
     LIMIT 1
   ),
   0,
-  'historial does not leak other categories'
+  'history stays scoped to the effective category when another category has the price'
 );
 
 CREATE TEMP TABLE pg_temp._ceil_save AS

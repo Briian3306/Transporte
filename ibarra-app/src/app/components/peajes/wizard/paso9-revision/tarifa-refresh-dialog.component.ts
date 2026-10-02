@@ -62,7 +62,6 @@ import {
   confirmNewVigenciaPreflight,
   deriveEditorGroups,
   familySentidos,
-  findHistoryHit,
   heuristicaSeleccionInicial,
   interseccionSentidos,
   maxSharedGroupCount,
@@ -71,7 +70,6 @@ import {
   resolverRequiereNormalizacionIva,
   sharedSlotsToTarifarioGroups,
   stationTraceViewModel,
-  uniqueHistoryIdentity,
   uniqueIdentityForCategory,
   resolveCategoriaEfectiva,
   withinTarifaPriceTolerance,
@@ -416,7 +414,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
         this.withinPriceTolerance(candidate.amount, option.importe) &&
         (candidate.sentido == null || option.sentido === candidate.sentido || option.sentido === 'AMBAS'),
     );
-    const fromCatalog = this.uniqueCategoryIdentity(catalogMatches, effective);
+    const fromCatalog = this.uniqueCategoryIdentity(catalogMatches, null);
     if (fromCatalog) return fromCatalog;
 
     const possibleMatches = (candidate.possibleMatches ?? [])
@@ -432,20 +430,31 @@ export class TarifaRefreshDialogComponent implements OnChanges {
         sentido: option.sentido,
         importe: option.importe,
       }));
-    const fromPossible = this.uniqueCategoryIdentity(possibleMatches, effective);
+    const fromPossible = this.uniqueCategoryIdentity(possibleMatches, null);
     if (fromPossible) return fromPossible;
 
     const status = grupo.reviewStatusByCandidate[candidate.candidateId] ?? candidate.status;
-    if (!status) return null;
-    return uniqueHistoryIdentity(
-      findHistoryHit(grupo.historyHits ?? [], candidate.estacionId, candidate.amount, effective),
-      status,
-      effective,
-    );
+    const historyMatches = (grupo.historyHits ?? [])
+      .filter((hit) => hit.estacionId === candidate.estacionId)
+      .filter((hit) => this.withinPriceTolerance(candidate.amount, hit.importeConsultado))
+      .flatMap((hit) => hit.matches ?? [])
+      .filter(
+        (hit) =>
+          hit.categoria === effective &&
+          (!status || hit.status === status) &&
+          (candidate.sentido == null || hit.sentido === candidate.sentido || hit.sentido === 'AMBAS'),
+      )
+      .map((hit) => ({
+        key: hit.tarifaId,
+        categoria: hit.categoria,
+        status: hit.status,
+        sentido: hit.sentido,
+      }));
+    return this.uniqueCategoryIdentity(historyMatches, null);
   }
 
   private uniqueCategoryIdentity(
-    matches: ReadonlyArray<SessionResolvedIdentity & { key: string; importe: number }>,
+    matches: ReadonlyArray<SessionResolvedIdentity & { key: string }>,
     categoria: number | null,
   ): SessionResolvedIdentity | null {
     const match = uniqueIdentityForCategory(matches, categoria);
@@ -550,11 +559,18 @@ export class TarifaRefreshDialogComponent implements OnChanges {
       this.refreshWarnings();
       return;
     }
-    const historyIdentity = uniqueHistoryIdentity(
-      findHistoryHit(grupo.historyHits ?? [], cand.estacionId, cand.amount, identity.categoria),
-      event.status,
-      identity.categoria,
-    );
+    const historyMatches = (grupo.historyHits ?? [])
+      .filter((hit) => hit.estacionId === cand.estacionId)
+      .filter((hit) => this.withinPriceTolerance(cand.amount, hit.importeConsultado))
+      .flatMap((hit) => hit.matches ?? [])
+      .filter((hit) => hit.categoria === identity.categoria && hit.status === event.status)
+      .map((hit) => ({
+        key: hit.tarifaId,
+        categoria: hit.categoria,
+        status: hit.status,
+        sentido: hit.sentido,
+      }));
+    const historyIdentity = this.uniqueCategoryIdentity(historyMatches, null);
     if (historyIdentity) {
       grupo.resolvedCandidates.set(cand.candidateId, historyIdentity);
       this.rebuildEditors(grupo);
@@ -911,7 +927,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
           };
           this.refreshCheckboxOptions(grupo);
           this.rebuildEditors(grupo);
-          this.resolveHistoryMatches(grupo);
+          this.applySessionMatches(grupo);
           if (generation !== this.loadGeneration) return;
           grupos.push(grupo);
         }
@@ -933,23 +949,6 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     const resolved = new Map(grupo.resolvedCandidates);
     for (const item of this.rawCandidatesFor(grupo)) {
       const identity = this.compatibleSessionIdentity(grupo, item);
-      if (identity) resolved.set(item.candidateId, identity);
-    }
-    grupo.resolvedCandidates = resolved;
-    this.rebuildEditors(grupo);
-  }
-
-  private resolveHistoryMatches(grupo: GrupoTarifaRefresco): void {
-    const resolved = new Map(grupo.resolvedCandidates);
-    for (const item of this.rawCandidatesFor(grupo)) {
-      const status = grupo.reviewStatusByCandidate[item.candidateId] ?? item.status;
-      if (!status) continue;
-      const effective = this.effectiveCategoria(grupo, item);
-      const identity = uniqueHistoryIdentity(
-        findHistoryHit(grupo.historyHits ?? [], item.estacionId, item.amount, effective),
-        status,
-        effective,
-      );
       if (identity) resolved.set(item.candidateId, identity);
     }
     grupo.resolvedCandidates = resolved;

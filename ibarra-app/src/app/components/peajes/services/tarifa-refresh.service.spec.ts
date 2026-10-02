@@ -502,7 +502,7 @@ describe('TarifaRefreshServiceImpl', () => {
     expect(resumen.resultados.length).toBe(2);
   });
 
-  it('calls TarifaComparisonAdapterService once and never applies a second IVA path', async () => {
+  it('uses an IVA flag from another tariff category when the provider category is wrong', async () => {
     const { TestBed } = await import('@angular/core/testing');
     const { of } = await import('rxjs');
     const { TarifaRefreshServiceImpl } = await import('./tarifa-refresh.service');
@@ -516,7 +516,7 @@ describe('TarifaRefreshServiceImpl', () => {
           id: 'ctx',
           peajeId: 'p',
           estacionId: ESTACION_DOCK,
-          categoria: 2,
+          categoria: 8,
           status: 'NO_PICO',
           sentido: 'AMBAS',
           tarifaId: 't',

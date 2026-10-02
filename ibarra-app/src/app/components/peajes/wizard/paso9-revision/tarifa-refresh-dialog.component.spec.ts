@@ -157,6 +157,48 @@ describe('TarifaRefreshDialogComponent', () => {
     expect(component.grupos[0].sharedSlots[0]).not.toContain(ESTACION_SAMBOROMBON);
   });
 
+  it('al abrir selecciona la categoría y status del único precio coincidente y conserva el precio sin match para revisión', async () => {
+    const precio = 27153.49;
+    const catalogRows = [3, 4, 5, 6].flatMap((categoria) =>
+      (['NO_PICO', 'PICO'] as const).map((status) => {
+        const row = catalogRow(ESTACION_HUDSON, categoria, status, 'AMBAS');
+        return {
+          ...row,
+          importe: status === 'NO_PICO' && categoria === 5 ? precio : 1000 + categoria,
+        };
+      }),
+    );
+    const resultados = [
+      pendiente(ESTACION_HUDSON, {
+        id: 'provider-cat-wrong', categoria: 7, categoriaProveedor: 7,
+        status: null, sentidoSolicitado: 'AMBAS', candidatePrice: precio, rowIndexes: [0],
+      }),
+      pendiente(ESTACION_HUDSON, {
+        id: 'price-without-tariff', categoria: 7, categoriaProveedor: 7,
+        status: null, sentidoSolicitado: 'AMBAS', candidatePrice: 5430.70, rowIndexes: [1],
+      }),
+    ];
+    const candidatos = [
+      candidato(ESTACION_HUDSON, {
+        id: 'provider-cat-wrong', categoria: 7, categoriaProveedor: 7,
+        statusSolicitado: null, sentidoSolicitado: 'AMBAS', directionConfidence: 'EXPLICIT',
+        candidatePrice: precio, precioDirecto: precio, rowIndexes: [0],
+      }),
+      candidato(ESTACION_HUDSON, {
+        id: 'price-without-tariff', categoria: 7, categoriaProveedor: 7,
+        statusSolicitado: null, sentidoSolicitado: 'AMBAS', directionConfidence: 'EXPLICIT',
+        candidatePrice: 5430.70, precioDirecto: 5430.70, rowIndexes: [1],
+      }),
+    ];
+
+    await open(resultados, candidatos, catalogRows);
+
+    const grupo = component.grupos[0];
+    expect(component.candidatesFor(grupo).map((item) => item.candidateId)).toEqual(['price-without-tariff']);
+    const tabla = grupo.editors[0].tablas[0];
+    expect(tabla.detected['5:NO_PICO'].map((item) => item.candidateId)).toContain('provider-cat-wrong');
+  });
+
   it('muestra IDA y VUELTA juntas, sin botones para crear o cambiar de sentido', async () => {
     await open(
       [pendiente(ESTACION_HUDSON)],

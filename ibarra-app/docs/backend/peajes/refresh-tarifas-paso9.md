@@ -30,21 +30,21 @@ Impedir que una carga confirme un precio nuevo, una corrección de categoría o 
 1. El frontend extrae candidatos **distintos** de las pasadas incluidas. Precio final visible/directo: `TARIFA_PESOS` si existe, si no `PRECIO`, y `IMPORTE_NETO` solo si no hay ninguno. No se parsea `TARIFA` crudo ni se redondea el candidato. Conserva `rowIndexes`, `fecha_pasada`, `categoria_proveedor` y sentido resuelto. El flag IVA no cambia el monto mostrado: solo manda `precio_normalizado` cuando el tarifario lo pide.
 2. `peajes_preparar_refresco_tarifas` resuelve identidades PICO/NO_PICO del contexto. **No** hace aritmética monetaria.
 3. El adapter Angular produce `precio_normalizado` **solo** si alguna identidad preparada tiene `requiere_normalizacion_iva = true`. SQL elige según el flag. Nunca divide por 1,21.
-4. `peajes_detectar_refresco_tarifas` clasifica cada candidato con helper privado `_peajes_tarifas_matching_candidatos` filtrado a **`categoria_efectiva = LEAST(categoria_recibida, categoria_maxima_estación)`** más importe (tolerancia 1%). No hay ranking ni fallback entre categorías. `fecha_vigencia_*` solo clasifica vigente vs histórico; **no** excluye un hit. Un match único reutiliza PICO/NO_PICO y sentido de esa identidad.
+4. `peajes_detectar_refresco_tarifas` busca primero precios actuales en todas las categorías habilitadas de la estación (tolerancia 1%), sin confiar en la categoría del proveedor. Si no hay match actual, busca importes históricos solo en `categoria_efectiva = LEAST(categoria_recibida, categoria_maxima_estación)`. Un match único reutiliza la categoría, PICO/NO_PICO y sentido del tarifario; varios matches quedan ambiguos.
 
 | Código | Cuándo | Diálogo / Paso 9 |
 |--------|--------|------------------|
-| `CURRENT_TARIFF` | Importe vigente dentro de 1% en la categoría efectiva y vigencia compatible | No (informativo) |
-| `HISTORICAL_TARIFF_MATCH` | Match único en la categoría efectiva cuyo intervalo no cubre `fecha_pasada` | No (informativo) |
-| `CURRENT_CATEGORY_CORRECTION` | Match único vigente tras capar la categoría (p. ej. 8 → máx. 5) | Sí (corrección explícita) |
-| `HISTORICAL_CATEGORY_CORRECTION` | Igual, pero el hit no cubre `fecha_pasada` | Sí |
-| `NEW_TARIFF` | Status explícito y ningún monto entra en tolerancia en la categoría efectiva | Sí |
+| `CURRENT_TARIFF` | Importe del tarifario actual dentro de 1% en cualquier categoría compatible | No (informativo) |
+| `HISTORICAL_TARIFF_MATCH` | Match único del historial en la categoría efectiva | No (informativo) |
+| `CURRENT_CATEGORY_CORRECTION` | Precio actual único en una categoría distinta a la recibida | Sí (corrección explícita) |
+| `HISTORICAL_CATEGORY_CORRECTION` | Match histórico de la categoría efectiva, distinta a la recibida por el cap de estación | Sí |
+| `NEW_TARIFF` | Status explícito y ningún importe coincide en tarifa actual ni en historial de la categoría efectiva | Sí |
 | `STATUS_REQUIRED` / `STATUS_AMBIGUOUS` | Falta status o hay más de un status candidato en esa categoría | Sí |
-| `AMBIGUOUS_TARIFF_MATCH` | Más de un match seguro en la categoría efectiva | Sí |
+| `AMBIGUOUS_TARIFF_MATCH` | Más de una identidad coincide en la búsqueda aplicable | Sí |
 | `DIRECTION_REQUIRED` / `DIRECTION_CONFLICT` | Sentido ausente o conflictivo | Bloquea hasta resolver sentido |
-| `CONTEXT_INCOMPLETE` | Sin estación **o categoría del proveedor nula** | Bloquea confirmar; el operador tipea categoría 0–10 |
+| `CONTEXT_INCOMPLETE` | Sin estación o sin categoría del proveedor y sin match tarifario único | Bloquea confirmar; el operador completa el contexto |
 
-5. **Categoría efectiva:** `pasadas.categoria` (proveedor) **no cambia**. La búsqueda usa `LEAST(recibida, máxima habilitada de la estación)`. Ejemplo: Cat 5 NO_PICO $5000 / PICO $6000 y el proveedor informa Cat 8 $5000 → efectiva 5 → `NO_PICO`. Si el proveedor informa 3 y la máxima es 9, se busca **3**, no la última categoría. `categoria_calculada` se expone cuando la efectiva difiere de la recibida.
+5. **Categoría:** `pasadas.categoria` (proveedor) no cambia. Una coincidencia única en la tarifa actual decide la categoría aunque el proveedor informe otra: Cat 5 NO_PICO $27.153,49 y proveedor Cat 7 $27.153,49 → Cat 5 NO_PICO. La categoría efectiva se usa para buscar historial cuando no hay match actual.
 6. **Agrupación de estaciones (UI):** el operador indica **Grupos de tarifa** (N, min 1, max `floor(estaciones/2)`). Salen N checkboxes **Estaciones con la misma tarifa** (Grupo 1 de N, …). Cada slot con ≥2 estaciones comparte un tablero; las no asignadas o desmarcadas quedan **exactamente una vez** como editor independiente. Una estación no puede estar en dos slots: las ya usadas aparecen `disabled` en los demás. N = 1 conserva la heurística inicial (mismo precio). Los grupos viven solo en la sesión; no se persisten. Un guardado agrupado fan-out a identidades `tarifas`/`tarifa_importe` **independientes** con el mismo importe/fecha. Detectado muestra `$20.792,47 (3)`. Candidatos sin status/sentido van al **bloque final** del mismo tablero con selectores. Checkbox **Normalizar IVA** solo en identidades nuevas (hereda del tarifario, plantilla como fallback, override manual). Acciones de categoría y **Agregar categoría** fan-outean solo a las estaciones de ese editor.
 7. **Guardado:** `peajes_guardar_refresco_tarifas` acepta `action`:
 
@@ -73,16 +73,16 @@ Ejemplo: catálogo Cat 5 NO_PICO $5000; proveedor Cat 8 $5000 → efectiva 5 →
 
 ### Orden de matching (SQL)
 
-Por candidato, tras hits de monto ≤1% **en `categoria_efectiva`**, excluyendo filas `REVISAR` e identidades deshabilitadas:
+Por candidato, primero se buscan hits de precio en la tarifa actual entre categorías, excluyendo identidades deshabilitadas y filas `REVISAR`. El historial se consulta solo en `categoria_efectiva`; también excluye identidades deshabilitadas y filas `REVISAR`.
 
-1. Calcular `categoria_maxima` de la estación y `categoria_efectiva = LEAST(recibida, maxima)`. Sin categoría del proveedor → `CONTEXT_INCOMPLETE`.
-2. Una sola búsqueda estación + categoría efectiva + importe. `fecha_pasada` no filtra hits; solo decide CURRENT vs HISTORICAL.
+1. Buscar el importe actual por estación en todas las categorías habilitadas. La categoría del proveedor no desempata precios actuales repetidos.
+2. Si no hay match actual, calcular `categoria_efectiva = LEAST(recibida, maxima)` y buscar estación + categoría efectiva + importe en el historial. `fecha_pasada` solo clasifica CURRENT vs HISTORICAL.
 3. Si hay una única identidad, reutilizar su status, sentido, tarifa e importe.
-4. Si hay más de una identidad en esa categoría, `AMBIGUOUS_TARIFF_MATCH`.
+4. Si más de una identidad coincide en la búsqueda aplicable, `AMBIGUOUS_TARIFF_MATCH`.
 
-`possible_matches` lista hits de la misma categoría efectiva (incluye vigentes que no cubren `fecha_pasada`).
+`possible_matches` contiene matches actuales en cualquier categoría y, si no existe uno actual, hits históricos solo de la categoría efectiva. Varias identidades compatibles permanecen ambiguas.
 
-Abrir el diálogo y **Revalidar** consultan historial por **peaje + estación + categoría efectiva + importe** (`peajes_buscar_historial_importes`), sin filtro de fecha. Sin `categoria` la RPC devuelve `count_identities: 0`. Un match único se resuelve y no se guarda.
+Abrir el diálogo y **Revalidar** consultan historial por peaje + estación + importe + categoría efectiva (`peajes_buscar_historial_importes`), sin filtro de fecha. Ambas acciones resuelven una identidad histórica única dentro de esa categoría y dejan precios sin match o ambiguos para revisión.
 
 Antes de `CONFIRM_NEW`, el diálogo omite el cambio si el importe ya es el vigente (1%) y bloquea con mensaje por estación/categoría/status si la fecha nueva es anterior o igual al vigente con otro importe.
 
@@ -125,6 +125,8 @@ Migraciones:
 - Follow-up Paso 9: `20260910195747_peajes_tarifario_ocultar_revision.sql` (production MCP version `20260911111515`)
 - Historial por importe: `20260911185630_peajes_buscar_historial_importes.sql`
 - Categoría efectiva + flag: `20260914122527_peajes_tarifa_categoria_efectiva_no_coincide.sql`
+- Precio actual entre categorías e historial limitado a categoría efectiva: `20261002164331_peajes_refresh_matching_precio_tarifario.sql`
+- Filtros de dirección, estado e identidades habilitadas: `20261002170238_peajes_refresh_matching_evidence_filters.sql`
 
 `SECURITY INVOKER`. `GRANT EXECUTE` a `authenticated, service_role`. Helpers `_peajes_tarifas_matching_candidatos`, `_peajes_aplicar_importe_guardado` no son API de producto.
 

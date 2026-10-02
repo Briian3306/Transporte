@@ -132,30 +132,12 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
     }
 
     const prepared = await firstValueFrom(this.tarifario.prepararRefresco(prepareInputs));
-    const ivaByContext = new Map<string, boolean>();
+    const ivaByStation = new Map<string, boolean>();
     for (const row of prepared) {
-      const key = [
+      ivaByStation.set(
         row.estacionId,
-        row.categoria == null ? '' : String(row.categoria),
-        row.status ?? '',
-        row.sentido,
-      ].join('|');
-      const requested = prepareInputs.find(
-        (p) =>
-          p.estacionId === row.estacionId &&
-          p.categoria === row.categoria &&
-          (p.statusSolicitado == null || p.statusSolicitado === row.status) &&
-          p.sentidoSolicitado === row.sentido,
+        ivaByStation.get(row.estacionId) === true || row.requiereNormalizacionIva,
       );
-      const ctx = requested
-        ? contextKey({
-            estacionId: requested.estacionId,
-            categoria: requested.categoria,
-            statusSolicitado: requested.statusSolicitado,
-            sentidoSolicitado: requested.sentidoSolicitado,
-          })
-        : key;
-      ivaByContext.set(ctx, ivaByContext.get(ctx) === true || row.requiereNormalizacionIva);
     }
 
     const detectSeen = new Set<string>();
@@ -164,7 +146,7 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
 
     for (const c of detectCandidates) {
       const ctx = contextKey(c);
-      const needsIva = ivaByContext.get(ctx) === true;
+      const needsIva = ivaByStation.get(c.estacionId) === true;
       const comparable = needsIva
         ? this.adapter.obtenerPrecioComparable({
             precioDirecto: c.precioDirecto,
