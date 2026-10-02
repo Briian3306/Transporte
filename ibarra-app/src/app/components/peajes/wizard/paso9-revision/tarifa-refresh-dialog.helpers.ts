@@ -284,6 +284,7 @@ function signaturesDe(
 export function buildDetectedStations(
   imported: readonly ResultadoDetectarRefresco[],
   catalogo: readonly EstacionCatalogoRefresco[] = [],
+  includeCatalogOnly = false,
 ): DetectedStation[] {
   const byId = new Map(catalogo.map((row) => [row.estacionId, row]));
   const seen = new Set<string>();
@@ -300,6 +301,20 @@ export function buildDetectedStations(
       color: STATION_SESSION_PALETTE[stations.length % STATION_SESSION_PALETTE.length],
       family: sentidoFamilyOf(row?.sentidosExistentes ?? []),
     });
+  }
+  if (includeCatalogOnly) {
+    for (const row of catalogo) {
+      if (seen.has(row.estacionId)) continue;
+      seen.add(row.estacionId);
+      stations.push({
+        estacionId: row.estacionId,
+        estacionNombre: row.estacionNombre || row.estacionId,
+        peajeId: row.peajeId,
+        peajeNombre: row.peajeNombre,
+        color: STATION_SESSION_PALETTE[stations.length % STATION_SESSION_PALETTE.length],
+        family: sentidoFamilyOf(row.sentidosExistentes),
+      });
+    }
   }
   return stations;
 }

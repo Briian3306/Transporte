@@ -157,6 +157,40 @@ describe('TarifaRefreshDialogComponent', () => {
     expect(component.grupos[0].sharedSlots[0]).not.toContain(ESTACION_SAMBOROMBON);
   });
 
+  it('shows compatible catalog stations for grouping when only one station was detected in the import', async () => {
+    await open(
+      [pendiente(ESTACION_HUDSON)],
+      [candidato(ESTACION_HUDSON)],
+      [
+        catalogRow(ESTACION_HUDSON, 2, 'NO_PICO', 'AMBAS'),
+        catalogRow(ESTACION_DOCK_SUD, 2, 'NO_PICO', 'AMBAS'),
+      ],
+    );
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.trd__stations-note')).toBeNull();
+    expect(root.querySelector('app-checkbox-multi-select')).toBeTruthy();
+    expect(component.grupos[0].opciones.map((option) => option.estacionId)).toEqual([
+      ESTACION_HUDSON,
+      ESTACION_DOCK_SUD,
+    ]);
+
+    await component.onSeleccionChange(component.grupos[0], 0, [ESTACION_HUDSON, ESTACION_DOCK_SUD]);
+    expect(component.grupos[0].editors[0].stationIds).toEqual([ESTACION_HUDSON, ESTACION_DOCK_SUD]);
+  });
+
+  it('explains why station grouping is unavailable when the review has only one station', async () => {
+    await open(
+      [pendiente(ESTACION_HUDSON)],
+      [candidato(ESTACION_HUDSON)],
+      [catalogRow(ESTACION_HUDSON, 2, 'NO_PICO', 'AMBAS')],
+    );
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.trd__stations-note')).toBeTruthy();
+    expect(root.querySelector('app-checkbox-multi-select')).toBeNull();
+    expect(root.querySelector('input[aria-label="Grupos de tarifa"]')).toBeNull();
+  });
   it('al abrir selecciona la categoría y status del único precio coincidente y conserva el precio sin match para revisión', async () => {
     const precio = 27153.49;
     const catalogRows = [3, 4, 5, 6].flatMap((categoria) =>

@@ -54,6 +54,9 @@
         (valueChange)="onSeleccionChange(grupo, i, $event)"
       ></app-checkbox-multi-select>
     </div>
+    <p class="trd__stations-note" *ngIf="grupo.detectedStations.length === 1">
+      Solo hay una estación disponible con esta familia tarifaria para agrupar.
+    </p>
 
     <div class="trd__date">
       <app-date-range-picker

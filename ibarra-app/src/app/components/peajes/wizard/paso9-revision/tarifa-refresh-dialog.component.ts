@@ -879,7 +879,9 @@ export class TarifaRefreshDialogComponent implements OnChanges {
           sentido: row.sentido,
           requiereNormalizacionIva: this.ivaHintFor(row.estacion_id, row.categoria, row.status, row.sentido),
         }));
-        const detectedAll = buildDetectedStations(items, catalogo);
+        // Include tariff catalog stations so operators can group compatible stations
+        // even when the imported file only detected one of them.
+        const detectedAll = buildDetectedStations(items, catalogo, true);
         for (const pending of agruparPendientesPorPeajeYFamilia(items, catalogo)) {
           const detectedStations = detectedAll.filter(
             (station) => station.peajeId === pending.peajeId && station.family === pending.family,
@@ -889,7 +891,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
             return {
               estacionId: station.estacionId,
               estacionNombre: station.estacionNombre,
-              pendiente: true,
+              pendiente: pending.itemsPorEstacion.has(station.estacionId),
               sentidosExistentes: catalogRow?.sentidosExistentes ?? [],
             };
           });

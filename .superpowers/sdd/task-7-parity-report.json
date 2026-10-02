@@ -1,8 +1,8 @@
 {
   "counts": {
     "legacy_links": 8406,
-    "v2_links": 7533,
-    "unmapped": 873,
+    "v2_links": 8325,
+    "unmapped": 81,
     "current_pointer_mismatches": 27,
     "price_comparison_mismatches": 0,
     "null_current_pointers": 27,

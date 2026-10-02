@@ -1,12 +1,12 @@
 # Task 7 local parity report
 
-Generated: 2026-09-14T18:49:28.957Z
+Generated: 2026-10-02T17:14:32.379Z
 
 | Metric | Count |
 |---|---|
 | legacy_links | 8406 |
-| v2_links | 7533 |
-| unmapped | 873 |
+| v2_links | 8325 |
+| unmapped | 81 |
 | current_pointer_mismatches | 27 |
 | price_comparison_mismatches | 0 |
 | null_current_pointers | 27 |
