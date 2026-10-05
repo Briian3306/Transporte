@@ -410,6 +410,7 @@ export class PeajesTarifarioSupabaseService implements PeajesTarifarioService {
             importe: item.importe,
             ...(item.peajeId ? { peaje_id: item.peajeId } : {}),
             ...(item.categoria != null ? { categoria: item.categoria } : {}),
+            ...(item.sentido ? { sentido_solicitado: item.sentido } : {}),
           })),
         });
         if (error) throw error;

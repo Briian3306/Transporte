@@ -43,6 +43,24 @@
   gap: 0.75rem;
 }
 
+.trd__group-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.trd__agrupado {
+  flex: 0 0 auto;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #d9e2ec;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+}
+
 .trd__group-count {
   display: grid;
   gap: 0.28rem;
@@ -109,11 +127,30 @@
 }
 
 .trd__sentido-title {
-  margin: 1rem 0 0.45rem;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--at-ink, #0f172a);
+  color: var(--at-signal, #004ac6);
+}
+
+.trd__editors {
+  margin-top: 0.35rem;
+  border-top: 1px solid var(--at-line, #dbe4ee);
+}
+
+.trd__acc-stations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+  align-items: center;
+}
+
+.trd__tabla + .trd__tabla {
+  margin-top: 1.15rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--at-line, #dbe4ee);
 }
 
 .trd__error,

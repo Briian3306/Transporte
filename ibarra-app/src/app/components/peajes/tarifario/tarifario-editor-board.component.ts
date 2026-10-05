@@ -125,6 +125,11 @@ export interface TarifarioCategoryStateChange {
   tarifaIds: string[];
 }
 
+export interface TarifarioNuevoNavigateOut {
+  direction: 'next' | 'prev';
+  consumed: boolean;
+}
+
 export function detectedCellKey(categoria: number, status: TarifaStatusPico): string {
   return `${categoria}:${status}`;
 }
@@ -189,6 +194,7 @@ export class TarifarioEditorBoardComponent implements OnChanges {
   @Output() readonly bulkReviewStatus = new EventEmitter<TarifaStatusPico>();
   @Output() readonly ivaChange = new EventEmitter<TarifarioIvaChange>();
   @Output() readonly categoryStateChange = new EventEmitter<TarifarioCategoryStateChange>();
+  @Output() readonly nuevoNavigateOut = new EventEmitter<TarifarioNuevoNavigateOut>();
 
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -353,24 +359,51 @@ export class TarifarioEditorBoardComponent implements OnChanges {
   }
 
   onNuevoKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Tab' && event.key !== 'Enter') return;
-    const inputs = this.nuevoInputs?.map((ref) => ref.nativeElement) ?? [];
+    const inputs = this.enabledNuevoInputs();
     if (!inputs.length) return;
     const current = event.target as HTMLInputElement;
     const index = inputs.indexOf(current);
     if (index < 0) return;
-    if (event.key === 'Tab' && event.shiftKey && index === 0) return;
-    const goingForward = !event.shiftKey;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft' || event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      this.moveNuevoGrid(event, inputs, index);
+      return;
+    }
+    if (event.key !== 'Tab' && event.key !== 'Enter') return;
+    const goingBack = event.key === 'Tab' && event.shiftKey;
+    if (goingBack && index === 0) {
+      if (this.emitNavigate('prev')) event.preventDefault();
+      return;
+    }
+    const goingForward = !goingBack;
     if (goingForward && index === inputs.length - 1) {
-      event.preventDefault();
-      this.addCategoriaBtn?.nativeElement.focus();
+      if (this.emitNavigate('next')) {
+        event.preventDefault();
+        return;
+      }
+      if (this.addCategoriaBtn) {
+        event.preventDefault();
+        this.addCategoriaBtn.nativeElement.focus();
+      }
       return;
     }
     event.preventDefault();
-    const delta = event.shiftKey ? -1 : 1;
-    const next = inputs[(index + delta + inputs.length) % inputs.length];
-    next.focus();
-    next.select();
+    const next = inputs[index + (goingBack ? -1 : 1)];
+    next?.focus();
+    next?.select();
+  }
+
+  onAddKeydown(event: KeyboardEvent): void {
+    if ((event.key === 'Tab' && !event.shiftKey) || event.key === 'ArrowDown') {
+      if (this.emitNavigate('next')) event.preventDefault();
+      return;
+    }
+    if ((event.key === 'Tab' && event.shiftKey) || event.key === 'ArrowUp') {
+      const last = this.enabledNuevoInputs().at(-1);
+      if (!last) return;
+      event.preventDefault();
+      last.focus();
+      last.select();
+    }
   }
 
   onBoardKeydown(event: KeyboardEvent): void {
@@ -379,6 +412,43 @@ export class TarifarioEditorBoardComponent implements OnChanges {
     if (!this.allowAddCategoria) return;
     event.preventDefault();
     this.addCategoria.emit();
+  }
+
+  private enabledNuevoInputs(): HTMLInputElement[] {
+    return (this.nuevoInputs?.map((ref) => ref.nativeElement) ?? []).filter((input) => !input.disabled);
+  }
+
+  private emitNavigate(direction: 'next' | 'prev'): boolean {
+    const nav: TarifarioNuevoNavigateOut = { direction, consumed: false };
+    this.nuevoNavigateOut.emit(nav);
+    return nav.consumed;
+  }
+
+  private moveNuevoGrid(event: KeyboardEvent, inputs: HTMLInputElement[], index: number): void {
+    const cols = this.lanes.length;
+    let target = index;
+    let outbound: 'next' | 'prev' | null = null;
+    if (event.key === 'ArrowRight') {
+      if (index + 1 < inputs.length) target = index + 1;
+      else outbound = 'next';
+    } else if (event.key === 'ArrowLeft') {
+      if (index > 0) target = index - 1;
+      else outbound = 'prev';
+    } else if (event.key === 'ArrowDown') {
+      if (index + cols < inputs.length) target = index + cols;
+      else outbound = 'next';
+    } else if (event.key === 'ArrowUp') {
+      if (index - cols >= 0) target = index - cols;
+      else outbound = 'prev';
+    }
+    if (outbound) {
+      if (this.emitNavigate(outbound)) event.preventDefault();
+      return;
+    }
+    if (target === index) return;
+    event.preventDefault();
+    inputs[target].focus();
+    inputs[target].select();
   }
 
   requestHistory(row: TarifarioEditorRow, status: TarifaStatusPico): void {

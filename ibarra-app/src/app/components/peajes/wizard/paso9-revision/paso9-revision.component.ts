@@ -323,8 +323,16 @@ export class Paso9RevisionComponent implements OnInit {
     if (this.dialogNeeded) this.refreshOpen = true;
   }
 
-  async onRefreshSaved(_saved: TarifaRefrescoGuardada[]): Promise<void> {
-    this.tarifasActualizadas = _saved;
+  async onRefreshSaved(saved: TarifaRefrescoGuardada[]): Promise<void> {
+    const byCandidate = new Map(
+      this.tarifasActualizadas
+        .filter((item) => item.candidate_id)
+        .map((item) => [item.candidate_id as string, item]),
+    );
+    for (const item of saved) {
+      if (item.candidate_id) byCandidate.set(item.candidate_id, item);
+    }
+    this.tarifasActualizadas = [...byCandidate.values()];
     this.refreshOpen = false;
     await this.analizarTarifas();
   }

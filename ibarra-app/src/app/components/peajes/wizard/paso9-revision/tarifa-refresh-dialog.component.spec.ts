@@ -132,6 +132,94 @@ describe('TarifaRefreshDialogComponent', () => {
     fixture.detectChanges();
   }
 
+  it('revalidates the six reported prices into IDA without writing or losing drafts', async () => {
+    const stationA = '3f32d96b-e51f-4e5e-a473-be7bcc3de5e9';
+    const stationB = '67486ca3-6e88-49a8-b628-7f41e946da5a';
+    const cases = [
+      { station: stationA, amount: 14370.19, category: 7, status: 'NO_PICO' as const },
+      { station: stationA, amount: 28740.39, category: 7, status: 'NO_PICO' as const },
+      { station: stationA, amount: 35925.48, category: 7, status: 'PICO' as const },
+      { station: stationB, amount: 14370.19, category: 7, status: 'NO_PICO' as const },
+      { station: stationB, amount: 11975.15, category: 6, status: 'NO_PICO' as const },
+      { station: stationB, amount: 14968.96, category: 6, status: 'PICO' as const },
+    ];
+    const results = cases.map((c, i) => pendiente(c.station, {
+      id: `reported-${i}`, categoria: c.category, categoriaProveedor: c.category,
+      status: null, candidatePrice: c.amount, rowIndexes: [i], codigo: 'AMBIGUOUS_TARIFF_MATCH',
+    }));
+    const candidates = cases.map((c, i) => candidato(c.station, {
+      id: `reported-${i}`, categoria: c.category, categoriaProveedor: c.category,
+      statusSolicitado: null, candidatePrice: c.amount, rowIndexes: [i],
+    }));
+    const catalog = cases.filter((_, i) => i !== 0).flatMap(c =>
+      (['VUELTA', 'IDA'] as const).map(d => ({ ...catalogRow(c.station, c.category, c.status, d), importe: c.amount })),
+    );
+    const history: TarifarioHistorialImporteHit[] = cases.map(c => ({
+      estacionId: c.station, importeConsultado: c.amount, countIdentities: 2,
+      tarifaId: null, categoria: null, status: null, sentido: null, importe: null,
+      fechaVigenciaInicio: null, fechaVigenciaFin: null, esActual: null, diagnostico: null, enabled: null,
+      matches: (['VUELTA', 'IDA'] as const).map(d => ({
+        tarifaId: `history-${c.station}-${c.category}-${c.status}-${d}`,
+        categoria: c.category, status: c.status, sentido: d, importe: c.amount,
+      })),
+    }));
+    await open(results, candidates, catalog, history);
+    const tarifario = TestBed.inject(PEAJES_TARIFARIO_SERVICE);
+    const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE);
+    const save = spyOn(refresh, 'guardar').and.callThrough();
+    const stateChange = spyOn(tarifario, 'actualizarEstadoCategorias').and.callThrough();
+    const grupo = component.grupos[0];
+    const tabla = grupo.editors.find(e => e.stationIds.includes(stationA))!.tablas.find(t => t.sentido === 'IDA')!;
+    component.onDraft(grupo, tabla, { categoria: 7, status: 'PICO', value: '35925.48' });
+    await component.revalidarPrecios();
+    for (const [i, c] of cases.entries()) {
+      expect(grupo.resolvedCandidates.get(`reported-${i}`)).toEqual({
+        categoria: c.category, status: c.status, sentido: 'IDA',
+      });
+      expect(grupo.editors.some(e => e.tablas.some(t => t.sentido === 'IDA' &&
+        t.detected[`${c.category}:${c.status}`]?.some(hit => hit.candidateId === `reported-${i}`)))).toBeTrue();
+    }
+    expect(component.candidatesFor(grupo)).toEqual([]);
+    const rebuilt = grupo.editors.find(e => e.stationIds.includes(stationA))!.tablas.find(t => t.sentido === 'IDA')!;
+    expect(rebuilt.drafts[7].pico).toBe('35925.48');
+    expect(save).not.toHaveBeenCalled();
+    expect(stateChange).not.toHaveBeenCalled();
+  });
+
+  it('requests VUELTA history when the candidate has an explicit direction', async () => {
+    await open(
+      [pendiente(ESTACION_HUDSON, { sentidoSolicitado: 'VUELTA', candidatePrice: 14370.19 })],
+      [candidato(ESTACION_HUDSON, { sentidoSolicitado: 'VUELTA', directionConfidence: 'EXPLICIT', candidatePrice: 14370.19 })],
+      [catalogRow(ESTACION_HUDSON, 2, 'NO_PICO', 'IDA'), catalogRow(ESTACION_HUDSON, 2, 'NO_PICO', 'VUELTA')],
+    );
+    const lookup = TestBed.inject(PEAJES_TARIFARIO_SERVICE).buscarHistorialImportes as jasmine.Spy;
+    expect(lookup.calls.mostRecent().args[0]).toEqual([
+      jasmine.objectContaining({ estacionId: ESTACION_HUDSON, importe: 14370.19, sentido: 'VUELTA' }),
+    ]);
+  });
+
+  it('keeps explicit VUELTA when choosing a status from mixed-direction history', async () => {
+    const catalog = (['IDA', 'VUELTA'] as const).flatMap(d =>
+      (['NO_PICO', 'PICO'] as const).map(s => ({ ...catalogRow(ESTACION_HUDSON, 7, s, d), importe: 14370.19 })),
+    );
+    await open(
+      [pendiente(ESTACION_HUDSON, { id: 'vuelta-review', categoria: 7, categoriaProveedor: 7,
+        sentidoSolicitado: 'VUELTA', status: null, candidatePrice: 14370.19 })],
+      [candidato(ESTACION_HUDSON, { id: 'vuelta-review', categoria: 7, categoriaProveedor: 7,
+        sentidoSolicitado: 'VUELTA', directionConfidence: 'EXPLICIT', statusSolicitado: null, candidatePrice: 14370.19 })],
+      catalog,
+      [{ estacionId: ESTACION_HUDSON, importeConsultado: 14370.19, countIdentities: 4,
+        tarifaId: null, categoria: null, status: null, sentido: null, importe: null,
+        fechaVigenciaInicio: null, fechaVigenciaFin: null, esActual: null, diagnostico: null, enabled: null,
+        matches: catalog.map(row => ({ tarifaId: row.tarifa_id, categoria: row.categoria,
+          status: row.status, sentido: row.sentido, importe: row.importe! })),
+      }],
+    );
+    const grupo = component.grupos[0];
+    component.onReviewStatusChange(grupo, { candidateId: 'vuelta-review', status: 'PICO' });
+    expect(grupo.resolvedCandidates.get('vuelta-review')).toEqual({ categoria: 7, status: 'PICO', sentido: 'VUELTA' });
+  });
+
   it('lista las estaciones del peaje con la misma familia y premarca las que coinciden en precio', async () => {
     await open(
       [
@@ -254,7 +342,114 @@ describe('TarifaRefreshDialogComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelectorAll('app-tarifario-editor-board').length).toBe(1);
     expect(root.textContent).toContain('AMBAS');
+    expect(root.querySelectorAll('.trd__sentido-title').length).toBe(0);
     expect(root.querySelectorAll('.at__seg-btn').length).toBe(0);
+  });
+
+  it('muestra IDA y VUELTA aunque el catálogo solo tenga IDA', async () => {
+    await open(
+      [pendiente(ESTACION_HUDSON)],
+      [candidato(ESTACION_HUDSON)],
+      [
+        catalogRow(ESTACION_HUDSON, 2, 'NO_PICO', 'IDA'),
+        catalogRow(ESTACION_HUDSON, 2, 'PICO', 'IDA'),
+      ],
+    );
+    const grupo = component.grupos[0];
+    expect(grupo.family).toBe('DIRECCIONAL');
+    expect(grupo.editors[0].tablas.map((tabla) => tabla.sentido)).toEqual(['IDA', 'VUELTA']);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('app-tarifario-editor-board').length).toBe(2);
+  });
+
+  it('un grupo mixto IDA+VUELTA con una estación solo IDA sigue mostrando ambas tablas', async () => {
+    await open(
+      [
+        pendiente(ESTACION_HUDSON, { rowIndexes: [0] }),
+        pendiente(ESTACION_DOCK_SUD, { rowIndexes: [1] }),
+      ],
+      [
+        candidato(ESTACION_HUDSON, { rowIndexes: [0] }),
+        candidato(ESTACION_DOCK_SUD, { rowIndexes: [1] }),
+      ],
+      [
+        catalogRow(ESTACION_HUDSON, 2, 'NO_PICO', 'IDA'),
+        catalogRow(ESTACION_HUDSON, 2, 'PICO', 'IDA'),
+        catalogRow(ESTACION_HUDSON, 2, 'NO_PICO', 'VUELTA'),
+        catalogRow(ESTACION_HUDSON, 2, 'PICO', 'VUELTA'),
+        catalogRow(ESTACION_DOCK_SUD, 2, 'NO_PICO', 'IDA'),
+        catalogRow(ESTACION_DOCK_SUD, 2, 'PICO', 'IDA'),
+      ],
+    );
+    const grupo = component.grupos[0];
+    await component.onSeleccionChange(grupo, 0, [ESTACION_HUDSON, ESTACION_DOCK_SUD]);
+    fixture.detectChanges();
+    const shared = grupo.editors.find((editor) => editor.stationIds.length === 2);
+    expect(shared?.tablas.map((tabla) => tabla.sentido)).toEqual(['IDA', 'VUELTA']);
+  });
+
+  it('abre todos los acordeones y cierra solo el que se vuelve a pulsar', async () => {
+    await open(
+      [
+        pendiente(ESTACION_DOCK_SUD, { rowIndexes: [0], candidatePrice: 7000 }),
+        pendiente(ESTACION_HUDSON, { rowIndexes: [1], candidatePrice: 8100 }),
+        pendiente(ESTACION_SAMBOROMBON, { rowIndexes: [2], candidatePrice: 9000 }),
+      ],
+      [
+        candidato(ESTACION_DOCK_SUD, { rowIndexes: [0], precioDirecto: 7000, candidatePrice: 7000 }),
+        candidato(ESTACION_HUDSON, { rowIndexes: [1], precioDirecto: 8100, candidatePrice: 8100 }),
+        candidato(ESTACION_SAMBOROMBON, { rowIndexes: [2], precioDirecto: 9000, candidatePrice: 9000 }),
+      ],
+    );
+    const grupo = component.grupos[0];
+    await component.onSeleccionChange(grupo, 0, []);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const triggers = [...root.querySelectorAll<HTMLButtonElement>('.app-acc-panel__trigger')];
+    expect(triggers.length).toBe(grupo.editors.length);
+    expect(component.expandedKeysFor(grupo)).toEqual(grupo.editors.map((editor) => editor.key));
+    expect(triggers.every((trigger) => trigger.getAttribute('aria-expanded') === 'true')).toBeTrue();
+    expect(triggers[0].querySelector('.trd__swatch')).not.toBeNull();
+    expect(triggers[0].textContent).toContain(grupo.editors[0].stations[0].estacionNombre);
+    const swatch = triggers[0].querySelector<HTMLElement>('.trd__trace');
+    expect(swatch?.style.getPropertyValue('--trd-trace')).toBe(grupo.editors[0].stations[0].color);
+
+    triggers[0].click();
+    fixture.detectChanges();
+    expect(triggers[0].getAttribute('aria-expanded')).toBe('false');
+    expect(triggers[1].getAttribute('aria-expanded')).toBe('true');
+    expect(root.querySelectorAll('.app-acc-panel__body[hidden]').length).toBe(1);
+    expect(component.expandedKeysFor(grupo)).not.toContain(grupo.editors[0].key);
+
+    triggers[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(triggers[0].getAttribute('aria-expanded')).toBe('true');
+    expect(triggers[1].getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('Tab desde el último Nuevo de IDA entra al primer Nuevo de VUELTA', async () => {
+    await open(
+      [pendiente(ESTACION_HUDSON)],
+      [candidato(ESTACION_HUDSON)],
+    );
+    const root = fixture.nativeElement as HTMLElement;
+    const panel = [...root.querySelectorAll('app-accordion-panel')].find((item) =>
+      item.querySelector('.trd__acc-stations')?.textContent?.includes('HUDSON'),
+    ) as HTMLElement;
+    const boards = [...panel.querySelectorAll('app-tarifario-editor-board')];
+    expect(boards.length).toBe(2);
+    const nuevoInputs = (board: Element) =>
+      [...board.querySelectorAll<HTMLInputElement>('.tf__nuevo .tf__input')].filter((input) => !input.disabled);
+    const idaInputs = nuevoInputs(boards[0]);
+    const vueltaInputs = nuevoInputs(boards[1]);
+    const lastIda = idaInputs[idaInputs.length - 1];
+    lastIda.focus();
+    lastIda.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(vueltaInputs[0]);
+
+    vueltaInputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true, shiftKey: true }));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(lastIda);
   });
 
   it('places Cancelar on the left and groups the primary actions on the right', async () => {
@@ -656,7 +851,7 @@ describe('TarifaRefreshDialogComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const tabla = grupo.editors[0].tablas.find((item) => item.sentido === 'IDA') ?? grupo.editors[0].tablas[0];
+    const tabla = grupo.editors[0].tablas[grupo.editors[0].tablas.length - 1];
     expect(tabla.drafts[7]?.pico ?? '').toBe('');
     expect(Object.values(tabla.detected).flat().some((item) => item.candidateId === candidateId)).toBeFalse();
     expect(tabla.reviewRows.find((item) => item.candidateId === candidateId)?.status).toBe('PICO');
@@ -1046,10 +1241,11 @@ describe('TarifaRefreshDialogComponent', () => {
     );
     const grupo = component.grupos[0];
     const tabla = grupo.editors[0].tablas[0];
+    const review = grupo.editors[0].tablas[grupo.editors[0].tablas.length - 1];
     const candidateId = component.candidatesFor(grupo)[0].candidateId;
     component.onReviewStatusChange(grupo, { candidateId, status: 'PICO' });
     expect(grupo.editors[0].tablas[0]).toBe(tabla);
-    expect(tabla.reviewRows.find((item) => item.candidateId === candidateId)?.status).toBe('PICO');
+    expect(review.reviewRows.find((item) => item.candidateId === candidateId)?.status).toBe('PICO');
   });
 
   it('confirms Pico on the effective category and does not write the last catalogue row', async () => {

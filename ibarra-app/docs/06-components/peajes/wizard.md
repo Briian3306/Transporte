@@ -34,8 +34,9 @@ trabajan con plantillas ya configuradas. Solo muestra Carga, Estaciones, Factura
 el Paso 8 de Validación aparece como pantalla intermedia cuando la validación encuentra errores
 o una diferencia de factura fuera de tolerancia.
 
-El Paso 1 exige archivo, empresa y plantilla. La plantilla se aplica automáticamente y el usuario
-no modifica transformaciones, mapeos ni configuraciones. Si todas las estaciones quedan reconocidas,
+En **Carga rápida (Express)**, Paso 1 pide primero el archivo; después muestra Empresa y Plantilla.
+Ambas son obligatorias para continuar. La plantilla se aplica automáticamente y el usuario no
+modifica transformaciones, mapeos ni configuraciones. Si todas las estaciones quedan reconocidas,
 el flujo salta directamente a Factura. Las recomendaciones o estaciones sin resolver mantienen
 visible el Paso 6 para que el usuario las confirme.
 
@@ -51,7 +52,7 @@ pasos y el acceso al ejemplo MVP.
 
 | # | Label | Componente | Notas |
 |---|-------|------------|-------|
-| 1 | Carga | `paso1-carga` | Upload `.xlsx`/`.csv` + empresa + plantilla. PDF de factura opcional: uno en simple, N en masiva (nombre = columna `FACTURA`). Con plantilla compatible → `facturaDirecta` Paso 7; excepciones → Paso 5/6; sin plantilla → Paso 2 |
+| 1 | Carga | `paso1-carga` | En wizard administrativo, archivo + empresa; Plantilla es opcional y se muestra junto al archivo (o con el fixture MVP antes de cargarlo). En Express, primero se carga el archivo y luego se requieren empresa + plantilla. PDF de factura opcional: uno en simple, N en masiva (nombre = columna `FACTURA`). Con plantilla compatible → `facturaDirecta` Paso 7; excepciones → Paso 5/6; sin plantilla → Paso 2 |
 | 2 | Preview | `paso2-preview` | Máx. 10 filas (RNF-03). Rail de recomendaciones semánticas (F02-11). Por defecto solo columnas reconocidas quedan incluidas (F02-12): ver [reconocimiento-columnas.md](./reconocimiento-columnas.md) |
 | 3 | Transformaciones | `paso3-transformaciones` | Motor 03 |
 | 4 | Plantilla | `paso4-plantilla` | Aplica pipeline + `mapeos` + estaciones (F09). Sin excepciones → `facturaDirecta` Paso 7; si no, `irAExcepcion` 5 o 6 |
@@ -59,7 +60,7 @@ pasos y el acceso al ejemplo MVP.
 | 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación filtrada por peaje de `Concesion`/empresa (RN-26); alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13). Código `0001` Zarate vs DOCK SUD: la empresa del Paso 1 acota `reconocerEstacion` (F02-17) |
 | 7 | Factura | `paso7-factura` | Cuenta opcional; subtotal, percepciones, IVA y total declarados; empresa SMS single (Paso 1); fecha DRP single. En simple, candidatos IA clickeables (F17). Recomienda crear plantilla completa (pipeline+mapeos+estaciones) |
 | 8 | Validación | `paso8-validacion` | Errores fila/columna/valor/motivo y diferencia neto de factura vs. pasadas |
-| 9 | Revisión | `paso9-revision` | Confirmación de carga. F14-18: analiza candidatos de tarifa; `CURRENT_TARIFF` / `HISTORICAL_TARIFF_MATCH` no abren diálogo; `NEW_TARIFF` / `STATUS_*` abren el tablero en `app-dialog` xl/top (`peajes:manage` para guardar); `CONTEXT_INCOMPLETE` bloquea confirmar. Persiste `SENTIDO` (default `AMBAS`). |
+| 9 | Revisión | `paso9-revision` | Confirmación de carga. F14-18: analiza candidatos de tarifa; `CURRENT_TARIFF` / `HISTORICAL_TARIFF_MATCH` no abren diálogo; `NEW_TARIFF` / `STATUS_*` abren el tablero en `app-dialog` xl/top (`peajes:manage` para guardar); `CONTEXT_INCOMPLETE` bloquea confirmar. Persiste `SENTIDO` (default `AMBAS`). El diálogo agrupa cada estación (o grupo de estaciones) en un acordeón abierto por defecto: familia `AMBAS` muestra un tablero; familia direccional muestra IDA y VUELTA. |
 
 ### Paso 5 — cobertura y destinos opcionales (F02-18)
 
@@ -95,7 +96,9 @@ plantilla distingue excepciones de `mapeo`, `patentes` y `estaciones`.
 
 ### Plantillas recurrentes (F09)
 
-En **Paso 1**, Empresa y Plantilla usan `app-search-select` (búsqueda single). Si hay archivo + empresa + plantilla, `PeajesPlantillaApplyService` aplica pipeline/mapeos/estaciones al Continuar: sin excepciones → Paso 7; con excepciones → Paso 5 o 6; sin plantilla → Paso 2.
+En **Paso 1**, Empresa y Plantilla usan `app-search-select` (búsqueda single). En el wizard administrativo la plantilla es opcional; el control aparece después de cargar el archivo o junto al fixture MVP. En Express, el control aparece después de cargar el archivo y la plantilla es obligatoria. Con archivo + empresa + plantilla, `PeajesPlantillaApplyService` aplica pipeline/mapeos/estaciones al Continuar: sin excepciones → Paso 7; con excepciones → Paso 5 o 6. Sin plantilla, el wizard administrativo continúa al Paso 2.
+
+El reconocimiento usa `plantillas_configuracion.mapeos` y `configuraciones_plantilla`; el snapshot de cada plantilla está en `plantilla_estaciones_reconocidas`. Para reconocer fuera de una plantilla, Paso 6 consulta `estaciones_alias_proveedor` por empresa y luego `estaciones.codigos_proveedor`/nombre. `npm run seed:local` carga esos catálogos, aliases y relaciones además del resto de fixtures locales; `npm run seed:peajes-matching` vuelve a aplicar solo este conjunto.
 
 En Paso 4 (flujo sin plantilla temprana) se reutiliza el mismo servicio. `validarDefinicionPlantilla` considera destinos del pipeline **o** `mapeos` activos. Detalle: [reconocimiento-estaciones.md](./reconocimiento-estaciones.md) y PRD §4 / §7.4.
 

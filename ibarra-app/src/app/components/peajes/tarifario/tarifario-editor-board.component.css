@@ -293,6 +293,11 @@
   background: #f8fafc;
 }
 
+.tf__review-row--status .tf__cat-cell,
+.tf__review-row--status .tf__review-cell {
+  background: #fff3bf;
+}
+
 .tf__review-toolbar td {
   text-align: left;
   background: #f8fafc;

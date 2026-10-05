@@ -137,6 +137,7 @@ export interface TarifarioHistorialImporteConsulta {
   importe: number;
   peajeId?: string;
   categoria?: number | null;
+  sentido?: TarifaSentido | null;
 }
 
 export interface TarifarioHistorialImporteMatch {

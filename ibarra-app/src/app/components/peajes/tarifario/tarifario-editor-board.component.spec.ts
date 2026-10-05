@@ -3,6 +3,7 @@ import { TarifarioEditorRow } from '../models/tarifario.contracts';
 import { MISSING_IMPORTE_LABEL } from './tarifario.helpers';
 import {
   TarifarioEditorBoardComponent,
+  TarifarioNuevoNavigateOut,
   groupCurrentAmounts,
 } from './tarifario-editor-board.component';
 
@@ -107,6 +108,28 @@ describe('TarifarioEditorBoardComponent', () => {
     inputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
     fixture.detectChanges();
     expect(document.activeElement).toBe(inputs[1]);
+  });
+
+  it('ArrowRight pasa de NO_PICO a PICO en la misma categoría', () => {
+    const inputs = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('.tf__input'),
+    );
+    inputs[0].focus();
+    inputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(inputs[1]);
+  });
+
+  it('ArrowDown en la última categoría pide salir del tablero', () => {
+    const events: TarifarioNuevoNavigateOut[] = [];
+    component.nuevoNavigateOut.subscribe((event) => events.push(event));
+    const inputs = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('.tf__input'),
+    );
+    const lastCategory = inputs[inputs.length - 2];
+    lastCategory.focus();
+    lastCategory.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+    expect(events.map((event) => event.direction)).toEqual(['next']);
+    expect(events[0].consumed).toBeFalse();
   });
 
   it('mantiene etiquetas persistentes Actual, Detectado y Nuevo', () => {

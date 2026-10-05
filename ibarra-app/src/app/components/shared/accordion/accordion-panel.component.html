@@ -11,6 +11,7 @@
       [attr.aria-expanded]="expanded"
       [attr.aria-controls]="contentId"
       (click)="toggle()"
+      (keydown)="onTriggerKeydown($event)"
     >
       <span class="app-acc-panel__lead">
         <span

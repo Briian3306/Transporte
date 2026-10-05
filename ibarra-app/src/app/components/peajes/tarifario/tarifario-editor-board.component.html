@@ -146,6 +146,7 @@
               [attr.aria-keyshortcuts]="'+'"
               [attr.aria-label]="addCategoryLabel()"
               (click)="emitAddCategoria()"
+              (keydown)="onAddKeydown($event)"
             >
               <i class="fas fa-plus" aria-hidden="true"></i>
               {{ addCategoryLabel() }}
@@ -166,6 +167,7 @@
               [attr.aria-keyshortcuts]="'+'"
               [attr.aria-label]="addCategoryLabel()"
               (click)="emitAddCategoria()"
+              (keydown)="onAddKeydown($event)"
             >
               <i class="fas fa-plus" aria-hidden="true"></i>
               {{ addCategoryLabel() }}
@@ -192,7 +194,12 @@
           </div>
         </td>
       </tr>
-      <tr *ngFor="let review of reviewRows; trackBy: trackReview" class="tf__review-row" data-role="revision">
+      <tr
+        *ngFor="let review of reviewRows; trackBy: trackReview"
+        class="tf__review-row"
+        [class.tf__review-row--status]="review.status == null"
+        data-role="revision"
+      >
         <th class="tf__cat-cell" scope="row">
           <label
             *ngIf="review.requiresCategoriaInput"

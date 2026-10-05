@@ -180,6 +180,21 @@ describe('Paso9RevisionComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Carga confirmada');
   });
 
+  it('preserves the pasada VUELTA direction when its selected tariff is IDA', async () => {
+    const base = state.snapshot().pasadasEstandarizadas[0];
+    state.setPasadasEstandarizadas([{ ...base, SENTIDO: 'VUELTA', CATEGORIA: '7' }]);
+    component.resumenRefresco = resumenTarifas([
+      resultadoResumen({ codigo: 'CURRENT_TARIFF', sentidoAplicado: 'IDA', sentidoSolicitado: null }),
+    ]);
+    const carga = TestBed.inject(PEAJES_CARGA_SERVICE as never) as PeajesCargaMockService;
+    const save = spyOn(carga, 'confirmarCarga').and.callThrough();
+    await component.confirmar();
+    expect(save).toHaveBeenCalled();
+    expect(save.calls.mostRecent().args[0].pasadas[0].SENTIDO).toBe('VUELTA');
+    expect(save.calls.mostRecent().args[0].pasadas[0].CATEGORIA).toBe('7');
+    expect(state.snapshot().pasadasEstandarizadas[0].SENTIDO).toBe('VUELTA');
+  });
+
   it('muestra Pase (ext), Patente y Estación en vez de IDs internos', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Pase (ext)');

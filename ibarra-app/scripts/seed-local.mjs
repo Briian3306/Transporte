@@ -3,6 +3,7 @@
  * seed_auth.sql is a pg_dump (not upsert). Skip it only when
  * francis@transporteibarra.com.ar already exists so leftover rows
  * do not block Auth. seed_cli_login.sql always runs (CLI password).
+ * The matching snapshot includes station codes/aliases and template matching data.
  * package.json then runs migrate-tarifario-v2.mjs --load-local (tarifas v2).
  */
 import { execFileSync } from 'node:child_process';
@@ -22,7 +23,12 @@ const FILES = [
   { file: 'supabase/seed_peajes_pasadas_fks.sql' },
   { file: 'supabase/pasadas_rows.sql' },
   { file: 'supabase/seed_peajes_f14.sql' },
+  { file: 'supabase/seed_peajes_matching.sql' },
 ];
+
+const selectedFiles = process.argv.includes('--matching-only')
+  ? FILES.filter((step) => step.file === 'supabase/seed_peajes_matching.sql')
+  : FILES;
 
 function docker(args, opts = {}) {
   return execFileSync('docker', args, {
@@ -81,7 +87,7 @@ try {
   process.exit(1);
 }
 
-for (const step of FILES) {
+for (const step of selectedFiles) {
   if (step.skipIfFrancisExists && shouldSkipSeedAuth(francis)) {
     console.log(
       `[seed:local] skip ${basename(step.file)} (${CLI_LOGIN_EMAIL} already in auth.users)`

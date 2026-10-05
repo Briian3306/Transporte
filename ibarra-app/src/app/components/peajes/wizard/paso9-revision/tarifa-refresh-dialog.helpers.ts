@@ -183,9 +183,19 @@ export function agruparPendientesPorPeajeYFamilia(
   return [...groups.values()];
 }
 
+export interface TarifaCatalogoFingerprintRow {
+  estacion_id: string;
+  categoria: number;
+  status: TarifaStatusPico;
+  sentido: TarifaSentido;
+  importe: number | null;
+  enabled?: boolean;
+}
+
 export function heuristicaSeleccionInicial(
   grupo: GrupoPendienteRefresco,
   candidatos: readonly CandidatoRefrescoTarifa[],
+  catalogRows: readonly TarifaCatalogoFingerprintRow[] = [],
 ): string[] {
   const anchorId = [...grupo.itemsPorEstacion.keys()][0];
   if (!anchorId) return [];
@@ -211,6 +221,16 @@ export function heuristicaSeleccionInicial(
       ),
     );
     if (matches) selected.add(opcion.estacionId);
+  }
+
+  const anchorPrint = tariffFingerprint(anchorId, catalogRows, grupo.family);
+  if (anchorPrint) {
+    for (const opcion of grupo.opciones) {
+      if (!opcion.pendiente) continue;
+      if (tariffFingerprint(opcion.estacionId, catalogRows, grupo.family) === anchorPrint) {
+        selected.add(opcion.estacionId);
+      }
+    }
   }
 
   return grupo.opciones
@@ -268,6 +288,24 @@ function precioDeCandidato(
     c.rowIndexes.some((idx) => item.rowIndexes.includes(idx)),
   );
   return related?.precioDirecto ?? null;
+}
+
+function tariffFingerprint(
+  estacionId: string,
+  rows: readonly TarifaCatalogoFingerprintRow[],
+  family: SentidoFamily,
+): string | null {
+  const filtered = rows.filter((row) => {
+    if (row.estacion_id !== estacionId || row.enabled === false || row.importe == null) return false;
+    if (family === 'AMBAS') return row.sentido === 'AMBAS';
+    if (family === 'DIRECCIONAL') return row.sentido === 'IDA' || row.sentido === 'VUELTA';
+    return false;
+  });
+  if (!filtered.length) return null;
+  return filtered
+    .map((row) => `${row.sentido}|${row.categoria}|${row.status}|${row.importe}`)
+    .sort()
+    .join(';');
 }
 
 function signaturesDe(
@@ -629,7 +667,7 @@ export interface HighestIdentityOption {
   sentido: TarifaSentido;
 }
 
-/** Paso 9: unique identity among 1% price hits. */
+/** Paso 9: unique identity among 1% price hits, preferring IDA over its VUELTA pair. */
 export function uniqueHighestCategoryIdentity<T extends HighestIdentityOption>(
   matches: readonly T[],
 ): T | null {
@@ -644,8 +682,11 @@ export function uniqueIdentityForCategory<T extends HighestIdentityOption>(
   const scoped =
     categoria == null ? matches : matches.filter((option) => option.categoria === categoria);
   if (!scoped.length) return null;
-  if (new Set(scoped.map((option) => option.key)).size !== 1) return null;
-  return scoped[0] ?? null;
+  const preferred = scoped.filter((option) => option.sentido !== 'VUELTA' || !scoped.some(
+    (ida) => ida.sentido === 'IDA' && ida.categoria === option.categoria && ida.status === option.status,
+  ));
+  if (new Set(preferred.map((option) => option.key)).size !== 1) return null;
+  return preferred[0] ?? null;
 }
 
 export function resolveCategoriaEfectiva(
@@ -712,9 +753,7 @@ export function uniqueHistoryIdentity(
   categoria?: number | null,
 ): { categoria: number; status: TarifaStatusPico; sentido: TarifaSentido } | null {
   const top = historyMatchesForCategory(hit, status, categoria);
-  const identities = new Map(top.map((match) => [match.tarifaId, match]));
-  if (identities.size !== 1) return null;
-  const [match] = identities.values();
+  const match = uniqueIdentityForCategory(top.map((item) => ({ ...item, key: item.tarifaId })));
   if (!match) return null;
   return { categoria: match.categoria, status: match.status, sentido: match.sentido };
 }

@@ -6,12 +6,15 @@
 .app-accordion {
   --acc-ink: #1f2a37;
   --acc-muted: #6f8197;
-  --acc-line: #e6edf4;
-  --acc-surface: #ffffff;
+  --acc-line: #d5dde6;
+  --acc-surface: #e8edf2;
   --acc-focus: #1769e0;
   display: flex;
   flex-direction: column;
   width: 100%;
   background: var(--acc-surface);
   color: var(--acc-ink);
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  padding: 0.15rem 0.85rem;
 }

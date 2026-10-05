@@ -178,6 +178,15 @@ describe('PeajesTarifarioSupabaseService', () => {
     ]);
   });
 
+  it('sends the optional direction to historical price lookup', async () => {
+    rpcSpy.and.resolveTo({ data: [], error: null });
+    const consulta = { estacionId: 'e', importe: 14370.19, categoria: 7, sentido: 'VUELTA' as const };
+    await firstValueFrom(service.buscarHistorialImportes([consulta]));
+    expect(rpcSpy).toHaveBeenCalledWith('peajes_buscar_historial_importes', {
+      p_candidatos: [{ estacion_id: 'e', importe: 14370.19, categoria: 7, sentido_solicitado: 'VUELTA' }],
+    });
+  });
+
   it('listar mapea vigencia y diagnostico del precio actual', async () => {
     rpcSpy.and.resolveTo({
       data: {

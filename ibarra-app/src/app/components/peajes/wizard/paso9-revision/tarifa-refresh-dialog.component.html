@@ -29,6 +29,7 @@
     </p>
 
     <div class="trd__stations" *ngIf="grupo.detectedStations.length > 1">
+      <div class="trd__group-head">
       <label class="trd__group-count">
         <span>Grupos de tarifa</span>
         <input
@@ -41,6 +42,8 @@
           (input)="onGroupCountChange(grupo, $any($event.target).value)"
         />
       </label>
+      <span class="trd__agrupado" *ngIf="isAgrupado(grupo)">AGRUPADO</span>
+      </div>
       <app-checkbox-multi-select
         *ngFor="let slot of grupo.sharedSlots; let i = index; trackBy: trackSlot"
         label="Estaciones con la misma tarifa"
@@ -73,54 +76,64 @@
       No hay un tarifario cargado para esta estación. No se puede crear un sentido desde la carga.
     </p>
 
-    <ng-container *ngFor="let editor of grupo.editors; trackBy: trackEditor">
-      <h3 class="trd__editor-title">
-        <span
-          class="trd__trace"
-          *ngFor="let station of editor.stations"
-          [style.--trd-trace]="station.color"
-        >
-          <span class="trd__swatch" aria-hidden="true"></span>
-          {{ station.estacionNombre }}
+    <app-accordion
+      class="trd__editors"
+      [multiple]="true"
+      [expandedValues]="expandedKeysFor(grupo)"
+      (expandedValuesChange)="onEditorExpandedChange(grupo, $event)"
+    >
+      <app-accordion-panel *ngFor="let editor of grupo.editors; trackBy: trackEditor" [value]="editor.key">
+        <span appAccordionHeader class="trd__acc-stations">
+          <span
+            class="trd__trace"
+            *ngFor="let station of editor.stations"
+            [style.--trd-trace]="station.color"
+          >
+            <span class="trd__swatch" aria-hidden="true"></span>
+            {{ station.estacionNombre }}
+          </span>
         </span>
-      </h3>
-      <div class="trd__sentido-select" *ngIf="editor.sentidoRequiereEleccion">
-        <app-search-select
-          label="Sentido"
-          placeholder="Elegí IDA, VUELTA o AMBAS"
-          [options]="sentidoOptions"
-          [value]="editor.sentidoSeleccionado"
-          [showAllWhenEmpty]="true"
-          [disabled]="!canManage || saving"
-          (valueChange)="onSentidoChange(editor, $event)"
-        ></app-search-select>
-      </div>
-      <ng-container *ngFor="let tabla of editor.tablas; trackBy: trackTabla">
-        <h4 class="trd__sentido-title" *ngIf="editor.family === 'DIRECCIONAL'">{{ tabla.sentido }}</h4>
-        <app-tarifario-editor-board
-          *ngIf="!loading"
-          [rows]="tabla.rows"
-          [drafts]="tabla.drafts"
-          [detected]="tabla.detected"
-          [currentStations]="tabla.currentStations"
-          [reviewRows]="tabla.reviewRows"
-          [showAddCategoria]="true"
-          [allowAddCategoria]="canAddCategoria(tabla)"
-          [nextCategoria]="nextCategory(tabla).categoria"
-          [nextCategoryAction]="nextCategory(tabla).action"
-          [draftCategories]="tabla.addedDraftCategories ?? []"
-          (draftChange)="onDraft(grupo, tabla, $event)"
-          (addCategoria)="addCategoria(grupo, tabla)"
-          (candidateSelected)="onCandidateSelected(grupo, editor, tabla, $event)"
-          (historyRequest)="openHistory(grupo, tabla, $event)"
-          (reviewStatusChange)="onReviewStatusChange(grupo, $event)"
-          (reviewCategoryChange)="onReviewCategoryChange(grupo, $event)"
-          (bulkReviewStatus)="onBulkReviewStatus(grupo, editor, $event)"
-          (ivaChange)="onIvaChange(grupo, $event)"
-          (categoryStateChange)="onCategoryStateChange(grupo, tabla, $event)"
-        ></app-tarifario-editor-board>
-      </ng-container>
-    </ng-container>
+        <div appAccordionContent>
+          <div class="trd__sentido-select" *ngIf="editor.sentidoRequiereEleccion">
+            <app-search-select
+              label="Sentido"
+              placeholder="Elegí IDA, VUELTA o AMBAS"
+              [options]="sentidoOptions"
+              [value]="editor.sentidoSeleccionado"
+              [showAllWhenEmpty]="true"
+              [disabled]="!canManage || saving"
+              (valueChange)="onSentidoChange(editor, $event)"
+            ></app-search-select>
+          </div>
+          <div class="trd__tabla" #tablaHost *ngFor="let tabla of editor.tablas; trackBy: trackTabla">
+            <h4 class="trd__sentido-title" *ngIf="editor.family === 'DIRECCIONAL'">{{ tabla.sentido }}</h4>
+            <app-tarifario-editor-board
+              *ngIf="!loading"
+              [rows]="tabla.rows"
+              [drafts]="tabla.drafts"
+              [detected]="tabla.detected"
+              [currentStations]="tabla.currentStations"
+              [reviewRows]="tabla.reviewRows"
+              [showAddCategoria]="true"
+              [allowAddCategoria]="canAddCategoria(tabla)"
+              [nextCategoria]="nextCategory(tabla).categoria"
+              [nextCategoryAction]="nextCategory(tabla).action"
+              [draftCategories]="tabla.addedDraftCategories ?? []"
+              (draftChange)="onDraft(grupo, tabla, $event)"
+              (addCategoria)="addCategoria(grupo, tabla)"
+              (candidateSelected)="onCandidateSelected(grupo, editor, tabla, $event)"
+              (historyRequest)="openHistory(grupo, tabla, $event)"
+              (reviewStatusChange)="onReviewStatusChange(grupo, $event)"
+              (reviewCategoryChange)="onReviewCategoryChange(grupo, $event)"
+              (bulkReviewStatus)="onBulkReviewStatus(grupo, editor, $event)"
+              (ivaChange)="onIvaChange(grupo, $event)"
+              (categoryStateChange)="onCategoryStateChange(grupo, tabla, $event)"
+              (nuevoNavigateOut)="onNuevoNavigate(tablaHost, $event)"
+            ></app-tarifario-editor-board>
+          </div>
+        </div>
+      </app-accordion-panel>
+    </app-accordion>
   </section>
 
   <p

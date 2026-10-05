@@ -211,6 +211,36 @@ describe('heuristicaSeleccionInicial', () => {
     expect(seleccion).not.toContain(BERNAL);
   });
 
+  it('agrupa estaciones con la misma escalera vigente aunque el archivo no repita el precio', () => {
+    const grupo = agruparPendientesPorPeajeYFamilia(
+      [
+        pendiente({ estacionId: DOCK, candidatePrice: 25500, rowIndexes: [0] }),
+        pendiente({ estacionId: HUDSON, candidatePrice: 18000, rowIndexes: [1], categoria: 7, status: 'NO_PICO' }),
+        pendiente({ estacionId: BERNAL, candidatePrice: 9000, rowIndexes: [2], categoria: 4, status: 'NO_PICO' }),
+      ],
+      [
+        catalogo(DOCK, 'DOCK SUD', ['IDA']),
+        catalogo(HUDSON, 'HUDSON', ['IDA']),
+        catalogo(BERNAL, 'BERNAL', ['IDA']),
+      ],
+    )[0];
+    const ladder = (estacionId: string, importe: number) => ({
+      estacion_id: estacionId,
+      categoria: 6,
+      status: 'NO_PICO' as const,
+      sentido: 'IDA' as const,
+      importe,
+      enabled: true,
+    });
+    const seleccion = heuristicaSeleccionInicial(
+      grupo,
+      [candidato({ estacionId: DOCK, precioDirecto: 25500, candidatePrice: 25500, rowIndexes: [0] })],
+      [ladder(DOCK, 11975.15), ladder(HUDSON, 11975.15), ladder(BERNAL, 8000)],
+    );
+    expect(seleccion).toEqual([DOCK, HUDSON]);
+    expect(seleccion).not.toContain(BERNAL);
+  });
+
   it('siempre incluye la estación ancla pendiente aunque no haya candidatos', () => {
     const grupo = agruparPendientesPorPeajeYFamilia(
       [pendiente({ estacionId: DOCK })],
@@ -713,6 +743,41 @@ describe('uniqueHistoryIdentity', () => {
       status: 'PICO',
       sentido: 'AMBAS',
     });
+  });
+});
+
+describe('direction-only price matches', () => {
+  const ida = { key: 'ida', categoria: 7, status: 'NO_PICO' as const, sentido: 'IDA' as const };
+  const vuelta = { ...ida, key: 'vuelta', sentido: 'VUELTA' as const };
+
+  it('prefers IDA regardless of result order', () => {
+    expect(uniqueIdentityForCategory([vuelta, ida])).toEqual(ida);
+    expect(uniqueIdentityForCategory([ida, vuelta])).toEqual(ida);
+  });
+
+  it('keeps different categories and statuses ambiguous', () => {
+    expect(uniqueIdentityForCategory([ida, { ...vuelta, categoria: 6 }])).toBeNull();
+    expect(uniqueIdentityForCategory([ida, { ...vuelta, status: 'PICO' }])).toBeNull();
+  });
+
+  it('does not collapse AMBAS or multiple IDA identities', () => {
+    expect(uniqueIdentityForCategory([ida, vuelta, { ...ida, key: 'ambas', sentido: 'AMBAS' }])).toBeNull();
+    expect(uniqueIdentityForCategory([ida, vuelta, { ...ida, key: 'another-ida' }])).toBeNull();
+  });
+
+  it('keeps a sole VUELTA match', () => {
+    expect(uniqueIdentityForCategory([vuelta])).toEqual(vuelta);
+  });
+
+  it('uses IDA for historical direction duplicates', () => {
+    expect(uniqueHistoryIdentity({ estacionId: 'e', importeConsultado: 14370.19, countIdentities: 2,
+      tarifaId: null, categoria: null, status: null, sentido: null, importe: null,
+      fechaVigenciaInicio: null, fechaVigenciaFin: null, esActual: null, diagnostico: null, enabled: null,
+      matches: [
+        { tarifaId: 'vuelta', categoria: 7, status: 'NO_PICO', sentido: 'VUELTA', importe: 14370.19 },
+        { tarifaId: 'ida', categoria: 7, status: 'NO_PICO', sentido: 'IDA', importe: 14370.19 },
+      ],
+    })).toEqual({ categoria: 7, status: 'NO_PICO', sentido: 'IDA' });
   });
 });
 
