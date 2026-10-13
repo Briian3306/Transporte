@@ -2,7 +2,7 @@
 
 ## Summary
 
-Detalle de RPCs y flujos backend del dominio Peajes (documentos FC|NC, pasadas, plantillas, aliases). El catálogo resumido está en [functions/index.md](../functions/index.md).
+Detalle de RPCs y flujos backend del dominio Peajes (documentos FC|NC, pasadas, plantillas, aliases). El catálogo resumido está en [functions/index.md](../functions/index.md). Roles de acceso: [roles-peajes.md](./roles-peajes.md).
 
 ## Index
 

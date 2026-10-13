@@ -48,8 +48,9 @@ export class PeajesCargaExpressComponent implements OnInit {
   get pasos(): CargaExpressPasoMeta[] {
     const pasos: CargaExpressPasoMeta[] = [{ id: 1, numero: 1, label: 'Cargar archivo' }];
     if (this.mostrarPatentes) pasos.push({ id: 5, numero: 0, label: 'Patentes' });
+    pasos.push({ id: 7, numero: 0, label: 'Factura' });
     if (this.mostrarEstaciones) pasos.push({ id: 6, numero: 0, label: 'Estaciones' });
-    pasos.push({ id: 7, numero: 0, label: 'Factura' }, { id: 9, numero: 0, label: 'Revisar y guardar' });
+    pasos.push({ id: 9, numero: 0, label: 'Revisar y guardar' });
     return pasos.map((paso, index) => ({ ...paso, numero: index + 1 }));
   }
 
@@ -67,7 +68,7 @@ export class PeajesCargaExpressComponent implements OnInit {
 
   onCargaCompletada(): void {
     this.error = null;
-    this.pasoActual = this.mostrarEstaciones ? 6 : 7;
+    this.pasoActual = 7;
   }
 
   onCargaFacturaDirecta(): void {
@@ -79,7 +80,7 @@ export class PeajesCargaExpressComponent implements OnInit {
     this.error = null;
     if (paso === 6) {
       this.mostrarEstaciones = true;
-      this.pasoActual = 6;
+      this.pasoActual = 7;
       return;
     }
     if (!this.plantillaApply.tieneMapeosObligatorios()) {
@@ -100,7 +101,7 @@ export class PeajesCargaExpressComponent implements OnInit {
     const siguiente = await this.plantillaApply.resolverSiguienteExcepcion();
     if (siguiente === 6) {
       this.mostrarEstaciones = true;
-      this.pasoActual = 6;
+      this.pasoActual = 7;
       return;
     }
     if (siguiente === null) {
@@ -112,12 +113,16 @@ export class PeajesCargaExpressComponent implements OnInit {
 
   onEstacionesCompletadas(): void {
     this.error = null;
-    this.pasoActual = 7;
+    this.pasoActual = 8;
   }
 
   onFacturaCompletada(): void {
     this.error = null;
-    this.pasoActual = 8;
+    this.pasoActual = this.mostrarEstaciones ? 6 : 8;
+  }
+
+  atrasDesdeFactura(): void {
+    this.pasoActual = this.mostrarPatentes ? 5 : 1;
   }
 
   onValidacionCompletada(): void {
@@ -126,7 +131,7 @@ export class PeajesCargaExpressComponent implements OnInit {
   }
 
   onValidacionAtras(): void {
-    this.pasoActual = this.mostrarEstaciones ? 6 : this.mostrarPatentes ? 5 : 7;
+    this.pasoActual = this.mostrarEstaciones ? 6 : 7;
   }
 
   onValidacionIrAPaso(paso: 5 | 6 | 7): void {
@@ -148,7 +153,7 @@ export class PeajesCargaExpressComponent implements OnInit {
   }
 
   onRevisionAtras(): void {
-    this.pasoActual = this.mostrarEstaciones ? 6 : this.mostrarPatentes ? 5 : 7;
+    this.pasoActual = this.mostrarEstaciones ? 6 : 7;
   }
 
   reiniciar(): void {

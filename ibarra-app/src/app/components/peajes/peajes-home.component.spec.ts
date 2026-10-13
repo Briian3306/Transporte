@@ -27,19 +27,12 @@ describe('PeajesHomeComponent: secciones visibles', () => {
     ).not.toContain('tarifario');
   });
 
-  it('muestra las secciones operativas al usuario de carga y revisión', () => {
+  it('muestra carga rápida, documentos, catálogos y pasadas al perfil básico', () => {
     expect(
       getVisiblePeajesHomeSectionIds(
         new Set(['peajes:read', 'peajes:create']),
       ),
-    ).toEqual([
-      'wizard',
-      'catalogos',
-      'pasadas',
-      'pasadas-pendientes',
-      'auditoria-tarifas',
-      'auditoria-estaciones',
-    ]);
+    ).toEqual(['carga-express', 'documentos', 'catalogos', 'pasadas']);
   });
 
   it('no muestra secciones operativas con solo read', () => {

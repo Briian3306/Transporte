@@ -329,6 +329,32 @@ describe('Paso1CargaComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('La empresa cierra el peaje');
     expect(text).toContain('0001');
+    expect(fixture.nativeElement.querySelectorAll('app-search-select').length).toBe(2);
+  });
+
+  it('en masiva oculta la empresa y continúa solo con el archivo', async () => {
+    excel.esArchivoValido.and.returnValue(true);
+    excel.parsearArchivo.and.resolveTo({
+      nombreArchivo: 'masiva.csv',
+      tamanioBytes: 100,
+      totalFilas: 2,
+      columnas: ['FACTURA', 'ESTACION'],
+      filasPreview: [{ FACTURA: '1', ESTACION: 'A' }],
+      filasOrigen: [{ FACTURA: '1', ESTACION: 'A' }],
+      tiposInferidos: {},
+    });
+    await component.procesar(new File(['x'], 'masiva.csv', { type: 'text/csv' }));
+    component.empresaId = 'emp-1';
+    state.setEmpresaId('emp-1');
+
+    await component.onModoImportacionChange('masiva');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('app-search-select').length).toBe(1);
+    expect(fixture.nativeElement.textContent).not.toContain('La empresa cierra el peaje');
+    expect(component.empresaId).toBe('');
+    expect(state.snapshot().empresaId).toBeNull();
+    expect(component.puedeContinuar).toBeTrue();
   });
 
   it('analyzes only after the template applies without exceptions', async () => {

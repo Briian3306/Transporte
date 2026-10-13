@@ -109,16 +109,21 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
 
     const conflictCandidates = candidatos.filter((candidate) => candidate.unresolvedReason === 'CONFLICT');
     const detectCandidates = candidatos.filter((candidate) => candidate.unresolvedReason !== 'CONFLICT');
+    const estacionInvalida = detectCandidates.filter((candidate) => /\s/.test(candidate.estacionId));
+    const detectables = detectCandidates.filter((candidate) => !/\s/.test(candidate.estacionId));
     const conflictResults: ResultadoDetectarRefresco[] = conflictCandidates.map((candidate) =>
       resultadoDesdeCandidato(candidate, 'DIRECTION_CONFLICT'),
     );
-    if (!detectCandidates.length) {
-      return resumenVacio(candidatos, conflictResults);
+    const invalidResults = estacionInvalida.map((candidate) =>
+      resultadoDesdeCandidato(candidate, 'CONTEXT_INCOMPLETE'),
+    );
+    if (!detectables.length) {
+      return resumenVacio(candidatos, [...conflictResults, ...invalidResults]);
     }
 
     const prepareSeen = new Set<string>();
     const prepareInputs: PrepararRefrescoTarifaInput[] = [];
-    for (const c of detectCandidates) {
+    for (const c of detectables) {
       const key = contextKey(c);
       if (prepareSeen.has(key)) continue;
       prepareSeen.add(key);
@@ -144,7 +149,7 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
     const detectInputs: DetectarRefrescoTarifaInput[] = [];
     const detectToCandidates = new Map<string, CandidatoRefrescoTarifa[]>();
 
-    for (const c of detectCandidates) {
+    for (const c of detectables) {
       const ctx = contextKey(c);
       const needsIva = ivaByStation.get(c.estacionId) === true;
       const comparable = needsIva
@@ -210,7 +215,7 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
         },
       ];
     });
-    resultados.unshift(...conflictResults);
+    resultados.unshift(...conflictResults, ...invalidResults);
 
     return {
       candidatos,

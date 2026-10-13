@@ -28,6 +28,10 @@ import { InvoiceAiService } from '../../services/ai/invoice/invoice-ai.service';
 import { InvoiceAiError } from '../../services/ai/invoice/invoice-ai.models';
 import { InvoicePdfTextService } from '../../services/ai/invoice/invoice-pdf-text.service';
 import { analizarFacturasMasivaPendientes } from '../services/invoice-masiva-queue';
+import {
+  agruparPlantillasPorFiltro,
+  PlantillaFiltroGrupo,
+} from '../services/plantilla-filtro-grupos';
 
 @Component({
   selector: 'app-paso1-carga',
@@ -52,6 +56,8 @@ export class Paso1CargaComponent implements OnInit {
   plantillas: PlantillaConfiguracion[] = [];
   empresas: Empresa[] = [];
   plantillaId = '';
+  /** Variantes elegidas cuando la plantilla es un grupo (MERCA-SUR-001/002/003). */
+  filtrosPlantillaIds: string[] = [];
   /**
    * Empresa of this load (simple mode). Paso 6 recognizes estaciones only
    * inside this company's peajes. Required in simple Telepase CSV because
@@ -86,13 +92,16 @@ export class Paso1CargaComponent implements OnInit {
     await this.cargarPlantillas();
   }
 
-  onModoImportacionChange(modo: ModoImportacion): void {
+  async onModoImportacionChange(modo: ModoImportacion): Promise<void> {
     this.modoImportacion = modo;
     this.state.setModoImportacion(modo);
     this.error = null;
     if (modo === 'masiva') {
       this.pdfError = null;
       this.state.setInvoicePdf(null, null);
+      this.empresaId = '';
+      this.state.setEmpresaId(null);
+      await this.cargarPlantillas();
     } else {
       this.state.clearInvoicePdfsMasiva();
     }
@@ -109,23 +118,70 @@ export class Paso1CargaComponent implements OnInit {
   }
 
   get plantillaOptions(): SearchSelectOption[] {
-    return this.plantillas.map((p) => ({
-      id: p.id,
-      label: `${p.nombre} · ${p.estado}`,
-    }));
+    if (!this.expressMode) {
+      return this.plantillas.map((p) => ({
+        id: p.id,
+        label: `${p.nombre} · ${p.estado}`,
+      }));
+    }
+    const agrupadas = agruparPlantillasPorFiltro(this.plantillas);
+    return [
+      ...agrupadas.grupos.map((grupo) => ({
+        id: grupo.id,
+        label: `${grupo.label} · ${grupo.opciones.length} filtros`,
+      })),
+      ...agrupadas.sueltas.map((p) => ({
+        id: p.id,
+        label: `${p.nombre} · ${p.estado}`,
+      })),
+    ];
+  }
+
+  get grupoPlantillaSeleccionado(): PlantillaFiltroGrupo | null {
+    if (!this.expressMode || !this.plantillaId) return null;
+    return (
+      agruparPlantillasPorFiltro(this.plantillas).grupos.find((grupo) => grupo.id === this.plantillaId) ??
+      null
+    );
+  }
+
+  private get plantillaIdAplicar(): string {
+    const grupo = this.grupoPlantillaSeleccionado;
+    if (!grupo) return this.plantillaId;
+    if (this.filtrosPlantillaIds.length === 1) return this.filtrosPlantillaIds[0];
+    return grupo.id;
+  }
+
+  private get filtrosAplicar(): { filtros?: string[] } | undefined {
+    const grupo = this.grupoPlantillaSeleccionado;
+    if (!grupo || this.filtrosPlantillaIds.length < 2) return undefined;
+    const valores = grupo.opciones
+      .filter((opcion) => this.filtrosPlantillaIds.includes(opcion.plantillaId))
+      .map((opcion) => opcion.valor);
+    return valores.length ? { filtros: valores } : undefined;
   }
 
   onPlantillaChange(id: string | null): void {
     this.plantillaId = id ?? '';
+    this.filtrosPlantillaIds = [];
     this.state.setPlantillaId(id);
     this.erroresPlantilla = [];
     this.info = null;
+  }
+
+  toggleFiltroPlantilla(plantillaId: string): void {
+    this.filtrosPlantillaIds = this.filtrosPlantillaIds.includes(plantillaId)
+      ? this.filtrosPlantillaIds.filter((id) => id !== plantillaId)
+      : [...this.filtrosPlantillaIds, plantillaId];
+    this.erroresPlantilla = [];
+    this.error = null;
   }
 
   async onEmpresaChange(id: string | null): Promise<void> {
     this.empresaId = id ?? '';
     this.state.setEmpresaId(id);
     this.plantillaId = '';
+    this.filtrosPlantillaIds = [];
     this.state.setPlantillaId(null);
     this.erroresPlantilla = [];
     this.info = null;
@@ -164,7 +220,10 @@ export class Paso1CargaComponent implements OnInit {
   get puedeContinuar(): boolean {
     // Masiva: empresa se asigna por documento en Paso 7 (archivo multi-empresa).
     const empresaOk = this.modoImportacion === 'masiva' || !!this.empresaId;
-    const plantillaOk = !this.expressMode || !!this.plantillaId;
+    const plantillaOk =
+      !this.expressMode ||
+      (!!this.plantillaId &&
+        (!this.grupoPlantillaSeleccionado || this.filtrosPlantillaIds.length > 0));
     return !!this.meta && empresaOk && plantillaOk && !this.cargando && !this.aplicandoPlantilla;
   }
 
@@ -397,6 +456,10 @@ export class Paso1CargaComponent implements OnInit {
       this.error = 'Seleccioná una plantilla para continuar con la carga rápida.';
       return;
     }
+    if (this.expressMode && this.grupoPlantillaSeleccionado && !this.filtrosPlantillaIds.length) {
+      this.error = 'Elegí al menos un filtro de la plantilla agrupada.';
+      return;
+    }
     if (this.modoImportacion === 'masiva' && !excelTieneColumnaFactura(this.meta.columnas)) {
       this.error =
         `Importación masiva bloqueada: el archivo no tiene la columna «${COLUMNA_FACTURA_MASIVA}». ` +
@@ -419,8 +482,11 @@ export class Paso1CargaComponent implements OnInit {
 
     this.aplicandoPlantilla = true;
     try {
-      this.state.setPlantillaId(this.plantillaId);
-      const result = await this.plantillaApply.aplicarYEvaluar(this.plantillaId);
+      this.state.setPlantillaId(this.plantillaIdAplicar);
+      const result = await this.plantillaApply.aplicarYEvaluar(
+        this.plantillaIdAplicar,
+        this.filtrosAplicar,
+      );
       this.info = result.mensaje;
       if (!result.ok) {
         this.erroresPlantilla = result.errores;

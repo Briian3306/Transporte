@@ -1,0 +1,26 @@
+<nav class="app-stepper__nav" role="tablist" [attr.aria-label]="ariaLabel">
+  <ng-container *ngFor="let item of items; let index = index; let last = last">
+    <button
+      type="button"
+      class="app-stepper__trigger"
+      role="tab"
+      [class.is-active]="item.step === value"
+      [class.is-completed]="item.state === 'completed'"
+      [class.is-loading]="item.state === 'loading'"
+      [class.is-review]="item.state === 'review'"
+      [attr.aria-selected]="item.step === value"
+      [disabled]="item.disabled"
+      (click)="select(item.step, item.disabled)"
+      (keydown)="onKeydown($event, index)"
+    >
+      <span class="app-stepper__indicator" aria-hidden="true">
+        <ng-container *ngIf="item.state === 'completed'">✓</ng-container>
+        <ng-container *ngIf="item.state === 'loading'">…</ng-container>
+        <ng-container *ngIf="item.state !== 'completed' && item.state !== 'loading'">{{ item.step }}</ng-container>
+      </span>
+      <span class="app-stepper__title">{{ item.title }}</span>
+    </button>
+    <span class="app-stepper__separator" *ngIf="!last" aria-hidden="true"></span>
+  </ng-container>
+</nav>
+<ng-content></ng-content>

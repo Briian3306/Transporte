@@ -4,7 +4,7 @@
 
 Tres RPCs INVOKER contrastan precios de pasadas incluidas contra el catálogo v2 (`tarifas.current_tarifa_id` → `tarifa_importe`) con **vigencia calendario**, **corrección de categoría**, **decisiones explícitas CONFIRM_NEW / MARK_REVIEW** y historial append-only. No pisan filas históricas ni aplican `/ 1.21`. Las firmas públicas de F14-16 se conservan.
 
-UI: diálogo xl/top en Paso 9 con **editores dinámicos por agrupación de estaciones**, tablero Actual/Detectado/Nuevo del Tarifario (sin rail de candidatos) y campo **Vigente desde** (solo inicio; el fin lo cierra el backend). Tablas: [tarifas-tarifa-importe.md](../../06-tablas/peajes/tarifas-tarifa-importe.md).
+UI: diálogo xl/top en Paso 9 con **editores dinámicos por agrupación de estaciones**, tablero Actual/Detectado/Nuevo del Tarifario (sin rail de candidatos) y campo **Vigente desde** (solo inicio; el fin lo cierra el backend). Si los documentos traen más de una empresa, el diálogo de refresh muestra el stepper (Tarifario 1..N) debajo del título y solo incluye las estaciones de la empresa activa. El mismo diálogo se puede abrir desde Paso 7 con el botón **Tarifario** de cada documento; eso no guarda la carga ni bloquea Continuar. No hay RPC nuevo. Tablas: [tarifas-tarifa-importe.md](../../06-tablas/peajes/tarifas-tarifa-importe.md).
 
 ## Index
 
@@ -187,6 +187,22 @@ npx ng build --configuration=development
 **Estado (2026-09-14):** Matching por `categoria_efectiva = LEAST(recibida, máxima de estación)` + importe 1%. Sin fallback a la última categoría. Historial acotado a peaje+estación+categoría. Leftover Pico/No pico guarda `CONFIRM_NEW` con precio y `no_coincide_con_tarifario`. Categoría nula exige input 0–10. Verify local: `npx supabase test db` **Files=21 Tests=623 PASS**; Karma diálogo+helpers+tablero+servicio+mock **164 SUCCESS**; `tsc` app+spec **EXIT 0**; `ng build --configuration=development` **EXIT 0** (NG8107 preexistente en Paso 9). `pnpm seed:local` aplicó Auth/RBAC/pasadas; `seed:tarifario-v2` EXIT 1 por cutover `null_current_pointers=27` (loader v2, no el matching). Sin `db push`.
 
 ## Notes
+
+### Estaciones sin tarifario y alcance por empresa (2026-10-06)
+
+Revisión agrupada: dentro de un editor, candidatos con el mismo importe, categoría y contexto de sentido/status comparten una fila. Se muestran todas sus estaciones y la suma de casos. Una categoría o status elegido se aplica a todos los candidatos de esa fila; la persistencia conserva las identidades de cada estación. Categorías conocidas diferentes o elecciones manuales en conflicto permanecen visibles por separado.
+
+Todas No pico/Pico puede elegirse antes de ingresar las categorías. La elección queda registrada; Guardar continúa exigiendo las categorías faltantes. Tab/Shift+Tab recorre directamente los inputs de categoría del tablero y confirma el valor escrito; Enter avanza también.
+
+Cuando otra empresa del stepper necesita revisión, el botón muestra **Guardar cambios + Siguiente**. La confirmación reanaliza las tarifas manteniendo abierto el diálogo y avanza a la siguiente empresa pendiente. Si la empresa actual todavía tiene pendientes, se mantiene en ella. Al completar todas, se cierra.
+
+- Paso 9 entrega el catálogo de estaciones al diálogo. Los nombres se resuelven desde `estaciones.nombre`, luego el candidato y el listado tarifario; si falta un nombre legible, se muestra `Estación`, nunca un UUID.
+- Una estación `SIN_TARIFARIO` ofrece Sentido IDA/VUELTA/AMBAS. AMBAS abre un tablero; IDA/VUELTA abre los dos tableros direccionales existentes. La selección se conserva para asignar candidatos nuevos y sobrantes al guardar. No se persiste nada al elegir el sentido.
+
+Una estación sin tarifario también puede agruparse con estaciones del mismo peaje que ya tienen tarifas vigentes. El tablero existente muestra la escalera compartida y el grupo lleva la etiqueta **MISMA TARIFA**. Si los orígenes difieren en identidades, importes o normalización IVA, se pide confirmación de la propuesta: para cada sentido/categoría/status gana el vigente con `fecha_vigencia_inicio` más reciente. Sin diferencia no aparece una confirmación adicional. **Guardar cambios** copia las identidades e importes vigentes a la estación nueva, con su propia historia y fecha de inicio, y vuelve a analizar los importes del archivo; los que no coincidan permanecen en la revisión habitual. Si un origen no tiene fecha de inicio, el operador debe completar **Vigente desde**. La agrupación no modifica los orígenes por sí sola.
+- Guardar queda deshabilitado hasta elegir los sentidos pendientes. Vigente desde, categoría, Pico/No pico y los importes mantienen la validación existente. `CONFIRM_NEW` en `peajes_guardar_refresco_tarifas` crea las primeras identidades; no se agrega un RPC.
+- Migración CLI `20261006141041_peajes_empresa_id_fk.sql`: solo `peajes.empresa_id` pasa a UUID FK con `ON DELETE RESTRICT`; vacíos, `__global__`, valores inválidos y empresas inexistentes pasan a NULL. Los peajes compartidos (NULL) participan en cada empresa; los asignados solo en su empresa. Las firmas públicas que devuelven empresa como texto se conservan.
+- Paso 6, Factura y el stepper tarifario incluyen peajes compartidos. El reconocimiento de Concesión no amplía el pool a otras empresas cuando no hay peajes propios.
 
 ### Preferencia IDA en coincidencias por precio (2026-10-02)
 

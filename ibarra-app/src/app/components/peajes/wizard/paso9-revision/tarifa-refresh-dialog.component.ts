@@ -10,15 +10,19 @@ import {
   DateRangePickerComponent,
   DialogComponent,
   SearchSelectComponent,
+  StepperComponent,
+  StepperItemComponent,
+  StepperPanelComponent,
 } from '../../../shared';
 import type { CheckboxMultiSelectOption, DateRangeValue, SearchSelectOption } from '../../../shared';
-import { ConfiguracionPlantilla } from '../../models/peajes.models';
+import { ConfiguracionPlantilla, Estacion } from '../../models/peajes.models';
 import {
   CandidatoRefrescoTarifa,
   ResultadoDetectarRefresco,
   TARIFA_REFRESH_SERVICE,
   TarifaRefreshService,
 } from '../../models/tarifa-refresh.contracts';
+import { EmpresaTarifarioPaso } from './tarifario-por-empresa';
 import {
   PEAJES_TARIFARIO_SERVICE,
   PeajesTarifarioService,
@@ -57,6 +61,7 @@ import {
   collectCambios,
   collectDraftErrores,
   countCategoriasEditor,
+  formatTarifaImporteDisplay,
 } from '../../tarifario/tarifario.helpers';
 import { nextCategoryAction, type CategoryAction } from '../../tarifario/tarifario-groups.helpers';
 import {
@@ -73,6 +78,8 @@ import {
   plantillaSugiereNormalizacionIva,
   resizeSharedSlots,
   resolverRequiereNormalizacionIva,
+  resolveStationName,
+  reusableTariffProposal,
   sharedSlotsToTarifarioGroups,
   stationTraceViewModel,
   uniqueIdentityForCategory,
@@ -86,6 +93,7 @@ import {
   type EstacionOpcionRefresco,
   type IdentidadTarifaExistente,
   type SentidoFamily,
+  type ReusableTariffProposal,
   type StationTraceViewModel,
 } from './tarifa-refresh-dialog.helpers';
 
@@ -129,7 +137,13 @@ export interface GrupoTarifaRefresco {
   peajeId: string;
   peajeNombre: string;
   family: SentidoFamily;
+  sentidoNuevo?: TarifaSentido;
   detectedStations: DetectedStation[];
+  availableStations: DetectedStation[];
+  onboarding: boolean;
+  reuseSourceIds: string[];
+  reuseRows: TarifarioCurrentRow[];
+  movedSources: Array<{ grupo: GrupoTarifaRefresco; station: DetectedStation; items: ResultadoDetectarRefresco[] | null; slots: string[][]; available: DetectedStation[] }>;
   opciones: EstacionOpcionRefresco[];
   groupCount: number;
   sharedSlots: string[][];
@@ -211,6 +225,9 @@ const SENTIDO_CHOICES: SearchSelectOption[] = [
     CheckboxMultiSelectComponent,
     DateRangePickerComponent,
     SearchSelectComponent,
+    StepperComponent,
+    StepperItemComponent,
+    StepperPanelComponent,
     TarifarioEditorBoardComponent,
     TarifarioHistorialDialogComponent,
   ],
@@ -225,11 +242,16 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   @Input() open = false;
   @Input() resultados: ResultadoDetectarRefresco[] = [];
   @Input() candidatos: CandidatoRefrescoTarifa[] = [];
+  @Input() estacionesCatalogo: readonly Pick<Estacion, 'id' | 'nombre' | 'peaje_id'>[] = [];
   @Input() configuraciones: ConfiguracionPlantilla[] = [];
   @Input() canManage = true;
   @Input() saving = false;
+  @Input() empresas: EmpresaTarifarioPaso[] = [];
+  @Input() empresaStep = 1;
+  @Input() hasNextCompany = false;
 
   @Output() openChange = new EventEmitter<boolean>();
+  @Output() empresaStepChange = new EventEmitter<number>();
   @Output() cancelled = new EventEmitter<void>();
   @Output() saved = new EventEmitter<TarifaRefrescoGuardada[]>();
 
@@ -238,8 +260,12 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   revalidating = false;
   warnings: TarifaRefreshWarning[] = [];
   readonly sentidoOptions: SearchSelectOption[] = SENTIDO_CHOICES;
+  readonly formatReuseAmount = formatTarifaImporteDisplay;
   private readonly closedEditorKeys = new Map<string, Set<string>>();
+  /** Evita recargar el tarifario cuando Angular entrega un array nuevo con el mismo contenido. */
+  private refreshLoadKey = '';
   private assignmentConflict = false;
+  pendingReuse: { grupo: GrupoTarifaRefresco; selected: string[]; proposal: ReusableTariffProposal } | null = null;
   private errorMessage: string | null = null;
 
   get error(): string | null {
@@ -265,8 +291,16 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['open'] || changes['resultados'] || changes['candidatos']) {
-      this.reloadIfOpen();
+    if (changes['open'] || changes['resultados'] || changes['candidatos'] || changes['empresaStep'] || changes['estacionesCatalogo']) {
+      if (!this.open) {
+        this.refreshLoadKey = '';
+      } else {
+        const key = `${this.empresaStep}|${this.unresolved.map((row) => row.id).join('\n')}|${this.candidatos.length}|${this.estacionesCatalogo.map(row => `${row.id}:${row.nombre}:${row.peaje_id}`).join('|')}`;
+        if (key !== this.refreshLoadKey) {
+          this.refreshLoadKey = key;
+          this.reloadIfOpen();
+        }
+      }
     }
     if (changes['canManage'] && !changes['canManage'].firstChange) {
       this.refreshWarnings();
@@ -357,7 +391,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   }
 
   maxGroupCount(grupo: GrupoTarifaRefresco): number {
-    return maxSharedGroupCount(grupo.detectedStations.length);
+    return grupo.onboarding ? 1 : maxSharedGroupCount(grupo.detectedStations.length);
   }
 
   candidatesFor(grupo: GrupoTarifaRefresco): CandidateRailItem[] {
@@ -658,6 +692,16 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   }
 
   onReviewStatusChange(grupo: GrupoTarifaRefresco, event: TarifarioReviewStatusChange): void {
+    for (const candidateId of this.reviewCandidateIds(grupo, event.candidateId)) {
+      this.applyReviewStatus(grupo, { candidateId, status: event.status });
+    }
+  }
+
+  get visibleGrupos(): GrupoTarifaRefresco[] {
+    return this.grupos.filter((grupo) => grupo.detectedStations.length > 0);
+  }
+
+  private applyReviewStatus(grupo: GrupoTarifaRefresco, event: TarifarioReviewStatusChange): void {
     grupo.reviewStatusByCandidate = {
       ...grupo.reviewStatusByCandidate,
       [event.candidateId]: event.status,
@@ -698,16 +742,15 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   }
 
   onReviewCategoryChange(grupo: GrupoTarifaRefresco, event: TarifarioReviewCategoryChange): void {
-    grupo.reviewCategoryByCandidate = {
-      ...grupo.reviewCategoryByCandidate,
-      [event.candidateId]: event.categoria,
-    };
-    this.patchReviewRowCategory(grupo, event.candidateId, event.categoria);
-    const cand = this.candidatesFor(grupo).find((item) => item.candidateId === event.candidateId);
-    const status = cand ? grupo.reviewStatusByCandidate[cand.candidateId] ?? cand.status : null;
-    if (cand && status) {
-      this.onReviewStatusChange(grupo, { candidateId: cand.candidateId, status });
-      return;
+    const ids = this.reviewCandidateIds(grupo, event.candidateId);
+    for (const candidateId of ids) {
+      grupo.reviewCategoryByCandidate[candidateId] = event.categoria;
+      this.patchReviewRowCategory(grupo, candidateId, event.categoria);
+    }
+    for (const candidateId of ids) {
+      const cand = this.candidatesFor(grupo).find(item => item.candidateId === candidateId);
+      const status = cand ? grupo.reviewStatusByCandidate[candidateId] ?? cand.status : null;
+      if (cand && status) this.applyReviewStatus(grupo, { candidateId, status });
     }
     this.refreshWarnings();
   }
@@ -718,7 +761,6 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     status: TarifaStatusPico,
   ): void {
     for (const row of this.reviewRowsFor(grupo, editor)) {
-      if (row.requiresCategoriaInput && row.categoria == null) continue;
       this.onReviewStatusChange(grupo, { candidateId: row.candidateId, status });
     }
   }
@@ -737,18 +779,36 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   }
 
   reviewRowsFor(grupo: GrupoTarifaRefresco, editor: EditorViewRefresco): TarifarioReviewRow[] {
-    return this.candidatesFor(grupo)
+    const grouped = new Map<string, TarifarioReviewRow>();
+    for (const item of this.candidatesFor(grupo)
       .filter(
         (item) =>
           editor.stationIds.includes(item.estacionId) && !this.candidateShownInDetected(editor, item),
-      )
-      .map((item) => {
+      )) {
         const requiresCategoriaInput = item.categoriaProveedor == null;
         const categoria = requiresCategoriaInput
           ? grupo.reviewCategoryByCandidate[item.candidateId] ?? null
           : item.categoriaProveedor;
-        return {
+        // Scope to this editor; never merge different known categories or directions.
+        // Preserve conflicting choices made before grouping instead of hiding them.
+        const key = JSON.stringify([
+          item.amount, item.categoriaProveedor, categoria, item.status,
+          grupo.reviewStatusByCandidate[item.candidateId] ?? item.status,
+          item.sentido ?? editor.sentidoSeleccionado,
+        ]);
+        const existing = grouped.get(key);
+        if (existing) {
+          existing.candidateIds!.push(item.candidateId);
+          existing.count += item.cases;
+          if (!existing.stations!.some(station => station.estacionId === item.estacionId)) {
+            existing.stations!.push({ estacionId: item.estacionId, estacionNombre: item.station.estacionNombre, color: item.station.color });
+          }
+          continue;
+        }
+        grouped.set(key, {
           candidateId: item.candidateId,
+          candidateIds: [item.candidateId],
+          stations: [{ estacionId: item.estacionId, estacionNombre: item.station.estacionNombre, color: item.station.color }],
           valor: item.amount,
           count: item.cases,
           categoria,
@@ -761,8 +821,17 @@ export class TarifaRefreshDialogComponent implements OnChanges {
             requiresCategoriaInput && categoria == null
               ? 'Indicá una categoría de 0 a 10.'
               : null,
-        };
-      });
+        });
+    }
+    return [...grouped.values()];
+  }
+
+  private reviewCandidateIds(grupo: GrupoTarifaRefresco, candidateId: string): string[] {
+    for (const editor of grupo.editors) {
+      const row = this.reviewRowsFor(grupo, editor).find(item => item.candidateIds?.includes(candidateId));
+      if (row) return row.candidateIds ?? [candidateId];
+    }
+    return [candidateId];
   }
 
   confirmCandidate(
@@ -778,16 +847,130 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     editor.sentidoSeleccionado = isTarifaSentidoValue(value) ? value : null;
   }
 
+  get requiresSentidoChoice(): boolean {
+    return this.grupos.some(grupo => grupo.family === 'SIN_TARIFARIO');
+  }
+
+  onGrupoSentidoChange(grupo: GrupoTarifaRefresco, value: string | null): void {
+    if (!this.canManage || this.saving || grupo.family !== 'SIN_TARIFARIO' || !isTarifaSentidoValue(value)) return;
+    grupo.sentidoNuevo = value;
+    grupo.family = value === 'AMBAS' ? 'AMBAS' : 'DIRECCIONAL';
+    grupo.detectedStations = grupo.detectedStations.map(station => ({ ...station, family: grupo.family }));
+    this.rebuildEditors(grupo);
+    this.refreshWarnings();
+  }
+
   onVigenteDesde(grupo: GrupoTarifaRefresco, value: DateRangeValue): void {
     grupo.vigenteDesde = { from: value.from, to: null };
   }
 
   async onSeleccionChange(grupo: GrupoTarifaRefresco, slotIndex: number, next: string[]): Promise<void> {
+    if (grupo.onboarding) {
+      const targetIds = [...grupo.itemsPorEstacion.keys()].filter((id) =>
+        grupo.availableStations.some((station) => station.estacionId === id && station.family === 'SIN_TARIFARIO'),
+      );
+      const targetId = targetIds[0];
+      const selected = [...new Set([targetId, ...next])].filter((id) => grupo.availableStations.some((station) => station.estacionId === id));
+      const sourceIds = selected.filter((id) => !targetIds.includes(id));
+      const families = new Set(sourceIds.map((id) => grupo.availableStations.find((station) => station.estacionId === id)?.family));
+      if (families.size > 1) {
+        this.error = 'Elegí estaciones con el mismo sentido tarifario para reutilizar sus tarifas.';
+        grupo.sharedSlots = grupo.sharedSlots.map((slot) => [...slot]);
+        return;
+      }
+      const proposal = reusableTariffProposal(sourceIds, grupo.catalogRows);
+      if (sourceIds.length && !proposal.rows.length) {
+        this.error = 'Las estaciones elegidas no tienen tarifas vigentes para reutilizar.';
+        grupo.sharedSlots = grupo.sharedSlots.map((slot) => [...slot]);
+        return;
+      }
+      if (proposal.mismatch) {
+        this.pendingReuse = { grupo, selected, proposal };
+        return;
+      }
+      this.applyReuseSelection(grupo, selected, proposal);
+      return;
+    }
     const valid = next.filter((id) => grupo.detectedStations.some((station) => station.estacionId === id));
     grupo.sharedSlots = applySharedSlotSelection(grupo.sharedSlots, slotIndex, valid);
     grupo.anchorEstacionId = grupo.sharedSlots[0]?.[0] ?? grupo.detectedStations[0]?.estacionId ?? '';
     this.refreshCheckboxOptions(grupo);
     this.rebuildEditors(grupo, { reuseUnchanged: true });
+    this.refreshWarnings();
+  }
+
+  confirmReuse(): void {
+    const pending = this.pendingReuse;
+    if (!pending) return;
+    this.pendingReuse = null;
+    this.applyReuseSelection(pending.grupo, pending.selected, pending.proposal);
+  }
+
+  cancelReuse(): void {
+    const grupo = this.pendingReuse?.grupo;
+    if (grupo) grupo.sharedSlots = grupo.sharedSlots.map((slot) => [...slot]);
+    this.pendingReuse = null;
+  }
+
+  reuseSourceName(grupo: GrupoTarifaRefresco, stationId: string): string {
+    return grupo.availableStations.find((station) => station.estacionId === stationId)?.estacionNombre ?? 'Estación';
+  }
+
+  private applyReuseSelection(grupo: GrupoTarifaRefresco, selected: string[], proposal: ReusableTariffProposal): void {
+    const targetIds = grupo.availableStations
+      .filter((station) => station.family === 'SIN_TARIFARIO' && grupo.itemsPorEstacion.has(station.estacionId))
+      .map((station) => station.estacionId);
+    const sourceIds = selected.filter((id) => !targetIds.includes(id));
+    const manualSentido = !sourceIds.length && !grupo.reuseSourceIds.length ? grupo.sentidoNuevo : undefined;
+    for (const moved of [...grupo.movedSources].reverse()) {
+      moved.grupo.detectedStations = moved.available.filter((station) =>
+        moved.grupo.detectedStations.some((current) => current.estacionId === station.estacionId) ||
+        station.estacionId === moved.station.estacionId,
+      );
+      if (moved.items) moved.grupo.itemsPorEstacion.set(moved.station.estacionId, moved.items);
+      moved.grupo.sharedSlots = moved.slots;
+      moved.grupo.availableStations = moved.available;
+      this.refreshCheckboxOptions(moved.grupo);
+      grupo.itemsPorEstacion.delete(moved.station.estacionId);
+      this.rebuildEditors(moved.grupo);
+    }
+    grupo.movedSources = [];
+    for (const sourceId of sourceIds) {
+      for (const other of this.grupos) {
+        if (other === grupo || other.onboarding) continue;
+        const station = other.detectedStations.find((item) => item.estacionId === sourceId);
+        if (!station) continue;
+        const items = other.itemsPorEstacion.get(sourceId) ?? null;
+        const slots = other.sharedSlots.map((slot) => [...slot]);
+        const available = other.availableStations;
+        other.detectedStations = other.detectedStations.filter((item) => item.estacionId !== sourceId);
+        other.availableStations = other.availableStations.filter((item) => item.estacionId !== sourceId);
+        other.itemsPorEstacion.delete(sourceId);
+        other.sharedSlots = other.sharedSlots.map((slot) => slot.filter((id) => id !== sourceId));
+        this.refreshCheckboxOptions(other);
+        if (items) grupo.itemsPorEstacion.set(sourceId, items);
+        grupo.movedSources.push({ grupo: other, station, items, slots, available });
+        this.rebuildEditors(other);
+      }
+    }
+    grupo.reuseSourceIds = sourceIds;
+    grupo.reuseRows = proposal.rows;
+    grupo.sharedSlots = [selected];
+    grupo.detectedStations = sourceIds.length
+      ? [...new Set([...targetIds, ...sourceIds])].map((id) => grupo.availableStations.find((station) => station.estacionId === id)!).map((station) => ({
+          ...station,
+          family: grupo.availableStations.find((row) => row.estacionId === sourceIds[0])!.family,
+        }))
+      : grupo.availableStations.filter((station) => targetIds.includes(station.estacionId)).map((station) => ({
+          ...station,
+          family: manualSentido ? (manualSentido === 'AMBAS' ? 'AMBAS' : 'DIRECCIONAL') : 'SIN_TARIFARIO',
+        }));
+    grupo.family = sourceIds.length
+      ? grupo.availableStations.find((station) => station.estacionId === sourceIds[0])!.family
+      : manualSentido ? (manualSentido === 'AMBAS' ? 'AMBAS' : 'DIRECCIONAL') : 'SIN_TARIFARIO';
+    grupo.sentidoNuevo = manualSentido;
+    this.refreshCheckboxOptions(grupo);
+    this.rebuildEditors(grupo);
     this.refreshWarnings();
   }
 
@@ -805,8 +988,31 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   }
 
   async guardar(): Promise<void> {
-    if (!this.canManage) return;
+    if (!this.canManage || this.loading || this.saving || this.revalidating || this.requiresSentidoChoice) return;
     this.error = null;
+    const copyDecisions = this.collectReuseDecisions();
+    if (this.error) return;
+    if (copyDecisions.length) {
+      const hasManualDraft = this.grupos.some((grupo) => grupo.editors.some((editor) => editor.tablas.some((tabla) =>
+        Object.values(tabla.drafts).some((draft) =>
+          String(draft.no_pico ?? '').trim() !== '' || String(draft.pico ?? '').trim() !== '',
+        ),
+      )));
+      if (hasManualDraft) {
+        this.error = 'Para copiar la tarifa compartida, vaciá primero los importes Nuevo. Después podrás editarla sin perder cambios.';
+        return;
+      }
+      this.saving = true;
+      try {
+        const saved = await this.refresh.guardar(copyDecisions);
+        this.saved.emit(saved);
+      } catch (e) {
+        this.error = rpcErrorMessage(e, 'No se pudieron copiar las tarifas vigentes.');
+      } finally {
+        this.saving = false;
+      }
+      return;
+    }
     const decisions = this.collectSaveDecisions();
     if (this.error) {
       this.refreshWarnings();
@@ -816,12 +1022,12 @@ export class TarifaRefreshDialogComponent implements OnChanges {
       const acknowledged = this.statusChoiceAcknowledgements();
       if (acknowledged.length) {
         this.saved.emit(acknowledged);
-        this.openChange.emit(false);
+        if (!this.hasNextCompany) this.openChange.emit(false);
         return;
       }
       if (this.grupos.every((grupo) => this.candidatesFor(grupo).length === 0)) {
         this.saved.emit([]);
-        this.openChange.emit(false);
+        if (!this.hasNextCompany) this.openChange.emit(false);
       }
       return;
     }
@@ -833,13 +1039,49 @@ export class TarifaRefreshDialogComponent implements OnChanges {
         (item) => !saved.some((row) => row.candidate_id && row.candidate_id === item.candidate_id),
       );
       this.saved.emit([...saved, ...acknowledged]);
-      this.openChange.emit(false);
+      if (!this.hasNextCompany) this.openChange.emit(false);
     } catch (e) {
       this.error = rpcErrorMessage(e, 'No se pudieron guardar los cambios.');
       this.refreshWarnings();
     } finally {
       this.saving = false;
     }
+  }
+
+  private collectReuseDecisions(): TarifaRefreshDecision[] {
+    const decisions: TarifaRefreshDecision[] = [];
+    for (const grupo of this.grupos) {
+      if (!grupo.onboarding || !grupo.reuseSourceIds.length) continue;
+      const targetIds = grupo.sharedSlots[0].filter((id) =>
+        grupo.availableStations.some((station) => station.estacionId === id && station.family === 'SIN_TARIFARIO'),
+      );
+      for (const targetId of targetIds) for (const row of grupo.reuseRows) {
+        const fecha = row.fechaVigenciaInicio ?? toIsoDate(grupo.vigenteDesde.from);
+        if (!fecha) {
+          this.error = 'Indicá Vigente desde para copiar una tarifa sin fecha de inicio.';
+          return [];
+        }
+        if (row.requiereNormalizacionIva == null) {
+          this.error = 'No se pudo leer la configuración IVA de la tarifa vigente. Actualizá el esquema de Supabase.';
+          return [];
+        }
+        decisions.push({
+          candidateId: typedCandidateId(targetId, row.sentido, row.categoria, row.status),
+          action: 'CONFIRM_NEW',
+          peajeId: grupo.peajeId,
+          estacionId: targetId,
+          categoriaProveedor: row.categoria,
+          categoriaCalculada: row.categoria,
+          status: row.status,
+          sentido: row.sentido,
+          importe: row.importe!,
+          fechaVigenciaInicio: fecha,
+          cases: 0,
+          requiereNormalizacionIva: row.requiereNormalizacionIva,
+        });
+      }
+    }
+    return decisions;
   }
 
   async onCategoryStateChange(
@@ -977,11 +1219,16 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     const generation = ++this.loadGeneration;
     this.loading = true;
     this.error = null;
+    this.pendingReuse = null;
     this.assignmentConflict = false;
     try {
       const byPeaje = new Map<string, ResultadoDetectarRefresco[]>();
-      for (const item of this.unresolved) {
-        const key = item.peajeId ?? '';
+      const stationsById = new Map(this.estacionesCatalogo.map((station) => [station.id, station]));
+      for (const unresolved of this.unresolved) {
+        const station = stationsById.get(unresolved.estacionId);
+        const item = { ...unresolved, peajeId: station?.peaje_id || unresolved.peajeId || '' };
+        if (/\s/.test(item.estacionId)) continue;
+        const key = item.peajeId;
         const list = byPeaje.get(key) ?? [];
         list.push(item);
         byPeaje.set(key, list);
@@ -1011,9 +1258,16 @@ export class TarifaRefreshDialogComponent implements OnChanges {
         // even when the imported file only detected one of them.
         const detectedAll = buildDetectedStations(items, catalogo, true);
         for (const pending of agruparPendientesPorPeajeYFamilia(items, catalogo)) {
-          const detectedStations = detectedAll.filter(
-            (station) => station.peajeId === pending.peajeId && station.family === pending.family,
-          );
+          const onboarding = pending.family === 'SIN_TARIFARIO';
+          const targetIds = [...pending.itemsPorEstacion.keys()];
+          const availableStations = onboarding
+            ? detectedAll.filter((station) => station.peajeId === pending.peajeId &&
+                (targetIds.includes(station.estacionId) || (station.family !== 'SIN_TARIFARIO' &&
+                  catalogRows.some((row) => row.estacion_id === station.estacionId && row.enabled !== false && row.importe != null))))
+            : detectedAll.filter((station) => station.peajeId === pending.peajeId && station.family === pending.family);
+          const detectedStations = onboarding
+            ? availableStations.filter((station) => targetIds.includes(station.estacionId))
+            : availableStations;
           const opciones: EstacionOpcionRefresco[] = detectedStations.map((station) => {
             const catalogRow = catalogo.find((row) => row.estacionId === station.estacionId);
             return {
@@ -1028,15 +1282,20 @@ export class TarifaRefreshDialogComponent implements OnChanges {
           );
           for (const resolved of this.resultados) {
             if (!DETECTADOS_RESUELTOS.has(resolved.codigo)) continue;
-            if ((resolved.peajeId ?? '') !== peajeId || !itemsPorEstacion.has(resolved.estacionId)) continue;
+            if ((stationsById.get(resolved.estacionId)?.peaje_id || resolved.peajeId || '') !== peajeId || !itemsPorEstacion.has(resolved.estacionId)) continue;
             const stationItems = itemsPorEstacion.get(resolved.estacionId)!;
             if (!stationItems.some((item) => item.id === resolved.id)) stationItems.push(resolved);
           }
           const grupoPendiente = { ...pending, itemsPorEstacion, opciones };
-          const seleccionadas = heuristicaSeleccionInicial(grupoPendiente, this.candidatos, catalogRows);
+          const seleccionadas = onboarding ? targetIds.slice(0, 1) : heuristicaSeleccionInicial(grupoPendiente, this.candidatos, catalogRows);
           const grupo: GrupoTarifaRefresco = {
             ...grupoPendiente,
             detectedStations,
+            availableStations,
+            onboarding,
+            reuseSourceIds: [],
+            reuseRows: [],
+            movedSources: [],
             groupCount: 1,
             sharedSlots: [seleccionadas],
             anchorEstacionId: seleccionadas[0] ?? detectedStations[0]?.estacionId ?? '',
@@ -1149,12 +1408,17 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     items: ResultadoDetectarRefresco[],
   ): EstacionCatalogoRefresco[] {
     const byEstacion = new Map<string, EstacionCatalogoRefresco>();
+    const stationName = (id: string, tariffName?: string) => resolveStationName(
+      this.estacionesCatalogo.find(station => station.id === id)?.nombre,
+      this.candidatos.find(candidate => candidate.estacionId === id)?.estacionNombre,
+      tariffName,
+    );
     for (const row of rows) {
       const existing = byEstacion.get(row.estacion_id);
       if (!existing) {
         byEstacion.set(row.estacion_id, {
           estacionId: row.estacion_id,
-          estacionNombre: row.estacion_nombre,
+          estacionNombre: stationName(row.estacion_id, row.estacion_nombre),
           peajeId: row.peaje_id,
           peajeNombre: row.peaje_nombre ?? '',
           sentidosExistentes: [row.sentido],
@@ -1167,9 +1431,9 @@ export class TarifaRefreshDialogComponent implements OnChanges {
       if (byEstacion.has(item.estacionId)) continue;
       byEstacion.set(item.estacionId, {
         estacionId: item.estacionId,
-        estacionNombre: item.estacionId,
-        peajeId: peajeId || item.peajeId || '',
-        peajeNombre: [...byEstacion.values()][0]?.peajeNombre ?? '',
+        estacionNombre: stationName(item.estacionId),
+        peajeId: this.estacionesCatalogo.find(station => station.id === item.estacionId)?.peaje_id || peajeId || item.peajeId || '',
+        peajeNombre: this.candidatos.find(candidate => candidate.estacionId === item.estacionId)?.peajeNombre ?? [...byEstacion.values()][0]?.peajeNombre ?? '',
         sentidosExistentes: [],
       });
     }
@@ -1289,6 +1553,32 @@ export class TarifaRefreshDialogComponent implements OnChanges {
         ];
       }
     }
+    if (grupo.onboarding && grupo.reuseRows.length && group.stationIds.some((id) => grupo.reuseSourceIds.includes(id))) {
+      for (const key of Object.keys(currentStations)) delete currentStations[key];
+      const chosen = grupo.reuseRows.filter((row) => row.sentido === sentido);
+      firstExistentes = chosen.map((row) => ({
+        tarifa_id: row.tarifa_id,
+        categoria: row.categoria,
+        status: row.status,
+        current_tarifa_importe_id: row.current_tarifa_importe_id,
+        importe: row.importe,
+        fecha_actualizacion: row.fecha_actualizacion,
+        enabled: row.enabled !== false,
+        fechaVigenciaInicio: row.fechaVigenciaInicio ?? null,
+        fechaVigenciaFin: row.fechaVigenciaFin ?? null,
+      }));
+      for (const row of chosen) {
+        const station = group.stations.find((item) => item.estacionId === row.estacion_id);
+        const key = detectedCellKey(row.categoria, row.status);
+        maxCats = Math.max(maxCats, row.categoria);
+        currentStations[key] = [{
+          estacionId: row.estacion_id,
+          estacionNombre: station?.estacionNombre ?? row.estacion_nombre,
+          color: station?.color ?? '#6D28D9',
+          importe: row.importe,
+        }];
+      }
+    }
     const rows = buildEditorRows(firstExistentes, categoriasEditor(maxCats || 1));
 
     const drafts: TarifarioEditorDrafts = { ...this.previousDrafts(previous, group, sentido) };
@@ -1349,6 +1639,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
 
   private reviewBoardSentido(grupo: GrupoTarifaRefresco, candidateId: string): TarifaSentido {
     if (grupo.family === 'AMBAS') return 'AMBAS';
+    if (grupo.sentidoNuevo) return grupo.sentidoNuevo;
     const item = [...grupo.itemsPorEstacion.values()].flat().find((row) => row.id === candidateId);
     const sentido = item?.sentidoAplicado ?? item?.sentidoSolicitado ?? null;
     if (sentido === 'IDA' || sentido === 'VUELTA') return sentido;
@@ -1571,6 +1862,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     family: SentidoFamily,
   ): { sentido: TarifaSentido | null; requiresChoice: boolean } {
     if (family === 'AMBAS') return { sentido: 'AMBAS', requiresChoice: false };
+    if (grupo.sentidoNuevo) return { sentido: grupo.sentidoNuevo, requiresChoice: false };
     const resolved = new Set<TarifaSentido>();
     for (const stationId of group.stationIds) {
       for (const item of grupo.itemsPorEstacion.get(stationId) ?? []) {
@@ -1672,7 +1964,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   ): { categoria: number; status: TarifaStatusPico; sentido: TarifaSentido } | null {
     const status = grupo.reviewStatusByCandidate[cand.candidateId] ?? cand.status;
     if (!status) return null;
-    const sentido: TarifaSentido = grupo.family === 'AMBAS' ? 'AMBAS' : 'IDA';
+    const sentido: TarifaSentido = grupo.sentidoNuevo ?? (grupo.family === 'AMBAS' ? 'AMBAS' : 'IDA');
     const categoria = this.effectiveCategoria(grupo, cand);
     if (categoria == null) return null;
     return { categoria, status, sentido };
@@ -1827,10 +2119,6 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     };
 
     for (const grupo of this.grupos) {
-      if (grupo.family === 'SIN_TARIFARIO') {
-        this.error = 'No hay un tarifario cargado para esta estación. No se puede crear un sentido desde la carga.';
-        return [];
-      }
       const fechaIso = toIsoDate(grupo.vigenteDesde.from);
       if (Object.values(grupo.pendingActions).includes('CONFIRM_NEW') && !fechaIso) {
         this.error = 'Indicá la fecha de Vigente desde para confirmar tarifas nuevas.';
@@ -2185,7 +2473,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
 
   private refreshCheckboxOptions(grupo: GrupoTarifaRefresco): void {
     grupo.checkboxOptionsCache = grupo.sharedSlots.map((_, index) =>
-      checkboxOptionsForSlot(grupo.detectedStations, grupo.sharedSlots, index),
+      checkboxOptionsForSlot(grupo.availableStations, grupo.sharedSlots, index),
     );
   }
 
@@ -2196,7 +2484,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   ): void {
     for (const editor of grupo.editors) {
       for (const tabla of editor.tablas) {
-        const row = tabla.reviewRows.find((item) => item.candidateId === candidateId);
+        const row = tabla.reviewRows.find((item) => item.candidateId === candidateId || item.candidateIds?.includes(candidateId));
         if (!row) continue;
         row.categoria = categoria;
         row.categoriaError =
@@ -2212,7 +2500,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   ): void {
     for (const editor of grupo.editors) {
       for (const tabla of editor.tablas) {
-        const row = tabla.reviewRows.find((item) => item.candidateId === candidateId);
+        const row = tabla.reviewRows.find((item) => item.candidateId === candidateId || item.candidateIds?.includes(candidateId));
         if (row) row.status = status;
       }
     }

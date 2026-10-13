@@ -1,3 +1,12 @@
+.trd__empresas {
+  margin-bottom: 1rem;
+}
+
+.trd__empresa-step {
+  margin: 0.75rem 0 0.35rem;
+  font-weight: 700;
+}
+
 .trd__editor {
   --at-signal: #004ac6;
   --at-ink: #0f172a;
@@ -59,6 +68,13 @@
   font-size: 0.72rem;
   font-weight: 750;
   letter-spacing: 0.04em;
+}
+
+.trd__reuse-list {
+  max-height: 15rem;
+  overflow: auto;
+  padding-left: 1.2rem;
+  line-height: 1.6;
 }
 
 .trd__group-count {

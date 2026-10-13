@@ -62,6 +62,7 @@ function mapListRow(raw: Record<string, unknown>): TarifarioCurrentRow {
         ? null
         : String(raw['current_tarifa_importe_id']),
     enabled: raw['enabled'] == null ? true : Boolean(raw['enabled']),
+    requiereNormalizacionIva: raw['requiere_normalizacion_iva'] == null ? undefined : Boolean(raw['requiere_normalizacion_iva']),
     ...mapVigenciaDiagnostico(raw),
   };
 }

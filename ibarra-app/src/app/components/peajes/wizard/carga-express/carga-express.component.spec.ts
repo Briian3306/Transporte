@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { PeajesCargaExpressComponent } from './carga-express.component';
 import {
@@ -19,6 +20,7 @@ describe('PeajesCargaExpressComponent', () => {
     await TestBed.configureTestingModule({
       imports: [PeajesCargaExpressComponent],
       providers: [
+        provideHttpClient(),
         provideRouter([]),
         PeajesWizardStateService,
         { provide: PEAJES_CARGA_SERVICE, useClass: PeajesCargaMockService },
@@ -54,8 +56,21 @@ describe('PeajesCargaExpressComponent', () => {
   it('agrega el paso Patentes solo cuando la plantilla deja patentes pendientes', () => {
     component.mostrarPasoPatentes();
 
-    expect(component.pasos.map((paso) => paso.id)).toEqual([1, 5, 6, 7, 9]);
-    expect(component.pasos.map((paso) => paso.numero)).toEqual([1, 2, 3, 4, 5]);
+    expect(component.pasos.map((paso) => paso.id)).toEqual([1, 5, 7, 9]);
+    expect(component.pasos.map((paso) => paso.numero)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('muestra Factura antes que Estaciones cuando hay estaciones sin resolver', async () => {
+    await component.onCargaExcepcion(6);
+
+    expect(component.pasoActual).toBe(7);
+    expect(component.pasos.map((paso) => paso.id)).toEqual([1, 7, 6, 9]);
+
+    component.onFacturaCompletada();
+    expect(component.pasoActual).toBe(6);
+
+    component.onEstacionesCompletadas();
+    expect(component.pasoActual).toBe(8);
   });
 
   it('omite Estaciones cuando no hay relaciones pendientes', () => {

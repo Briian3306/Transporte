@@ -248,7 +248,8 @@
 }
 
 .plt__documents-head h2 { margin-bottom: 0.25rem; }
-.plt__documents-filters { display: grid; grid-template-columns: 1.5fr 1fr 1fr 0.7fr; gap: 0.85rem; margin-bottom: 1rem; }
+.plt__documents { overflow: visible; }
+.plt__documents-filters { display: grid; grid-template-columns: 1.5fr 1fr 1fr 0.7fr; gap: 0.85rem; margin-bottom: 1rem; overflow: visible; position: relative; z-index: 3; }
 .plt__documents-filters .plt__field { min-width: 0; }
 .plt__mono { font-variant-numeric: tabular-nums; white-space: nowrap; }
 

@@ -16,6 +16,8 @@ import {
   buscarColumnaPorAliases,
   CONSUMOS_RESUMEN_ALIASES,
   concesionPorValorEstacion,
+  coincidirPorNombreNormalizado,
+  Empresa,
   Estacion,
   PEAJES_CATALOGO_SERVICE,
   Peaje,
@@ -65,6 +67,9 @@ export class Paso6EstacionesComponent implements OnInit {
   estaciones: Estacion[] = [];
   peajesUnicos: Peaje[] = [];
   peajeOptions: SearchSelectOption[] = [];
+  private empresas: Empresa[] = [];
+  creandoPeajePara: string | null = null;
+  nuevoPeajeNombre = '';
   relaciones: RelacionEstacionProveedor[] = [];
   sugerencias: Record<string, Estacion[]> = {};
   reconocimientos: Record<string, ResultadoReconocimientoEstacion> = {};
@@ -120,15 +125,15 @@ export class Paso6EstacionesComponent implements OnInit {
   }
 
   get sinPeajesEmpresa(): boolean {
-    return !!this.state.snapshot().empresaId && this.peajesUnicos.length === 0;
+    return this.state.empresaIdsDocumentos().length > 0 && this.peajesUnicos.length === 0;
   }
 
   get alcanceEmpresaLabel(): string {
-    const empresaId = this.state.snapshot().empresaId;
-    if (!empresaId) return '';
+    const empresaIds = this.state.empresaIdsDocumentos();
+    if (!empresaIds.length) return '';
     if (this.peajesUnicos.length === 1) return this.peajesUnicos[0].nombre;
     if (this.peajesUnicos.length) return this.peajesUnicos.map((p) => p.nombre).join(' · ');
-    return 'la empresa del Paso 1';
+    return empresaIds.length > 1 ? 'las empresas de los documentos' : 'la empresa del documento';
   }
 
   get relacionesFiltradas(): RelacionEstacionProveedor[] {
@@ -175,12 +180,50 @@ export class Paso6EstacionesComponent implements OnInit {
     return rel?.peajeIdAlcance ?? rel?.peajeIdDerivado ?? null;
   }
 
-  peajeOptionsForRow(_valorProveedor: string): SearchSelectOption[] {
-    const empresaId = this.state.snapshot().empresaId ?? '';
-    if (empresaId && this.peajeOptionsByEmpresa.has(empresaId)) {
-      return this.peajeOptionsByEmpresa.get(empresaId)!;
+  peajeOptionsForRow(valorProveedor: string): SearchSelectOption[] {
+    const empresaId = this.empresaIdDeFila(valorProveedor);
+    if (!empresaId) return this.peajeOptions;
+    return this.peajeOptionsByEmpresa.get(empresaId) ?? [];
+  }
+
+  abrirCrearPeaje(valorProveedor: string): void {
+    const rel = this.relaciones.find((r) => r.valorProveedor === valorProveedor);
+    const empresaId = this.empresaIdDeFila(valorProveedor);
+    const empresa = this.empresas.find((item) => item.id === empresaId);
+    this.creandoPeajePara = valorProveedor;
+    this.nuevoPeajeNombre = empresa?.nombre || rel?.concesionProveedor || '';
+    this.error = null;
+    this.cdr.markForCheck();
+  }
+
+  async crearPeajeFila(): Promise<void> {
+    const valor = this.creandoPeajePara;
+    const nombre = this.nuevoPeajeNombre.trim();
+    const empresaId = valor ? this.empresaIdDeFila(valor) : null;
+    if (!valor || !nombre || !empresaId) {
+      this.error = 'Elegí la empresa del documento antes de crear el peaje.';
+      this.cdr.markForCheck();
+      return;
     }
-    return this.peajeOptions;
+    try {
+      const peaje = await firstValueFrom(
+        this.catalogo.crearPeaje({
+          nombre,
+          empresa_id: empresaId,
+          descripcion: null,
+        })
+      );
+      this.todosPeajes = [...this.todosPeajes, peaje];
+      this.peajesUnicos = [...this.peajesUnicos, peaje];
+      this.rebuildOptionCaches();
+      this.onPeajeAlcanceChange(valor, peaje.id);
+      this.nuevaEstacionPeajeId = peaje.id;
+      this.creandoPeajePara = null;
+      this.successMsg = `Peaje «${peaje.nombre}» creado.`;
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : 'No se pudo crear el peaje.';
+    }
+    this.cdr.markForCheck();
   }
 
   isEditing(valorProveedor: string): boolean {
@@ -213,6 +256,16 @@ export class Paso6EstacionesComponent implements OnInit {
     if (this.rowPage >= this.totalRowPages - 1) return;
     this.rowPage += 1;
     this.cdr.markForCheck();
+  }
+
+  private empresaIdDeFila(valorProveedor: string): string | null {
+    const rel = this.relaciones.find((r) => r.valorProveedor === valorProveedor);
+    const concesion = rel?.concesionProveedor?.trim();
+    if (concesion) {
+      const porNombre = coincidirPorNombreNormalizado(concesion, this.empresas);
+      if (porNombre) return porNombre.id;
+    }
+    return this.empresaIdParaValor(valorProveedor);
   }
 
   private empresaIdParaValor(valorProveedor: string): string | null {
@@ -267,7 +320,8 @@ export class Paso6EstacionesComponent implements OnInit {
     const valores = this.valoresProveedorUnicos();
     const prev = this.state.snapshot().relacionesEstacion;
     const concesionMap = this.construirMapaConcesion();
-    const empresaId = this.state.snapshot().empresaId;
+    const empresaIds = this.state.empresaIdsDocumentos();
+    const empresaUnica = empresaIds.length === 1 ? empresaIds[0] : null;
     const peajeUnicoEmpresa =
       this.peajesUnicos.length === 1 ? this.peajesUnicos[0] : null;
     this.codigosFueraDeEmpresa = [];
@@ -281,7 +335,7 @@ export class Paso6EstacionesComponent implements OnInit {
         ? reconocerPeajeDesdeConcesion(
             concesion,
             this.todosPeajes,
-            empresaId
+            empresaUnica
           )
         : null;
       const peajeDesdeConcesion =
@@ -299,9 +353,13 @@ export class Paso6EstacionesComponent implements OnInit {
         peajeUnicoEmpresa?.id ??
         null;
 
-      if (peajeAlcance && empresaId) {
+      if (peajeAlcance && empresaIds.length) {
         const peaje = this.peajeById.get(peajeAlcance);
-        if (peaje && peaje.empresa_id && peaje.empresa_id !== empresaId && peaje.empresa_id !== '__global__') {
+        const ajena =
+          !!peaje?.empresa_id &&
+          peaje.empresa_id !== '__global__' &&
+          !empresaIds.includes(peaje.empresa_id);
+        if (ajena) {
           peajeAlcance = peajeUnicoEmpresa?.id ?? null;
         }
       }
@@ -315,7 +373,9 @@ export class Paso6EstacionesComponent implements OnInit {
       const existenteEnEmpresa = !!(
         existente?.estacionId &&
         pool.some((e) => e.id === existente.estacionId) &&
-        (!estPrev || estacionPerteneceAEmpresa(estPrev, empresaId, this.todosPeajes))
+        (!estPrev ||
+          !empresaIds.length ||
+          empresaIds.some((id) => estacionPerteneceAEmpresa(estPrev, id, this.todosPeajes)))
       );
       if (existente?.estacionId && !existenteEnEmpresa) {
         this.codigosFueraDeEmpresa.push(valorProveedor);
@@ -326,7 +386,7 @@ export class Paso6EstacionesComponent implements OnInit {
       const recLocal = reconocerEstacionEnCatalogo(
         pool,
         valorProveedor,
-        empresaId,
+        empresaUnica,
         this.todosPeajes
       );
       auto = recLocal.tipo === 'exacta' ? recLocal.estacion ?? null : null;
@@ -404,9 +464,13 @@ export class Paso6EstacionesComponent implements OnInit {
 
   private async reconocerFila(valorProveedor: string): Promise<void> {
     const peajeId = this.peajeAlcanceDe(valorProveedor);
+    const empresaIds = this.state.empresaIdsDocumentos();
+    const desdePeaje = this.peajeById.get(peajeId ?? '')?.empresa_id ?? null;
     const empresaId =
-      this.state.snapshot().empresaId ??
-      this.peajeById.get(peajeId ?? '')?.empresa_id ??
+      (desdePeaje && (empresaIds.includes(desdePeaje) || desdePeaje === '__global__')
+        ? desdePeaje
+        : null) ??
+      (empresaIds.length === 1 ? empresaIds[0] : this.state.snapshot().empresaId) ??
       undefined;
     const reconocimiento = await firstValueFrom(
       this.catalogo.reconocerEstacion(valorProveedor, empresaId)
@@ -468,27 +532,39 @@ export class Paso6EstacionesComponent implements OnInit {
     this.peajeOptionsByEmpresa.clear();
     this.peajeOptionsByEmpresa.set('', this.peajeOptions);
     const empresaIds = new Set(
-      this.todosPeajes.map((p) => p.empresa_id).filter((id): id is string => !!id)
+      [
+        ...this.empresas.map((empresa) => empresa.id),
+        ...this.state.empresaIdsDocumentos(),
+        ...this.todosPeajes.map((p) => p.empresa_id).filter((id): id is string => !!id),
+      ]
     );
     for (const empresaId of empresaIds) {
-      const pool = this.todosPeajes.filter((p) => !p.empresa_id || p.empresa_id === empresaId);
+      const pool = this.todosPeajes.filter(
+        (p) => p.empresa_id == null || p.empresa_id === empresaId || p.empresa_id === '__global__'
+      );
       this.peajeOptionsByEmpresa.set(
         empresaId,
-        (pool.length ? pool : this.todosPeajes).map((p) => ({ id: p.id, label: p.nombre }))
+        pool.map((p) => ({ id: p.id, label: p.nombre }))
       );
     }
   }
 
   private async recargarCatalogos(): Promise<void> {
-    const empresaId = this.state.snapshot().empresaId ?? undefined;
-    this.todosPeajes = await firstValueFrom(this.catalogo.listarPeajes());
-    this.todasEstaciones = await firstValueFrom(this.catalogo.listarEstaciones());
+    const empresaIds = this.state.empresaIdsDocumentos();
+    const [peajes, estaciones, empresas] = await Promise.all([
+      firstValueFrom(this.catalogo.listarPeajes()),
+      firstValueFrom(this.catalogo.listarEstaciones()),
+      firstValueFrom(this.catalogo.listarEmpresas()),
+    ]);
+    this.todosPeajes = peajes;
+    this.todasEstaciones = estaciones;
+    this.empresas = empresas;
 
-    // RN-23 / RN-26: con empresa en Paso 1, NUNCA caer a peajes de otras empresas.
-    // Código 0001 es Zarate (MERCOSUR) y DOCK SUD (AUBASA): el pool queda en la empresa.
-    const peajesEmpresa = empresaId
+    // RN-23 / RN-26: el pool son los peajes de las empresas de los documentos.
+    // Código 0001 es Zarate (MERCOSUR) y DOCK SUD (AUBASA): no se mezclan.
+    const peajesEmpresa = empresaIds.length
       ? this.todosPeajes.filter(
-          (p) => p.empresa_id === empresaId || p.empresa_id === '__global__'
+          (p) => !p.empresa_id || empresaIds.includes(p.empresa_id) || p.empresa_id === '__global__'
         )
       : this.todosPeajes;
     this.peajesUnicos = peajesEmpresa;

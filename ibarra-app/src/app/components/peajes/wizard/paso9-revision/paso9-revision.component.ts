@@ -4,8 +4,10 @@ import { firstValueFrom } from 'rxjs';
 import {
   ConfiguracionPlantilla,
   ConfirmacionCargaResultado,
+  Empresa,
   Estacion,
   EstacionViaSentido,
+  Peaje,
   PasadaEstandarizada,
   Pase,
   Patente,
@@ -24,6 +26,7 @@ import {
   WizardDocumentoGrupo,
 } from '../services/peajes-wizard-state.service';
 import { DialogComponent } from '../../../shared';
+import { EmpresaTarifarioPaso, pasosTarifarioPorEmpresa } from './tarifario-por-empresa';
 import { TarifaRefreshDialogComponent } from './tarifa-refresh-dialog.component';
 import { TarifaValidationService, AsociacionTarifaImporte } from '../../services/tarifa-validation.service';
 import { GranularPermissionService } from '../../../../services/granular-permission.service';
@@ -71,7 +74,11 @@ export interface FilaResumenTarifa {
 @Component({
   selector: 'app-paso9-revision',
   standalone: true,
-  imports: [CommonModule, DialogComponent, TarifaRefreshDialogComponent],
+  imports: [
+    CommonModule,
+    DialogComponent,
+    TarifaRefreshDialogComponent,
+  ],
   templateUrl: './paso9-revision.component.html',
   styleUrl: './paso9-revision.component.css',
 })
@@ -92,6 +99,9 @@ export class Paso9RevisionComponent implements OnInit {
   importadosResumen: Array<{ numero: string; pasadas: number }> = [];
   exitoAbierto = false;
   refreshOpen = false;
+  empresaTarifarioStep = 1;
+  private empresasCatalogo: Empresa[] = [];
+  private peajesCatalogo: Peaje[] = [];
   resumenRefresco: ResumenRefrescoTarifas | null = null;
   configuracionesPlantilla: ConfiguracionPlantilla[] = [];
   tarifasActualizadas: TarifaRefrescoGuardada[] = [];
@@ -102,7 +112,7 @@ export class Paso9RevisionComponent implements OnInit {
 
   private pases: Pase[] = [];
   private patentes: Patente[] = [];
-  private estaciones: Estacion[] = [];
+  estaciones: Estacion[] = [];
   private estacionesViasSentido: EstacionViaSentido[] = [];
 
   constructor(
@@ -115,16 +125,20 @@ export class Paso9RevisionComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     try {
-      const [pases, patentes, estaciones, estacionesViasSentido] = await Promise.all([
+      const [pases, patentes, estaciones, estacionesViasSentido, empresas, peajes] = await Promise.all([
         firstValueFrom(this.catalogo.listarPases()),
         firstValueFrom(this.catalogo.listarPatentes()),
         firstValueFrom(this.catalogo.listarEstaciones()),
         firstValueFrom(this.catalogo.listarEstacionesViasSentido()),
+        firstValueFrom(this.catalogo.listarEmpresas()),
+        firstValueFrom(this.catalogo.listarPeajes()),
       ]);
       this.pases = pases;
       this.patentes = patentes.filter((p) => p.activa !== false);
       this.estaciones = estaciones;
       this.estacionesViasSentido = estacionesViasSentido;
+      this.empresasCatalogo = empresas;
+      this.peajesCatalogo = peajes;
       await this.analizarTarifas();
     } catch {
       this.pases = [];
@@ -199,12 +213,41 @@ export class Paso9RevisionComponent implements OnInit {
     return `Se subieron ${this.registrosConfirmados} registros correctamente!`;
   }
 
+  get empresasTarifario(): EmpresaTarifarioPaso[] {
+    return pasosTarifarioPorEmpresa({
+      empresaIds: this.state.empresaIdsDocumentos(),
+      empresas: this.empresasCatalogo,
+      peajes: this.peajesCatalogo,
+      candidatos: this.resumenRefresco?.candidatos ?? [],
+      resultados: this.resumenRefresco?.resultados ?? [],
+    });
+  }
+
+  get empresaTarifarioActiva(): EmpresaTarifarioPaso | null {
+    return this.empresasTarifario.find((paso) => paso.numero === this.empresaTarifarioStep)
+      ?? this.empresasTarifario[0]
+      ?? null;
+  }
+
+  get hasNextTarifarioCompany(): boolean {
+    return this.empresasTarifario.some(paso => paso.numero !== this.empresaTarifarioStep && paso.estado === 'pendiente');
+  }
+
   get dialogResultados(): ResultadoDetectarRefresco[] {
-    return this.resumenRefresco?.resultados ?? this.emptyResultados;
+    return this.filtrarPorEmpresaActiva(this.resumenRefresco?.resultados ?? this.emptyResultados);
   }
 
   get dialogCandidatos(): CandidatoRefrescoTarifa[] {
-    return this.resumenRefresco?.candidatos ?? this.emptyCandidatos;
+    return this.filtrarPorEmpresaActiva(this.resumenRefresco?.candidatos ?? this.emptyCandidatos);
+  }
+
+  private filtrarPorEmpresaActiva<T extends { peajeId?: string | null }>(rows: T[]): T[] {
+    const activa = this.empresaTarifarioActiva;
+    if (!activa) return rows;
+    const peajeIds = new Set(
+      this.peajesCatalogo.filter((peaje) => peaje.empresa_id == null || peaje.empresa_id === activa.id).map((peaje) => peaje.id)
+    );
+    return rows.filter((row) => !!row.peajeId && peajeIds.has(row.peajeId));
   }
 
   get canManageTarifas(): boolean {
@@ -220,7 +263,15 @@ export class Paso9RevisionComponent implements OnInit {
 
   get dialogNeeded(): boolean {
     return (this.resumenRefresco?.resultados ?? []).some((r) =>
-      ['NEW_TARIFF', 'AMBIGUOUS_TARIFF_MATCH', 'STATUS_REQUIRED', 'STATUS_AMBIGUOUS', 'DIRECTION_REQUIRED', 'DIRECTION_CONFLICT'].includes(r.codigo),
+      [
+        'NEW_TARIFF',
+        'AMBIGUOUS_TARIFF_MATCH',
+        'STATUS_REQUIRED',
+        'STATUS_AMBIGUOUS',
+        'DIRECTION_REQUIRED',
+        'DIRECTION_CONFLICT',
+        'CONTEXT_INCOMPLETE',
+      ].includes(r.codigo),
     );
   }
 
@@ -282,7 +333,8 @@ export class Paso9RevisionComponent implements OnInit {
           estacionId: estacion.id,
           estacionNombre: estacion.nombre,
           peajeId: estacion.peaje_id,
-          peajeNombre: estacion.nombre,
+          peajeNombre: this.peajesCatalogo.find((peaje) => peaje.id === estacion.peaje_id)?.nombre ?? estacion.nombre,
+          codigosProveedor: estacion.codigos_proveedor ?? [],
         })),
       });
       // The extractor intentionally does not invent a peaje identity. Once the
@@ -303,6 +355,11 @@ export class Paso9RevisionComponent implements OnInit {
       // Operators may review unresolved direction candidates even though only
       // peajes:manage can persist tariff changes.
       this.refreshOpen = this.dialogNeeded;
+      const conDatos = this.empresasTarifario.find((paso) => paso.estado !== 'vacio');
+      const actual = this.empresasTarifario.find((paso) => paso.numero === this.empresaTarifarioStep);
+      if (conDatos && (!actual || actual.estado === 'vacio')) {
+        this.empresaTarifarioStep = conDatos.numero;
+      }
       if (this.resumenRefresco.contextIncomplete) {
         this.error = CONTEXTO_INCOMPLETO_MSG;
       } else if (this.error === CONTEXTO_INCOMPLETO_MSG) {
@@ -323,6 +380,10 @@ export class Paso9RevisionComponent implements OnInit {
     if (this.dialogNeeded) this.refreshOpen = true;
   }
 
+  onEmpresaTarifarioStep(step: number): void {
+    this.empresaTarifarioStep = step;
+  }
+
   async onRefreshSaved(saved: TarifaRefrescoGuardada[]): Promise<void> {
     const byCandidate = new Map(
       this.tarifasActualizadas
@@ -333,8 +394,12 @@ export class Paso9RevisionComponent implements OnInit {
       if (item.candidate_id) byCandidate.set(item.candidate_id, item);
     }
     this.tarifasActualizadas = [...byCandidate.values()];
-    this.refreshOpen = false;
     await this.analizarTarifas();
+    const pendientes = this.empresasTarifario.filter(paso => paso.estado === 'pendiente');
+    const actual = pendientes.find(paso => paso.numero === this.empresaTarifarioStep);
+    const siguiente = actual ?? pendientes.find(paso => paso.numero > this.empresaTarifarioStep) ?? pendientes[0];
+    if (siguiente) this.empresaTarifarioStep = siguiente.numero;
+    this.refreshOpen = !!siguiente;
   }
 
   paseExt(pasada: PasadaEstandarizada): string {

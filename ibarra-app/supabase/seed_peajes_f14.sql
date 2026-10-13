@@ -8,7 +8,7 @@ VALUES (
   'a0f14000-0000-4000-8000-000000000001',
   'CLI Auditoría tarifas',
   'Seed local F14 (Supabase CLI)',
-  '__global__'
+  NULL
 )
 ON CONFLICT (id) DO UPDATE
 SET nombre = EXCLUDED.nombre,

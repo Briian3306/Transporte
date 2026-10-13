@@ -2,8 +2,10 @@
 -- 190 stations/codes, 396 provider aliases, 17 templates, 161 template configs,
 -- 93 station recognitions, 5 combined algorithms, 9 algorithm steps, 27 algorithm codes.
 -- Company UUIDs are resolved by name; station/template/algorithm IDs map to local natural keys.
-BEGIN;
-
+-- Single statement: the CLI parses a seed batch before executing it, so a TEMP
+-- table created in one statement is invisible to the next statement.
+DO $seed$
+BEGIN
 CREATE TEMP TABLE seed_stations_src (
   source_id uuid PRIMARY KEY, peaje_id uuid NOT NULL, nombre text NOT NULL, ubicacion text,
   descripcion text, codigos_proveedor text[] NOT NULL DEFAULT '{}', created_at timestamptz,
@@ -279,20 +281,16 @@ CREATE TEMP TABLE seed_empresa_id_map ON COMMIT DROP AS
 SELECT s.source_id,e.id::text AS local_id
 FROM seed_empresas_src s JOIN public.empresas e ON e.nombre=s.nombre;
 
-DO $$
-BEGIN
   IF (SELECT count(*) FROM seed_empresa_id_map) <> (SELECT count(*) FROM seed_empresas_src) THEN
     RAISE EXCEPTION 'No se pudieron mapear todas las empresas del snapshot de Peajes';
   END IF;
-END;
-$$;
 
 -- Keep the seed peajes aligned with the local company UUIDs too; alias validation
 -- requires peajes.empresa_id and estaciones_alias_proveedor.empresa_id to agree.
 UPDATE public.peajes p
-SET empresa_id=em.local_id
+SET empresa_id=em.local_id::uuid
 FROM seed_empresa_id_map em
-WHERE p.empresa_id=em.source_id AND p.empresa_id IS DISTINCT FROM em.local_id;
+WHERE p.empresa_id=em.source_id::uuid AND p.empresa_id IS DISTINCT FROM em.local_id::uuid;
 
 CREATE TEMP TABLE seed_aliases_src (
   id uuid PRIMARY KEY,empresa_id text NOT NULL,source_estacion_id uuid NOT NULL,
@@ -1199,6 +1197,5 @@ JOIN seed_station_id_map sm ON sm.source_id=r.source_estacion_id AND sm.local_id
 ON CONFLICT (plantilla_id,valor_normalizado) DO UPDATE SET
   estacion_id=EXCLUDED.estacion_id,valor_proveedor=EXCLUDED.valor_proveedor,
   origen=EXCLUDED.origen,created_at=EXCLUDED.created_at;
-
-COMMIT;
-
+END
+$seed$;

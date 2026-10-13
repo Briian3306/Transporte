@@ -28,23 +28,22 @@ const peajesAdminOrOperational = any(peajesManage, peajesOperational);
 
 export const PEAJES_ROUTE_PERMISSIONS: Record<string, PermissionRequirement> = {
   '/peajes': peajesAdminOrOperational,
-  '/peajes/wizard': peajesOperational,
+  '/peajes/wizard': all(peajesManage),
   '/peajes/pasadas': peajesOperational,
-  '/peajes/pasadas-pendientes': peajesOperational,
-  '/peajes/auditoria-tarifas': peajesOperational,
+  '/peajes/pasadas-pendientes': all(peajesManage),
+  '/peajes/auditoria-tarifas': all(peajesManage),
   '/peajes/tarifario': all(peajesManage),
-  '/peajes/auditoria-estaciones': peajesOperational,
+  '/peajes/auditoria-estaciones': all(peajesManage),
   '/peajes/pdf-reader': peajesRead,
-  '/peajes/carga-express': all(peajesManage),
-  '/peajes/catalogos': all(peajesManage),
-  '/peajes/catalogos/empresas': all(peajesManage),
-  '/peajes/catalogos/peajes': all(peajesManage),
-  // Read access keeps the catalogue viewable; the editor disables mutations
-  // unless the user also has the operational peajes:create permission.
-  '/peajes/catalogos/estaciones': peajesRead,
-  '/peajes/catalogos/patentes': all(peajesManage),
-  '/peajes/catalogos/pases': all(peajesManage),
-  '/peajes/plantillas': all(peajesManage),
+  '/peajes/carga-express': peajesOperational,
+  '/peajes/catalogos': peajesOperational,
+  '/peajes/catalogos/empresas': peajesOperational,
+  '/peajes/catalogos/peajes': peajesOperational,
+  '/peajes/catalogos/estaciones': peajesOperational,
+  '/peajes/catalogos/patentes': peajesOperational,
+  '/peajes/catalogos/pases': peajesOperational,
+  // Lectura abre Documentos. Plantillas y algoritmos quedan en la UI para manage.
+  '/peajes/plantillas': peajesRead,
 };
 
 export function matchesPermissionRequirement(

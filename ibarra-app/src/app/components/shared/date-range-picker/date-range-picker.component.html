@@ -1,4 +1,4 @@
-<div class="drp" [class.drp--disabled]="disabled" [class.drp--error]="parseError">
+<div class="drp" [class.drp--disabled]="disabled" [class.drp--error]="parseError" [class.drp--open]="open">
   <label *ngIf="label" class="drp__label" [attr.for]="inputId || null">{{ label }}</label>
 
   <div class="drp__trigger-row">
@@ -29,7 +29,7 @@
         [disabled]="disabled"
         tabindex="-1"
         aria-label="Abrir calendario"
-        (click)="toggle()"
+        (mousedown)="onCalendarPointerDown($event)"
       >
         <i class="fas fa-caret-down" aria-hidden="true"></i>
       </button>

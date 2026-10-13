@@ -50,6 +50,7 @@ export interface TarifarioCurrentRow {
   fecha_actualizacion: string | null;
   current_tarifa_importe_id: string | null;
   enabled?: boolean;
+  requiereNormalizacionIva?: boolean;
   fechaVigenciaInicio?: string | null;
   fechaVigenciaFin?: string | null;
   diagnostico?: string | null;

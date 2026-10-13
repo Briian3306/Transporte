@@ -208,6 +208,7 @@
           >
             <span class="tf__review-cat-label">Categoría</span>
             <input
+              #reviewCategoryInput
               class="tf__input tf__review-cat-input"
               type="number"
               min="0"
@@ -221,6 +222,7 @@
               [attr.aria-describedby]="review.categoriaError ? 'tf-review-cat-err-' + review.candidateId : null"
               aria-label="Categoría de 0 a 10"
               required
+              (keydown)="onReviewCategoryKeydown($event, review)"
               (change)="onReviewCategoryInput(review, $any($event.target).value)"
               (blur)="onReviewCategoryInput(review, $any($event.target).value)"
             />
@@ -237,11 +239,15 @@
           <div class="tf__review">
             <span
               class="tf__trace"
-              *ngIf="review.estacionNombre"
+              *ngIf="!review.stations?.length && review.estacionNombre"
               [style.--tf-trace-color]="review.color"
             >
               <span class="tf__trace-swatch" aria-hidden="true"></span>
               <span class="tf__trace-name">{{ review.estacionNombre }}</span>
+            </span>
+            <span class="tf__trace" *ngFor="let station of review.stations" [style.--tf-trace-color]="station.color">
+              <span class="tf__trace-swatch" aria-hidden="true"></span>
+              <span class="tf__trace-name">{{ station.estacionNombre }}</span>
             </span>
             <span class="tf__detected-amount">{{ formatDetected(review) }}</span>
             <div class="tf__review-status" role="group" aria-label="Status de revisión">

@@ -1,3 +1,7 @@
+.drp--open {
+  z-index: 60;
+}
+
 .drp {
   --drp-signal: #1769e0;
   --drp-rail: #f2f4f6;
@@ -176,9 +180,11 @@
 
 .drp__popover {
   position: absolute;
-  z-index: 40;
+  z-index: 60;
   top: calc(100% + 0.35rem);
   left: 0;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
   background: var(--drp-surface);
   border: 1px solid var(--drp-line);
   border-radius: 0.75rem;

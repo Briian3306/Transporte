@@ -44,6 +44,8 @@ export class SearchMultiSelectComponent implements ControlValueAccessor {
   @Input() mode: SearchMultiSelectMode = 'multi';
   /** En modo single, oculta la × del chip (p. ej. empresa fijada en wizard). */
   @Input() clearable = true;
+  /** Con el campo vacío, lista las opciones que todavía no están elegidas. */
+  @Input() showAllWhenEmpty = false;
 
   @Output() valueChange = new EventEmitter<string[]>();
 
@@ -76,10 +78,13 @@ export class SearchMultiSelectComponent implements ControlValueAccessor {
 
   get filteredOptions(): SearchMultiSelectOption[] {
     const q = this.query.trim().toLowerCase();
-    if (!q) return [];
     const selected = new Set(this.value);
-    return this.options
-      .filter((o) => !selected.has(o.id) && o.label.toLowerCase().includes(q))
+    const available = this.options.filter((o) => !selected.has(o.id));
+    if (!q) {
+      return this.showAllWhenEmpty ? available.slice(0, this.maxResults) : [];
+    }
+    return available
+      .filter((o) => o.label.toLowerCase().includes(q))
       .slice(0, this.maxResults);
   }
 
@@ -102,12 +107,12 @@ export class SearchMultiSelectComponent implements ControlValueAccessor {
   onQueryChange(q: string): void {
     this.query = q;
     this.highlightedIndex = 0;
-    this.open = q.trim().length > 0;
+    this.open = this.showAllWhenEmpty || q.trim().length > 0;
     this.onTouched();
   }
 
   onFocus(): void {
-    if (this.query.trim().length > 0) {
+    if (this.showAllWhenEmpty || this.query.trim().length > 0) {
       this.open = true;
     }
   }

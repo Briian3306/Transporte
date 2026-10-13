@@ -111,8 +111,10 @@ SELECT has_function(
   'F14-18 helper privado de dirección/current/historial existe'
 );
 
+INSERT INTO public.empresas (id, nombre) VALUES
+  ('18180000-aaaa-4aa1-8aa1-000000000000', 'AUBASA company F14-18');
 INSERT INTO public.peajes (id, nombre, empresa_id) VALUES
-  ('18180000-aaaa-4aa1-8aa1-000000000001', 'AUBASA F14-18', 'test');
+  ('18180000-aaaa-4aa1-8aa1-000000000001', 'AUBASA F14-18', '18180000-aaaa-4aa1-8aa1-000000000000');
 
 INSERT INTO public.estaciones (id, peaje_id, nombre) VALUES
   ('18180000-aaaa-4aa1-8aa1-000000000010', '18180000-aaaa-4aa1-8aa1-000000000001', 'DOCK SUD'),
@@ -1845,7 +1847,7 @@ SELECT ok(
 SELECT throws_ok(
   $$INSERT INTO public.estaciones_vias_sentido
     (empresa_id, estacion_id, codigo_estacion, via, sentido)
-    VALUES ('test', '18180000-aaaa-4aa1-8aa1-000000000010', '0004', '01M', 'AMBAS')$$,
+    VALUES ('18180000-aaaa-4aa1-8aa1-000000000000', '18180000-aaaa-4aa1-8aa1-000000000010', '0004', '01M', 'AMBAS')$$,
   '23514',
   NULL,
   'station/lane catalogue rejects inferred AMBAS'

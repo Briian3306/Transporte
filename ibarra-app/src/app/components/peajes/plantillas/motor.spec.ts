@@ -199,6 +199,20 @@ describe('peajes/plantillas/motor', () => {
       columnaOrigen: 'ESTACION',
     });
     expect(drop).toBe(false);
+    const varios = filtrarColumnaStrategy.ejecutar({
+      fila: { ESTACION: '0003' },
+      resultado: {},
+      parametros: { columna: 'ESTACION', valor: ['0001', '0003'] },
+      columnaOrigen: 'ESTACION',
+    });
+    expect(varios).toBe(true);
+    const lista = filtrarColumnaStrategy.ejecutar({
+      fila: { ESTACION: '2' },
+      resultado: {},
+      parametros: { columna: 'ESTACION', valor: '0001, 0002' },
+      columnaOrigen: 'ESTACION',
+    });
+    expect(lista).toBe(true);
   });
 
   it('FILTRAR_COLUMNA: descriptor exige columna y valor', () => {

@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
+import { PermissionStateService } from '../../../services/permission-state.service';
 import {
   PEAJES_PLANTILLAS_SERVICE,
   PlantillaConfiguracion,
@@ -12,6 +13,10 @@ import { PlantillaBuilderComponent } from './plantilla-builder.component';
 import { AplicarPlantillaComponent } from './aplicar-plantilla.component';
 import { AlgoritmoBuilderComponent } from './algoritmo-builder.component';
 import { DocumentosPlantillasListComponent } from './documentos-plantillas-list.component';
+
+export function puedeVerPlantillasAlgoritmos(permissions: readonly string[]): boolean {
+  return permissions.includes('*:*') || permissions.includes('peajes:manage');
+}
 
 /**
  * Hub de plantillas y algoritmos (área plantillas/**).
@@ -32,6 +37,7 @@ import { DocumentosPlantillasListComponent } from './documentos-plantillas-list.
 export class PlantillasHomeComponent implements OnInit {
   private readonly motor = inject(PeajesMotorTransformacionService);
   private readonly route = inject(ActivatedRoute);
+  private readonly permissionState = inject(PermissionStateService);
 
   constructor(
     @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillasSvc: PeajesPlantillasService
@@ -42,12 +48,18 @@ export class PlantillasHomeComponent implements OnInit {
   algoritmos: AlgoritmoCombinado[] = [];
   estrategias: string[] = [];
 
+  get soloDocumentos(): boolean {
+    return !puedeVerPlantillasAlgoritmos(this.permissionState.getUserPermissions());
+  }
+
   ngOnInit(): void {
     this.estrategias = this.motor.getRegistry().codigos();
-    this.plantillasSvc.listarPlantillas().subscribe((p) => (this.plantillas = p));
-    this.plantillasSvc.listarAlgoritmos().subscribe((a) => (this.algoritmos = a));
+    if (!this.soloDocumentos) {
+      this.plantillasSvc.listarPlantillas().subscribe((p) => (this.plantillas = p));
+      this.plantillasSvc.listarAlgoritmos().subscribe((a) => (this.algoritmos = a));
+    }
     const vistaParam = this.route.snapshot.queryParamMap.get('vista');
-    if (vistaParam === 'documentos') {
+    if (this.soloDocumentos || vistaParam === 'documentos') {
       this.vista = 'documentos';
     } else if (this.route.snapshot.queryParamMap.get('desdeWizard') === '1') {
       this.vista = 'builder';
@@ -55,6 +67,10 @@ export class PlantillasHomeComponent implements OnInit {
   }
 
   mostrar(v: typeof this.vista): void {
+    if (this.soloDocumentos) {
+      this.vista = 'documentos';
+      return;
+    }
     this.vista = v;
   }
 }

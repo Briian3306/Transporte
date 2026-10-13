@@ -524,7 +524,13 @@ const DESCRIPTORES: AlgorithmDescriptor[] = [
           err('columna', null, 'FILTRAR_COLUMNA: falta columna de entrada')
         );
       }
-      if (config == null || !('valor' in config) || config['valor'] === undefined) {
+      const valor = config?.['valor'];
+      const valorVacio =
+        valor === undefined ||
+        valor === null ||
+        valor === '' ||
+        (Array.isArray(valor) && valor.length === 0);
+      if (config == null || valorVacio) {
         errores.push(err('valor', null, 'FILTRAR_COLUMNA: falta parametro valor'));
       }
       return errores;

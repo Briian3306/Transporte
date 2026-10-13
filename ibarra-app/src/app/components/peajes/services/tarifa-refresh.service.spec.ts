@@ -23,6 +23,23 @@ function pasada(overrides: Partial<PasadaEstandarizada> = {}): PasadaEstandariza
 }
 
 describe('extraerCandidatosRefresco', () => {
+  it('resuelve el nombre de estación del archivo al id del catálogo', () => {
+    const candidatos = extraerCandidatosRefresco(
+      [pasada({ ESTACION_ID: 'HINOJO - RN 226 KM 276' })],
+      {
+        estacionesCatalogo: [{
+          estacionId: '11111111-1111-4111-8111-111111111111',
+          estacionNombre: 'Otra',
+          peajeId: 'peaje-1',
+          peajeNombre: 'Peaje',
+          codigosProveedor: ['HINOJO - RN 226 KM 276'],
+        }],
+      },
+    );
+    expect(candidatos[0].estacionId).toBe('11111111-1111-4111-8111-111111111111');
+    expect(candidatos[0].peajeId).toBe('peaje-1');
+  });
+
   it('prefers PRECIO over a different IMPORTE_NETO', () => {
     const candidatos = extraerCandidatosRefresco([
       pasada({ PRECIO: 14968.96, IMPORTE_NETO: 12100 }),

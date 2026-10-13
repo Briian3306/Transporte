@@ -7,7 +7,17 @@ import {
   PeajesCargaService,
   PeajesCatalogoService,
 } from '../models';
-import { PeajesWizardStateService, WizardPasoId } from './services/peajes-wizard-state.service';
+import {
+  PeajesWizardStateService,
+  WIZARD_FLUJO_ORDEN,
+  WizardPasoId,
+  anteriorPaso,
+  indiceFlujo,
+  numeroVisualPaso,
+  puedeAvanzarFlujo,
+  siguientePaso,
+} from './services/peajes-wizard-state.service';
+import { PlantillaExcepcionPaso } from './services/peajes-plantilla-apply.service';
 import { PeajesPlantillaApplyService } from './services/peajes-plantilla-apply.service';
 import { Paso1CargaComponent } from './paso1-carga/paso1-carga.component';
 import { Paso2PreviewComponent } from './paso2-preview/paso2-preview.component';
@@ -24,20 +34,26 @@ import { PEAJES_WIZARD_ADVANCE_EVENT } from './wizard-keyboard';
 interface PasoMeta {
   id: WizardPasoId;
   label: string;
-  owner?: string;
+  numero: number;
 }
 
-const PASOS: PasoMeta[] = [
-  { id: 1, label: 'Cargar archivo' },
-  { id: 2, label: 'Previsualizar' },
-  { id: 3, label: 'Transformaciones' },
-  { id: 4, label: 'Plantilla' },
-  { id: 5, label: 'Mapear columnas' },
-  { id: 6, label: 'Estaciones' },
-  { id: 7, label: 'Documento' },
-  { id: 8, label: 'Validación' },
-  { id: 9, label: 'Revisar' },
-];
+const PASO_LABELS: Record<WizardPasoId, string> = {
+  1: 'Cargar archivo',
+  2: 'Previsualizar',
+  3: 'Transformaciones',
+  4: 'Plantilla',
+  5: 'Mapear columnas',
+  6: 'Estaciones',
+  7: 'Documento',
+  8: 'Validación',
+  9: 'Revisar',
+};
+
+const PASOS: PasoMeta[] = WIZARD_FLUJO_ORDEN.map((id) => ({
+  id,
+  label: PASO_LABELS[id],
+  numero: numeroVisualPaso(id),
+}));
 
 @Component({
   selector: 'app-peajes-wizard',
@@ -100,8 +116,8 @@ export class PeajesWizardComponent implements OnInit {
       return;
     }
 
-    const next = Math.min(9, this.pasoActual + 1) as WizardPasoId;
-    if (this.puedeAvanzarA(next)) {
+    const next = siguientePaso(this.pasoActual);
+    if (next !== this.pasoActual && this.puedeAvanzarA(next)) {
       this.state.setPaso(next);
       return;
     }
@@ -110,22 +126,32 @@ export class PeajesWizardComponent implements OnInit {
   }
 
   irA(paso: WizardPasoId): void {
-    if (paso < this.pasoActual || this.puedeAvanzarA(paso)) {
+    if (indiceFlujo(paso) <= indiceFlujo(this.pasoActual) || this.puedeAvanzarA(paso)) {
       this.state.setPaso(paso);
     }
   }
 
   siguiente(): void {
-    const next = Math.min(9, this.pasoActual + 1) as WizardPasoId;
-    if (this.puedeAvanzarA(next)) {
+    const next = siguientePaso(this.pasoActual);
+    if (next !== this.pasoActual && this.puedeAvanzarA(next)) {
       this.state.setPaso(next);
     }
   }
 
   atras(): void {
-    if (this.pasoActual > 1) {
-      this.state.setPaso((this.pasoActual - 1) as WizardPasoId);
+    const prev = anteriorPaso(this.pasoActual);
+    if (prev !== this.pasoActual) {
+      this.state.setPaso(prev);
     }
+  }
+
+  /** Estaciones (6) se resuelven después de elegir empresa en Documento. */
+  onExcepcionPlantilla(paso: PlantillaExcepcionPaso): void {
+    this.state.setPaso(paso === 6 ? 7 : paso);
+  }
+
+  pasoHecho(paso: WizardPasoId): boolean {
+    return indiceFlujo(paso) < indiceFlujo(this.pasoActual);
   }
 
   private isEditableTarget(target: EventTarget | null): boolean {
@@ -137,48 +163,7 @@ export class PeajesWizardComponent implements OnInit {
   }
 
   puedeAvanzarA(paso: WizardPasoId): boolean {
-    const s = this.state.snapshot();
-    if (paso >= 2 && !s.preview) {
-      return false;
-    }
-    // Simple: empresa global obligatoria. Masiva: empresa por documento en Paso 7.
-    if (paso >= 2 && s.modoImportacion !== 'masiva' && !s.empresaId) {
-      return false;
-    }
-    if (paso >= 5 && s.columnasIncluidas.length === 0) {
-      return false;
-    }
-    if (paso >= 6 && s.pasadasEstandarizadas.length === 0) {
-      return false;
-    }
-    if (paso >= 7 && (!s.relacionesEstacion.length || s.relacionesEstacion.some((r) => !r.estacionId))) {
-      return false;
-    }
-    if (paso >= 8) {
-      const docs = s.documentos?.length ? s.documentos : [s.factura];
-      const incluidos = docs.filter((f) => !('omitido' in f && f.omitido));
-      if (!incluidos.length) {
-        return false;
-      }
-      const incompleto = incluidos.some(
-        (f) =>
-          !f.factura ||
-          !f.empresa_id ||
-          !f.fecha_factura ||
-          f.bonificacion === null ||
-          f.importe_sin_iva === null ||
-          f.percepciones === null ||
-          f.iva === null ||
-          f.importe_total === null
-      );
-      if (incompleto) {
-        return false;
-      }
-    }
-    if (paso >= 9 && (!s.validacion || s.validacion.errores.length > 0 || !s.validacion.dentroTolerancia)) {
-      return false;
-    }
-    return true;
+    return puedeAvanzarFlujo(paso, this.state.snapshot());
   }
 
   reiniciar(): void {

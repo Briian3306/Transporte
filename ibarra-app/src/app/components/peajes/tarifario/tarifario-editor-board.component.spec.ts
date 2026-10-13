@@ -28,6 +28,20 @@ describe('TarifarioEditorBoardComponent', () => {
   let fixture: ComponentFixture<TarifarioEditorBoardComponent>;
   let component: TarifarioEditorBoardComponent;
 
+  it('Tab and Shift Tab move directly between review category inputs and commit the typed category', () => {
+    component.reviewRows = ['a', 'b'].map(candidateId => ({ candidateId, valor: 1000, count: 1, categoria: null, status: null, requiresCategoriaInput: true }));
+    fixture.detectChanges();
+    const inputs = fixture.nativeElement.querySelectorAll('.tf__review-cat-input') as NodeListOf<HTMLInputElement>;
+    const category = spyOn(component.reviewCategoryChange, 'emit');
+    inputs[0].focus();
+    inputs[0].value = '5';
+    inputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(inputs[1]);
+    expect(category).toHaveBeenCalledWith({ candidateId: 'a', categoria: 5 });
+    inputs[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(inputs[0]);
+  });
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TarifarioEditorBoardComponent],

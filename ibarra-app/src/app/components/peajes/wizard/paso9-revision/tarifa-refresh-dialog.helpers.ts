@@ -6,9 +6,16 @@ import {
   type TarifarioHistorialImporteHit,
   type TarifarioHistorialImporteMatch,
   type TarifarioStationGroup,
+  type TarifarioCurrentRow,
 } from '../../models/tarifario.contracts';
 
 export type SentidoFamily = 'AMBAS' | 'DIRECCIONAL' | 'SIN_TARIFARIO';
+
+export function resolveStationName(...names: Array<string | null | undefined>): string {
+  return names.map(name => name?.trim()).find(name =>
+    !!name && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(name),
+  ) || 'Estación';
+}
 
 export interface EstacionCatalogoRefresco {
   estacionId: string;
@@ -77,6 +84,42 @@ export interface SharedTariffGroupState {
 export interface EditorGroup {
   stationIds: readonly string[];
   stations: readonly DetectedStation[];
+}
+
+export interface ReusableTariffProposal {
+  rows: TarifarioCurrentRow[];
+  mismatch: boolean;
+}
+
+/** One current tariff per identity, chosen by validity rather than station order. */
+export function reusableTariffProposal(
+  stationIds: readonly string[],
+  catalog: readonly TarifarioCurrentRow[],
+): ReusableTariffProposal {
+  const active = catalog.filter((row) =>
+    stationIds.includes(row.estacion_id) && row.enabled !== false &&
+    row.current_tarifa_importe_id && row.importe != null && row.importe > 0,
+  );
+  const keyOf = (row: TarifarioCurrentRow): string => `${row.sentido}|${row.categoria}|${row.status}`;
+  const byStation = new Map(stationIds.map((id) => [id, new Map(
+    active.filter((row) => row.estacion_id === id).map((row) => [keyOf(row), row]),
+  )]));
+  const keys = new Set(active.map(keyOf));
+  const rows: TarifarioCurrentRow[] = [];
+  let mismatch = false;
+  for (const key of [...keys].sort()) {
+    const present = stationIds.map((id) => byStation.get(id)?.get(key)).filter((row): row is TarifarioCurrentRow => !!row);
+    if (present.length !== stationIds.length || present.some((row) =>
+      row.importe !== present[0].importe || row.requiereNormalizacionIva !== present[0].requiereNormalizacionIva,
+    )) mismatch = true;
+    present.sort((a, b) =>
+      String(b.fechaVigenciaInicio ?? '').localeCompare(String(a.fechaVigenciaInicio ?? '')) ||
+      String(b.fecha_actualizacion ?? '').localeCompare(String(a.fecha_actualizacion ?? '')) ||
+      a.estacion_id.localeCompare(b.estacion_id),
+    );
+    if (present[0]) rows.push(present[0]);
+  }
+  return { rows, mismatch };
 }
 
 export interface StationTraceViewModel {
@@ -150,7 +193,7 @@ export function agruparPendientesPorPeajeYFamilia(
 
   for (const item of unresolved) {
     const row = byId.get(item.estacionId);
-    const peajeId = item.peajeId || row?.peajeId || '';
+    const peajeId = row?.peajeId || item.peajeId || '';
     const family = sentidoFamilyOf(row?.sentidosExistentes ?? []);
     const key = `${peajeId}|${family}`;
     let grupo = groups.get(key);
@@ -333,8 +376,8 @@ export function buildDetectedStations(
     const row = byId.get(item.estacionId);
     stations.push({
       estacionId: item.estacionId,
-      estacionNombre: row?.estacionNombre || item.estacionId,
-      peajeId: item.peajeId || row?.peajeId || '',
+      estacionNombre: resolveStationName(row?.estacionNombre),
+      peajeId: row?.peajeId || item.peajeId || '',
       peajeNombre: row?.peajeNombre || '',
       color: STATION_SESSION_PALETTE[stations.length % STATION_SESSION_PALETTE.length],
       family: sentidoFamilyOf(row?.sentidosExistentes ?? []),
@@ -346,7 +389,7 @@ export function buildDetectedStations(
       seen.add(row.estacionId);
       stations.push({
         estacionId: row.estacionId,
-        estacionNombre: row.estacionNombre || row.estacionId,
+        estacionNombre: resolveStationName(row.estacionNombre),
         peajeId: row.peajeId,
         peajeNombre: row.peajeNombre,
         color: STATION_SESSION_PALETTE[stations.length % STATION_SESSION_PALETTE.length],
@@ -360,7 +403,7 @@ export function buildDetectedStations(
 export function stationTraceViewModel(station: DetectedStation): StationTraceViewModel {
   return {
     estacionId: station.estacionId,
-    estacionNombre: station.estacionNombre,
+    estacionNombre: resolveStationName(station.estacionNombre),
     color: station.color,
   };
 }
@@ -408,7 +451,7 @@ export function checkboxOptionsForSlot(
   );
   return stations.map((station) => ({
     value: station.estacionId,
-    label: station.estacionNombre,
+    label: resolveStationName(station.estacionNombre),
     disabled: usedElsewhere.has(station.estacionId),
     style: { badgeColor: station.color, iconColor: station.color },
   }));

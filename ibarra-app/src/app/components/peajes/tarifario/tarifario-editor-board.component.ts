@@ -45,6 +45,8 @@ export interface TarifarioDetectedAmount {
 
 export interface TarifarioReviewRow {
   candidateId: string;
+  candidateIds?: string[];
+  stations?: Array<{ estacionId: string; estacionNombre: string; color?: string }>;
   valor: number;
   count: number;
   categoria: number | null;
@@ -153,6 +155,7 @@ export function groupCurrentAmounts(
 })
 export class TarifarioEditorBoardComponent implements OnChanges {
   @ViewChildren('nuevoInput') private readonly nuevoInputs?: QueryList<ElementRef<HTMLInputElement>>;
+  @ViewChildren('reviewCategoryInput') private readonly reviewCategoryInputs?: QueryList<ElementRef<HTMLInputElement>>;
   @ViewChild('addCategoriaBtn') private readonly addCategoriaBtn?: ElementRef<HTMLButtonElement>;
 
   readonly missing = MISSING_IMPORTE_LABEL;
@@ -282,6 +285,19 @@ export class TarifarioEditorBoardComponent implements OnChanges {
       return;
     }
     this.reviewCategoryChange.emit({ candidateId: row.candidateId, categoria: parsed });
+  }
+
+  onReviewCategoryKeydown(event: KeyboardEvent, row: TarifarioReviewRow): void {
+    if (event.key !== 'Tab' && event.key !== 'Enter') return;
+    const current = event.target as HTMLInputElement;
+    this.onReviewCategoryInput(row, current.value);
+    const inputs = (this.reviewCategoryInputs?.map(ref => ref.nativeElement) ?? []).filter(input => !input.disabled);
+    const index = inputs.indexOf(current);
+    if (index < 0) return;
+    const next = inputs[index + (event.shiftKey && event.key === 'Tab' ? -1 : 1)];
+    if (!next) return;
+    event.preventDefault();
+    next.focus();
   }
 
   reviewCategoryValue(row: TarifarioReviewRow): string {

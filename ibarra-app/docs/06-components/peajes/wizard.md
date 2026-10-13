@@ -34,11 +34,12 @@ trabajan con plantillas ya configuradas. Solo muestra Carga, Estaciones, Factura
 el Paso 8 de Validación aparece como pantalla intermedia cuando la validación encuentra errores
 o una diferencia de factura fuera de tolerancia.
 
-En **Carga rápida (Express)**, Paso 1 pide primero el archivo; después muestra Empresa y Plantilla.
-Ambas son obligatorias para continuar. La plantilla se aplica automáticamente y el usuario no
-modifica transformaciones, mapeos ni configuraciones. Si todas las estaciones quedan reconocidas,
-el flujo salta directamente a Factura. Las recomendaciones o estaciones sin resolver mantienen
-visible el Paso 6 para que el usuario las confirme.
+En **Carga rápida (Express)**, Paso 1 pide primero el archivo; después muestra Empresa y Plantilla
+en importación simple. En **masiva** no se pide empresa en el Paso 1: se elige por documento.
+La plantilla se aplica automáticamente y el usuario no modifica transformaciones, mapeos ni
+configuraciones. El orden Express es Carga, Patentes (si hace falta), Factura y después Estaciones
+solo cuando quedan recomendaciones. Si todas las estaciones quedan reconocidas, Factura sigue a
+Validación o Revisión.
 
 La tarjeta de inicio está en `peajes-home.component.html` como **Carga rápida** y utiliza el mismo
 permiso `peajes:read` que el módulo. El wizard administrativo `/peajes/wizard` conserva sus nueve
@@ -52,15 +53,15 @@ pasos y el acceso al ejemplo MVP.
 
 | # | Label | Componente | Notas |
 |---|-------|------------|-------|
-| 1 | Carga | `paso1-carga` | En wizard administrativo, archivo + empresa; Plantilla es opcional y se muestra junto al archivo (o con el fixture MVP antes de cargarlo). En Express, primero se carga el archivo y luego se requieren empresa + plantilla. PDF de factura opcional: uno en simple, N en masiva (nombre = columna `FACTURA`). Con plantilla compatible → `facturaDirecta` Paso 7; excepciones → Paso 5/6; sin plantilla → Paso 2 |
+| 1 | Carga | `paso1-carga` | En wizard administrativo, archivo + empresa en simple. En **masiva** el campo Empresa no se muestra y Continuar no la exige. Plantilla es opcional y se muestra junto al archivo. En Express, primero se carga el archivo y luego se requieren empresa + plantilla salvo masiva. PDF de factura opcional: uno en simple, N en masiva (nombre = columna `FACTURA`). Con plantilla compatible → Documento (Paso 7); excepción de estaciones se difiere hasta después del documento |
 | 2 | Preview | `paso2-preview` | Máx. 10 filas (RNF-03). Rail de recomendaciones semánticas (F02-11). Por defecto solo columnas reconocidas quedan incluidas (F02-12): ver [reconocimiento-columnas.md](./reconocimiento-columnas.md) |
 | 3 | Transformaciones | `paso3-transformaciones` | Motor 03 |
 | 4 | Plantilla | `paso4-plantilla` | Aplica pipeline + `mapeos` + estaciones (F09). Sin excepciones → `facturaDirecta` Paso 7; si no, `irAExcepcion` 5 o 6 |
 | 5 | Mapeo | `paso5-mapeo` | Columnas → Structure Goal. Destinos opcionales: **`CATEGORIA`** (F14-3 / RN-15) y **`PASE_ID`** (F02-18: último `pases.created_at` de la patente). Sin `PRECIO` y con `IMPORTE_NETO`, se toma el neto. Tira «Para avanzar» nombra destinos cubiertos / de catálogo / faltantes; Continuar no se deshabilita en silencio. Detecta `Concesion`→Peaje (RN-26). Patentes: [patentes-sin-resolver.md](./patentes-sin-resolver.md) (F02-14) |
-| 6 | Estaciones | `paso6-estaciones` | Relación proveedor ↔ estación filtrada por peaje de `Concesion`/empresa (RN-26); alta en `app-dialog` ([reconocimiento-estaciones.md](./reconocimiento-estaciones.md), F02-13). Código `0001` Zarate vs DOCK SUD: la empresa del Paso 1 acota `reconocerEstacion` (F02-17) |
-| 7 | Factura | `paso7-factura` | Cuenta opcional; subtotal, percepciones, IVA y total declarados; empresa SMS single (Paso 1); fecha DRP single. En simple, candidatos IA clickeables (F17). Recomienda crear plantilla completa (pipeline+mapeos+estaciones) |
+| 6 | Estaciones | `paso6-estaciones` | Se recorre **después** del Documento. El pool de peajes y estaciones es la unión de las empresas de los documentos y los peajes compartidos (`empresa_id = NULL`). Relación proveedor ↔ estación filtrada por peaje de `Concesion` (RN-26). El nombre mostrado es el del catálogo |
+| 7 | Factura | `paso7-factura` | Se recorre **antes** de Estaciones. Empresa siempre editable (SMS single) y botón **+ Agregar empresa**. Botón **Tarifario** abre el diálogo de refresh de tarifas de las estaciones de esa empresa; no bloquea Continuar. Cuenta opcional; subtotal, percepciones, IVA y total; fecha DRP single |
 | 8 | Validación | `paso8-validacion` | Errores fila/columna/valor/motivo y diferencia neto de factura vs. pasadas |
-| 9 | Revisión | `paso9-revision` | Confirmación de carga. F14-18: analiza candidatos de tarifa; `CURRENT_TARIFF` / `HISTORICAL_TARIFF_MATCH` no abren diálogo; `NEW_TARIFF` / `STATUS_*` abren el tablero en `app-dialog` xl/top (`peajes:manage` para guardar); `CONTEXT_INCOMPLETE` bloquea confirmar. Persiste `SENTIDO` (default `AMBAS`). El diálogo agrupa cada estación (o grupo de estaciones) en un acordeón abierto por defecto: familia `AMBAS` muestra un tablero; familia direccional muestra IDA y VUELTA. |
+| 9 | Revisión | `paso9-revision` | Confirmación de carga. F14-18: analiza candidatos de tarifa. Si hay más de una empresa en los documentos, un stepper (`app-stepper`) muestra **Tarifario 1..N**, uno por empresa, y el diálogo de refresh filtra las estaciones de la empresa activa. `CURRENT_TARIFF` / `HISTORICAL_TARIFF_MATCH` no abren diálogo; `NEW_TARIFF` / `STATUS_*` abren el tablero (`peajes:manage` para guardar); `CONTEXT_INCOMPLETE` bloquea confirmar. Persiste `SENTIDO` (default `AMBAS`). |
 
 ### Paso 5 — cobertura y destinos opcionales (F02-18)
 
@@ -85,10 +86,11 @@ cuando la plantilla deja dominios sin catálogo. El usuario puede agregar patent
 individual, agregarlas masivamente o excluirlas del import. Antes de validar, cada patente
 del proveedor se convierte a su UUID interno.
 
-El stepper Express asigna números visuales consecutivos y ordena Patentes antes de Estaciones.
-Estaciones solo se muestra cuando el reconocimiento deja recomendaciones o pendientes; si todas
-las estaciones están reconocidas, el flujo avanza directamente a Factura. La aplicación de
-plantilla distingue excepciones de `mapeo`, `patentes` y `estaciones`.
+El stepper Express asigna números visuales consecutivos: Patentes (si hace falta), Factura y
+después Estaciones. Estaciones solo se muestra cuando el reconocimiento deja recomendaciones o
+pendientes, y se confirma después de la factura. Si todas las estaciones están reconocidas, Factura
+sigue a validación o revisión. La aplicación de plantilla distingue excepciones de `mapeo`,
+`patentes` y `estaciones`.
 
 > Para controles, errores técnicos y el criterio de avance del Paso 8, consultar [validacion-carga.md](./validacion-carga.md).
 
@@ -96,7 +98,7 @@ plantilla distingue excepciones de `mapeo`, `patentes` y `estaciones`.
 
 ### Plantillas recurrentes (F09)
 
-En **Paso 1**, Empresa y Plantilla usan `app-search-select` (búsqueda single). En el wizard administrativo la plantilla es opcional; el control aparece después de cargar el archivo o junto al fixture MVP. En Express, el control aparece después de cargar el archivo y la plantilla es obligatoria. Con archivo + empresa + plantilla, `PeajesPlantillaApplyService` aplica pipeline/mapeos/estaciones al Continuar: sin excepciones → Paso 7; con excepciones → Paso 5 o 6. Sin plantilla, el wizard administrativo continúa al Paso 2.
+En **Paso 1**, Empresa y Plantilla usan `app-search-select` (búsqueda single). En el wizard administrativo la plantilla es opcional; el control aparece después de cargar el archivo o junto al fixture MVP. En Express, el control aparece después de cargar el archivo y la plantilla es obligatoria. En **masiva** (wizard y Express) no se elige empresa en el Paso 1: cada documento la elige en Factura. Con archivo + empresa (simple) + plantilla, `PeajesPlantillaApplyService` aplica pipeline/mapeos/estaciones al Continuar: sin excepciones → Paso 7; con excepciones de estaciones el flujo va primero a Factura y después a Estaciones. Sin plantilla, el wizard administrativo continúa al Paso 2.
 
 El reconocimiento usa `plantillas_configuracion.mapeos` y `configuraciones_plantilla`; el snapshot de cada plantilla está en `plantilla_estaciones_reconocidas`. Para reconocer fuera de una plantilla, Paso 6 consulta `estaciones_alias_proveedor` por empresa y luego `estaciones.codigos_proveedor`/nombre. `npm run seed:local` carga esos catálogos, aliases y relaciones además del resto de fixtures locales; `npm run seed:peajes-matching` vuelve a aplicar solo este conjunto.
 
@@ -243,4 +245,16 @@ Guía operativa: [importacion-masiva-consumos-resumen.md](./importacion-masiva-c
 
 ---
 
-> Última actualización: 2026-08-24
+### Paso 9: crear el primer tarifario de una estación
+
+El diálogo recibe los nombres del catálogo de estaciones y los muestra en los chips y acordeones aunque la estación todavía no tenga precios. Si no existe un nombre disponible, muestra `Estación`.
+
+Las filas de revisión del mismo precio y categoría se unifican dentro de las estaciones agrupadas: una sola elección de categoría/Pico/No pico se aplica a todos sus candidatos, conservando las estaciones al guardar. No se ocultan categorías diferentes ni elecciones manuales incompatibles. Todas No pico/Pico puede seleccionarse antes de completar categorías; las categorías siguen siendo obligatorias para guardar. Tab/Shift+Tab y Enter permiten recorrer los inputs de categoría sin pasar por los botones de status de cada fila.
+
+Si otra empresa necesita revisión, **Guardar cambios + Siguiente** guarda y avanza a esa empresa en el stepper sin cerrar y reabrir el diálogo. La empresa actual se conserva si todavía tiene pendientes. El diálogo se cierra cuando no quedan empresas pendientes.
+
+Para una estación sin tarifario, elegí IDA, VUELTA o AMBAS. AMBAS muestra un tablero; IDA/VUELTA muestra ambos tableros direccionales, conservando el sentido elegido para los importes detectados pendientes. Completá Vigente desde y los importes/categoría/Pico o No pico; Guardar cambios crea las identidades mediante la confirmación existente. Elegir sentido no guarda datos.
+
+Los peajes sin empresa (`empresa_id = NULL`) están disponibles en cada empresa de la carga. Los peajes con empresa asignada se muestran únicamente para esa empresa. Documento, plantilla y algoritmo conservan su representación textual de empresa, incluido `__global__`.
+
+> Última actualización: 2026-10-06

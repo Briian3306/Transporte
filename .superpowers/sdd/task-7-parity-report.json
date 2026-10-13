@@ -3,20 +3,22 @@
     "legacy_links": 8406,
     "v2_links": 8325,
     "unmapped": 81,
-    "current_pointer_mismatches": 27,
+    "current_pointer_mismatches": 0,
     "price_comparison_mismatches": 0,
     "null_current_pointers": 27,
+    "expected_null_current_pointers": 27,
     "lineage_1n_mismatches": 0,
     "lineage_id_mismatches": 0,
     "pointer_parent_mismatches": 0,
-    "tarifas_without_staged_precio_last": 77,
+    "tarifas_without_staged_precio_last": 95,
     "sentido_id_collisions_remapped": 27,
     "sentido_id_collisions_unresolved": 27,
     "tn_unique_key_lineage_skipped": 8,
-    "precio_last_current_mismatches": 0
+    "precio_last_current_mismatches": 0,
+    "unexpected_null_current_pointers": 0
   },
-  "unexplained": [
-    "null_current_pointers=27",
+  "unexplained": [],
+  "warnings": [
     "directional_history_collisions=27"
   ],
   "remapped": 27,

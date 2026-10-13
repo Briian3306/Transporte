@@ -103,6 +103,35 @@ describe('Paso9RevisionComponent', () => {
   let component: Paso9RevisionComponent;
   let state: PeajesWizardStateService;
 
+  it('advances to the next pending company after save without closing the tariff dialog', async () => {
+    await component.ngOnInit();
+    state.setModoImportacion('masiva');
+    const base = state.snapshot().factura;
+    state.setDocumentos([
+      { ...base, empresa_id: 'emp-a', rowIndexes: [0], status: 'neutral', errores: [] },
+      { ...base, empresa_id: 'emp-b', rowIndexes: [1], status: 'neutral', errores: [] },
+    ]);
+    (component as any).peajesCatalogo = [{ id: 'p-a', empresa_id: 'emp-a' }, { id: 'p-b', empresa_id: 'emp-b' }];
+    component.resumenRefresco = resumenTarifas([
+      resultadoResumen({ codigo: 'NEW_TARIFF', peajeId: 'p-a' }),
+      resultadoResumen({ codigo: 'NEW_TARIFF', peajeId: 'p-b' }),
+    ]);
+    component.refreshOpen = true;
+    component.empresaTarifarioStep = 1;
+    let remainedOpen = false;
+    spyOn(component, 'analizarTarifas').and.callFake(async () => {
+      remainedOpen = component.refreshOpen;
+      component.resumenRefresco = resumenTarifas([
+        resultadoResumen({ codigo: 'CURRENT_TARIFF', peajeId: 'p-a' }),
+        resultadoResumen({ codigo: 'NEW_TARIFF', peajeId: 'p-b' }),
+      ]);
+    });
+    await component.onRefreshSaved([]);
+    expect(remainedOpen).toBeTrue();
+    expect(component.empresaTarifarioStep).toBe(2);
+    expect(component.refreshOpen).toBeTrue();
+  });
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Paso9RevisionComponent],
@@ -1044,6 +1073,34 @@ describe('Paso9RevisionComponent', () => {
       { pasada_id: 'PSD-1', tarifa_importe_id: 'ti-nueva-assoc', codigo: 'AL_DIA' },
     ]);
     expect(JSON.stringify(asociaciones)).not.toContain('categoria');
+  });
+
+  it('separa el tarifario por empresa y muestra el nombre de catálogo de la estación', () => {
+    const mercosur = '37ab9246-a07a-40b5-b62d-7a8b8e7782db';
+    const aubasa = '75d868b4-aef5-409a-8d12-973506656811';
+    state.setModoImportacion('masiva');
+    const base = state.snapshot().factura;
+    state.setDocumentos([
+      { ...base, empresa_id: mercosur, rowIndexes: [0], status: 'neutral', errores: [] },
+      { ...base, factura: 'B-1', empresa_id: aubasa, rowIndexes: [], status: 'neutral', errores: [] },
+    ]);
+    component.resumenRefresco = resumenTarifas(
+      [resultadoResumen({ codigo: 'NEW_TARIFF', peajeId: 'PEA-MERCOSUR', estacionId: 'EST-MER-0001' })],
+      [candidatoResumen({ estacionId: 'EST-MER-0001', peajeId: 'PEA-MERCOSUR' })],
+    );
+    fixture.detectChanges();
+
+    expect(component.empresasTarifario.map((paso) => paso.nombre)).toEqual([
+      'AUTOVIA DEL MERCOSUR',
+      'AUBASA',
+    ]);
+    expect(component.empresasTarifario[0].estado).toBe('pendiente');
+    expect(component.empresasTarifario[1].estado).toBe('vacio');
+    expect(component.nombreEstacionTarifa('EST-MER-0001')).toBe('Estación 0001');
+    component.refreshOpen = true;
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Tarifario 1 de 2');
+    expect(fixture.nativeElement.textContent).not.toContain('Tarifario 2 de 2');
   });
 });
 

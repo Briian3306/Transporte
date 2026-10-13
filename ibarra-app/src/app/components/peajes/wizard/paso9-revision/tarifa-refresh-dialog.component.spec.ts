@@ -102,6 +102,133 @@ describe('TarifaRefreshDialogComponent', () => {
   let fixture: ComponentFixture<TarifaRefreshDialogComponent>;
   let component: TarifaRefreshDialogComponent;
 
+  it('grouped review shares category and bulk status across equal-price candidates before saving', async () => {
+    const stations = [ESTACION_HUDSON, ESTACION_DOCK_SUD];
+    await open(stations.map((id, i) => pendiente(id, { categoria: null, categoriaProveedor: null, status: null, rowIndexes: [i] })),
+      stations.map((id, i) => candidato(id, { categoria: null, categoriaProveedor: null, statusSolicitado: null, rowIndexes: [i], estacionNombre: `Station ${i}` })), []);
+    const grupo = component.grupos[0];
+    component.onGrupoSentidoChange(grupo, 'AMBAS');
+    await component.onSeleccionChange(grupo, 0, stations);
+    const editor = grupo.editors[0];
+    expect(component.reviewRowsFor(grupo, editor).length).toBe(1);
+    component.onBulkReviewStatus(grupo, editor, 'NO_PICO');
+    for (const id of stations) expect(grupo.reviewStatusByCandidate[`${id}-7`]).toBe('NO_PICO');
+    component.onReviewCategoryChange(grupo, { candidateId: `${stations[0]}-7`, categoria: 5 });
+    for (const id of stations) expect(grupo.reviewCategoryByCandidate[`${id}-7`]).toBe(5);
+    expect(component.reviewRowsFor(grupo, editor)[0].count).toBe(2);
+    component.onVigenteDesde(grupo, { from: new Date(2026, 8, 1), to: null });
+    const save = spyOn(TestBed.inject(TARIFA_REFRESH_SERVICE), 'guardar').and.callThrough();
+    await component.guardar();
+    expect(component.error).toBeNull();
+    expect(save.calls.mostRecent().args[0].map(d => d.estacionId).sort()).toEqual([...stations].sort());
+    expect((save.calls.mostRecent().args[0] as TarifaRefreshDecision[]).every(d => d.categoriaCalculada === 5 && d.status === 'NO_PICO')).toBeTrue();
+  });
+
+  it('keeps different known categories separate even when grouped prices are equal', async () => {
+    await open([pendiente(ESTACION_HUDSON, { categoriaProveedor: 4 }), pendiente(ESTACION_DOCK_SUD, { categoriaProveedor: 5, rowIndexes: [1] })],
+      [candidato(ESTACION_HUDSON, { categoriaProveedor: 4 }), candidato(ESTACION_DOCK_SUD, { categoriaProveedor: 5, rowIndexes: [1] })], []);
+    const grupo = component.grupos[0];
+    component.onGrupoSentidoChange(grupo, 'AMBAS');
+    await component.onSeleccionChange(grupo, 0, [ESTACION_HUDSON, ESTACION_DOCK_SUD]);
+    expect(component.reviewRowsFor(grupo, grupo.editors[0]).map(r => r.categoria)).toEqual([4, 5]);
+  });
+
+  it('does not hide conflicting manual categories when stations are grouped after editing', async () => {
+    const stations = [ESTACION_HUDSON, ESTACION_DOCK_SUD];
+    await open(stations.map((id, i) => pendiente(id, { categoria: null, categoriaProveedor: null, status: null, rowIndexes: [i] })),
+      stations.map((id, i) => candidato(id, { categoria: null, categoriaProveedor: null, statusSolicitado: null, rowIndexes: [i] })), []);
+    const grupo = component.grupos[0];
+    component.onGrupoSentidoChange(grupo, 'AMBAS');
+    await component.onSeleccionChange(grupo, 0, []);
+    component.onReviewCategoryChange(grupo, { candidateId: `${stations[0]}-7`, categoria: 5 });
+    component.onReviewCategoryChange(grupo, { candidateId: `${stations[1]}-7`, categoria: 6 });
+    await component.onSeleccionChange(grupo, 0, stations);
+    expect(component.reviewRowsFor(grupo, grupo.editors[0]).map(r => r.categoria)).toEqual([5, 6]);
+  });
+
+  it('keeps the dialog open after saving when another company awaits review', async () => {
+    await open([pendiente(ESTACION_HUDSON, { status: null })], [candidato(ESTACION_HUDSON, { statusSolicitado: null })], []);
+    fixture.componentRef.setInput('hasNextCompany', true);
+    fixture.detectChanges();
+    const grupo = component.grupos[0];
+    component.onGrupoSentidoChange(grupo, 'AMBAS');
+    component.onReviewStatusChange(grupo, { candidateId: `${ESTACION_HUDSON}-7`, status: 'NO_PICO' });
+    component.onVigenteDesde(grupo, { from: new Date(2026, 8, 1), to: null });
+    const close = spyOn(component.openChange, 'emit');
+    await component.guardar();
+    expect(component.error).toBeNull();
+    expect(close).not.toHaveBeenCalledWith(false);
+    expect(fixture.nativeElement.querySelector('.trd__btn--primary').textContent).toContain('Siguiente');
+  });
+
+  it('creates an AMBAS tariff for a named station without current prices', async () => {
+    await open([pendiente(ESTACION_HUDSON)], [candidato(ESTACION_HUDSON, { estacionNombre: 'Hudson' })], []);
+    const grupo = component.grupos[0];
+    expect(grupo.detectedStations[0].estacionNombre).toBe('Hudson');
+    expect(component.requiresSentidoChoice).toBeTrue();
+    component.onGrupoSentidoChange(grupo, 'AMBAS');
+    fixture.detectChanges();
+    expect(grupo.editors[0].tablas.map(t => t.sentido)).toEqual(['AMBAS']);
+    expect(fixture.nativeElement.querySelector('.trd__acc-stations').textContent).toContain('Hudson');
+    expect(component.requiresSentidoChoice).toBeFalse();
+    const save = spyOn(TestBed.inject(TARIFA_REFRESH_SERVICE), 'guardar').and.callThrough();
+    expect(save).not.toHaveBeenCalled();
+    component.onVigenteDesde(grupo, { from: new Date(2026, 8, 1), to: null });
+    const tabla = grupo.editors[0].tablas[0];
+    component.onDraft(grupo, tabla, { categoria: 2, status: 'NO_PICO', value: '7000' });
+    component.onDraft(grupo, tabla, { categoria: 2, status: 'PICO', value: '8000' });
+    await component.guardar();
+    expect(component.error).toBeNull();
+    expect(save).toHaveBeenCalled();
+    expect(save.calls.mostRecent().args[0]).toEqual(jasmine.arrayContaining([
+      jasmine.objectContaining({ action: 'CONFIRM_NEW', estacionId: ESTACION_HUDSON, sentido: 'AMBAS', importe: 7000 }),
+      jasmine.objectContaining({ action: 'CONFIRM_NEW', estacionId: ESTACION_HUDSON, sentido: 'AMBAS', importe: 8000 }),
+    ]));
+  });
+
+  for (const sentido of ['IDA', 'VUELTA'] as const) {
+    it(`opens both directional boards and assigns the chosen ${sentido} to a new station`, async () => {
+      await open([pendiente(ESTACION_HUDSON)], [candidato(ESTACION_HUDSON)], []);
+      const grupo = component.grupos[0];
+      component.onGrupoSentidoChange(grupo, sentido);
+      expect(grupo.family).toBe('DIRECCIONAL');
+      expect(grupo.editors[0].tablas.map(t => t.sentido)).toEqual(['IDA', 'VUELTA']);
+      expect(grupo.editors[0].sentidoSeleccionado).toBe(sentido);
+    });
+  }
+
+  it('uses the station catalog ahead of candidate names when prices are missing', async () => {
+    await open([pendiente(ESTACION_HUDSON)], [candidato(ESTACION_HUDSON, { estacionNombre: 'Old name' })], []);
+    fixture.componentRef.setInput('estacionesCatalogo', [{ id: ESTACION_HUDSON, nombre: 'Hudson', peaje_id: PEAJE_AUBASA }]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(component.grupos[0].detectedStations[0].estacionNombre).toBe('Hudson');
+  });
+
+  it('saves a leftover new tariff under the selected VUELTA direction', async () => {
+    await open([pendiente(ESTACION_HUDSON, { status: null })], [candidato(ESTACION_HUDSON, { statusSolicitado: null })], []);
+    const grupo = component.grupos[0];
+    component.onGrupoSentidoChange(grupo, 'VUELTA');
+    component.onVigenteDesde(grupo, { from: new Date(2026, 8, 1), to: null });
+    component.onReviewStatusChange(grupo, { candidateId: `${ESTACION_HUDSON}-7`, status: 'NO_PICO' });
+    const save = spyOn(TestBed.inject(TARIFA_REFRESH_SERVICE), 'guardar').and.callThrough();
+    await component.guardar();
+    expect(component.error).toBeNull();
+    expect(save).toHaveBeenCalled();
+    expect(save.calls.mostRecent().args[0]).toEqual(jasmine.arrayContaining([
+      jasmine.objectContaining({ action: 'CONFIRM_NEW', sentido: 'VUELTA', importe: 7000 }),
+    ]));
+  });
+
+  it('shows a neutral station label and disables saving until direction is chosen', async () => {
+    await open([pendiente(ESTACION_HUDSON)], [candidato(ESTACION_HUDSON)], []);
+    expect(component.grupos[0].detectedStations[0].estacionNombre).toBe('Estación');
+    expect(fixture.nativeElement.querySelector('.trd__btn--primary').disabled).toBeTrue();
+    const save = spyOn(TestBed.inject(TARIFA_REFRESH_SERVICE), 'guardar').and.callThrough();
+    await component.guardar();
+    expect(save).not.toHaveBeenCalled();
+  });
+
   async function open(
     resultados: ResultadoDetectarRefresco[],
     candidatos: CandidatoRefrescoTarifa[],
@@ -1435,7 +1562,7 @@ describe('TarifaRefreshDialogComponent', () => {
     expect(grupo.reviewStatusByCandidate['cand-a']).toBe('PICO');
   });
 
-  it('Todas Pico omite filas sin categoría y no pisa importes de otras categorías', async () => {
+  it('Todas Pico marca también filas sin categoría sin inventar su categoría', async () => {
     await open(
       [
         pendiente(ESTACION_GUTIERREZ, { id: 'cand-a', categoria: 7, categoriaProveedor: 7, status: null, candidatePrice: 10202.36, rowIndexes: [0] }),
@@ -1455,7 +1582,8 @@ describe('TarifaRefreshDialogComponent', () => {
       component.onBulkReviewStatus(grupo, editor, 'PICO');
     }
     expect(grupo.reviewStatusByCandidate['cand-a']).toBe('PICO');
-    expect(grupo.reviewStatusByCandidate['cand-null']).toBeUndefined();
+    expect(grupo.reviewStatusByCandidate['cand-null']).toBe('PICO');
+    expect(grupo.reviewCategoryByCandidate['cand-null']).toBeUndefined();
   });
 
   it('exige categoría manual cuando el proveedor no la informa', async () => {

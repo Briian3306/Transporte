@@ -461,6 +461,8 @@ export class TarifarioMockService implements PeajesTarifarioService {
         fecha_actualizacion: t.fecha_actualizacion,
         current_tarifa_importe_id: t.current_tarifa_id,
         enabled: t.enabled,
+        requiereNormalizacionIva: false,
+        fechaVigenciaInicio: current?.fecha_vigencia_inicio ?? null,
       };
     });
   }

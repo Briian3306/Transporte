@@ -29,8 +29,14 @@ describe('DateRangePickerComponent', () => {
     expect(changes.length).toBe(2);
   });
 
-  it('formats placeholder when empty', () => {
-    expect(component.buttonLabel).toBe('Elegir fechas');
+  it('reabre el calendario después de cerrarlo', () => {
+    const event = { preventDefault() {}, stopPropagation() {} } as MouseEvent;
+    component.onCalendarPointerDown(event);
+    expect(component.open).toBeTrue();
+    component.onCalendarPointerDown(event);
+    expect(component.open).toBeFalse();
+    component.onCalendarPointerDown(event);
+    expect(component.open).toBeTrue();
   });
 
   it('single mode picks one date and closes', () => {
