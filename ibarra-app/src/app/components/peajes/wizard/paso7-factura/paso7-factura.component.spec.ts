@@ -1,13 +1,41 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Injector } from '@angular/core';
 import { of } from 'rxjs';
 import { Paso7FacturaComponent } from './paso7-factura.component';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
-import { PEAJES_CATALOGO_SERVICE, PEAJES_PLANTILLAS_SERVICE } from '../../models';
+import { PEAJES_CATALOGO_SERVICE, PEAJES_PLANTILLAS_SERVICE, PeajesCatalogoService } from '../../models';
 import { AUSOL_FACTURA_557074 } from '../fixtures/ausol-factura-real.fixture';
 import { InvoiceAiService } from '../../services/ai/invoice/invoice-ai.service';
 import { InvoiceAiResult, InvoiceCandidate } from '../../services/ai/invoice/invoice-ai.models';
+import { TARIFA_REFRESH_SERVICE } from '../../models/tarifa-refresh.contracts';
+import { PEAJES_TARIFARIO_SERVICE } from '../../models/tarifario.contracts';
+import { TarifaRefreshMockService } from '../mocks/tarifa-refresh.mock';
+import { TarifarioMockService } from '../../tarifario/mocks/tarifario.mock';
 
 describe('Paso7FacturaComponent', () => {
+  it('includes shared toll stations and excludes other companies when opening tarifario', async () => {
+    await component.ngOnInit();
+    const estacionId = '67486ca3-6e88-49a8-b628-7f41e946da5a';
+    const catalogo = TestBed.inject(Injector).get(PEAJES_CATALOGO_SERVICE) as PeajesCatalogoService;
+    spyOn(catalogo, 'listarEstaciones').and.returnValue(of([
+      { id: estacionId, nombre: 'Compartida', peaje_id: 'shared' },
+      { id: 'other-station', nombre: 'Otra', peaje_id: 'other' },
+    ]));
+    component.peajes = [
+      { id: 'shared', nombre: 'Compartido', empresa_id: null },
+      { id: 'other', nombre: 'Otra empresa', empresa_id: 'otra-empresa' },
+    ];
+    state.setPasadasEstandarizadas([{ ESTACION_ID: estacionId, CATEGORIA: 2, PRECIO: 100,
+      PASADA_ID: null, FECHA_HORA: '2026-09-01T12:00:00', PASE_ID: null, PATENTE_ID: null,
+      QUANTITY: 1, IMPORTE_NETO: 100, BONIFICACION: null }]);
+    const refresh = TestBed.inject(TARIFA_REFRESH_SERVICE);
+    const analizar = spyOn(refresh, 'analizar').and.callThrough();
+    await component.abrirTarifario(null);
+    expect(analizar.calls.mostRecent().args[0].estacionesCatalogo?.map((e) => e.estacionId))
+      .toEqual([estacionId]);
+    expect(component.tarifarioAbierto).toBeTrue();
+  });
+
   let fixture: ComponentFixture<Paso7FacturaComponent>;
   let component: Paso7FacturaComponent;
   let state: PeajesWizardStateService;
@@ -47,9 +75,18 @@ describe('Paso7FacturaComponent', () => {
           useValue: {
             listarEmpresas: () =>
               of([{ id: 'EMP-001', nombre: 'Empresa Demo', created_at: undefined }]),
-            listarPeajes: () => of([]),
+            listarPeajes: () => of([{ id: 'peaje-1', nombre: 'Norte', empresa_id: 'EMP-001' }]),
+            listarEstaciones: () =>
+              of([{ id: 'est-1', nombre: 'Campana', peaje_id: 'peaje-1' }]),
+            listarEstacionesViasSentido: () => of([]),
+            crearEmpresa: (data: { nombre: string }) =>
+              of({ id: 'EMP-NUEVA', nombre: data.nombre, descripcion: null }),
+            crearPeaje: (data: { nombre: string; empresa_id: string }) =>
+              of({ id: 'PEA-NUEVA', nombre: data.nombre, empresa_id: data.empresa_id }),
           },
         },
+        { provide: TARIFA_REFRESH_SERVICE, useClass: TarifaRefreshMockService },
+        { provide: PEAJES_TARIFARIO_SERVICE, useClass: TarifarioMockService },
         {
           provide: PEAJES_PLANTILLAS_SERVICE,
           useValue: {
@@ -67,6 +104,50 @@ describe('Paso7FacturaComponent', () => {
     component = fixture.componentInstance;
     await component.ngOnInit();
     fixture.detectChanges();
+  });
+
+  it('permite cambiar la empresa y crear una nueva', async () => {
+    expect(component.form.controls.empresa_id.disabled).toBeFalse();
+
+    component.onEmpresaSimpleChange(['EMP-001']);
+    expect(component.form.controls.empresa_id.value).toBe('EMP-001');
+
+    component.abrirCrearEmpresa(null);
+    component.nuevaEmpresaNombre = 'Nueva SA';
+    await component.crearEmpresa();
+
+    expect(component.empresaIds).toEqual(['EMP-NUEVA']);
+    expect(component.form.controls.empresa_id.value).toBe('EMP-NUEVA');
+    expect(state.snapshot().empresaId).toBe('EMP-NUEVA');
+  });
+
+  it('el botón Tarifario abre el diálogo de estaciones sin bloquear continuar', async () => {
+    state.setPasadasEstandarizadas([{
+      ESTACION_ID: '67486ca3-6e88-49a8-b628-7f41e946da5a', CATEGORIA: 2, PRECIO: 100,
+      PASADA_ID: null, FECHA_HORA: '2026-09-01T12:00:00', PASE_ID: null, PATENTE_ID: null,
+      QUANTITY: 1, IMPORTE_NETO: 100, BONIFICACION: null,
+    }]);
+    const spy = jasmine.createSpy('completado');
+    component.completado.subscribe(spy);
+
+    await component.abrirTarifario(null);
+    expect(component.tarifarioAbierto).toBeTrue();
+
+    component.form.patchValue({
+      factura: 'A-0001',
+      empresa_id: 'EMP-001',
+      fecha_factura: '2026-06-30',
+      bonificacion: 0,
+      importe_sin_iva: 100,
+      percepciones: 0,
+      iva: 21,
+      importe_total: 121,
+    });
+    component.continuar();
+    expect(spy).toHaveBeenCalled();
+
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-tarifa-refresh-dialog')).toBeTruthy();
   });
 
   it('exige factura, empresa, fecha e importes; cuenta es opcional', () => {

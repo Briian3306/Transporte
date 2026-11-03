@@ -146,6 +146,14 @@
                       [showAllWhenEmpty]="true"
                       (valueChange)="onPeajeAlcanceChange(r.valorProveedor, $event)"
                     ></app-search-select>
+                    <button
+                      type="button"
+                      class="pw__btn pw__btn--small pw__btn--ghost"
+                      *ngIf="!peajeOptionsForRow(r.valorProveedor).length"
+                      (click)="abrirCrearPeaje(r.valorProveedor)"
+                    >
+                      Crear peaje
+                    </button>
                     <ng-template #peajeCompact>
                       <div class="paso6__compact">{{ peajeDe(r.estacionId, r.valorProveedor) }}</div>
                     </ng-template>
@@ -298,7 +306,7 @@
         <app-search-select
           label="Peaje *"
           placeholder="Buscar peaje…"
-          [options]="peajeOptions"
+          [options]="creandoPara ? peajeOptionsForRow(creandoPara) : peajeOptions"
           [value]="nuevaEstacionPeajeId || null"
           [showAllWhenEmpty]="true"
           (valueChange)="onPeajeChange($event)"
@@ -322,6 +330,30 @@
         [disabled]="!nuevaEstacionPeajeId || !nuevaEstacionNombre.trim()"
       >
         Crear y relacionar
+      </button>
+    </div>
+  </app-dialog>
+
+  <app-dialog
+    [open]="!!creandoPeajePara"
+    eyebrow="Catálogo de peajes"
+    title="Crear peaje"
+    description="El peaje queda en la empresa de esta estación para poder relacionarla."
+    (closed)="creandoPeajePara = null"
+  >
+    <div class="pw__field">
+      <label for="nuevo-peaje-nombre">Nombre *</label>
+      <input id="nuevo-peaje-nombre" class="pw__input" [(ngModel)]="nuevoPeajeNombre" autocomplete="off" />
+    </div>
+    <div appDialogActions class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="creandoPeajePara = null">Cancelar</button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--primary"
+        (click)="crearPeajeFila()"
+        [disabled]="!nuevoPeajeNombre.trim()"
+      >
+        Crear peaje
       </button>
     </div>
   </app-dialog>

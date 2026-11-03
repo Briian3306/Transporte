@@ -3,6 +3,10 @@ import { buildMvpPreview } from '../fixtures/mvp-ejemplo.fixture';
 import {
   ConfiguracionPlantillaDraft,
   PeajesWizardStateService,
+  WIZARD_FLUJO_ORDEN,
+  anteriorPaso,
+  puedeAvanzarFlujo,
+  siguientePaso,
 } from './peajes-wizard-state.service';
 
 function draftStep(
@@ -477,5 +481,92 @@ describe('PeajesWizardStateService (F02-9 / F02-10)', () => {
       tiposInferidos: {},
     });
     expect(state.snapshot().permitirDuplicados).toBeFalse();
+  });
+
+  it('recorre Documento antes que Estaciones', () => {
+    expect(WIZARD_FLUJO_ORDEN).toEqual([1, 2, 3, 4, 5, 7, 6, 8, 9]);
+    expect(siguientePaso(5)).toBe(7);
+    expect(siguientePaso(7)).toBe(6);
+    expect(siguientePaso(6)).toBe(8);
+    expect(anteriorPaso(6)).toBe(7);
+    expect(anteriorPaso(7)).toBe(5);
+    expect(siguientePaso(9)).toBe(9);
+    expect(anteriorPaso(1)).toBe(1);
+  });
+
+  it('masiva avanza sin empresa global y Estaciones exige empresa por documento', () => {
+    state.setModoImportacion('masiva');
+    state.setPreview({
+      nombreArchivo: 'masiva.csv',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['FACTURA', 'ESTACION'],
+      filasPreview: [{ FACTURA: '1', ESTACION: 'A' }],
+      filasOrigen: [{ FACTURA: '1', ESTACION: 'A' }],
+      tiposInferidos: {},
+    });
+    state.setEmpresaId(null);
+    expect(puedeAvanzarFlujo(2, state.snapshot())).toBeTrue();
+
+    state.setPasadasEstandarizadas([{ ESTACION_ID: 'EST-1' } as never]);
+    expect(puedeAvanzarFlujo(7, state.snapshot())).toBeTrue();
+    expect(puedeAvanzarFlujo(6, state.snapshot())).toBeFalse();
+
+    state.setDocumentos([
+      {
+        factura: '1',
+        tipo: 'FC',
+        cuenta: '',
+        empresa_id: 'emp-a',
+        fecha_factura: '',
+        bonificacion: 0,
+        importe_sin_iva: null,
+        percepciones: 0,
+        iva: 0,
+        importe_total: null,
+        rowIndexes: [0],
+        status: 'neutral',
+        errores: [],
+      },
+    ]);
+    expect(puedeAvanzarFlujo(6, state.snapshot())).toBeTrue();
+    expect(puedeAvanzarFlujo(8, state.snapshot())).toBeFalse();
+  });
+
+  it('Validación exige estaciones resueltas y documentos completos', () => {
+    state.setModoImportacion('simple');
+    state.setEmpresaId('emp-a');
+    state.setPreview({
+      nombreArchivo: 'a.csv',
+      tamanioBytes: 1,
+      totalFilas: 1,
+      columnas: ['A'],
+      filasPreview: [{ A: '1' }],
+      filasOrigen: [{ A: '1' }],
+      tiposInferidos: {},
+    });
+    state.setPasadasEstandarizadas([{ ESTACION_ID: 'EST-1' } as never]);
+    state.setDocumentos([
+      {
+        factura: 'F-1',
+        tipo: 'FC',
+        cuenta: '',
+        empresa_id: 'emp-a',
+        fecha_factura: '2026-01-01',
+        bonificacion: 0,
+        importe_sin_iva: 10,
+        percepciones: 0,
+        iva: 2,
+        importe_total: 12,
+        rowIndexes: [0],
+        status: 'neutral',
+        errores: [],
+      },
+    ]);
+    state.setRelacionesEstacion([{ valorProveedor: 'EST-1', estacionId: null }]);
+    expect(puedeAvanzarFlujo(8, state.snapshot())).toBeFalse();
+
+    state.setRelacionesEstacion([{ valorProveedor: 'EST-1', estacionId: 'uuid-1' }]);
+    expect(puedeAvanzarFlujo(8, state.snapshot())).toBeTrue();
   });
 });

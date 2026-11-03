@@ -28,7 +28,9 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.user_roles (id, name, description, is_system_role) VALUES
   ('302a8fca-976f-4cb8-81ca-b9cc9edc4665', 'admin', 'Administrador del sistema con acceso completo', true),
-  ('3978ddcb-ef1b-4a52-b410-65e772f3c909', 'administrador', 'Administrador de operaciones', true)
+  ('3978ddcb-ef1b-4a52-b410-65e772f3c909', 'administrador', 'Administrador de operaciones', true),
+  ('c4a1e8b2-6d30-4f1a-9c77-1b0e5a6d8f21', 'peajes - full', 'Acceso completo a todas las rutas y acciones del módulo Peajes', false),
+  ('d5b2f9c3-7e41-4a2b-8d88-2c1f6b7e9022', 'peajes - basico', 'Carga rápida, documentos (facturas), catálogos y pasadas, sin plantillas ni algoritmos', false)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.module_permissions (module_id, action_id)
@@ -42,6 +44,26 @@ SELECT r.id, mp.id
 FROM public.user_roles r
 CROSS JOIN public.module_permissions mp
 WHERE r.name IN ('admin', 'administrador')
+ON CONFLICT (role_id, module_permission_id) DO NOTHING;
+
+INSERT INTO public.role_permissions (role_id, module_permission_id)
+SELECT r.id, mp.id
+FROM public.user_roles r
+JOIN public.module_permissions mp ON true
+JOIN public.system_modules m ON m.id = mp.module_id
+WHERE r.name = 'peajes - full'
+  AND m.name = 'peajes'
+ON CONFLICT (role_id, module_permission_id) DO NOTHING;
+
+INSERT INTO public.role_permissions (role_id, module_permission_id)
+SELECT r.id, mp.id
+FROM public.user_roles r
+JOIN public.module_permissions mp ON true
+JOIN public.system_modules m ON m.id = mp.module_id
+JOIN public.system_actions a ON a.id = mp.action_id
+WHERE r.name = 'peajes - basico'
+  AND m.name = 'peajes'
+  AND a.name IN ('read', 'create', 'update')
 ON CONFLICT (role_id, module_permission_id) DO NOTHING;
 
 INSERT INTO public.user_profiles (id, email, full_name, is_active)

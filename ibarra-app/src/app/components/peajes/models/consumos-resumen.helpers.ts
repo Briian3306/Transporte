@@ -163,9 +163,7 @@ export function reconocerPeajeDesdeConcesion(
   const scoped = empresaId
     ? peajes.filter((p) => !p.empresa_id || p.empresa_id === empresaId)
     : peajes;
-  const pool = scoped.length ? scoped : peajes;
-
-  const candidatas = pool
+  const candidatas = scoped
     .filter((p) => {
       const nombre = normalizarParaReconocimiento(p.nombre);
       return (

@@ -3,6 +3,7 @@ import { TarifarioEditorRow } from '../models/tarifario.contracts';
 import { MISSING_IMPORTE_LABEL } from './tarifario.helpers';
 import {
   TarifarioEditorBoardComponent,
+  TarifarioNuevoNavigateOut,
   groupCurrentAmounts,
 } from './tarifario-editor-board.component';
 
@@ -26,6 +27,20 @@ function row(categoria: number, noPico: number | null, pico: number | null): Tar
 describe('TarifarioEditorBoardComponent', () => {
   let fixture: ComponentFixture<TarifarioEditorBoardComponent>;
   let component: TarifarioEditorBoardComponent;
+
+  it('Tab and Shift Tab move directly between review category inputs and commit the typed category', () => {
+    component.reviewRows = ['a', 'b'].map(candidateId => ({ candidateId, valor: 1000, count: 1, categoria: null, status: null, requiresCategoriaInput: true }));
+    fixture.detectChanges();
+    const inputs = fixture.nativeElement.querySelectorAll('.tf__review-cat-input') as NodeListOf<HTMLInputElement>;
+    const category = spyOn(component.reviewCategoryChange, 'emit');
+    inputs[0].focus();
+    inputs[0].value = '5';
+    inputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(inputs[1]);
+    expect(category).toHaveBeenCalledWith({ candidateId: 'a', categoria: 5 });
+    inputs[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(inputs[0]);
+  });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -72,6 +87,7 @@ describe('TarifarioEditorBoardComponent', () => {
     component.drafts = { ...component.drafts, 1: { no_pico: 'abc', pico: '' } };
     fixture.detectChanges();
     expect(component.isInvalid(1, 'NO_PICO')).toBeTrue();
+    expect(component.isInvalid(2, 'NO_PICO')).toBeFalse();
     const input = (fixture.nativeElement as HTMLElement).querySelector(
       '.tf__input--invalid',
     ) as HTMLInputElement;
@@ -106,6 +122,28 @@ describe('TarifarioEditorBoardComponent', () => {
     inputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
     fixture.detectChanges();
     expect(document.activeElement).toBe(inputs[1]);
+  });
+
+  it('ArrowRight pasa de NO_PICO a PICO en la misma categoría', () => {
+    const inputs = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('.tf__input'),
+    );
+    inputs[0].focus();
+    inputs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(inputs[1]);
+  });
+
+  it('ArrowDown en la última categoría pide salir del tablero', () => {
+    const events: TarifarioNuevoNavigateOut[] = [];
+    component.nuevoNavigateOut.subscribe((event) => events.push(event));
+    const inputs = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('.tf__input'),
+    );
+    const lastCategory = inputs[inputs.length - 2];
+    lastCategory.focus();
+    lastCategory.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+    expect(events.map((event) => event.direction)).toEqual(['next']);
+    expect(events[0].consumed).toBeFalse();
   });
 
   it('mantiene etiquetas persistentes Actual, Detectado y Nuevo', () => {
@@ -202,6 +240,127 @@ describe('TarifarioEditorBoardComponent', () => {
     expect(component.draftValue(1, 'NO_PICO')).toBe('');
   });
 
+  it('renders one category-level action without state text or dots', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    const actionCell = root.querySelector('.tf__actions-cell') as HTMLElement;
+    expect(actionCell.querySelectorAll('.tf__state-btn').length).toBe(1);
+    expect(actionCell.textContent).not.toContain('Habilitada');
+    expect(actionCell.textContent).not.toContain('Deshabilitada');
+    expect(actionCell.querySelector('.tf__state-dot')).toBeFalsy();
+    const action = actionCell.querySelector<HTMLButtonElement>('.tf__state-btn');
+    expect(action?.querySelector('.fa-trash')).toBeTruthy();
+    expect(action?.getAttribute('title')).toBe('Deshabilitar categoría 1');
+    expect(action?.getAttribute('aria-label')).toBe('Deshabilitar categoría 1');
+  });
+
+  it('emits one category-level action for both PICO and NO_PICO', () => {
+    const spy = jasmine.createSpy('categoryStateChange');
+    component.categoryStateChange.subscribe(spy);
+    component.toggleCategoryState(component.rows[0]);
+    expect(spy).toHaveBeenCalledWith({
+      categoria: 1,
+      enabled: false,
+      tarifaIds: ['t-1-np', 't-1-p'],
+    });
+  });
+
+  it('places the add row after the last persisted category', () => {
+    component.rows = [row(7, 8238, null), row(8, null, 23146), row(9, null, null)];
+    component.categoriaCount = 9;
+    component.allowAddCategoria = true;
+    component.nextCategoria = 10;
+    component.nextCategoryAction = 'DRAFT';
+    fixture.detectChanges();
+    const rows = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tbody > tr'));
+    expect(rows[2].querySelector('.tf__add')).toBeTruthy();
+    expect(rows[2].querySelector('.tf__cat-cell')).toBeFalsy();
+  });
+
+  it('hides disabled-only and unadded trailing categories', () => {
+    const disabled = row(8, 23000, 23100);
+    disabled.no_pico.enabled = false;
+    disabled.pico.enabled = false;
+    component.rows = [row(7, 8238, 2315), disabled, row(9, null, null)];
+    component.drafts = {
+      7: { no_pico: '', pico: '' },
+      8: { no_pico: '', pico: '' },
+      9: { no_pico: '', pico: '' },
+    };
+    component.nextCategoria = 8;
+    component.nextCategoryAction = 'ENABLE';
+    component.draftCategories = [];
+    fixture.detectChanges();
+
+    expect(component.visibleRows().map((item) => item.categoria)).toEqual([7]);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.tf__cat-cell').length).toBe(1);
+    expect((fixture.nativeElement as HTMLElement).querySelector('.tf__add')?.textContent).toContain('Habilitar categoría 8');
+  });
+
+  it('hides a disabled category even when Nuevo still has an amount', () => {
+    const disabled = row(8, 23000, 23100);
+    disabled.no_pico.enabled = false;
+    disabled.pico.enabled = false;
+    component.rows = [row(7, 8238, 2315), disabled];
+    component.drafts = {
+      7: { no_pico: '', pico: '' },
+      8: { no_pico: '24000', pico: '' },
+    };
+    component.nextCategoria = 8;
+    component.nextCategoryAction = 'ENABLE';
+    component.draftCategories = [];
+    fixture.detectChanges();
+
+    expect(component.visibleRows().map((item) => item.categoria)).toEqual([7]);
+  });
+
+  it('shows a disabled category only after Agregar/Habilitar', () => {
+    const disabled = row(8, 23000, 23100);
+    disabled.no_pico.enabled = false;
+    disabled.pico.enabled = false;
+    component.rows = [row(7, 8238, 2315), disabled];
+    component.drafts = {
+      7: { no_pico: '', pico: '' },
+      8: { no_pico: '', pico: '' },
+    };
+    component.nextCategoria = 9;
+    component.nextCategoryAction = 'DRAFT';
+    component.draftCategories = [8];
+    fixture.detectChanges();
+
+    expect(component.visibleRows().map((item) => item.categoria)).toEqual([7, 8]);
+  });
+
+  it('shows only the explicitly added blank category', () => {
+    component.rows = [row(7, 8238, 2315), row(8, null, null), row(9, null, null)];
+    component.drafts = {
+      7: { no_pico: '', pico: '' },
+      8: { no_pico: '', pico: '' },
+      9: { no_pico: '', pico: '' },
+    };
+    component.draftCategories = [8];
+    component.nextCategoria = 9;
+    component.nextCategoryAction = 'DRAFT';
+    fixture.detectChanges();
+
+    expect(component.visibleRows().map((item) => item.categoria)).toEqual([7, 8]);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.tf__cat-cell').length).toBe(2);
+  });
+
+  it('keeps leading blank categories so the visible sequence starts at category 1', () => {
+    component.rows = [row(1, null, null), row(2, 7300, null), row(3, 8200, null), row(4, 9100, null), row(5, null, null)];
+    component.drafts = {
+      1: { no_pico: '', pico: '' },
+      2: { no_pico: '', pico: '' },
+      3: { no_pico: '', pico: '' },
+      4: { no_pico: '', pico: '' },
+      5: { no_pico: '', pico: '' },
+    };
+    component.draftCategories = [];
+    fixture.detectChanges();
+
+    expect(component.visibleRows().map((item) => item.categoria)).toEqual([1, 2, 3, 4]);
+  });
+
   it('muestra un detectado resuelto como solo lectura sin emitir una selección', () => {
     const selected = jasmine.createSpy('candidateSelected');
     component.candidateSelected.subscribe(selected);
@@ -277,6 +436,7 @@ describe('TarifarioEditorBoardComponent', () => {
       { role: 'actual', lane: 'pico' },
       { role: 'detectado', lane: 'pico' },
       { role: 'nuevo', lane: 'pico' },
+      { role: null, lane: null },
     ]);
   });
 
@@ -321,6 +481,51 @@ describe('TarifarioEditorBoardComponent', () => {
     expect(draftSpy).not.toHaveBeenCalled();
     expect(review.querySelector('select')).toBeNull();
     expect(review.querySelector('input[type="checkbox"]')).toBeNull();
+  });
+
+  it('emite Todas No pico y Todas Pico para las filas de revisión', () => {
+    component.reviewRows = [
+      { candidateId: 'cand-a', valor: 1000, count: 1, categoria: 7, status: null, estacionNombre: 'A', color: '#6D28D9' },
+      { candidateId: 'cand-b', valor: 2000, count: 1, categoria: 7, status: null, estacionNombre: 'B', color: '#15803D' },
+    ];
+    fixture.detectChanges();
+    const bulkSpy = jasmine.createSpy('bulkReviewStatus');
+    component.bulkReviewStatus.subscribe(bulkSpy);
+    const root = fixture.nativeElement as HTMLElement;
+    const toolbar = root.querySelector('[data-role="revision-toolbar"]') as HTMLElement;
+    expect(toolbar).toBeTruthy();
+    (toolbar.querySelector('button[aria-label="Marcar todas como Pico"]') as HTMLButtonElement).click();
+    expect(bulkSpy).toHaveBeenCalledWith('PICO');
+    (toolbar.querySelector('button[aria-label="Marcar todas como No pico"]') as HTMLButtonElement).click();
+    expect(bulkSpy).toHaveBeenCalledWith('NO_PICO');
+  });
+
+  it('muestra un input de categoría obligatorio cuando el proveedor no la informa', () => {
+    component.reviewRows = [
+      {
+        candidateId: 'cand-null',
+        valor: 5000,
+        count: 1,
+        categoria: null,
+        status: null,
+        requiresCategoriaInput: true,
+        categoriaError: 'Indicá una categoría de 0 a 10.',
+        estacionNombre: 'Varela',
+        color: '#6D28D9',
+      },
+    ];
+    fixture.detectChanges();
+    const categorySpy = jasmine.createSpy('reviewCategoryChange');
+    component.reviewCategoryChange.subscribe(categorySpy);
+    const root = fixture.nativeElement as HTMLElement;
+    const input = root.querySelector('#tf-review-cat-cand-null') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    expect(input.getAttribute('aria-label')).toBe('Categoría de 0 a 10');
+    expect(input.required).toBeTrue();
+    expect(root.querySelector('#tf-review-cat-err-cand-null')?.textContent).toContain('0 a 10');
+    input.value = '4';
+    input.dispatchEvent(new Event('change'));
+    expect(categorySpy).toHaveBeenCalledWith({ candidateId: 'cand-null', categoria: 4 });
   });
 });
 

@@ -142,6 +142,12 @@ export class DateRangePickerComponent implements ControlValueAccessor, OnChanges
     this.disabled = isDisabled;
   }
 
+  onCalendarPointerDown(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.toggle();
+  }
+
   toggle(): void {
     if (this.disabled) return;
     this.open = !this.open;

@@ -8,9 +8,32 @@
   [closeOnBackdrop]="false"
   (closed)="close()"
 >
+  <section class="trd__empresas" *ngIf="empresas.length" aria-label="Tarifario por empresa">
+    <app-stepper
+      [value]="empresaStep"
+      (valueChange)="empresaStepChange.emit($event)"
+      ariaLabel="Tarifario por empresa"
+    >
+      <app-stepper-item
+        *ngFor="let paso of empresas"
+        [step]="paso.numero"
+        [title]="paso.nombre"
+        [state]="paso.estado === 'completo' ? 'completed' : paso.estado === 'revisar' ? 'review' : 'pending'"
+      ></app-stepper-item>
+      <app-stepper-panel *ngFor="let paso of empresas" [value]="paso.numero">
+        <p class="trd__empresa-step">
+          Tarifario {{ paso.numero }} de {{ empresas.length }} · {{ paso.nombre }}
+        </p>
+        <p class="at__error" *ngIf="paso.estado === 'vacio'">
+          Esta empresa no tiene estaciones con tarifa para revisar en esta carga.
+        </p>
+      </app-stepper-panel>
+    </app-stepper>
+  </section>
+
   <p class="at__empty" *ngIf="loading">Cargando tarifario…</p>
 
-  <section class="tf trd__editor" *ngFor="let grupo of grupos">
+  <section class="tf trd__editor" *ngFor="let grupo of visibleGrupos; trackBy: trackGrupo">
     <header class="at__header">
       <div>
         <p class="at__eyebrow">Módulo Peajes · Tarifario</p>
@@ -28,19 +51,39 @@
       Sentido: <strong>{{ familyLabel(grupo.family) }}</strong>
     </p>
 
-    <div class="trd__stations" *ngIf="grupo.detectedStations.length > 1">
+    <div class="trd__stations" *ngIf="grupo.availableStations.length > 1">
+      <div class="trd__group-head">
+      <label class="trd__group-count">
+        <span>Grupos de tarifa</span>
+        <input
+          type="number"
+          min="1"
+          [max]="maxGroupCount(grupo)"
+          [value]="grupo.groupCount"
+          [disabled]="!canManage || saving"
+          aria-label="Grupos de tarifa"
+          (input)="onGroupCountChange(grupo, $any($event.target).value)"
+        />
+      </label>
+      <span class="trd__agrupado" *ngIf="isAgrupado(grupo) && !grupo.reuseSourceIds.length">AGRUPADO</span>
+      <span class="trd__agrupado" *ngIf="grupo.reuseSourceIds.length">MISMA TARIFA</span>
+      </div>
       <app-checkbox-multi-select
+        *ngFor="let slot of grupo.sharedSlots; let i = index; trackBy: trackSlot"
         label="Estaciones con la misma tarifa"
-        hint="Las estaciones desmarcadas reciben un editor independiente."
-        [options]="checkboxOptions(grupo)"
-        [value]="grupo.seleccionadas"
+        [hint]="'Grupo ' + (i + 1) + ' de ' + grupo.groupCount + '. Las estaciones desmarcadas reciben un editor independiente.'"
+        [options]="checkboxOptions(grupo, i)"
+        [value]="slot"
         [disabled]="!canManage || saving"
         [modalPopover]="true"
         [maxCount]="6"
         placeholder="Elegir estaciones"
-        (valueChange)="onSeleccionChange(grupo, $event)"
+        (valueChange)="onSeleccionChange(grupo, i, $event)"
       ></app-checkbox-multi-select>
     </div>
+    <p class="trd__stations-note" *ngIf="grupo.availableStations.length === 1">
+      Solo hay una estación disponible con esta familia tarifaria para agrupar.
+    </p>
 
     <div class="trd__date">
       <app-date-range-picker
@@ -53,51 +96,76 @@
       ></app-date-range-picker>
     </div>
 
-    <p class="at__error" *ngIf="grupo.family === 'SIN_TARIFARIO'" role="alert">
-      No hay un tarifario cargado para esta estación. No se puede crear un sentido desde la carga.
-    </p>
+    <div class="trd__sentido-select" *ngIf="grupo.family === 'SIN_TARIFARIO'">
+      <p class="at__sub">Elegí IDA, VUELTA o AMBAS para crear el tarifario de las estaciones sin tarifa.</p>
+      <app-search-select
+        label="Sentido"
+        placeholder="Elegí IDA, VUELTA o AMBAS"
+        [options]="sentidoOptions"
+        [showAllWhenEmpty]="true"
+        [disabled]="!canManage || saving"
+        (valueChange)="onGrupoSentidoChange(grupo, $event)"
+      ></app-search-select>
+    </div>
 
-    <ng-container *ngFor="let editor of grupo.editors">
-      <h3 class="trd__editor-title">
-        <span
-          class="trd__trace"
-          *ngFor="let station of editor.stations"
-          [style.--trd-trace]="station.color"
-        >
-          <span class="trd__swatch" aria-hidden="true"></span>
-          {{ station.estacionNombre }}
+    <app-accordion
+      class="trd__editors"
+      [multiple]="true"
+      [expandedValues]="expandedKeysFor(grupo)"
+      (expandedValuesChange)="onEditorExpandedChange(grupo, $event)"
+    >
+      <app-accordion-panel *ngFor="let editor of grupo.editors; trackBy: trackEditor" [value]="editor.key">
+        <span appAccordionHeader class="trd__acc-stations">
+          <span
+            class="trd__trace"
+            *ngFor="let station of editor.stations"
+            [style.--trd-trace]="station.color"
+          >
+            <span class="trd__swatch" aria-hidden="true"></span>
+            {{ station.estacionNombre }}
+          </span>
         </span>
-      </h3>
-      <div class="trd__sentido-select" *ngIf="editor.sentidoRequiereEleccion">
-        <app-search-select
-          label="Sentido"
-          placeholder="Elegí IDA, VUELTA o AMBAS"
-          [options]="sentidoOptions"
-          [value]="editor.sentidoSeleccionado"
-          [showAllWhenEmpty]="true"
-          [disabled]="!canManage || saving"
-          (valueChange)="onSentidoChange(editor, $event)"
-        ></app-search-select>
-      </div>
-      <ng-container *ngFor="let tabla of editor.tablas">
-        <h4 class="trd__sentido-title" *ngIf="editor.family === 'DIRECCIONAL'">{{ tabla.sentido }}</h4>
-        <app-tarifario-editor-board
-          *ngIf="!loading"
-          [rows]="tabla.rows"
-          [drafts]="tabla.drafts"
-          [detected]="tabla.detected"
-          [currentStations]="tabla.currentStations"
-          [reviewRows]="tabla.reviewRows"
-          [showAddCategoria]="true"
-          [allowAddCategoria]="false"
-          (draftChange)="onDraft(grupo, tabla, $event)"
-          (candidateSelected)="onCandidateSelected(grupo, editor, tabla, $event)"
-          (historyRequest)="openHistory(grupo, tabla, $event)"
-          (reviewStatusChange)="onReviewStatusChange(grupo, $event)"
-          (ivaChange)="onIvaChange(grupo, $event)"
-        ></app-tarifario-editor-board>
-      </ng-container>
-    </ng-container>
+        <div appAccordionContent>
+          <div class="trd__sentido-select" *ngIf="editor.sentidoRequiereEleccion">
+            <app-search-select
+              label="Sentido"
+              placeholder="Elegí IDA, VUELTA o AMBAS"
+              [options]="sentidoOptions"
+              [value]="editor.sentidoSeleccionado"
+              [showAllWhenEmpty]="true"
+              [disabled]="!canManage || saving"
+              (valueChange)="onSentidoChange(editor, $event)"
+            ></app-search-select>
+          </div>
+          <div class="trd__tabla" #tablaHost *ngFor="let tabla of editor.tablas; trackBy: trackTabla">
+            <h4 class="trd__sentido-title" *ngIf="editor.family === 'DIRECCIONAL'">{{ tabla.sentido }}</h4>
+            <app-tarifario-editor-board
+              *ngIf="!loading"
+              [rows]="tabla.rows"
+              [drafts]="tabla.drafts"
+              [detected]="tabla.detected"
+              [currentStations]="tabla.currentStations"
+              [reviewRows]="tabla.reviewRows"
+              [showAddCategoria]="true"
+              [allowAddCategoria]="canAddCategoria(tabla)"
+              [nextCategoria]="nextCategory(tabla).categoria"
+              [nextCategoryAction]="nextCategory(tabla).action"
+              [draftCategories]="tabla.addedDraftCategories ?? []"
+              (draftChange)="onDraft(grupo, tabla, $event)"
+              (addCategoria)="addCategoria(grupo, tabla)"
+              (candidateSelected)="onCandidateSelected(grupo, editor, tabla, $event)"
+              (historyRequest)="openHistory(grupo, tabla, $event)"
+              (reviewStatusChange)="onReviewStatusChange(grupo, $event)"
+              (reviewCategoryChange)="onReviewCategoryChange(grupo, $event)"
+              (bulkReviewStatus)="onBulkReviewStatus(grupo, editor, $event)"
+              (ivaChange)="onIvaChange(grupo, $event)"
+              (categoryStateChange)="onCategoryStateChange(grupo, tabla, $event)"
+              (nuevoNavigateOut)="onNuevoNavigate(tablaHost, $event)"
+            ></app-tarifario-editor-board>
+          </div>
+        </div>
+      </app-accordion-panel>
+    </app-accordion>
   </section>
 
   <p
@@ -119,23 +187,49 @@
     (closed)="historyOpen = false"
   ></app-tarifario-historial-dialog>
 
-  <div appDialogActions>
-    <button type="button" class="trd__btn" (click)="close()">Cancelar</button>
-    <button
-      type="button"
-      class="trd__btn"
-      [disabled]="!canManage || loading || saving || revalidating"
-      (click)="revalidarPrecios()"
-    >
-      {{ revalidating ? 'Revalidando…' : 'Revalidar precios' }}
-    </button>
-    <button
-      type="button"
-      class="trd__btn trd__btn--primary"
-      [disabled]="!canManage || saving || revalidating"
-      (click)="guardar()"
-    >
-      {{ saving ? 'Guardando…' : 'Guardar cambios' }}
-    </button>
+  <div appDialogActions class="trd__actions">
+    <button type="button" class="trd__btn trd__btn--ghost" (click)="close()">Cancelar</button>
+    <div class="trd__actions-primary">
+      <button
+        type="button"
+        class="trd__btn"
+        [disabled]="!canManage || loading || saving || revalidating"
+        (click)="revalidarPrecios()"
+      >
+        {{ revalidating ? 'Revalidando…' : 'Revalidar precios' }}
+      </button>
+      <button
+        type="button"
+        class="trd__btn trd__btn--primary"
+        [disabled]="!canManage || loading || saving || revalidating || requiresSentidoChoice"
+        (click)="guardar()"
+      >
+        {{ saving ? 'Guardando…' : hasNextCompany ? 'Guardar cambios + Siguiente' : 'Guardar cambios' }}
+      </button>
+    </div>
   </div>
 </app-dialog>
+
+<app-dialog
+    [open]="!!pendingReuse"
+    size="md"
+    title="Confirmar tarifa compartida"
+    description="Las estaciones elegidas tienen tarifas vigentes diferentes. Se propone la más reciente por sentido, categoría y status."
+    [closeOnBackdrop]="false"
+    (closed)="cancelReuse()"
+  >
+    <ng-container *ngIf="pendingReuse as reuse">
+      <p>Se copiarán estas {{ reuse.proposal.rows.length }} tarifas vigentes a las estaciones nuevas seleccionadas al guardar:</p>
+      <ul class="trd__reuse-list">
+        <li *ngFor="let row of reuse.proposal.rows">
+          {{ row.sentido }} · Cat. {{ row.categoria }} · {{ row.status }} ·
+          {{ formatReuseAmount(row.importe) }} · {{ reuseSourceName(reuse.grupo, row.estacion_id) }} ·
+          Vigente desde {{ row.fechaVigenciaInicio || 'sin fecha' }}
+        </li>
+      </ul>
+    </ng-container>
+    <div appDialogActions class="trd__actions">
+      <button type="button" class="trd__btn trd__btn--ghost" (click)="cancelReuse()">Cancelar</button>
+      <button type="button" class="trd__btn trd__btn--primary" (click)="confirmReuse()">Usar tarifas propuestas</button>
+    </div>
+  </app-dialog>

@@ -107,21 +107,23 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
       return resumenVacio();
     }
 
-    const unresolvedCandidates = candidatos.filter((candidate) => candidate.sentidoSolicitado == null);
-    const resolvedCandidates = candidatos.filter((candidate) => candidate.sentidoSolicitado != null);
-    const unresolvedResults: ResultadoDetectarRefresco[] = unresolvedCandidates.map((candidate) =>
-      resultadoDesdeCandidato(
-        candidate,
-        candidate.unresolvedReason === 'CONFLICT' ? 'DIRECTION_CONFLICT' : 'DIRECTION_REQUIRED',
-      ),
+    const conflictCandidates = candidatos.filter((candidate) => candidate.unresolvedReason === 'CONFLICT');
+    const detectCandidates = candidatos.filter((candidate) => candidate.unresolvedReason !== 'CONFLICT');
+    const estacionInvalida = detectCandidates.filter((candidate) => /\s/.test(candidate.estacionId));
+    const detectables = detectCandidates.filter((candidate) => !/\s/.test(candidate.estacionId));
+    const conflictResults: ResultadoDetectarRefresco[] = conflictCandidates.map((candidate) =>
+      resultadoDesdeCandidato(candidate, 'DIRECTION_CONFLICT'),
     );
-    if (!resolvedCandidates.length) {
-      return resumenVacio(candidatos, unresolvedResults);
+    const invalidResults = estacionInvalida.map((candidate) =>
+      resultadoDesdeCandidato(candidate, 'CONTEXT_INCOMPLETE'),
+    );
+    if (!detectables.length) {
+      return resumenVacio(candidatos, [...conflictResults, ...invalidResults]);
     }
 
     const prepareSeen = new Set<string>();
     const prepareInputs: PrepararRefrescoTarifaInput[] = [];
-    for (const c of resolvedCandidates) {
+    for (const c of detectables) {
       const key = contextKey(c);
       if (prepareSeen.has(key)) continue;
       prepareSeen.add(key);
@@ -135,39 +137,21 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
     }
 
     const prepared = await firstValueFrom(this.tarifario.prepararRefresco(prepareInputs));
-    const ivaByContext = new Map<string, boolean>();
+    const ivaByStation = new Map<string, boolean>();
     for (const row of prepared) {
-      const key = [
+      ivaByStation.set(
         row.estacionId,
-        row.categoria == null ? '' : String(row.categoria),
-        row.status ?? '',
-        row.sentido,
-      ].join('|');
-      const requested = prepareInputs.find(
-        (p) =>
-          p.estacionId === row.estacionId &&
-          p.categoria === row.categoria &&
-          (p.statusSolicitado == null || p.statusSolicitado === row.status) &&
-          p.sentidoSolicitado === row.sentido,
+        ivaByStation.get(row.estacionId) === true || row.requiereNormalizacionIva,
       );
-      const ctx = requested
-        ? contextKey({
-            estacionId: requested.estacionId,
-            categoria: requested.categoria,
-            statusSolicitado: requested.statusSolicitado,
-            sentidoSolicitado: requested.sentidoSolicitado,
-          })
-        : key;
-      ivaByContext.set(ctx, ivaByContext.get(ctx) === true || row.requiereNormalizacionIva);
     }
 
     const detectSeen = new Set<string>();
     const detectInputs: DetectarRefrescoTarifaInput[] = [];
     const detectToCandidates = new Map<string, CandidatoRefrescoTarifa[]>();
 
-    for (const c of resolvedCandidates) {
+    for (const c of detectables) {
       const ctx = contextKey(c);
-      const needsIva = ivaByContext.get(ctx) === true;
+      const needsIva = ivaByStation.get(c.estacionId) === true;
       const comparable = needsIva
         ? this.adapter.obtenerPrecioComparable({
             precioDirecto: c.precioDirecto,
@@ -231,7 +215,7 @@ export class TarifaRefreshServiceImpl implements TarifaRefreshService {
         },
       ];
     });
-    resultados.unshift(...unresolvedResults);
+    resultados.unshift(...conflictResults, ...invalidResults);
 
     return {
       candidatos,

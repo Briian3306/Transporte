@@ -9,7 +9,7 @@
 
   <div class="pw__head">
     <div>
-      <div class="pw__eyebrow">{{ expressMode ? 'Paso 3 · factura' : 'Paso 07 · asociación contable' }}</div>
+      <div class="pw__eyebrow">{{ expressMode ? 'Factura · empresa y documento' : 'Paso 07 · asociación contable' }}</div>
       <h2>{{ esMasiva ? 'Ingresar documentos' : 'Ingresar documento' }}</h2>
       <p *ngIf="!esMasiva">
         Asociá el lote con un documento (factura o nota de crédito). Tab entre campos; escribí la fecha como 13/6/2020.
@@ -160,6 +160,18 @@
                       </p>
                       <div class="pw__field-error" *ngIf="invalid('empresa_id', item.index)">Obligatorio</div>
                       <div class="paso7__step-actions">
+                        <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="abrirCrearEmpresa(item.index)">
+                          + Agregar empresa
+                        </button>
+                        <button
+                          type="button"
+                          class="pw__btn pw__btn--ghost pw__btn--small"
+                          data-testid="tarifario-doc"
+                          [disabled]="tarifarioCargando"
+                          (click)="abrirTarifario(item.index)"
+                        >
+                          {{ tarifarioCargando ? 'Abriendo tarifario…' : 'Tarifario' }}
+                        </button>
                         <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="irAPasoParaDocumento(5, item.index)">
                           Revisar mapeo
                         </button>
@@ -294,13 +306,28 @@
                 [options]="empresaOptions"
                 [value]="empresaIds"
                 mode="single"
-                [disabled]="true"
-                [clearable]="false"
-                placeholder="Empresa del Paso 1"
-                emptyMessage="Sin empresa seleccionada en Paso 1"
+                [clearable]="true"
+                placeholder="Elegí la empresa de este documento…"
+                emptyMessage="Sin empresas en catálogo"
+                (valueChange)="onEmpresaSimpleChange($event)"
               ></app-search-multi-select>
-              <p class="paso7__hint">Definida en Paso 1 · no se modifica aquí</p>
-              <div class="pw__field-error" *ngIf="invalid('empresa_id')">Obligatorio (elegí empresa en Paso 1)</div>
+              <p class="paso7__hint">Viene del Paso 1 si ya la elegiste. Podés cambiarla para este documento.</p>
+              <div class="pw__field-error" *ngIf="invalid('empresa_id')">Obligatorio</div>
+              <div class="paso7__step-actions">
+                <button type="button" class="pw__btn pw__btn--ghost pw__btn--small" (click)="abrirCrearEmpresa(null)">
+                  + Agregar empresa
+                </button>
+                <button
+                  type="button"
+                  class="pw__btn pw__btn--ghost pw__btn--small"
+                  data-testid="tarifario-doc"
+                  [disabled]="tarifarioCargando"
+                  (click)="abrirTarifario(null)"
+                >
+                  {{ tarifarioCargando ? 'Abriendo tarifario…' : 'Tarifario' }}
+                </button>
+              </div>
+              <p class="pw__field-error" *ngIf="tarifarioError">{{ tarifarioError }}</p>
             </div>
 
             <div class="pw__field paso7__field--date">
@@ -431,4 +458,47 @@
       <button type="button" class="pw__btn pw__btn--primary" (click)="continuar()">Continuar</button>
     </div>
   </div>
+
+  <p class="pw__field-error" *ngIf="esMasiva && tarifarioError">{{ tarifarioError }}</p>
+
+  <app-tarifa-refresh-dialog
+    *ngIf="tarifarioAbierto"
+    [open]="tarifarioAbierto"
+    [resultados]="tarifarioResultados"
+    [candidatos]="tarifarioCandidatos"
+    [estacionesCatalogo]="tarifarioEstacionesCatalogo"
+    [canManage]="puedeGestionarTarifas"
+    (openChange)="tarifarioAbierto = $event"
+    (cancelled)="tarifarioAbierto = false"
+  ></app-tarifa-refresh-dialog>
+
+  <app-dialog
+    [open]="crearEmpresaAbierto"
+    eyebrow="Catálogo de empresas"
+    title="Crear empresa"
+    description="La empresa queda disponible para este documento, sus peajes y estaciones."
+    (closed)="crearEmpresaAbierto = false"
+  >
+    <div class="pw__form-grid">
+      <label class="pw__field">
+        Nombre *
+        <input [(ngModel)]="nuevaEmpresaNombre" autocomplete="organization" />
+      </label>
+      <label class="pw__field">
+        Descripción
+        <input [(ngModel)]="nuevaEmpresaDescripcion" autocomplete="off" />
+      </label>
+    </div>
+    <div appDialogActions class="pw__footer-actions">
+      <button type="button" class="pw__btn" (click)="crearEmpresaAbierto = false">Cancelar</button>
+      <button
+        type="button"
+        class="pw__btn pw__btn--primary"
+        [disabled]="!nuevaEmpresaNombre.trim()"
+        (click)="crearEmpresa()"
+      >
+        Crear y seleccionar
+      </button>
+    </div>
+  </app-dialog>
 </div>

@@ -1,0 +1,92 @@
+:host {
+  display: block;
+}
+
+.app-stepper__nav {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+
+.app-stepper__trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 5.5rem;
+  flex: 1 1 0;
+  border: 0;
+  background: transparent;
+  color: #3d5166;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem 0;
+  font: inherit;
+}
+
+.app-stepper__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.app-stepper__indicator {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c5d2e0;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.app-stepper__trigger.is-active .app-stepper__indicator {
+  background: #1f4e79;
+  border-color: #1f4e79;
+  color: #fff;
+}
+
+.app-stepper__trigger.is-completed .app-stepper__indicator {
+  background: #e7f6ee;
+  border-color: #1f8a4c;
+  color: #1f8a4c;
+}
+
+.app-stepper__trigger.is-review .app-stepper__indicator {
+  background: #fff6e5;
+  border-color: #c47d00;
+  color: #8a5a00;
+}
+
+.app-stepper__trigger.is-loading .app-stepper__indicator {
+  border-style: dashed;
+}
+
+.app-stepper__title {
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 9rem;
+}
+
+.app-stepper__separator {
+  flex: 1 1 1.5rem;
+  height: 1px;
+  background: #d5e0ea;
+  margin-top: 0.85rem;
+}
+
+.app-stepper__panel {
+  margin-top: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .app-stepper__trigger {
+    min-width: 4.5rem;
+  }
+}

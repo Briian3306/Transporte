@@ -52,7 +52,11 @@ export const PEAJES_HOME_SECTION_IDS = [
 ] as const;
 
 const PEAJES_OPERATIONAL_SECTION_IDS = [
+  'empresas',
+  'peajes',
+  'estaciones',
   'patentes',
+  'pases',
 ] as const;
 
 export function getVisiblePeajesHomeSectionIds(

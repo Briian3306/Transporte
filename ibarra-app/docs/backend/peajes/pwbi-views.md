@@ -24,7 +24,7 @@ Exponer un esquema estrella estable para relaciones en Power BI sin alterar las 
 - `pwbi_estacion`: una fila por estación; `Status` = `estaciones.estado_geocodificacion` (`OK` | `REVIEW`); incluye `Peaje_ID` / `Peaje_Nombre` y `Latitud` / `Longitud`.
 - `pwbi_patentes`: una fila por patente (`Patente_ID`, `Patente`, `Patente_Categoria`, `Patente_Tipo_Trabajo`, `Patente_Activa`, `created_at`).
 - `pwbi_documentos`: una fila por documento FC|NC (importes de cabecera + empresa).
-- `pwbi_pasadas`: hecho denormalizado (pasada + estación + peaje + empresa + patente + pase + documento) con FKs para relacionar dimensiones. Incluye `Patente_Categoria`, `Patente_Tipo_Trabajo` y `Patente_Activa`, además de `Tarifa_Status` (PICO/NO_PICO) y `Estacion_Geocodificacion_Status` (`OK`|`REVIEW`, calidad de coordenadas; no es tarifa). `Categoria_Calculated` / `Categoria_Calculated_Boolean`: si `Categoria` es NULL se copia `tarifas_normalizadas.categoria_calculated` (Patrón A) y el boolean es TRUE; si hay categoría de proveedor, calculated queda NULL y el boolean es FALSE.
+- `pwbi_pasadas`: hecho denormalizado (pasada + estación + peaje + empresa + patente + pase + documento) con FKs para relacionar dimensiones. Incluye `Patente_Categoria`, `Patente_Tipo_Trabajo` y `Patente_Activa`, además de `Tarifa_Status` y `Estacion_Geocodificacion_Status` (`OK`|`REVIEW`, calidad de coordenadas; no es tarifa). `Tarifa_Status` = `COALESCE(tarifas.status, pasadas.tarifa_status)` restringido a `PICO`/`NO_PICO`: primero el join v2 (`pasadas.tarifa_importe_id` → `tarifa_importe` → `tarifas`); si no hay FK, se usa el status legado de la pasada. **No** hay JOIN a `tarifas_normalizadas` ni lookup dimensional LATERAL. `Categoria_Calculated` / `Categoria_Calculated_Boolean`: si `Categoria` es NULL se copia `tarifas.categoria` (vía el mismo join v2) y el boolean es TRUE; si hay categoría de proveedor, calculated queda NULL y el boolean es FALSE.
 - `pwbi_tarifas`: una fila por nivel de `tarifas_normalizadas`; `Status` es PICO/NO_PICO (sin `Tipo_Meta`); expone `Hora_Min` / `Hora_Max` / `Hora_Media` y `fecha_aparicion` (primera `pasadas.fecha_hora` del nivel). **Sigue vigente**; F14-16 no la reescribe.
 - `pwbi_tarifas_v2`: una fila por configuración `tarifas` + importe current vía puntero. Más delgada que `pwbi_tarifas`. LEFT JOIN puede dejar `Importe` NULL. No es un clon drop-in.
 - Vistas con `security_invoker = false` y `GRANT SELECT` a `anon`, `authenticated`, `service_role`.
@@ -38,7 +38,7 @@ Exponer un esquema estrella estable para relaciones en Power BI sin alterar las 
 | `pwbi_patentes` | `Patente_ID` ← `pwbi_pasadas.Patente_ID` |
 | `pwbi_documentos` | `Documento_ID` ← `pwbi_pasadas.Documento_ID` |
 | `pwbi_tarifas` | `Tarifa_Normalizada_ID` ← `pwbi_pasadas.Tarifa_Normalizada_ID` |
-| `pwbi_tarifas_v2` | Dimensión paralela por `Tarifa_ID` / `Current_Tarifa_ID`. `pwbi_pasadas` **no** expone aún `Tarifa_Importe_ID`. |
+| `pwbi_tarifas_v2` | Dimensión paralela por `Tarifa_ID` / `Current_Tarifa_ID`. Relación opcional vía `pasadas.tarifa_importe_id` (no se expone como columna PascalCase). |
 | `pwbi_pasadas` | Hecho; también expone `Pase_ID`, `Peaje_ID`, `Empresa_ID` |
 
 ## Tables
@@ -50,7 +50,7 @@ Exponer un esquema estrella estable para relaciones en Power BI sin alterar las 
 | `pwbi_documentos` | dimensión | `documentos` LEFT JOIN `empresas` |
 | `pwbi_tarifas` | dimensión | `tarifas_normalizadas` JOIN `peajes` + `estaciones` |
 | `pwbi_tarifas_v2` | dimensión paralela | `tarifas` LEFT JOIN `tarifa_importe` (puntero current) |
-| `pwbi_pasadas` | hecho | `pasadas` + catálogos + `documentos` (mismo patrón que `pasadas_gestion`) |
+| `pwbi_pasadas` | hecho | `pasadas` + catálogos + `documentos` + LEFT JOIN `tarifa_importe`/`tarifas` |
 
 ### Columnas `pwbi_estacion`
 
@@ -141,7 +141,7 @@ No expone `Peaje_Nombre`, `Estacion_Nombre`, `hora_*`, `fecha_aparicion`, diagn�
 
 FKs: `Pasada_ID`, `Estacion_ID`, `Patente_ID`, `Pase_ID`, `Documento_ID`, `Peaje_ID`, `Empresa_ID`, `Tarifa_Normalizada_ID`.
 
-Medidas / atributos: `fecha_hora`, `precio`, `bonificacion`, `quantity`, `importe_neto`, `file_upload_name`, `created_at`, `user_id`, `Categoria` (texto crudo proveedor; NULL = Patrón A), `Categoria_Calculated` (smallint 0–10 desde `tarifas_normalizadas` **solo si** `Categoria` es NULL; si hay categoría de proveedor queda NULL), `Categoria_Calculated_Boolean` (`TRUE` si se rellenó con esa clase, `FALSE` si no), `Tarifa_Status` (PICO/NO_PICO; no confundir con geocodificación), `Estacion_Geocodificacion_Status` (`OK`\|`REVIEW` desde `estaciones.estado_geocodificacion`), nombres denormalizados (`Estacion_Nombre`, `Peaje_Nombre`, `Empresa_Nombre`, `Patente`, `Patente_Categoria`, `Patente_Tipo_Trabajo`, `Patente_Activa`, `Pase`), geo (`Estacion_Latitud`, `Estacion_Longitud`), documento (`Documento_Numero`, `Documento_Tipo`, `Documento_Cuenta`, `fecha_factura`, `Documento_Importe_Sin_Iva`, `Documento_Importe_Total`).
+Medidas / atributos: `fecha_hora`, `precio`, `bonificacion`, `quantity`, `importe_neto`, `file_upload_name`, `created_at`, `user_id`, `Categoria` (texto crudo proveedor; NULL = Patrón A), `Categoria_Calculated` (smallint 0–10 desde `tarifas.categoria` **solo si** `Categoria` es NULL y hay `tarifa_importe_id`; si hay categoría de proveedor queda NULL), `Categoria_Calculated_Boolean` (`TRUE` si se rellenó con esa clase, `FALSE` si no), `Tarifa_Status` (`COALESCE(tarifas.status, pasadas.tarifa_status)` en `PICO`/`NO_PICO`; no confundir con geocodificación), `Estacion_Geocodificacion_Status` (`OK`\|`REVIEW` desde `estaciones.estado_geocodificacion`), nombres denormalizados (`Estacion_Nombre`, `Peaje_Nombre`, `Empresa_Nombre`, `Patente`, `Patente_Categoria`, `Patente_Tipo_Trabajo`, `Patente_Activa`, `Pase`), geo (`Estacion_Latitud`, `Estacion_Longitud`), documento (`Documento_Numero`, `Documento_Tipo`, `Documento_Cuenta`, `fecha_factura`, `Documento_Importe_Sin_Iva`, `Documento_Importe_Total`).
 
 ## Policies
 
@@ -153,14 +153,20 @@ Medidas / atributos: `fecha_hora`, `precio`, `bonificacion`, `quantity`, `import
 
 | Tipo | Archivo / comando | Escenario |
 |------|-------------------|-----------|
-| `supabase_db_test` | `supabase/tests/peajes_pwbi_views_test.sql` | Existencia, columnas, GRANT anon; tests 42–45 `pwbi_tarifas_v2` |
-| CLI | `npx supabase db reset --local --no-seed` + `npx supabase test db` | Rebuild + suite (2026-09-08: Files=14 Tests=412) |
+| `supabase_db_test` | `supabase/tests/peajes_pwbi_views_test.sql` | Existencia, columnas, GRANT anon; `Tarifa_Status` vía v2 + COALESCE legado; `pwbi_tarifas_v2` |
+| `supabase_db_test` | `supabase/tests/peajes_backfill_pasadas_status_test.sql` | Backfill linaje / LEAST+status / IDA 1% / insert histórico `no_coincide` |
+| CLI | `npx supabase db reset --local --no-seed` + `npx supabase test db` | Rebuild + suite |
 
-**Estado:** DESARROLLO con `pwbi_tarifas.fecha_aparicion` (snake_case, migración `20260902185000` / MCP). `Estacion_Geocodificacion_Status` + `Patente_Categoria` / `Patente_Tipo_Trabajo` / `Patente_Activa` + `Categoria_Calculated` / `Categoria_Calculated_Boolean` en `pwbi_pasadas` (migración `20260818171958`). `pwbi_tarifas_v2` verificado en CLI local (2026-09-08, Files=14 Tests=412); **no** aplicado a DESARROLLO en F14-16.
+**Estado:** `pwbi_pasadas.Tarifa_Status` con COALESCE v2/legado en migración `20260915120326` (CLI; **no** `db push --linked` hasta autorización). Inspección previa: `supabase/scripts/pwbi_pasadas_backfill_inspect.sql`.
+
+**Comando ejecutado:** `npx supabase db reset --local --no-seed`; `npx supabase test db` (2026-09-15).
+
+**Resultado:** pgTAP **Files=22 Tests=650 EXIT 0**.
 
 ## Notes
 
-- Migraciones: `20260810194113_peajes_pwbi_views.sql`, `20260811114646_peajes_pwbi_anon_api_access.sql`, `20260811121811_peajes_pwbi_documentos.sql`, `20260812140648_peajes_tarifas_vistas.sql`, `20260818131012_peajes_pwbi_tarifas.sql`, `20260818144011_peajes_pwbi_pasadas_categoria_calculated.sql`, `20260818171958_peajes_patentes_categoria_tipo_trabajo_estado.sql`, `20260902163000_peajes_tarifas_fecha_aparicion.sql`, `20260902185000_peajes_pwbi_tarifas_fecha_aparicion.sql`, `20260907103000_peajes_tarifas_v2_compat_cutover.sql` (`pwbi_tarifas_v2` paralela; no DROP de `pwbi_tarifas`).
+- Migraciones: `20260810194113_peajes_pwbi_views.sql`, `20260811114646_peajes_pwbi_anon_api_access.sql`, `20260811121811_peajes_pwbi_documentos.sql`, `20260812140648_peajes_tarifas_vistas.sql`, `20260818131012_peajes_pwbi_tarifas.sql`, `20260818144011_peajes_pwbi_pasadas_categoria_calculated.sql`, `20260818171958_peajes_patentes_categoria_tipo_trabajo_estado.sql`, `20260902163000_peajes_tarifas_fecha_aparicion.sql`, `20260902185000_peajes_pwbi_tarifas_fecha_aparicion.sql`, `20260907103000_peajes_tarifas_v2_compat_cutover.sql` (`pwbi_tarifas_v2` paralela; no DROP de `pwbi_tarifas`), `20260914183521_peajes_pwbi_tarifas_views.sql`, **`20260915120326_peajes_backfill_pasadas_tarifa_importe_status.sql`** (backfill + COALESCE).
+- Inspección DESARROLLO (solo SELECT): `supabase/scripts/pwbi_pasadas_backfill_inspect.sql`.
 - No reemplaza `pasadas_gestion` ni los RPC de la UI.
 - Detalle v2: [tarifas-tarifa-importe.md](./tarifas-tarifa-importe.md).
 - Guía de conexión Power BI (**API URL + anon key** + tipos en Power Query): [docs/05-configuracion/powerbi-supabase.md](../../05-configuracion/powerbi-supabase.md). La guía de tipos M cubre `pwbi_tarifas` legado; `pwbi_tarifas_v2` aún no está en ese workbook.
@@ -168,4 +174,4 @@ Medidas / atributos: `fecha_hora`, `precio`, `bonificacion`, `quantity`, `import
 
 ---
 
-> Última actualización: 2026-09-08
+> Última actualización: 2026-09-15

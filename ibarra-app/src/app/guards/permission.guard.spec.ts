@@ -14,10 +14,10 @@ describe('PermissionGuard: permisos de Peajes', () => {
     (module: string, action: string) =>
       permissions.has(`${module}:${action}`) || permissions.has('*:*');
 
-  it('permite al operador carga y revisión, pero no administración', () => {
+  it('permite al perfil básico carga rápida, documentos, catálogos y pasadas', () => {
     expect(
       matchesPermissionRequirement(
-        PEAJES_ROUTE_PERMISSIONS['/peajes/wizard'],
+        PEAJES_ROUTE_PERMISSIONS['/peajes/carga-express'],
         hasPermission(operatorPermissions),
       ),
     ).toBeTrue();
@@ -29,19 +29,31 @@ describe('PermissionGuard: permisos de Peajes', () => {
     ).toBeTrue();
     expect(
       matchesPermissionRequirement(
-        PEAJES_ROUTE_PERMISSIONS['/peajes/pasadas-pendientes'],
-        hasPermission(operatorPermissions),
-      ),
-    ).toBeTrue();
-    expect(
-      matchesPermissionRequirement(
-        PEAJES_ROUTE_PERMISSIONS['/peajes/auditoria-estaciones'],
+        PEAJES_ROUTE_PERMISSIONS['/peajes/plantillas'],
         hasPermission(operatorPermissions),
       ),
     ).toBeTrue();
     expect(
       matchesPermissionRequirement(
         PEAJES_ROUTE_PERMISSIONS['/peajes/catalogos'],
+        hasPermission(operatorPermissions),
+      ),
+    ).toBeTrue();
+    expect(
+      matchesPermissionRequirement(
+        PEAJES_ROUTE_PERMISSIONS['/peajes/wizard'],
+        hasPermission(operatorPermissions),
+      ),
+    ).toBeFalse();
+    expect(
+      matchesPermissionRequirement(
+        PEAJES_ROUTE_PERMISSIONS['/peajes/pasadas-pendientes'],
+        hasPermission(operatorPermissions),
+      ),
+    ).toBeFalse();
+    expect(
+      matchesPermissionRequirement(
+        PEAJES_ROUTE_PERMISSIONS['/peajes/auditoria-estaciones'],
         hasPermission(operatorPermissions),
       ),
     ).toBeFalse();
@@ -56,7 +68,7 @@ describe('PermissionGuard: permisos de Peajes', () => {
         PEAJES_ROUTE_PERMISSIONS['/peajes/catalogos/estaciones'],
         hasPermission(readOnlyPermissions),
       ),
-    ).toBeTrue();
+    ).toBeFalse();
     expect(
       matchesPermissionRequirement(
         PEAJES_ROUTE_PERMISSIONS['/peajes/tarifario'],
@@ -74,10 +86,10 @@ describe('PermissionGuard: permisos de Peajes', () => {
         PEAJES_ROUTE_PERMISSIONS['/peajes/catalogos/empresas'],
         hasPermission(operatorPermissions),
       ),
-    ).toBeFalse();
+    ).toBeTrue();
   });
 
-  it('exige peajes:manage para el catálogo de empresas', () => {
+  it('permite peajes:manage en el catálogo de empresas', () => {
     expect(PEAJES_ROUTE_PERMISSIONS['/peajes/catalogos/empresas']).toBeDefined();
     expect(
       matchesPermissionRequirement(

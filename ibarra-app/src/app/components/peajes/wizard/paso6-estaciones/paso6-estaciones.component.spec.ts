@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Injector } from '@angular/core';
+import { of } from 'rxjs';
 import { Paso6EstacionesComponent } from './paso6-estaciones.component';
 import { PEAJES_CATALOGO_SERVICE } from '../../models';
 import { PeajesCatalogoMockService } from '../mocks/peajes-catalogo.mock';
@@ -7,6 +8,22 @@ import { PeajesWizardStateService } from '../services/peajes-wizard-state.servic
 import { Estacion } from '../../models';
 
 describe('Paso6EstacionesComponent', () => {
+  it('offers NULL-company tolls for a company without assigned tolls', async () => {
+    const catalogo = TestBed.inject(Injector).get(PEAJES_CATALOGO_SERVICE) as PeajesCatalogoMockService;
+    spyOn(catalogo, 'listarPeajes').and.returnValue(of([
+      { id: 'shared', nombre: 'Compartido', empresa_id: null },
+      { id: 'shared-2', nombre: 'Compartido 2', empresa_id: null },
+      { id: 'other', nombre: 'Otra', empresa_id: 'otra-empresa' },
+    ]));
+    await crearConPreview({ columnas: ['ESTACION'], filas: [{ ESTACION: 'CAMPANA' }],
+      incluidas: ['ESTACION'], excluidas: [] });
+    state.setEmpresaId('empresa-sin-peajes');
+    await montarPaso6();
+    component.relaciones = [{ valorProveedor: 'CAMPANA', estacionId: null,
+      peajeIdDerivado: null, peajeIdAlcance: null }];
+    expect(component.peajeOptionsForRow('CAMPANA').map((p) => p.id)).toEqual(['shared', 'shared-2']);
+  });
+
   let fixture: ComponentFixture<Paso6EstacionesComponent>;
   let component: Paso6EstacionesComponent;
   let state: PeajesWizardStateService;
@@ -393,5 +410,50 @@ describe('Paso6EstacionesComponent', () => {
     fixture.detectChanges();
     expect(component.relaciones[0]?.estacionId).not.toBe('EST-DOCK');
     expect(component.codigosFueraDeEmpresa).toContain('0001');
+  });
+
+  it('en masiva junta peajes de todas las empresas de los documentos y muestra el nombre de catálogo', async () => {
+    state.reiniciar();
+    state.setModoImportacion('masiva');
+    state.setPreview({
+      nombreArchivo: 'masiva.csv',
+      tamanioBytes: 10,
+      totalFilas: 1,
+      columnas: ['ESTACION', 'FACTURA'],
+      filasPreview: [{ ESTACION: '0001', FACTURA: '1' }],
+      filasOrigen: [{ ESTACION: '0001', FACTURA: '1' }],
+      tiposInferidos: {},
+    });
+    state.setSeleccionColumnas(['ESTACION', 'FACTURA'], []);
+    state.setMapeos([
+      { columnaOrigen: 'ESTACION', columnaDestino: 'ESTACION_ID', excluida: false },
+    ]);
+    const doc = {
+      factura: '1',
+      tipo: 'FC' as const,
+      cuenta: '',
+      fecha_factura: '',
+      bonificacion: 0,
+      importe_sin_iva: null,
+      percepciones: 0,
+      iva: 0,
+      importe_total: null,
+      rowIndexes: [0],
+      status: 'neutral' as const,
+      errores: [] as string[],
+    };
+    state.setDocumentos([
+      { ...doc, empresa_id: '37ab9246-a07a-40b5-b62d-7a8b8e7782db' },
+      { ...doc, factura: '2', empresa_id: '75d868b4-aef5-409a-8d12-973506656811', rowIndexes: [] },
+    ]);
+
+    await montarPaso6();
+
+    expect(component.peajesUnicos.map((p) => p.nombre).sort()).toEqual([
+      'AUBASA',
+      'Autovía del Mercosur',
+    ]);
+    expect(component.peajesUnicos.map((p) => p.nombre)).not.toContain('Corredores Viales Demo SA');
+    expect(component.estacionNombre('EST-MER-0001')).toBe('Estación 0001');
   });
 });

@@ -51,6 +51,17 @@ export class AccordionPanelComponent implements OnInit {
     this.accordion?.toggle(this.value);
   }
 
+  onTriggerKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.toggle();
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    this.accordion?.moveFocus(event.currentTarget as HTMLElement, event.key);
+  }
+
   statusLabel(): string {
     switch (this.status) {
       case 'ok':

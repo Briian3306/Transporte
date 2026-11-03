@@ -15,6 +15,23 @@ import {
 } from './consumos-resumen.helpers';
 
 describe('consumos-resumen.helpers', () => {
+  it('does not recognize another company toll when the assigned company pool is empty', () => {
+    const result = reconocerPeajeDesdeConcesion('VIAL 8', [
+      { id: 'p8', nombre: 'VIAL 8', empresa_id: 'empresa-8' },
+    ], 'empresa-sur');
+    expect(result.tipo).toBe('sin_coincidencia');
+    expect(result.sugerencias).toEqual([]);
+  });
+
+  it('recognizes NULL-company tolls within any assigned company pool', () => {
+    const result = reconocerPeajeDesdeConcesion('Compartido', [
+      { id: 'shared', nombre: 'Compartido', empresa_id: null },
+      { id: 'other', nombre: 'Compartido', empresa_id: 'otra' },
+    ], 'empresa-sur');
+    expect(result.tipo).toBe('exacta');
+    expect(result.peaje?.id).toBe('shared');
+  });
+
   it('normaliza Tag Nº y Estación', () => {
     expect(normalizarEncabezadoColumna('Tag Nº')).toBe('TAG N');
     expect(normalizarEncabezadoColumna('Estación')).toBe('ESTACION');

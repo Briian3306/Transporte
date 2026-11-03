@@ -1,8 +1,21 @@
 import { CandidatoRefrescoTarifa, ResultadoDetectarRefresco } from '../../models/tarifa-refresh.contracts';
 import { ConfiguracionPlantilla } from '../../models/peajes.models';
-import { TarifaSentido, TarifaStatusPico } from '../../models/tarifario.contracts';
+import {
+  TarifaSentido,
+  TarifaStatusPico,
+  type TarifarioHistorialImporteHit,
+  type TarifarioHistorialImporteMatch,
+  type TarifarioStationGroup,
+  type TarifarioCurrentRow,
+} from '../../models/tarifario.contracts';
 
 export type SentidoFamily = 'AMBAS' | 'DIRECCIONAL' | 'SIN_TARIFARIO';
+
+export function resolveStationName(...names: Array<string | null | undefined>): string {
+  return names.map(name => name?.trim()).find(name =>
+    !!name && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(name),
+  ) || 'Estación';
+}
 
 export interface EstacionCatalogoRefresco {
   estacionId: string;
@@ -25,6 +38,7 @@ export interface IdentidadTarifaExistente {
   status: TarifaStatusPico;
   sentido: TarifaSentido;
   requiereNormalizacionIva?: boolean | null;
+  enabled?: boolean;
 }
 
 export interface ResolverIvaOpciones {
@@ -63,12 +77,49 @@ export interface DetectedStation {
 
 export interface SharedTariffGroupState {
   detectedStations: readonly DetectedStation[];
-  sharedStationIds: readonly string[];
+  sharedStationIds?: readonly string[];
+  groups?: readonly TarifarioStationGroup[];
 }
 
 export interface EditorGroup {
   stationIds: readonly string[];
   stations: readonly DetectedStation[];
+}
+
+export interface ReusableTariffProposal {
+  rows: TarifarioCurrentRow[];
+  mismatch: boolean;
+}
+
+/** One current tariff per identity, chosen by validity rather than station order. */
+export function reusableTariffProposal(
+  stationIds: readonly string[],
+  catalog: readonly TarifarioCurrentRow[],
+): ReusableTariffProposal {
+  const active = catalog.filter((row) =>
+    stationIds.includes(row.estacion_id) && row.enabled !== false &&
+    row.current_tarifa_importe_id && row.importe != null && row.importe > 0,
+  );
+  const keyOf = (row: TarifarioCurrentRow): string => `${row.sentido}|${row.categoria}|${row.status}`;
+  const byStation = new Map(stationIds.map((id) => [id, new Map(
+    active.filter((row) => row.estacion_id === id).map((row) => [keyOf(row), row]),
+  )]));
+  const keys = new Set(active.map(keyOf));
+  const rows: TarifarioCurrentRow[] = [];
+  let mismatch = false;
+  for (const key of [...keys].sort()) {
+    const present = stationIds.map((id) => byStation.get(id)?.get(key)).filter((row): row is TarifarioCurrentRow => !!row);
+    if (present.length !== stationIds.length || present.some((row) =>
+      row.importe !== present[0].importe || row.requiereNormalizacionIva !== present[0].requiereNormalizacionIva,
+    )) mismatch = true;
+    present.sort((a, b) =>
+      String(b.fechaVigenciaInicio ?? '').localeCompare(String(a.fechaVigenciaInicio ?? '')) ||
+      String(b.fecha_actualizacion ?? '').localeCompare(String(a.fecha_actualizacion ?? '')) ||
+      a.estacion_id.localeCompare(b.estacion_id),
+    );
+    if (present[0]) rows.push(present[0]);
+  }
+  return { rows, mismatch };
 }
 
 export interface StationTraceViewModel {
@@ -142,7 +193,7 @@ export function agruparPendientesPorPeajeYFamilia(
 
   for (const item of unresolved) {
     const row = byId.get(item.estacionId);
-    const peajeId = item.peajeId || row?.peajeId || '';
+    const peajeId = row?.peajeId || item.peajeId || '';
     const family = sentidoFamilyOf(row?.sentidosExistentes ?? []);
     const key = `${peajeId}|${family}`;
     let grupo = groups.get(key);
@@ -175,9 +226,19 @@ export function agruparPendientesPorPeajeYFamilia(
   return [...groups.values()];
 }
 
+export interface TarifaCatalogoFingerprintRow {
+  estacion_id: string;
+  categoria: number;
+  status: TarifaStatusPico;
+  sentido: TarifaSentido;
+  importe: number | null;
+  enabled?: boolean;
+}
+
 export function heuristicaSeleccionInicial(
   grupo: GrupoPendienteRefresco,
   candidatos: readonly CandidatoRefrescoTarifa[],
+  catalogRows: readonly TarifaCatalogoFingerprintRow[] = [],
 ): string[] {
   const anchorId = [...grupo.itemsPorEstacion.keys()][0];
   if (!anchorId) return [];
@@ -203,6 +264,16 @@ export function heuristicaSeleccionInicial(
       ),
     );
     if (matches) selected.add(opcion.estacionId);
+  }
+
+  const anchorPrint = tariffFingerprint(anchorId, catalogRows, grupo.family);
+  if (anchorPrint) {
+    for (const opcion of grupo.opciones) {
+      if (!opcion.pendiente) continue;
+      if (tariffFingerprint(opcion.estacionId, catalogRows, grupo.family) === anchorPrint) {
+        selected.add(opcion.estacionId);
+      }
+    }
   }
 
   return grupo.opciones
@@ -262,6 +333,24 @@ function precioDeCandidato(
   return related?.precioDirecto ?? null;
 }
 
+function tariffFingerprint(
+  estacionId: string,
+  rows: readonly TarifaCatalogoFingerprintRow[],
+  family: SentidoFamily,
+): string | null {
+  const filtered = rows.filter((row) => {
+    if (row.estacion_id !== estacionId || row.enabled === false || row.importe == null) return false;
+    if (family === 'AMBAS') return row.sentido === 'AMBAS';
+    if (family === 'DIRECCIONAL') return row.sentido === 'IDA' || row.sentido === 'VUELTA';
+    return false;
+  });
+  if (!filtered.length) return null;
+  return filtered
+    .map((row) => `${row.sentido}|${row.categoria}|${row.status}|${row.importe}`)
+    .sort()
+    .join(';');
+}
+
 function signaturesDe(
   categoria: number | null | undefined,
   status: TarifaStatusPico | null | undefined,
@@ -276,6 +365,7 @@ function signaturesDe(
 export function buildDetectedStations(
   imported: readonly ResultadoDetectarRefresco[],
   catalogo: readonly EstacionCatalogoRefresco[] = [],
+  includeCatalogOnly = false,
 ): DetectedStation[] {
   const byId = new Map(catalogo.map((row) => [row.estacionId, row]));
   const seen = new Set<string>();
@@ -286,12 +376,26 @@ export function buildDetectedStations(
     const row = byId.get(item.estacionId);
     stations.push({
       estacionId: item.estacionId,
-      estacionNombre: row?.estacionNombre || item.estacionId,
-      peajeId: item.peajeId || row?.peajeId || '',
+      estacionNombre: resolveStationName(row?.estacionNombre),
+      peajeId: row?.peajeId || item.peajeId || '',
       peajeNombre: row?.peajeNombre || '',
       color: STATION_SESSION_PALETTE[stations.length % STATION_SESSION_PALETTE.length],
       family: sentidoFamilyOf(row?.sentidosExistentes ?? []),
     });
+  }
+  if (includeCatalogOnly) {
+    for (const row of catalogo) {
+      if (seen.has(row.estacionId)) continue;
+      seen.add(row.estacionId);
+      stations.push({
+        estacionId: row.estacionId,
+        estacionNombre: resolveStationName(row.estacionNombre),
+        peajeId: row.peajeId,
+        peajeNombre: row.peajeNombre,
+        color: STATION_SESSION_PALETTE[stations.length % STATION_SESSION_PALETTE.length],
+        family: sentidoFamilyOf(row.sentidosExistentes),
+      });
+    }
   }
   return stations;
 }
@@ -299,15 +403,91 @@ export function buildDetectedStations(
 export function stationTraceViewModel(station: DetectedStation): StationTraceViewModel {
   return {
     estacionId: station.estacionId,
-    estacionNombre: station.estacionNombre,
+    estacionNombre: resolveStationName(station.estacionNombre),
     color: station.color,
   };
+}
+
+export function maxSharedGroupCount(stationCount: number): number {
+  return Math.max(1, Math.floor(stationCount / 2));
+}
+
+export function resizeSharedSlots(
+  slots: readonly (readonly string[])[],
+  nextCount: number,
+): string[][] {
+  const count = Math.max(1, nextCount);
+  const next = slots.slice(0, count).map((slot) => [...slot]);
+  while (next.length < count) next.push([]);
+  return next;
+}
+
+export function applySharedSlotSelection(
+  slots: readonly (readonly string[])[],
+  slotIndex: number,
+  nextIds: readonly string[],
+): string[][] {
+  const ownedElsewhere = new Set(
+    slots.flatMap((slot, index) => (index === slotIndex ? [] : [...slot])),
+  );
+  const unique = [...new Set(nextIds)].filter((id) => !ownedElsewhere.has(id));
+  return slots.map((slot, index) => (index === slotIndex ? unique : [...slot]));
+}
+
+export interface SharedSlotCheckboxOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+  style: { badgeColor: string; iconColor: string };
+}
+
+export function checkboxOptionsForSlot(
+  stations: readonly DetectedStation[],
+  slots: readonly (readonly string[])[],
+  slotIndex: number,
+): SharedSlotCheckboxOption[] {
+  const usedElsewhere = new Set(
+    slots.flatMap((slot, index) => (index === slotIndex ? [] : [...slot])),
+  );
+  return stations.map((station) => ({
+    value: station.estacionId,
+    label: resolveStationName(station.estacionNombre),
+    disabled: usedElsewhere.has(station.estacionId),
+    style: { badgeColor: station.color, iconColor: station.color },
+  }));
+}
+
+export function sharedSlotsToTarifarioGroups(
+  slots: readonly (readonly string[])[],
+  family: 'AMBAS' | 'DIRECCIONAL',
+): TarifarioStationGroup[] {
+  return slots
+    .filter((slot) => slot.length >= 2)
+    .map((slot, index) => ({
+      id: `shared-slot-${index}`,
+      stationIds: [...slot],
+      family,
+    }));
 }
 
 export function deriveEditorGroups(state: SharedTariffGroupState): EditorGroup[] {
   const detected = uniqueDetectedStations(state.detectedStations);
   const detectedIds = new Set(detected.map((station) => station.estacionId));
-  const sharedWanted = new Set(state.sharedStationIds.filter((id) => detectedIds.has(id)));
+  if (state.groups?.length) {
+    const byId = new Map(detected.map((station) => [station.estacionId, station]));
+    const used = new Set<string>();
+    const explicit: EditorGroup[] = [];
+    for (const configured of state.groups) {
+      const stations = configured.stationIds
+        .map((id) => byId.get(id))
+        .filter((station): station is DetectedStation => !!station && station.family === configured.family && !used.has(station.estacionId));
+      if (!stations.length) continue;
+      explicit.push(toEditorGroup(stations));
+      stations.forEach((station) => used.add(station.estacionId));
+    }
+    return [...explicit, ...detected.filter((station) => !used.has(station.estacionId)).map((station) => [station]).map(toEditorGroup)];
+  }
+  const sharedWanted = new Set((state.sharedStationIds ?? []).filter((id) => detectedIds.has(id)));
 
   const clusters = new Map<string, DetectedStation[]>();
   const clusterOrder: string[] = [];
@@ -448,4 +628,207 @@ function identityCellKey(
   sentido: TarifaSentido,
 ): string {
   return `${categoria}|${status}|${sentido}`;
+}
+
+export const TARIFA_PRICE_TOLERANCE = 0.01;
+
+export function withinTarifaPriceTolerance(candidate: number, importe: number): boolean {
+  return Number.isFinite(candidate) && importe > 0 && Math.abs(candidate - importe) / importe <= TARIFA_PRICE_TOLERANCE;
+}
+
+export function hasDistinctPriceClusters(amounts: readonly number[]): boolean {
+  const clusters: number[][] = [];
+  for (const amount of amounts) {
+    if (!Number.isFinite(amount)) continue;
+    const cluster = clusters.find((group) => withinTarifaPriceTolerance(amount, group[0]));
+    if (cluster) cluster.push(amount);
+    else clusters.push([amount]);
+  }
+  return clusters.length > 1;
+}
+
+export interface LeftoverMergeItem {
+  identityKey: string;
+  amount: number;
+  cases: number;
+  fechaPasada?: string | null;
+}
+
+export interface LeftoverMergeConflict<T extends LeftoverMergeItem> {
+  identityKey: string;
+  amounts: number[];
+  items: T[];
+}
+
+export interface LeftoverMergeResult<T extends LeftoverMergeItem> {
+  merged: T[];
+  conflict: LeftoverMergeConflict<T> | null;
+}
+
+export function mergeLeftoversByIdentity<T extends LeftoverMergeItem>(
+  items: readonly T[],
+): LeftoverMergeResult<T> {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const list = groups.get(item.identityKey) ?? [];
+    list.push(item);
+    groups.set(item.identityKey, list);
+  }
+  const merged: T[] = [];
+  for (const group of groups.values()) {
+    const clusters: T[][] = [];
+    for (const item of group) {
+      const cluster = clusters.find((existing) => withinTarifaPriceTolerance(item.amount, existing[0].amount));
+      if (cluster) cluster.push(item);
+      else clusters.push([item]);
+    }
+    clusters.sort((left, right) => leftoverClusterFecha(left).localeCompare(leftoverClusterFecha(right)));
+    for (const cluster of clusters) {
+      if (cluster.length === 0) continue;
+      const representative = cluster.reduce((best, item) => (item.cases > best.cases ? item : best));
+      merged.push({
+        ...representative,
+        cases: cluster.reduce((sum, item) => sum + item.cases, 0),
+        amount: representative.amount,
+      });
+    }
+  }
+  return { merged, conflict: null };
+}
+
+function leftoverClusterFecha<T extends LeftoverMergeItem>(cluster: readonly T[]): string {
+  return cluster.reduce((best, item) => {
+    const fecha = item.fechaPasada?.trim() ?? '';
+    return fecha > best ? fecha : best;
+  }, '');
+}
+
+export interface HighestIdentityOption {
+  key: string;
+  categoria: number;
+  status: TarifaStatusPico;
+  sentido: TarifaSentido;
+}
+
+/** Paso 9: unique identity among 1% price hits, preferring IDA over its VUELTA pair. */
+export function uniqueHighestCategoryIdentity<T extends HighestIdentityOption>(
+  matches: readonly T[],
+): T | null {
+  return uniqueIdentityForCategory(matches);
+}
+
+export function uniqueIdentityForCategory<T extends HighestIdentityOption>(
+  matches: readonly T[],
+  categoria?: number | null,
+): T | null {
+  if (!matches.length) return null;
+  const scoped =
+    categoria == null ? matches : matches.filter((option) => option.categoria === categoria);
+  if (!scoped.length) return null;
+  const preferred = scoped.filter((option) => option.sentido !== 'VUELTA' || !scoped.some(
+    (ida) => ida.sentido === 'IDA' && ida.categoria === option.categoria && ida.status === option.status,
+  ));
+  if (new Set(preferred.map((option) => option.key)).size !== 1) return null;
+  return preferred[0] ?? null;
+}
+
+export function resolveCategoriaEfectiva(
+  recibida: number | null | undefined,
+  catalogRows: ReadonlyArray<{ estacion_id: string; categoria: number; enabled?: boolean | null }>,
+  estacionId: string,
+): number | null {
+  if (recibida == null || !Number.isFinite(recibida)) return null;
+  const capped = Math.trunc(recibida);
+  const maxima = catalogRows
+    .filter((row) => row.estacion_id === estacionId && row.enabled !== false)
+    .reduce((max, row) => Math.max(max, row.categoria), Number.NEGATIVE_INFINITY);
+  if (!Number.isFinite(maxima)) return capped;
+  return Math.min(capped, maxima);
+}
+
+export function findHistoryHit(
+  hits: readonly TarifarioHistorialImporteHit[],
+  estacionId: string,
+  importe: number,
+  categoria?: number | null,
+): TarifarioHistorialImporteHit | null {
+  return (
+    hits.find((hit) => {
+      if (hit.estacionId !== estacionId) return false;
+      if (!withinTarifaPriceTolerance(importe, hit.importeConsultado)) return false;
+      if (categoria == null) return true;
+      if (hit.categoria === categoria) return true;
+      return (hit.matches ?? []).some((match) => match.categoria === categoria);
+    }) ?? null
+  );
+}
+
+export function historyMatchesForCategory(
+  hit: TarifarioHistorialImporteHit | null | undefined,
+  status?: TarifaStatusPico | null,
+  categoria?: number | null,
+): TarifarioHistorialImporteMatch[] {
+  if (!hit) return [];
+  const matches =
+    hit.matches?.length
+      ? hit.matches
+      : hit.tarifaId && hit.categoria != null && hit.status && hit.sentido && hit.importe != null
+        ? [
+            {
+              tarifaId: hit.tarifaId,
+              categoria: hit.categoria,
+              status: hit.status,
+              sentido: hit.sentido,
+              importe: hit.importe,
+            },
+          ]
+        : [];
+  return matches.filter((match) => {
+    if (status && match.status !== status) return false;
+    if (categoria != null && match.categoria !== categoria) return false;
+    return true;
+  });
+}
+
+export function uniqueHistoryIdentity(
+  hit: TarifarioHistorialImporteHit | null | undefined,
+  status?: TarifaStatusPico | null,
+  categoria?: number | null,
+): { categoria: number; status: TarifaStatusPico; sentido: TarifaSentido } | null {
+  const top = historyMatchesForCategory(hit, status, categoria);
+  const match = uniqueIdentityForCategory(top.map((item) => ({ ...item, key: item.tarifaId })));
+  if (!match) return null;
+  return { categoria: match.categoria, status: match.status, sentido: match.sentido };
+}
+
+export type ConfirmNewVigenciaPreflight =
+  | { kind: 'omit' }
+  | { kind: 'error'; message: string }
+  | { kind: 'ok' };
+
+export function confirmNewVigenciaPreflight(params: {
+  importe: number;
+  fechaVigenciaInicio: string | null;
+  catalog: {
+    importe: number | null;
+    fechaVigenciaInicio: string | null;
+    estacionNombre?: string | null;
+    categoria: number;
+    status: TarifaStatusPico;
+  } | null;
+  forcePersist?: boolean;
+}): ConfirmNewVigenciaPreflight {
+  if (!params.catalog || params.catalog.importe == null || params.catalog.importe <= 0) return { kind: 'ok' };
+  if (!params.forcePersist && withinTarifaPriceTolerance(params.importe, params.catalog.importe)) {
+    return { kind: 'omit' };
+  }
+  const catalogStart = params.catalog.fechaVigenciaInicio;
+  const newStart = params.fechaVigenciaInicio;
+  if (!catalogStart || !newStart || newStart > catalogStart) return { kind: 'ok' };
+  const statusLabel = params.catalog.status === 'PICO' ? 'Pico' : 'No pico';
+  const estacion = params.catalog.estacionNombre?.trim() || 'la estación';
+  return {
+    kind: 'error',
+    message: `La vigencia nueva se superpone o inicia antes del vigente en ${estacion} · cat. ${params.catalog.categoria} · ${statusLabel} (nuevo ${newStart}, vigente ${catalogStart}).`,
+  };
 }

@@ -15,7 +15,7 @@ describe('PeajesCatalogosHomeComponent: visibilidad de cards', () => {
     const visible = getVisiblePeajesHomeSectionIds(
       new Set(['peajes:read', 'peajes:create']),
     );
-    expect(visible).toContain('patentes');
-    expect(CATALOGOS_CARDS.some((c) => visible.includes(c.route))).toBeTrue();
+    expect(visible).toEqual(['empresas', 'peajes', 'estaciones', 'patentes', 'pases']);
+    expect(CATALOGOS_CARDS.every((c) => visible.includes(c.route))).toBeTrue();
   });
 });

@@ -4,7 +4,7 @@
       <p class="pwe__eyebrow">Peajes / carga rápida</p>
       <h1 class="pwe__title">Cargá tus pasadas con una plantilla.</h1>
       <p class="pwe__lede">
-        Elegí la empresa y el formato, revisá las estaciones cuando sea necesario y completá la factura.
+        Elegí el formato, completá la factura y revisá las estaciones de esas empresas cuando sea necesario.
       </p>
     </div>
     <div class="pwe__actions">
@@ -56,13 +56,13 @@
       *ngIf="pasoActual === 6"
       [expressMode]="true"
       (completado)="onEstacionesCompletadas()"
-      (atras)="pasoActual = 1"
+      (atras)="pasoActual = 7"
     />
     <app-paso7-factura
       *ngIf="pasoActual === 7"
       [expressMode]="true"
       (completado)="onFacturaCompletada()"
-      (atras)="pasoActual = 6"
+      (atras)="atrasDesdeFactura()"
     />
     <app-paso8-validacion
       *ngIf="pasoActual === 8"

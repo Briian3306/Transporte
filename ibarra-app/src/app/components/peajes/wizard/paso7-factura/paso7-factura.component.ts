@@ -36,6 +36,7 @@ import {
   toDateInputValue,
   formatDateInputDisplay,
   AiCatLoaderComponent,
+  DialogComponent,
 } from '../../../shared';
 import {
   agregarIvaDocumento,
@@ -54,6 +55,7 @@ import {
   resolverEmpresaDesdeConcesion,
 } from '../../models';
 import { MVP_FACTURA } from '../fixtures/mvp-ejemplo.fixture';
+import type { Estacion } from '../../models/peajes.models';
 import {
   PeajesWizardStateService,
   WizardDocumentoGrupo,
@@ -68,6 +70,14 @@ import {
   InvoiceField,
 } from '../../services/ai/invoice/invoice-ai.models';
 import { analizarFacturasMasivaPendientes } from '../services/invoice-masiva-queue';
+import { TarifaRefreshDialogComponent } from '../paso9-revision/tarifa-refresh-dialog.component';
+import {
+  CandidatoRefrescoTarifa,
+  ResultadoDetectarRefresco,
+  TARIFA_REFRESH_SERVICE,
+  TarifaRefreshService,
+} from '../../models/tarifa-refresh.contracts';
+import { GranularPermissionService } from '../../../../services/granular-permission.service';
 
 type DocFormGroup = ReturnType<Paso7FacturaComponent['crearDocGroup']>;
 
@@ -79,12 +89,14 @@ type DocFormGroup = ReturnType<Paso7FacturaComponent['crearDocGroup']>;
     ReactiveFormsModule,
     FormsModule,
     SearchMultiSelectComponent,
+    DialogComponent,
     DateRangePickerComponent,
     AccordionComponent,
     AccordionPanelComponent,
     AccordionHeaderDirective,
     AccordionContentDirective,
     AiCatLoaderComponent,
+    TarifaRefreshDialogComponent,
   ],
   templateUrl: './paso7-factura.component.html',
   styleUrl: './paso7-factura.component.css',
@@ -120,6 +132,16 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
   esMasiva = false;
   documentos: WizardDocumentoGrupo[] = [];
   empresaOptions: SearchMultiSelectOption[] = [];
+  crearEmpresaAbierto = false;
+  crearEmpresaIndex: number | null = null;
+  nuevaEmpresaNombre = '';
+  nuevaEmpresaDescripcion = '';
+  tarifarioAbierto = false;
+  tarifarioCargando = false;
+  tarifarioError = '';
+  tarifarioCandidatos: CandidatoRefrescoTarifa[] = [];
+  tarifarioResultados: ResultadoDetectarRefresco[] = [];
+  tarifarioEstacionesCatalogo: Pick<Estacion, 'id' | 'nombre' | 'peaje_id'>[] = [];
   docPage = 0;
   /** Precomputed net sum per factura key. */
   sumaNetaPorKey = new Map<string, number>();
@@ -132,7 +154,7 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
     factura: ['', Validators.required],
     tipo: ['FC' as DocumentoTipo, Validators.required],
     cuenta: [''],
-    empresa_id: [{ value: '', disabled: true }, Validators.required],
+    empresa_id: ['', Validators.required],
     fecha_factura: ['', Validators.required],
     bonificacion: [0 as number | null, [Validators.required]],
     importe_sin_iva: [null as number | null, [Validators.required]],
@@ -143,7 +165,9 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
 
   constructor(
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService,
-    @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillas: PeajesPlantillasService
+    @Inject(PEAJES_PLANTILLAS_SERVICE) private readonly plantillas: PeajesPlantillasService,
+    @Inject(TARIFA_REFRESH_SERVICE) private readonly refresh: TarifaRefreshService,
+    private readonly permissions: GranularPermissionService
   ) {}
 
   get totalDocPages(): number {
@@ -630,6 +654,134 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
     this.state.patchDocumento(index, { empresa_id: id });
     this.refreshDocumentosFromState();
     this.cdr.markForCheck();
+  }
+
+  onEmpresaSimpleChange(ids: string[]): void {
+    const id = ids[0] ?? '';
+    this.empresaIds = id ? [id] : [];
+    this.form.patchValue({ empresa_id: id });
+    this.form.controls.empresa_id.markAsTouched();
+    this.state.setEmpresaId(id || null);
+    this.cdr.markForCheck();
+  }
+
+  get puedeGestionarTarifas(): boolean {
+    return this.permissions.hasPermission('peajes', 'manage');
+  }
+
+  abrirCrearEmpresa(index: number | null): void {
+    this.crearEmpresaIndex = index;
+    this.nuevaEmpresaNombre = '';
+    this.nuevaEmpresaDescripcion = '';
+    this.crearEmpresaAbierto = true;
+    this.cdr.markForCheck();
+  }
+
+  async crearEmpresa(): Promise<void> {
+    const nombre = this.nuevaEmpresaNombre.trim();
+    if (!nombre) return;
+    const empresa = await firstValueFrom(
+      this.catalogo.crearEmpresa({
+        nombre,
+        descripcion: this.nuevaEmpresaDescripcion.trim() || null,
+      })
+    );
+    const peaje = await firstValueFrom(
+      this.catalogo.crearPeaje({
+        nombre,
+        empresa_id: empresa.id,
+        descripcion: this.nuevaEmpresaDescripcion.trim() || null,
+      })
+    );
+    this.empresas = [...this.empresas, empresa];
+    this.peajes = [...this.peajes, peaje];
+    this.empresaOptions = this.empresas.map((e) => ({ id: e.id, label: e.nombre }));
+    this.crearEmpresaAbierto = false;
+    if (this.crearEmpresaIndex == null) {
+      this.onEmpresaSimpleChange([empresa.id]);
+    } else {
+      this.onEmpresaDocChange([empresa.id], this.crearEmpresaIndex);
+    }
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Abre el diálogo de tarifario (mismo que Paso 9) para las estaciones de la empresa
+   * del documento. No bloquea Continuar.
+   */
+  async abrirTarifario(index: number | null): Promise<void> {
+    const empresaId =
+      index == null
+        ? this.form.getRawValue().empresa_id
+        : this.empresaIdsPorDoc[index]?.[0] || this.documentos[index]?.empresa_id || '';
+    if (!empresaId) {
+      this.tarifarioError = 'Elegí la empresa antes de ver el tarifario.';
+      this.cdr.markForCheck();
+      return;
+    }
+    this.tarifarioCargando = true;
+    this.tarifarioError = '';
+    this.cdr.markForCheck();
+    try {
+      const [estaciones, vias] = await Promise.all([
+        firstValueFrom(this.catalogo.listarEstaciones()),
+        firstValueFrom(this.catalogo.listarEstacionesViasSentido()),
+      ]);
+      const peajeIds = new Set(
+        this.peajes
+          .filter((p) => p.empresa_id == null || p.empresa_id === empresaId || p.empresa_id === '__global__')
+          .map((p) => p.id)
+      );
+      const estacionesEmpresa = estaciones.filter((e) => peajeIds.has(e.peaje_id));
+      this.tarifarioEstacionesCatalogo = estacionesEmpresa.map((estacion) => ({
+        id: estacion.id,
+        nombre: estacion.nombre,
+        peaje_id: estacion.peaje_id,
+      }));
+      const snap = this.state.snapshot();
+      const doc = index == null ? snap.documentos[0] : snap.documentos[index];
+      const pasadasConEstacion = snap.pasadasEstandarizadas.filter((pasada) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          String(pasada.ESTACION_ID ?? '')
+        )
+      );
+      if (!pasadasConEstacion.length) {
+        this.tarifarioError =
+          'Hay pasadas sin estación o categoría numérica. Completá las estaciones antes de ver el tarifario.';
+        this.cdr.markForCheck();
+        return;
+      }
+      const resumen = await this.refresh.analizar({
+        pasadas: pasadasConEstacion,
+        documentos: doc
+          ? [{ tipo: doc.tipo, rowIndexes: doc.rowIndexes ?? [], omitido: false }]
+          : [],
+        configuraciones: this.state.toConfiguracionesPlantilla(),
+        estacionesViasSentido: vias.map((row) => ({
+          codigoEstacion: row.codigo_estacion,
+          via: row.via,
+          sentido: row.sentido,
+        })),
+        estacionesCatalogo: estacionesEmpresa.map((estacion) => ({
+          estacionId: estacion.id,
+          estacionNombre: estacion.nombre,
+          peajeId: estacion.peaje_id,
+          peajeNombre: this.peajes.find((p) => p.id === estacion.peaje_id)?.nombre ?? estacion.nombre,
+          codigosProveedor: estacion.codigos_proveedor ?? [],
+        })),
+      });
+      this.tarifarioCandidatos = resumen.candidatos;
+      this.tarifarioResultados = resumen.resultados;
+      this.tarifarioAbierto = true;
+      if (!estacionesEmpresa.length) {
+        this.tarifarioError = 'Esta empresa no tiene estaciones en el catálogo.';
+      }
+    } catch (e) {
+      this.tarifarioError = e instanceof Error ? e.message : 'No se pudo abrir el tarifario.';
+    } finally {
+      this.tarifarioCargando = false;
+      this.cdr.markForCheck();
+    }
   }
 
   irAPasoParaDocumento(paso: 5 | 6, index: number): void {

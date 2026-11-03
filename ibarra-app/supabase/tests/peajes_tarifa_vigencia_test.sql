@@ -1,6 +1,6 @@
 -- pgTAP: F14-19 validity, diagnostics, safe lineage backfill and pointer gates.
 BEGIN;
-SELECT plan(51);
+SELECT plan(52);
 
 -- Legacy compatibility remains intact.
 SELECT has_table('public', 'tarifa_importe', 'F14-19 tarifa_importe sigue existiendo');
@@ -55,6 +55,11 @@ SELECT col_type_is(
 SELECT col_is_null(
   'public', 'tarifa_importe', 'diagnostico',
   'F14-19 tarifa_importe.diagnostico nullable'
+);
+
+SELECT has_column(
+  'public', 'tarifa_importe', 'no_coincide_con_tarifario',
+  'tarifa_importe.no_coincide_con_tarifario exists'
 );
 
 SELECT ok(

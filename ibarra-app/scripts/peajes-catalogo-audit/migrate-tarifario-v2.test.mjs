@@ -381,3 +381,23 @@ test('splitSentidoCollisions keeps directional collisions unresolved without clo
   assert.equal(split.unresolved.length, 1);
   assert.equal(split.unresolved[0].reason, 'DIRECTIONAL_HISTORY_COLLISION');
 });
+
+test('known directionless split pointers are reported but do not fail the local seed parity gate', async () => {
+  const { buildParityFindings } = await loadEtl();
+  const findings = buildParityFindings(
+    { null_current_pointers: 27, expected_null_current_pointers: 27 },
+    Array.from({ length: 27 }, (_, index) => ({ from: `source-${index}`, to: `split-${index}` })),
+  );
+  assert.deepEqual(findings.unexplained, []);
+  assert.deepEqual(findings.warnings, ['directional_history_collisions=27']);
+});
+
+test('null pointers beyond known directionless splits remain a cutover blocker', async () => {
+  const { buildParityFindings } = await loadEtl();
+  const findings = buildParityFindings(
+    { null_current_pointers: 28, expected_null_current_pointers: 27 },
+    [{ from: PARENT_A, to: PARENT_B }],
+  );
+  assert.deepEqual(findings.unexplained, ['unexpected_null_current_pointers=1']);
+  assert.deepEqual(findings.warnings, ['directional_history_collisions=1']);
+});

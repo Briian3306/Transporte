@@ -49,4 +49,19 @@ export class AccordionComponent {
     if (!this.isExpanded(value)) return;
     this.toggle(value);
   }
+
+  moveFocus(from: HTMLElement, key: string): void {
+    const root = from.closest('.app-accordion');
+    if (!root) return;
+    const triggers = [...root.querySelectorAll<HTMLButtonElement>('.app-acc-panel__trigger')];
+    const index = triggers.findIndex((trigger) => trigger === from || trigger.contains(from));
+    if (index < 0) return;
+    const nextIndex =
+      key === 'Home' ? 0
+      : key === 'End' ? triggers.length - 1
+      : key === 'ArrowDown' ? Math.min(triggers.length - 1, index + 1)
+      : key === 'ArrowUp' ? Math.max(0, index - 1)
+      : index;
+    triggers[nextIndex]?.focus();
+  }
 }

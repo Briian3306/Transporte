@@ -23,6 +23,23 @@ function pasada(overrides: Partial<PasadaEstandarizada> = {}): PasadaEstandariza
 }
 
 describe('extraerCandidatosRefresco', () => {
+  it('resuelve el nombre de estación del archivo al id del catálogo', () => {
+    const candidatos = extraerCandidatosRefresco(
+      [pasada({ ESTACION_ID: 'HINOJO - RN 226 KM 276' })],
+      {
+        estacionesCatalogo: [{
+          estacionId: '11111111-1111-4111-8111-111111111111',
+          estacionNombre: 'Otra',
+          peajeId: 'peaje-1',
+          peajeNombre: 'Peaje',
+          codigosProveedor: ['HINOJO - RN 226 KM 276'],
+        }],
+      },
+    );
+    expect(candidatos[0].estacionId).toBe('11111111-1111-4111-8111-111111111111');
+    expect(candidatos[0].peajeId).toBe('peaje-1');
+  });
+
   it('prefers PRECIO over a different IMPORTE_NETO', () => {
     const candidatos = extraerCandidatosRefresco([
       pasada({ PRECIO: 14968.96, IMPORTE_NETO: 12100 }),
@@ -375,6 +392,67 @@ describe('TarifaRefreshServiceImpl', () => {
     expect(adapter.obtenerPrecioComparable).not.toHaveBeenCalled();
   });
 
+  it('still detects when SENTIDO is missing so a unique catalog match can close Paso 9', async () => {
+    const { TestBed } = await import('@angular/core/testing');
+    const { of } = await import('rxjs');
+    const { TarifaRefreshServiceImpl } = await import('./tarifa-refresh.service');
+    const { PEAJES_TARIFARIO_SERVICE } = await import('../models/tarifario.contracts');
+    const { TarifaComparisonAdapterService } = await import('./tarifa-comparison-adapter.service');
+
+    const preparar = jasmine.createSpy('prepararRefresco').and.returnValue(
+      of([
+        {
+          id: 'ctx',
+          peajeId: 'p',
+          estacionId: ESTACION_DOCK,
+          categoria: 2,
+          status: 'NO_PICO',
+          sentido: 'AMBAS',
+          tarifaId: 't',
+          importe: 11975.15,
+          requiereNormalizacionIva: false,
+        },
+      ]),
+    );
+    const detectar = jasmine.createSpy('detectarRefresco').and.callFake((inputs: Array<{ id: string }>) =>
+      of(
+        inputs.map((item) => ({
+          id: item.id,
+          codigo: 'HISTORICAL_TARIFF_MATCH',
+          peajeId: 'p',
+          estacionId: ESTACION_DOCK,
+          categoria: 2,
+          status: 'NO_PICO',
+          sentidoSolicitado: null,
+          sentidoAplicado: 'AMBAS',
+          importeActual: 11975.15,
+          tarifaId: 't',
+          tarifaImporteId: 'ti-hist',
+          requiereNormalizacionIva: false,
+        })),
+      ),
+    );
+    TestBed.configureTestingModule({
+      providers: [
+        TarifaRefreshServiceImpl,
+        { provide: PEAJES_TARIFARIO_SERVICE, useValue: { prepararRefresco: preparar, detectarRefresco: detectar } },
+        {
+          provide: TarifaComparisonAdapterService,
+          useValue: jasmine.createSpyObj('TarifaComparisonAdapterService', ['obtenerPrecioComparable']),
+        },
+      ],
+    });
+    const service = TestBed.inject(TarifaRefreshServiceImpl);
+    const resumen = await service.analizar({
+      pasadas: [pasada({ PRECIO: 11975.15, SENTIDO: null })],
+      documentos: [{ tipo: 'FC', rowIndexes: [0] }],
+      configuraciones: [],
+    });
+    expect(detectar).toHaveBeenCalled();
+    expect(resumen.resultados.map((row) => row.codigo)).toEqual(['HISTORICAL_TARIFF_MATCH']);
+    expect(resumen.resultados.some((row) => row.codigo === 'DIRECTION_REQUIRED')).toBeFalse();
+  });
+
   it('sends fechaPasada to detect so the same price on two dates stays two candidates', async () => {
     const { TestBed } = await import('@angular/core/testing');
     const { of } = await import('rxjs');
@@ -441,7 +519,7 @@ describe('TarifaRefreshServiceImpl', () => {
     expect(resumen.resultados.length).toBe(2);
   });
 
-  it('calls TarifaComparisonAdapterService once and never applies a second IVA path', async () => {
+  it('uses an IVA flag from another tariff category when the provider category is wrong', async () => {
     const { TestBed } = await import('@angular/core/testing');
     const { of } = await import('rxjs');
     const { TarifaRefreshServiceImpl } = await import('./tarifa-refresh.service');
@@ -455,7 +533,7 @@ describe('TarifaRefreshServiceImpl', () => {
           id: 'ctx',
           peajeId: 'p',
           estacionId: ESTACION_DOCK,
-          categoria: 2,
+          categoria: 8,
           status: 'NO_PICO',
           sentido: 'AMBAS',
           tarifaId: 't',

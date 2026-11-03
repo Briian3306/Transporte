@@ -56,6 +56,10 @@ export type {
 export { SearchSelectComponent } from './search-select/search-select.component';
 export type { SearchSelectOption } from './search-select/search-select.types';
 export { DialogComponent } from './dialog/dialog.component';
+export { StepperComponent } from './stepper/stepper.component';
+export { StepperItemComponent } from './stepper/stepper-item.component';
+export { StepperPanelComponent } from './stepper/stepper-panel.component';
+export type { StepperItemState } from './stepper/stepper-item.component';
 export { AccordionComponent } from './accordion/accordion.component';
 export { AccordionPanelComponent } from './accordion/accordion-panel.component';
 export { AccordionHeaderDirective } from './accordion/accordion-header.directive';

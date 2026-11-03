@@ -55,6 +55,64 @@ export type { ColumnRecommendation } from './column-recognition';
 
 export type WizardPasoId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
+/**
+ * Orden real del asistente. Los ids de paso no cambian (Documento sigue siendo 7),
+ * pero Documento se recorre antes que Estaciones.
+ */
+export const WIZARD_FLUJO_ORDEN: readonly WizardPasoId[] = [1, 2, 3, 4, 5, 7, 6, 8, 9];
+
+export function indiceFlujo(paso: WizardPasoId): number {
+  const index = WIZARD_FLUJO_ORDEN.indexOf(paso);
+  return index < 0 ? 0 : index;
+}
+
+export function siguientePaso(paso: WizardPasoId): WizardPasoId {
+  const index = indiceFlujo(paso);
+  return WIZARD_FLUJO_ORDEN[Math.min(WIZARD_FLUJO_ORDEN.length - 1, index + 1)];
+}
+
+export function anteriorPaso(paso: WizardPasoId): WizardPasoId {
+  const index = indiceFlujo(paso);
+  return WIZARD_FLUJO_ORDEN[Math.max(0, index - 1)];
+}
+
+export function numeroVisualPaso(paso: WizardPasoId): number {
+  return indiceFlujo(paso) + 1;
+}
+
+/** Gates de avance según la posición en el flujo, no según el id numérico. */
+export function puedeAvanzarFlujo(paso: WizardPasoId, s: PeajesWizardState): boolean {
+  const target = indiceFlujo(paso);
+  const alcanza = (id: WizardPasoId) => target >= indiceFlujo(id);
+  const docs = s.documentos?.length ? s.documentos : [];
+  const incluidos = docs.filter((f) => !f.omitido);
+
+  if (alcanza(2) && !s.preview) return false;
+  if (alcanza(2) && s.modoImportacion !== 'masiva' && !s.empresaId) return false;
+  if (alcanza(5) && s.columnasIncluidas.length === 0) return false;
+  if (alcanza(7) && s.pasadasEstandarizadas.length === 0) return false;
+  if (alcanza(6) && (!incluidos.length || incluidos.some((f) => !f.empresa_id))) return false;
+  if (alcanza(8)) {
+    if (!s.relacionesEstacion.length || s.relacionesEstacion.some((r) => !r.estacionId)) return false;
+    const incompleto = incluidos.some(
+      (f) =>
+        !f.factura ||
+        !f.empresa_id ||
+        !f.fecha_factura ||
+        f.bonificacion === null ||
+        f.importe_sin_iva === null ||
+        f.percepciones === null ||
+        f.iva === null ||
+        f.importe_total === null
+    );
+    if (!incluidos.length || incompleto) return false;
+  }
+  if (alcanza(9) && (!s.validacion || s.validacion.errores.length > 0 || !s.validacion.dentroTolerancia)) {
+    return false;
+  }
+  return true;
+}
+
 export type ModoImportacion = 'simple' | 'masiva';
 
 export interface WizardFacturaForm {
@@ -541,6 +599,18 @@ export class PeajesWizardStateService {
 
   setEmpresaId(id: string | null): void {
     this.state.empresaId = id;
+  }
+
+  /** Empresas de los documentos incluidos. En simple también incluye la empresa global. */
+  empresaIdsDocumentos(): string[] {
+    const ids = new Set<string>();
+    for (const doc of this.documentosIncluidos()) {
+      if (doc.empresa_id) ids.add(doc.empresa_id);
+    }
+    if (this.state.modoImportacion !== 'masiva' && this.state.empresaId) {
+      ids.add(this.state.empresaId);
+    }
+    return [...ids];
   }
 
   // ── Draft pipeline (F02-10 Wave 1) ───────────────────────────────────────

@@ -610,12 +610,24 @@ export const filtrarColumnaStrategy: TransformStrategy = {
     if (!columna) return false;
     if (ctx.parametros == null || !('valor' in ctx.parametros)) return false;
 
-    const esperado = ctx.parametros['valor'];
     const actual =
       columna in ctx.resultado ? ctx.resultado[columna] : ctx.fila[columna];
-    return valoresEquivalentesFiltro(actual, esperado);
+    return valoresFiltro(ctx.parametros['valor']).some((esperado) =>
+      valoresEquivalentesFiltro(actual, esperado),
+    );
   },
 };
+
+function valoresFiltro(valor: unknown): unknown[] {
+  if (Array.isArray(valor)) return valor;
+  if (typeof valor === 'string' && valor.includes(',')) {
+    return valor
+      .split(',')
+      .map((parte) => parte.trim())
+      .filter((parte) => parte.length > 0);
+  }
+  return [valor];
+}
 
 /** Comparación eq para FILTRAR_COLUMNA (pads numéricos + texto case-insensitive). */
 export function valoresEquivalentesFiltro(a: unknown, b: unknown): boolean {

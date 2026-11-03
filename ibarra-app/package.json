@@ -13,6 +13,7 @@
     "supabase:stop": "npx supabase stop",
     "supabase:status": "npx supabase status",
     "seed:local": "node scripts/ensure-supabase-local.mjs && node scripts/seed-local.mjs && npm run seed:tarifario-v2",
+    "seed:peajes-matching": "node scripts/seed-local.mjs --matching-only",
     "seed:tarifario-v2": "node scripts/peajes-catalogo-audit/migrate-tarifario-v2.mjs --load-local",
     "build": "node scripts/sync-env.mjs development && ng build",
     "build:prod": "node scripts/sync-env.mjs production && ng build --configuration production",

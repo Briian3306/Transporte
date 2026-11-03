@@ -28,7 +28,7 @@ Catálogos base del módulo (F01-1): peajes/corredores, estaciones, patentes y p
 | `tarifa_url` | text | Sí | URL pública de tarifas (`http`/`https`). CHECK `empresas_tarifa_url_http_chk` |
 | `created_at` | timestamptz | No | Default `now()` |
 
-Índice: `nombre`. Relación lógica: `peajes.empresa_id` / `documentos.empresa_id` / plantillas y algoritmos usan `empresas.id::text` o `'__global__'` (sin FK uuid; RN-23). `tarifa_url` se edita desde Auditoría de tarifas (lápiz junto al nombre del peaje). Seed: AUSA → `https://www.ausa.com.ar/sections/tarifas.html`. Migración: `20260813195728_peajes_empresas_tarifa_url.sql`.
+Índice: `nombre`. `peajes.empresa_id` referencia `empresas.id` mediante FK UUID. `documentos.empresa_id`, plantillas y algoritmos conservan identificadores text (`empresas.id::text` o `'__global__'`; RN-23). `tarifa_url` se edita desde Auditoría de tarifas (lápiz junto al nombre del peaje). Seed: AUSA → `https://www.ausa.com.ar/sections/tarifas.html`. Migración: `20260813195728_peajes_empresas_tarifa_url.sql`.
 
 ---
 
@@ -40,10 +40,16 @@ Catálogos base del módulo (F01-1): peajes/corredores, estaciones, patentes y p
 | `nombre` | text | No | Nombre del peaje/corredor |
 | `ubicacion` | text | Sí | — |
 | `descripcion` | text | Sí | — |
-| `empresa_id` | text | Sí | `empresas.id::text` o `'__global__'` |
+| `empresa_id` | uuid FK → empresas | Sí | ON DELETE RESTRICT; `NULL` = visible para todas las empresas |
 | `created_at` | timestamptz | No | Default `now()` |
 
 Índices: `empresa_id`, `nombre`.
+
+Migración `20261006141041_peajes_empresa_id_fk.sql`: convierte únicamente `peajes.empresa_id` a UUID. Los valores anteriores `'__global__'`, vacíos, UUID inválidos y referencias a empresas inexistentes pasan a `NULL`. Conserva `idx_peajes_empresa_id`; rechaza nuevos UUID sin empresa y elimina el marcador text en este catálogo.
+
+El matching masivo sigue `pasada.estacion_id → estaciones.peaje_id → peajes.empresa_id → documento.empresa_id`. Un peaje con empresa asignada pertenece únicamente a esa empresa; `NULL` permite usarlo en cada empresa. Las vistas dependientes se recrean preservando definición, opciones de seguridad, propietarios, comentarios y permisos. Sus columnas de empresa y la firma de `peajes_auditoria_estaciones_universo` continúan siendo text mediante conversión de salida; los joins a `empresas` usan UUID.
+
+Seeds CLI: `seed_peajes_f14.sql` usa `NULL` en el peaje global y conserva `'__global__'` en documentos. `seed_peajes_desarrollo.sql` resuelve la empresa por nombre cuando las migraciones locales ya crearon otro UUID; `seed_peajes_matching.sql` convierte a UUID únicamente las referencias de peajes.
 
 ---
 

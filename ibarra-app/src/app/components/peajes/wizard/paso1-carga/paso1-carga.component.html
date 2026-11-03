@@ -97,31 +97,26 @@
             </div>
           </div>
           <div class="paso1__template-box">
-            <app-search-select
-              [label]="modoImportacion === 'masiva' ? 'Empresa (opcional / default)' : 'Empresa'"
-              [placeholder]="
-                modoImportacion === 'masiva'
-                  ? 'Opcional: default; se puede cambiar por documento…'
-                  : 'Buscar o seleccionar empresa…'
-              "
-              [options]="empresaOptions"
-              [value]="empresaId || null"
-              (valueChange)="onEmpresaChange($event)"
-            ></app-search-select>
-            <button type="button" class="pw__btn pw__btn--small" *ngIf="!expressMode" (click)="crearEmpresaAbierto = true">+ Crear empresa</button>
-            <aside class="paso1__lock" *ngIf="modoImportacion === 'simple'" role="note">
-              <i class="fas fa-lock" aria-hidden="true"></i>
-              <div>
-                <strong>La empresa cierra el peaje</strong>
-                <p>
-                  Las estaciones se reconocen solo en los peajes de esta empresa.
-                  El código 0001 es Zárate en MERCOSUR y DOCK SUD en AUBASA.
-                </p>
-              </div>
-            </aside>
-            <p class="paso1__hint" *ngIf="modoImportacion === 'masiva'">
-              En masiva podés dejar la empresa vacía y asignarla por cada FACTURA en el paso Documento.
-            </p>
+            <ng-container *ngIf="modoImportacion !== 'masiva'">
+              <app-search-select
+                label="Empresa"
+                placeholder="Buscar o seleccionar empresa…"
+                [options]="empresaOptions"
+                [value]="empresaId || null"
+                (valueChange)="onEmpresaChange($event)"
+              ></app-search-select>
+              <button type="button" class="pw__btn pw__btn--small" *ngIf="!expressMode" (click)="crearEmpresaAbierto = true">+ Crear empresa</button>
+              <aside class="paso1__lock" role="note">
+                <i class="fas fa-lock" aria-hidden="true"></i>
+                <div>
+                  <strong>La empresa cierra el peaje</strong>
+                  <p>
+                    Las estaciones se reconocen solo en los peajes de esta empresa.
+                    El código 0001 es Zárate en MERCOSUR y DOCK SUD en AUBASA.
+                  </p>
+                </div>
+              </aside>
+            </ng-container>
             <div class="paso1__template-head">
               <div>
                 <strong>Importación con plantilla</strong>
@@ -140,6 +135,22 @@
               [showAllWhenEmpty]="true"
               (valueChange)="onPlantillaChange($event)"
             ></app-search-select>
+            <fieldset class="paso1__filtros" *ngIf="grupoPlantillaSeleccionado as grupo">
+              <legend>Filtros de la plantilla</legend>
+              <div class="paso1__filtros-grid">
+                <label *ngFor="let opcion of grupo.opciones" class="paso1__filtro">
+                  <input
+                    type="checkbox"
+                    [checked]="filtrosPlantillaIds.includes(opcion.plantillaId)"
+                    (change)="toggleFiltroPlantilla(opcion.plantillaId)"
+                  />
+                  <span>{{ opcion.label }}</span>
+                </label>
+              </div>
+              <p class="paso1__hint">
+                Podés marcar dos o tres filtros. {{ grupo.label }} aplica las mismas modificaciones en cada uno.
+              </p>
+            </fieldset>
           </div>
           <button type="button" class="pw__btn pw__btn--small" (click)="fileInput.click()">
             Reemplazar archivos

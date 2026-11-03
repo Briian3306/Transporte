@@ -3,14 +3,18 @@
     <div>
       <p class="plt__eyebrow">Módulo Peajes</p>
       <h1 class="plt__title">
-        <i class="fas fa-cogs" aria-hidden="true"></i>
-        Plantillas y algoritmos
+        <i class="fas" [class.fa-file-invoice]="soloDocumentos" [class.fa-cogs]="!soloDocumentos" aria-hidden="true"></i>
+        {{ soloDocumentos ? 'Documentos' : 'Plantillas y algoritmos' }}
       </h1>
       <p class="plt__subtitle">
-        Motor Builder + Strategy, configuración de plantillas y algoritmos combinados.
+        {{
+          soloDocumentos
+            ? 'Facturas y notas de crédito de peajes.'
+            : 'Motor Builder + Strategy, configuración de plantillas y algoritmos combinados.'
+        }}
       </p>
     </div>
-    <div class="plt__actions">
+    <div class="plt__actions" *ngIf="!soloDocumentos">
       <button type="button" class="plt__btn" [class.plt__btn--primary]="vista === 'lista'" (click)="mostrar('lista')">
         Listado
       </button>
@@ -35,7 +39,7 @@
     </div>
   </header>
 
-  @if (vista === 'lista') {
+  @if (vista === 'lista' && !soloDocumentos) {
     <section class="plt__panel">
       <h2>Estrategias registradas</h2>
       <p class="plt__muted">{{ estrategias.join(' · ') }}</p>
@@ -66,13 +70,13 @@
     </div>
   }
 
-  @if (vista === 'builder') {
+  @if (vista === 'builder' && !soloDocumentos) {
     <app-plantilla-builder />
   }
-  @if (vista === 'aplicar') {
+  @if (vista === 'aplicar' && !soloDocumentos) {
     <app-aplicar-plantilla />
   }
-  @if (vista === 'algoritmos') {
+  @if (vista === 'algoritmos' && !soloDocumentos) {
     <app-algoritmo-builder />
   }
   @if (vista === 'documentos') {

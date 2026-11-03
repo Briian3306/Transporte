@@ -119,6 +119,10 @@ SELECT is(
 -- -----------------------------------------------------------------------------
 -- B→A data repair + Σ importe_neto vs documento (1%)
 -- -----------------------------------------------------------------------------
+INSERT INTO public.empresas (id, nombre)
+VALUES ('37ab9246-a07a-40b5-b62d-7a8b8e7782db', 'Mercosur Pattern A pgTAP')
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO public.peajes (id, nombre, empresa_id)
 VALUES (
   'aa111111-1111-4111-8111-111111111111',

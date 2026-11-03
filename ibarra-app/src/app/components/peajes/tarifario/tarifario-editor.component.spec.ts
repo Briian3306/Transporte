@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { firstValueFrom } from 'rxjs';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { DateRangePickerComponent } from '../../shared';
 import { PEAJES_TARIFARIO_SERVICE } from '../models/tarifario.contracts';
@@ -100,6 +101,16 @@ describe('TarifarioEditorComponent', () => {
     component.onVigenteDesde({ from: new Date(2026, 8, 1), to: null });
     await component.save();
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('deshabilita PICO y NO_PICO con una sola accion de categoria', async () => {
+    const { component } = await setup('IDA');
+    const mock = TestBed.inject(PEAJES_TARIFARIO_SERVICE) as TarifarioMockService;
+    await component.onCategoryStateChange({ categoria: 1, enabled: false, tarifaIds: [] });
+    const payload = await firstValueFrom(mock.obtenerEditor(PEAJE_AUBASA, ESTACION_HUDSON, 'IDA'));
+    const category = payload.existentes.filter((item) => item.categoria === 1);
+    expect(category.length).toBe(2);
+    expect(category.every((item) => item.enabled === false)).toBeTrue();
   });
 
   it('muestra un solo picker Vigente desde y no pide fecha hasta', async () => {

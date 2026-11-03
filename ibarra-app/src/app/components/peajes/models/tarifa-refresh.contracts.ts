@@ -5,6 +5,7 @@
 
 import { InjectionToken } from '@angular/core';
 import { normalizarImportesPasada } from './documento.helpers';
+import { normalizarCodigoEstacion } from './estacion-reconocimiento.helpers';
 import { ConfiguracionPlantilla, PasadaEstandarizada } from './peajes.models';
 import { EstacionViaSentidoRef, resolvePasadaSentido } from './direction-resolution';
 import { DocumentoTipo } from './peajes.types';
@@ -38,6 +39,7 @@ export interface EstacionCatalogoCandidato {
   estacionNombre: string;
   peajeId: string;
   peajeNombre: string;
+  codigosProveedor?: readonly string[] | null;
 }
 
 export interface CandidatoRefrescoTarifa {
@@ -253,6 +255,23 @@ function indicesOmitidos(documentos: ExtraerCandidatosRefrescoOpciones['document
   return omit;
 }
 
+function resolverEstacionCatalogo(
+  valor: string,
+  catalogo: readonly EstacionCatalogoCandidato[],
+  porId: ReadonlyMap<string, EstacionCatalogoCandidato>,
+): EstacionCatalogoCandidato | null {
+  if (!valor) return null;
+  const directa = porId.get(valor);
+  if (directa) return directa;
+  const clave = normalizarCodigoEstacion(valor);
+  if (!clave) return null;
+  const coincidencias = catalogo.filter((row) => {
+    if (normalizarCodigoEstacion(row.estacionNombre) === clave) return true;
+    return (row.codigosProveedor ?? []).some((codigo) => normalizarCodigoEstacion(codigo) === clave);
+  });
+  return coincidencias.length === 1 ? coincidencias[0] : null;
+}
+
 export function extraerCandidatosRefresco(
   pasadas: PasadaEstandarizada[],
   opciones: ExtraerCandidatosRefrescoOpciones = {},
@@ -260,7 +279,8 @@ export function extraerCandidatosRefresco(
   const grupos = new Map<string, CandidatoRefrescoTarifa>();
   const orden: string[] = [];
   const omitidos = indicesOmitidos(opciones.documentos);
-  const catalogo = new Map((opciones.estacionesCatalogo ?? []).map((row) => [row.estacionId, row]));
+  const catalogo = opciones.estacionesCatalogo ?? [];
+  const catalogoPorId = new Map(catalogo.map((row) => [row.estacionId, row]));
 
   pasadas.forEach((fila, index) => {
     if (omitidos.has(index)) return;
@@ -276,7 +296,9 @@ export function extraerCandidatosRefresco(
     const precioDirecto = Math.abs(firmado.precio);
     if (!Number.isFinite(precioDirecto)) return;
 
-    const estacionId = String(fila.ESTACION_ID ?? '').trim();
+    const estacionCruda = String(fila.ESTACION_ID ?? '').trim();
+    const meta = resolverEstacionCatalogo(estacionCruda, catalogo, catalogoPorId);
+    const estacionId = meta?.estacionId ?? estacionCruda;
     const categoria = parseCategoria(fila.CATEGORIA);
     const statusSolicitado = parseStatus(fila.TARIFA_STATUS);
     const fechaPasada = fechaPasadaCanonico(fila.FECHA_HORA);
@@ -305,7 +327,6 @@ export function extraerCandidatosRefresco(
       return;
     }
 
-    const meta = catalogo.get(estacionId);
     grupos.set(id, {
       id,
       estacionId,

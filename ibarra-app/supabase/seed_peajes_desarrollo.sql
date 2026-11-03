@@ -8,7 +8,15 @@
 
 SET search_path = public, extensions, pg_catalog;
 
-INSERT INTO public.empresas (id, nombre, descripcion, tarifa_url, created_at) VALUES
+-- One statement: the CLI sends a seed file as a single batch, and a TEMP
+-- table created in an earlier batch statement is invisible to the next one.
+-- Keep the snapshot's identity/name mapping even when CLI migrations already
+-- created a company with the same name and another UUID. Peajes must use the
+-- actual catalog UUID to satisfy peajes_empresa_id_fkey.
+DO $seed$
+BEGIN
+CREATE TEMP TABLE seed_empresas_desarrollo AS
+SELECT * FROM (VALUES
   ('873da060-6be4-4786-b248-5f216ae730b4', ' (DESACTIVAR)', 'Proveedor del archivo 387882.csv.', NULL, '2026-08-05T17:33:08.061347+00:00'),
   ('75d868b4-aef5-409a-8d12-973506656811', 'AUBASA', 'Empresa creada desde ESTACIONES.xlsx.', NULL, '2026-08-05T17:33:10.816699+00:00'),
   ('710f497d-7fa6-4259-b8dc-16fb1b3b1468', 'AUSA', 'Empresa creada desde ESTACIONES.xlsx.', 'https://www.ausa.com.ar/telepase/tarifas', '2026-08-05T17:33:10.816699+00:00'),
@@ -33,9 +41,16 @@ INSERT INTO public.empresas (id, nombre, descripcion, tarifa_url, created_at) VA
   ('89fefcb0-e14d-4b54-a0be-0945f1a00798', 'RUTAS SUR ATLANTICO S.A.', 'Creada desde Concesión del Excel.', 'https://www.corresur.com.ar/tarifas.php', '2026-08-07T18:34:23.551308+00:00'),
   ('8b5414f2-3a0a-45ee-abb2-69cac0e2920f', 'TELEPEAJE-PLUS', 'conjunto de compañias', NULL, '2026-08-10T12:18:16.972957+00:00'),
   ('fef37dd0-564c-47d4-afc4-5155799e96a5', 'TUNEL SUBFLUVIAL', 'Empresa creada desde ESTACIONES.xlsx.', NULL, '2026-08-05T17:33:10.816699+00:00')
+) AS source(id, nombre, descripcion, tarifa_url, created_at);
+
+INSERT INTO public.empresas (id, nombre, descripcion, tarifa_url, created_at)
+SELECT id::uuid, nombre, descripcion, tarifa_url, created_at::timestamptz
+FROM seed_empresas_desarrollo
 ON CONFLICT (nombre) DO NOTHING;
 
-INSERT INTO public.peajes (id, nombre, ubicacion, descripcion, empresa_id, created_at) VALUES
+INSERT INTO public.peajes (id, nombre, ubicacion, descripcion, empresa_id, created_at)
+SELECT source.id::uuid, source.nombre, source.ubicacion, source.descripcion, empresa.id, source.created_at::timestamptz
+FROM (VALUES
   ('ab449656-bebf-4cb2-bbb3-6221403e1c7b', 'AUBASA', NULL, 'Peaje/corredor creado desde ESTACIONES.xlsx.', '75d868b4-aef5-409a-8d12-973506656811', '2026-08-05T17:33:10.816699+00:00'),
   ('fcf50348-fe3d-48db-934f-13e0af1e0e74', 'AUSA', NULL, 'Peaje/corredor creado desde ESTACIONES.xlsx.', '710f497d-7fa6-4259-b8dc-16fb1b3b1468', '2026-08-05T17:33:10.816699+00:00'),
   ('dc7dad0c-adda-4a56-a1f4-2ec87c19c356', 'AUSOL', NULL, 'Peaje/corredor creado desde ESTACIONES.xlsx.', '4951e389-42d4-477b-a442-83196cf67790', '2026-08-05T17:33:10.816699+00:00'),
@@ -58,4 +73,11 @@ INSERT INTO public.peajes (id, nombre, ubicacion, descripcion, empresa_id, creat
   ('ebc3d756-788f-4875-9c20-15c9c8d0dffc', 'RUTAS SUR ATLANTICO S.A.', NULL, 'Peaje desde Concesión.', '89fefcb0-e14d-4b54-a0be-0945f1a00798', '2026-08-07T18:34:23.782723+00:00'),
   ('798dd576-3cbb-46b5-ba54-cbe0d0adb493', 'TUNEL SUBFLUVIAL', NULL, 'Peaje/corredor creado desde ESTACIONES.xlsx.', 'fef37dd0-564c-47d4-afc4-5155799e96a5', '2026-08-05T17:33:10.816699+00:00'),
   ('c4d1ffb5-7363-4291-84be-9da3665f002a', 'UNIDAD EJECUTORA (SANTA FE)', NULL, 'Peaje/corredor creado desde ESTACIONES.xlsx.', 'd897928d-8a0c-42d6-b3e9-fffb66b9006c', '2026-08-05T17:33:10.816699+00:00')
+) AS source(id, nombre, ubicacion, descripcion, empresa_id, created_at)
+JOIN seed_empresas_desarrollo snapshot ON snapshot.id = source.empresa_id
+JOIN public.empresas empresa ON empresa.nombre = snapshot.nombre
 ON CONFLICT (id) DO UPDATE SET nombre = EXCLUDED.nombre, empresa_id = EXCLUDED.empresa_id, descripcion = EXCLUDED.descripcion;
+
+DROP TABLE seed_empresas_desarrollo;
+END
+$seed$;

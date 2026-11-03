@@ -2,7 +2,7 @@
 -- Fixture namespace 18180000-… (avoids F14-16 162/166 and F14-17 174).
 -- Empty tables; synthetic Dock Sud-like fixtures only.
 BEGIN;
-SELECT plan(80);
+SELECT plan(81);
 
 CREATE FUNCTION pg_temp.rpc_jsonb(p_fn text, p_arg jsonb)
 RETURNS jsonb
@@ -111,8 +111,10 @@ SELECT has_function(
   'F14-18 helper privado de dirección/current/historial existe'
 );
 
+INSERT INTO public.empresas (id, nombre) VALUES
+  ('18180000-aaaa-4aa1-8aa1-000000000000', 'AUBASA company F14-18');
 INSERT INTO public.peajes (id, nombre, empresa_id) VALUES
-  ('18180000-aaaa-4aa1-8aa1-000000000001', 'AUBASA F14-18', 'test');
+  ('18180000-aaaa-4aa1-8aa1-000000000001', 'AUBASA F14-18', '18180000-aaaa-4aa1-8aa1-000000000000');
 
 INSERT INTO public.estaciones (id, peaje_id, nombre) VALUES
   ('18180000-aaaa-4aa1-8aa1-000000000010', '18180000-aaaa-4aa1-8aa1-000000000001', 'DOCK SUD'),
@@ -548,6 +550,7 @@ SELECT ok(
         )
       )
     ) e
+    WHERE (e->>'categoria')::int = 2
   ),
   'F14-18 prepare devuelve PICO y NO_PICO vigentes de Dock Sud cat 2'
 );
@@ -579,8 +582,32 @@ SELECT is(
       )
     )
   ),
-  'HISTORICAL_CATEGORY_CORRECTION',
-  'F14-20 station-price matching may correct to the highest compatible category'
+  'CURRENT_TARIFF',
+  'current cat 2 match is not made ambiguous by a historical cat 5 price'
+);
+
+SELECT ok(
+  (
+    SELECT e->>'codigo' = 'CURRENT_CATEGORY_CORRECTION'
+      AND (e->>'categoria_proveedor')::int = 3
+      AND (e->>'categoria_calculada')::int = 2
+      AND e->>'status' = 'PICO'
+      AND e->>'sentido_aplicado' = 'AMBAS'
+    FROM pg_temp.elem(
+      'wrong-provider-category',
+      pg_temp.rpc_jsonb('peajes_detectar_refresco_tarifas', jsonb_build_array(
+        jsonb_build_object(
+          'id', 'wrong-provider-category',
+          'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000012',
+          'categoria_proveedor', 3,
+          'status_solicitado', 'PICO',
+          'sentido_solicitado', 'AMBAS',
+          'precio_directo', 5300
+        )
+      ))
+    ) e
+  ),
+  'a unique tariff price corrects a wrong provider category and preserves it separately'
 );
 
 SELECT is(
@@ -623,8 +650,8 @@ SELECT is(
       )
     )
   ),
-  'HISTORICAL_CATEGORY_CORRECTION',
-  'F14-20 applies the highest-category rule within the inclusive tolerance'
+  'CURRENT_TARIFF',
+  'price matching reports current cat 2 within tolerance'
 );
 
 SELECT is(
@@ -645,8 +672,8 @@ SELECT is(
       )
     )
   ),
-  'HISTORICAL_CATEGORY_CORRECTION',
-  'F14-20 keeps the inclusive 1% tolerance for price-led matching'
+  'CURRENT_TARIFF',
+  'inclusive 1% matches the current cat 2 identity'
 );
 
 SELECT is(
@@ -689,8 +716,8 @@ SELECT is(
       )
     )
   ),
-  'HISTORICAL_TARIFF_MATCH',
-  'F14-18 detect 12010 vs vigente 14500 / hist 12000 es HISTORICAL_TARIFF_MATCH'
+  'AMBIGUOUS_TARIFF_MATCH',
+  '12010 matching historical prices in multiple categories is ambiguous'
 );
 
 SELECT ok(
@@ -780,15 +807,14 @@ SELECT is(
       )
     )
   ),
-  'CURRENT_TARIFF',
-  'F14-20 reuses the complete unique tariff identity despite provider direction'
+  'NEW_TARIFF',
+  'F14-20 does not reuse a directional tariff when the provider says AMBAS'
 );
 
 SELECT ok(
   (
     SELECT
-      r -> 0 ->> 'codigo' = 'HISTORICAL_CATEGORY_CORRECTION'
-      AND r -> 0 ->> 'status' = 'NO_PICO'
+      r -> 0 ->> 'codigo' = 'CURRENT_TARIFF'
     FROM pg_temp.rpc_jsonb(
       'peajes_detectar_refresco_tarifas',
       jsonb_build_array(
@@ -804,7 +830,7 @@ SELECT ok(
       )
     ) AS r
   ),
-  'F14-20 resolves status from the unique station-price tariff'
+  'current tariff amount selects its category without trusting provider category'
 );
 
 SELECT is(
@@ -869,8 +895,8 @@ SELECT is(
       )
     )
   ),
-  'HISTORICAL_CATEGORY_CORRECTION',
-  'F14-20 obtains a missing category from a unique station-price tariff'
+  'CURRENT_CATEGORY_CORRECTION',
+  'a unique current amount can resolve a missing provider category'
 );
 
 SELECT is(
@@ -935,8 +961,8 @@ SELECT is(
       )
     )
   ),
-  'HISTORICAL_CATEGORY_CORRECTION',
-  'F14-20 keeps the catalog IVA flag while using price-led matching'
+  'CURRENT_TARIFF',
+  'current tariff match ignores an irrelevant normalized amount'
 );
 
 SELECT ok(
@@ -1809,8 +1835,8 @@ SELECT is(
       'precio_directo', 11975.15
     )
   ))),
-  'HISTORICAL_CATEGORY_CORRECTION',
-  'F14-20 reuses a unique full tariff identity when provider direction is missing'
+  'HISTORICAL_TARIFF_MATCH',
+  'a unique price match remains usable when direction is missing'
 );
 
 SELECT ok(
@@ -1821,7 +1847,7 @@ SELECT ok(
 SELECT throws_ok(
   $$INSERT INTO public.estaciones_vias_sentido
     (empresa_id, estacion_id, codigo_estacion, via, sentido)
-    VALUES ('test', '18180000-aaaa-4aa1-8aa1-000000000010', '0004', '01M', 'AMBAS')$$,
+    VALUES ('18180000-aaaa-4aa1-8aa1-000000000000', '18180000-aaaa-4aa1-8aa1-000000000010', '0004', '01M', 'AMBAS')$$,
   '23514',
   NULL,
   'station/lane catalogue rejects inferred AMBAS'
@@ -1844,11 +1870,7 @@ SELECT ok(
     SELECT
       e->>'codigo' = 'CURRENT_CATEGORY_CORRECTION'
       AND (e->>'categoria_proveedor')::int = 3
-      AND (e->>'categoria')::int = 3
       AND (e->>'categoria_calculada')::int = 2
-      AND e->>'status' = 'PICO'
-      AND e->>'tarifa_id' = '18180000-aaaa-4aa1-8aa1-0000000000a2'
-      AND (e->>'importe_actual')::numeric = 5300
     FROM pg_temp.elem(
       'corr-5300',
       pg_temp.rpc_jsonb(
@@ -1868,24 +1890,15 @@ SELECT ok(
       )
     ) e
   ),
-  'F14-19 detect 5300 matches only Category 2 PICO when provider category is 3'
+  'a unique price in cat 2 corrects a provider category of cat 3'
 );
 
 SELECT ok(
   (
     SELECT
-      e->>'codigo' = 'CURRENT_CATEGORY_CORRECTION'
+      e->>'codigo' = 'AMBIGUOUS_TARIFF_MATCH'
       AND (e->>'categoria_proveedor')::int = 2
-      AND (e->>'categoria_calculada')::int = 3
-      AND jsonb_array_length(e->'possible_matches') >= 2
-      AND (
-        SELECT count(DISTINCT m->>'categoria')
-        FROM jsonb_array_elements(e->'possible_matches') m
-        WHERE (m->>'categoria')::int IN (2, 3)
-          AND m->>'status' = 'PICO'
-          AND (m->>'importe')::numeric = 5300
-      ) = 2
-      AND e->>'tarifa_id' = '18180000-aaaa-4aa1-8aa1-0000000000b3'
+      AND jsonb_array_length(e->'possible_matches') = 2
     FROM pg_temp.elem(
       'amb-5300',
       pg_temp.rpc_jsonb(
@@ -1905,19 +1918,15 @@ SELECT ok(
       )
     ) e
   ),
-  'F14-20 detect same-price Categories 2 and 3 reuses the highest Category 3'
+  'the provider category does not break a tie between matching tariff identities'
 );
 
 SELECT ok(
   (
     SELECT
-      e->>'codigo' = 'HISTORICAL_CATEGORY_CORRECTION'
-      AND e->>'codigo' <> 'NEW_TARIFF'
+      e->>'codigo' = 'NEW_TARIFF'
       AND (e->>'categoria_proveedor')::int = 3
-      AND (e->>'categoria_calculada')::int = 2
-      AND e->>'tarifa_id' = '18180000-aaaa-4aa1-8aa1-0000000000c2'
-      AND (e->>'importe_actual')::numeric = 5300
-      AND (e->>'fecha_vigencia_inicio')::date = DATE '2026-01-01'
+      AND e->>'categoria_calculada' IS NULL
     FROM pg_temp.elem(
       'hist-5300',
       pg_temp.rpc_jsonb(
@@ -1937,7 +1946,7 @@ SELECT ok(
       )
     ) e
   ),
-  'F14-19 detect historical Category 2 5300 never returns NEW_TARIFF'
+  'a historical price in another category does not correct provider category'
 );
 
 SELECT ok(
@@ -1947,8 +1956,7 @@ SELECT ok(
       AND (
         SELECT bool_or(m->>'diagnostico' = 'REVISAR')
         FROM jsonb_array_elements(COALESCE(e->'possible_matches', '[]'::jsonb)) m
-      )
-      AND e->>'tarifa_importe_id' = '18180000-aaaa-4aa1-8aa1-0000000003a1'
+      ) IS DISTINCT FROM true
     FROM pg_temp.elem(
       'corr-revisar',
       pg_temp.rpc_jsonb(
@@ -1968,7 +1976,7 @@ SELECT ok(
       )
     ) e
   ),
-  'F14-19 REVISAR is excluded from the safe match but listed in possible_matches'
+  'REVISAR amounts stay excluded while a confirmed unique price match is selected'
 );
 
 SELECT is(
@@ -1998,9 +2006,10 @@ SELECT ok(
   (
     SELECT
       e->>'codigo' = 'NEW_TARIFF'
-      AND (
-        SELECT bool_or(m->>'diagnostico' = 'REVISAR' AND (m->>'importe')::numeric = 5300)
+      AND NOT EXISTS (
+        SELECT 1
         FROM jsonb_array_elements(COALESCE(e->'possible_matches', '[]'::jsonb)) m
+        WHERE m->>'diagnostico' = 'REVISAR'
       )
     FROM pg_temp.elem(
       'rev-only',
@@ -2021,7 +2030,7 @@ SELECT ok(
       )
     ) e
   ),
-  'F14-19 unresolved REVISAR evidence still appears in possible_matches'
+  'REVISAR at another category is excluded from possible_matches of categoria_efectiva'
 );
 
 SELECT is(
@@ -2051,20 +2060,15 @@ SELECT ok(
   (
     SELECT
       e->>'codigo' = 'HISTORICAL_TARIFF_MATCH'
-      AND NOT EXISTS (
-        SELECT 1
-        FROM jsonb_array_elements(COALESCE(e->'possible_matches', '[]'::jsonb)) m
-        WHERE m->>'tarifa_importe_id' = '18180000-aaaa-4aa1-8aa1-0000000003e1'
-           OR (
-             m->>'es_actual' IN ('true', 't')
-             AND (m->>'importe')::numeric = 5300
-             AND (m->>'fecha_vigencia_inicio')::date = DATE '2026-08-01'
-           )
-      )
       AND EXISTS (
         SELECT 1
         FROM jsonb_array_elements(COALESCE(e->'possible_matches', '[]'::jsonb)) m
         WHERE m->>'tarifa_importe_id' = '18180000-aaaa-4aa1-8aa1-0000000003e0'
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements(COALESCE(e->'possible_matches', '[]'::jsonb)) m
+        WHERE m->>'tarifa_importe_id' = '18180000-aaaa-4aa1-8aa1-0000000003e1'
       )
     FROM pg_temp.elem(
       'val-hist',
@@ -2085,7 +2089,7 @@ SELECT ok(
       )
     ) e
   ),
-  'F14-19 val-hist possible_matches excludes the non-covering current 5300 pointer'
+  'fecha_pasada does not exclude a same-category current pointer from possible_matches'
 );
 
 SELECT is(
@@ -2108,19 +2112,23 @@ SELECT is(
     )
   ),
   'CURRENT_TARIFF',
-  'F14-19 covering current interval is CURRENT_TARIFF after original-category current stage'
+  'F14-19 covering current interval is CURRENT_TARIFF'
 );
 
 SELECT ok(
   (
     SELECT
-      e->>'codigo' = 'CURRENT_TARIFF'
-      AND (
-        SELECT min((m->>'error_relativo')::numeric) = 0
-          AND max((m->>'error_relativo')::numeric) = 0
-          AND count(*) FILTER (WHERE m->>'es_actual' IN ('true', 't')) >= 2
-        FROM jsonb_array_elements(e->'possible_matches') m
-        WHERE m->>'diagnostico' IS DISTINCT FROM 'REVISAR'
+      e->>'codigo' = 'AMBIGUOUS_TARIFF_MATCH'
+      AND (e->>'categoria_proveedor')::int = 3
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements(COALESCE(e->'possible_matches', '[]'::jsonb)) m
+        WHERE (m->>'categoria')::int = 2
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements(COALESCE(e->'possible_matches', '[]'::jsonb)) m
+        WHERE (m->>'categoria')::int = 3
       )
     FROM pg_temp.elem(
       'amb-5300-err',
@@ -2141,7 +2149,7 @@ SELECT ok(
       )
     ) e
   ),
-  'F14-20 same-price categories select the highest category instead of remaining ambiguous'
+  'possible_matches report matching prices across categories'
 );
 
 SELECT ok(
@@ -2167,8 +2175,8 @@ SELECT is(
       )
     ))
   ),
-  'CURRENT_CATEGORY_CORRECTION',
-  'F14-20 reuses a unique full tariff identity despite a provider direction conflict'
+  'DIRECTION_CONFLICT',
+  'no match at categoria_efectiva keeps the provider direction conflict'
 );
 
 SELECT ok(

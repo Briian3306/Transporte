@@ -555,6 +555,8 @@ function formatParityMarkdown(counts, extra = {}) {
     `| current_pointer_mismatches | ${counts.current_pointer_mismatches} |`,
     `| price_comparison_mismatches | ${counts.price_comparison_mismatches} |`,
     `| null_current_pointers | ${counts.null_current_pointers} |`,
+    `| expected_null_current_pointers | ${counts.expected_null_current_pointers} |`,
+    `| unexpected_null_current_pointers | ${counts.unexpected_null_current_pointers} |`,
     `| lineage_1n_mismatches | ${counts.lineage_1n_mismatches} |`,
     `| lineage_id_mismatches | ${counts.lineage_id_mismatches} |`,
     `| pointer_parent_mismatches | ${counts.pointer_parent_mismatches} |`,
@@ -603,6 +605,25 @@ export function parseParityQueryOutput(stdout) {
   return parseCountRow(stdout);
 }
 
+export function buildParityFindings(counts, unresolvedSentidoHistories = []) {
+  const unexpectedNullPointers = Math.max(
+    0,
+    Number(counts.null_current_pointers || 0) - Number(counts.expected_null_current_pointers || 0),
+  );
+  const unexplained = [];
+  if (counts.lineage_1n_mismatches) unexplained.push(`lineage_1n_mismatches=${counts.lineage_1n_mismatches}`);
+  if (counts.lineage_id_mismatches) unexplained.push(`lineage_id_mismatches=${counts.lineage_id_mismatches}`);
+  if (counts.pointer_parent_mismatches) unexplained.push(`pointer_parent_mismatches=${counts.pointer_parent_mismatches}`);
+  if (counts.price_comparison_mismatches) unexplained.push(`price_comparison_mismatches=${counts.price_comparison_mismatches}`);
+  if (unexpectedNullPointers) unexplained.push(`unexpected_null_current_pointers=${unexpectedNullPointers}`);
+  return {
+    unexplained,
+    warnings: unresolvedSentidoHistories.length
+      ? [`directional_history_collisions=${unresolvedSentidoHistories.length}`]
+      : [],
+  };
+}
+
 export function loadTarifarioV2Local(options = {}) {
   resolveLocalDbUrl(options.env || process.env);
   const workbookPath = options.workbook || DEFAULT_WORKBOOK;
@@ -631,6 +652,8 @@ export function loadTarifarioV2Local(options = {}) {
       : 'SELECT 1;',
     { cwd: options.cwd || appRoot() },
   );
+
+  const expectedSplitIds = split.unresolved.map((item) => sqlUuid(item.to)).join(', ') || 'NULL';
 
   const parityJsonSql = `
 SELECT json_build_object(
@@ -663,6 +686,10 @@ SELECT json_build_object(
     WHERE ti.importe IS DISTINCT FROM last.precio_last
   ),
   'null_current_pointers', (SELECT count(*)::int FROM public.tarifas WHERE current_tarifa_id IS NULL),
+  'expected_null_current_pointers', (
+    SELECT count(*)::int FROM public.tarifas t
+    WHERE t.current_tarifa_id IS NULL AND t.id IN (${expectedSplitIds})
+  ),
   'tarifas_without_staged_precio_last', (
     SELECT count(*)::int FROM public.tarifas t
     WHERE NOT EXISTS (SELECT 1 FROM public._stg_precio_last last WHERE last.tarifa_id = t.id)
@@ -684,6 +711,7 @@ SELECT json_build_object(
     current_pointer_mismatches: 0,
     price_comparison_mismatches: 0,
     null_current_pointers: 0,
+    expected_null_current_pointers: 0,
     lineage_1n_mismatches: 0,
     lineage_id_mismatches: 0,
     pointer_parent_mismatches: 0,
@@ -696,31 +724,31 @@ SELECT json_build_object(
   if (counts.precio_last_current_mismatches != null) {
     counts.price_comparison_mismatches = counts.precio_last_current_mismatches;
   }
-  counts.current_pointer_mismatches = (counts.pointer_parent_mismatches || 0) + (counts.null_current_pointers || 0);
-
-  const unexplained = [];
-  if (counts.lineage_1n_mismatches) unexplained.push(`lineage_1n_mismatches=${counts.lineage_1n_mismatches}`);
-  if (counts.lineage_id_mismatches) unexplained.push(`lineage_id_mismatches=${counts.lineage_id_mismatches}`);
-  if (counts.pointer_parent_mismatches) unexplained.push(`pointer_parent_mismatches=${counts.pointer_parent_mismatches}`);
-  if (counts.price_comparison_mismatches) unexplained.push(`price_comparison_mismatches=${counts.price_comparison_mismatches}`);
-  if (counts.null_current_pointers) unexplained.push(`null_current_pointers=${counts.null_current_pointers}`);
-  if (split.unresolved.length) unexplained.push(`directional_history_collisions=${split.unresolved.length}`);
+  const { unexplained, warnings } = buildParityFindings(counts, split.unresolved);
+  counts.unexpected_null_current_pointers = Math.max(
+    0,
+    (counts.null_current_pointers || 0) - (counts.expected_null_current_pointers || 0),
+  );
+  counts.current_pointer_mismatches = (counts.pointer_parent_mismatches || 0) + counts.unexpected_null_current_pointers;
 
   const notes = [
     `Workbook: ${sheets.path}`,
     `tarifas loaded: ${parsed.tarifas.length}; tarifa_importe loaded: ${parsed.tarifa_importe.length}; staged PRECIO_LAST: ${parsed.report.length}.`,
-    `sentido ID collisions remapped: ${split.remapped.length}; unresolved directionless histories: ${split.unresolved.length}. No Cruzado amount is cloned across directions.`,
+    `sentido ID collisions remapped: ${split.remapped.length}; unresolved directionless histories: ${split.unresolved.length}. Their remapped rows intentionally retain NULL current pointers because the source has no direction-specific amount. These are reported for manual review and excluded from local seed blockers; no Cruzado amount is cloned across directions.`,
     `TN unique-key lineage stubs skipped: ${built.skippedLineageCount} (explained; tarifas_normalizadas unique is peaje+estacion+categoria+importe and does not include PICO/NO_PICO).`,
     'pasadas counts reflect the local CLI database after db reset --no-seed plus this catalog load (empty pasadas unless separately seeded).',
     'Did not overwrite auditoria-catalogo-20260904.xlsx.',
   ].join('\n\n');
 
-  const markdown = formatParityMarkdown(counts, { unexplained, notes });
+  const markdown = formatParityMarkdown(counts, {
+    unexplained,
+    notes: `${notes}\n\nKnown source-data cases requiring review (not local seed failures):\n${warnings.length ? warnings.map((warning) => `- ${warning}`).join('\n') : '- None.'}`,
+  });
   const parityPath = resolve(options.parityOut || DEFAULT_PARITY);
   mkdirSync(dirname(parityPath), { recursive: true });
   writeFileSync(parityPath, markdown, 'utf8');
   const jsonPath = parityPath.replace(/\.md$/i, '.json');
-  writeFileSync(jsonPath, `${JSON.stringify({ counts, unexplained, remapped: split.remapped.length, unresolved: split.unresolved }, null, 2)}\n`, 'utf8');
+  writeFileSync(jsonPath, `${JSON.stringify({ counts, unexplained, warnings, remapped: split.remapped.length, unresolved: split.unresolved }, null, 2)}\n`, 'utf8');
 
   return {
     parsed,
@@ -728,6 +756,7 @@ SELECT json_build_object(
     unresolved: split.unresolved,
     counts,
     unexplained,
+    warnings,
     loadOut,
     backfillOut,
     validatorOut,
@@ -756,6 +785,8 @@ function main() {
   if (result.unexplained.length) {
     console.error(`CUTOVER BLOCKER: ${result.unexplained.join('; ')}`);
     process.exitCode = 1;
+  } else if (result.warnings.length) {
+    console.warn(`LOCAL SEED WARNING: ${result.warnings.join('; ')} (see parity report for manual review)`);
   }
 }
 

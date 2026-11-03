@@ -1,5 +1,21 @@
 # Handoff del proyecto — 2026-09-10
 
+## 2026-10-06 — Filas agrupadas y siguiente empresa
+
+El usuario confirmó avanzar a la próxima empresa del stepper al guardar. Filas compatibles de igual importe comparten categoría/status y suman casos; se guardan por cada estación. Conflictos de categorías/status manuales conservan filas separadas. Todas No pico/Pico se puede elegir sin categoría; la validación de guardado sigue exigiéndola. Tab/Shift+Tab/Enter navega entre inputs de categoría del tablero.
+
+Guardar cambios + Siguiente conserva abierto el diálogo durante la revalidación y avanza a la siguiente empresa pendiente; se mantiene en la actual si todavía tiene pendientes y se cierra al terminar. Karma focalizado 7 SUCCESS, TypeScript app/spec y build EXIT 0. Suite ampliada 125 SUCCESS / 17 fallas anteriores del diálogo. F14-21 permanece in_progress por gates generales pendientes; no commit ni despliegue.
+
+## 2026-10-06 — Paso 9 sin tarifario / empresa FK
+
+Plan `.cursor/plans/paso9_tarifario_empresa_de40f832.plan.md` implementado sobre las modificaciones previas del wizard. Una estación sin tarifas puede elegir sentido y guardar su primer tarifario mediante `CONFIRM_NEW`. Nombres desde catálogo/candidato; peajes compartidos con empresa NULL participan en cada empresa sin fallback a empresas ajenas.
+
+Migración local `20261006141041_peajes_empresa_id_fk.sql` aplicada por reset; `peajes.empresa_id` UUID FK, contratos públicos text preservados. Reset EXIT 0, pgTAP 721 PASS, seed local EXIT 0, post-seed 159 PASS. TypeScript app/spec y build desarrollo pasan. Paso 7 final 20 SUCCESS; consolidado previo 200 SUCCESS con 17 fallas anteriores del diálogo y una fixture Paso 7 ya corregida. Los seis casos nuevos del diálogo pasan.
+
+Regresiones específicas del plan: Karma con config temporal `%TEMP%/paso9-regression.karma.cjs` y `client.args --grep` selecciona **12 SUCCESS**, EXIT 0; log `%TEMP%/paso9-new-regressions.log`.
+
+Pendiente para F14-21 passing: resolver expectativas/fixtures anteriores del diálogo y smoke masivo con archivo de septiembre, cinco empresas y estación sin tarifas. La herramienta Node REPL/browser no está disponible en esta sesión. Cambios sin commit ni despliegue remoto. El seed produjo reportes de paridad en `.superpowers/sdd/task-7-parity-report.*`; 27 colisiones direccionales existentes permanecen como advertencia.
+
 ## Handoff Paso 9 — Precio final + REVISAR automático (follow-up F14-19)
 
 Refresh UI only: no schema/RPC. Extractor `TARIFA_PESOS` → `PRECIO` → `IMPORTE_NETO`. AUSA-V3 shows/compares `20792.47`, not `/1.31` `PRECIO`. Rail removed; Detectado `$20.792,47 (n)`; incomplete status/sentido in board footer; IVA checkbox for new identities; empty Nuevo → `MARK_REVIEW`; typed/clicked Nuevo → `CONFIRM_NEW`.

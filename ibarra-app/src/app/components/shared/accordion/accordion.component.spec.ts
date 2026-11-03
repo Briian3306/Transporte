@@ -79,4 +79,32 @@ describe('AccordionComponent', () => {
     ) as HTMLButtonElement;
     expect(first.getAttribute('aria-expanded')).toBe('true');
   });
+
+  it('mueve el foco entre encabezados con flechas, Home y End', () => {
+    const buttons = [...fixture.nativeElement.querySelectorAll(
+      '.app-acc-panel__trigger',
+    )] as HTMLButtonElement[];
+    buttons[0].focus();
+    buttons[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(buttons[1]);
+    buttons[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(buttons[0]);
+    buttons[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(buttons[1]);
+    buttons[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(buttons[0]);
+  });
+
+  it('Enter en el encabezado alterna solo ese panel', () => {
+    const buttons = [...fixture.nativeElement.querySelectorAll(
+      '.app-acc-panel__trigger',
+    )] as HTMLButtonElement[];
+    buttons[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(buttons[0].getAttribute('aria-expanded')).toBe('false');
+    expect(buttons[1].getAttribute('aria-expanded')).toBe('false');
+    buttons[0].dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(buttons[0].getAttribute('aria-expanded')).toBe('true');
+  });
 });

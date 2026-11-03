@@ -78,6 +78,7 @@ sql_paths = [
   "./seed_peajes_pasadas_fks.sql",
   "./pasadas_rows.sql",
   "./seed_peajes_f14.sql",
+  "./seed_peajes_matching.sql",
 ]
 
 [db.network_restrictions]

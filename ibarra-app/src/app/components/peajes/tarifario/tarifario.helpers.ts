@@ -78,6 +78,7 @@ function emptyCell(): TarifarioEditorCell {
     current_tarifa_importe_id: null,
     importe: null,
     fecha_actualizacion: null,
+    enabled: true,
   };
 }
 
@@ -130,6 +131,7 @@ export function buildEditorRows(
             current_tarifa_importe_id: noPico.current_tarifa_importe_id,
             importe: noPico.importe,
             fecha_actualizacion: noPico.fecha_actualizacion,
+            enabled: noPico.enabled !== false,
           }
         : emptyCell(),
       pico: pico
@@ -138,6 +140,7 @@ export function buildEditorRows(
             current_tarifa_importe_id: pico.current_tarifa_importe_id,
             importe: pico.importe,
             fecha_actualizacion: pico.fecha_actualizacion,
+            enabled: pico.enabled !== false,
           }
         : emptyCell(),
     };

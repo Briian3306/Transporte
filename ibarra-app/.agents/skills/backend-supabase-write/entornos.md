@@ -38,7 +38,9 @@ pnpm seed:local
 `pnpm seed:local` restaura datos de app: Kong/Auth/RBAC/pasadas **y** `node scripts/peajes-catalogo-audit/migrate-tarifario-v2.mjs --load-local`. Login CLI: `francis@transporteibarra.com.ar` / `Transporte2026`.  
 [docs/05-configuracion/cli-local-credenciales-y-permisos.md](../../../docs/05-configuracion/cli-local-credenciales-y-permisos.md).
 
-Aplicar migraciones con CLI local (`db reset`, `migration up`, o el flujo local del repo). **No** usar MCP remoto como fuente de verdad de testing.
+Aplicar migraciones con CLI local (`db reset`, `migration up`, o el flujo local del repo). **No** usar MCP remoto como fuente de verdad de testing ni de version IDs. La fuente de verdad de identidad es `supabase/migrations/<timestamp>_*.sql`.
+
+Flujo canónico: `migration new` → editar SQL → `db reset --local --no-seed` → `test db` → `db push --linked --dry-run` → `db push --linked`. Si `db push` da **403**: detener; no usar MCP como fallback; arreglar login/link del CLI.
 
 Antes de cualquier comando `--linked` contra DESARROLLO:
 
@@ -66,4 +68,8 @@ Si `db push` falla por timestamps distintos (MCP vs archivo local) o hay que res
 - Hardcodear `service_role`, Bearer tokens o secrets en migraciones/docs
 - `db reset --linked` contra el remoto DESARROLLO
 - `apply_migration` MCP cuando el SQL ya existe en `supabase/migrations/` (segundo timestamp)
+- `execute_sql` MCP para DDL remoto
+- Usar MCP como fallback automático si `db push` falla (403 = detener e investigar CLI)
+- Inventar timestamps de migración a mano
+- Cambiar el schema remoto antes de probar en CLI local
 - Asumir staging/prod separados

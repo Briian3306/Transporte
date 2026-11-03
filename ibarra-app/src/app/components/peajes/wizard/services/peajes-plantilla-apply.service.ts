@@ -13,6 +13,7 @@ import {
 } from '../../models';
 import { PeajesMotorTransformacionService } from '../../plantillas/motor/peajes-motor-transformacion.service';
 import { resolvePatenteReferences } from './patente-reference.helper';
+import { aplicarValoresFiltro } from './plantilla-filtro-grupos';
 import { PeajesWizardStateService } from './peajes-wizard-state.service';
 
 export type PlantillaExcepcionPaso = 5 | 6;
@@ -43,8 +44,14 @@ export class PeajesPlantillaApplyService {
     @Inject(PEAJES_CATALOGO_SERVICE) private readonly catalogo: PeajesCatalogoService
   ) {}
 
-  async aplicarYEvaluar(plantillaId: string): Promise<ResultadoAplicarPlantilla> {
-    const plantilla = await firstValueFrom(this.plantillasSvc.obtenerPlantilla(plantillaId));
+  async aplicarYEvaluar(
+    plantillaId: string,
+    opciones?: { filtros?: readonly string[] },
+  ): Promise<ResultadoAplicarPlantilla> {
+    const cargada = await firstValueFrom(this.plantillasSvc.obtenerPlantilla(plantillaId));
+    const plantilla = cargada
+      ? aplicarValoresFiltro(cargada, opciones?.filtros ?? [])
+      : null;
     if (!plantilla) {
       return {
         ok: false,

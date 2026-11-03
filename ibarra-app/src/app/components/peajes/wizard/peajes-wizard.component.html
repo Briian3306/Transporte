@@ -30,14 +30,14 @@
         class="pw__step"
         *ngFor="let p of pasos"
         [class.pw__step--active]="p.id === pasoActual"
-        [class.pw__step--done]="p.id < pasoActual"
-        [disabled]="p.id > pasoActual && !puedeAvanzarA(p.id)"
+        [class.pw__step--done]="pasoHecho(p.id)"
+        [disabled]="!pasoHecho(p.id) && p.id !== pasoActual && !puedeAvanzarA(p.id)"
         (click)="irA(p.id)"
       >
         <span class="pw__step-row">
           <span class="pw__step-num">
-            <ng-container *ngIf="p.id < pasoActual; else num">✓</ng-container>
-            <ng-template #num>{{ p.id }}</ng-template>
+            <ng-container *ngIf="pasoHecho(p.id); else num">✓</ng-container>
+            <ng-template #num>{{ p.numero }}</ng-template>
           </span>
           <span class="pw__step-label">{{ p.label }}</span>
         </span>
@@ -50,7 +50,7 @@
       *ngIf="pasoActual === 1"
       (completado)="siguiente()"
       (facturaDirecta)="state.setPaso(7)"
-      (irAExcepcion)="state.setPaso($event)"
+      (irAExcepcion)="onExcepcionPlantilla($event)"
     />
     <app-paso2-preview *ngIf="pasoActual === 2" (completado)="siguiente()" (atras)="atras()" />
     <app-paso3-transformaciones *ngIf="pasoActual === 3" (completado)="siguiente()" (atras)="atras()" />
@@ -58,7 +58,7 @@
       *ngIf="pasoActual === 4"
       (completado)="siguiente()"
       (facturaDirecta)="state.setPaso(7)"
-      (irAExcepcion)="state.setPaso($event)"
+      (irAExcepcion)="onExcepcionPlantilla($event)"
       (atras)="atras()"
     />
     <app-paso5-mapeo *ngIf="pasoActual === 5" (completado)="siguiente()" (atras)="atras()" />

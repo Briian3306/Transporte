@@ -16,13 +16,12 @@ export const PEAJES_HOME_SECTION_IDS = [
   'documentos',
 ] as const;
 
+/** Peajes - Basico: carga rápida, documentos, catálogos y pasadas. */
 const PEAJES_OPERATIONAL_SECTION_IDS = [
-  'wizard',
+  'carga-express',
+  'documentos',
   'catalogos',
   'pasadas',
-  'pasadas-pendientes',
-  'auditoria-tarifas',
-  'auditoria-estaciones',
 ] as const;
 
 export function getVisiblePeajesHomeSectionIds(
