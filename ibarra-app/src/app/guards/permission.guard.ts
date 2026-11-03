@@ -4,6 +4,7 @@ import { Observable, of } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { AuthStateService } from '../services/auth-state.service';
 import { PermissionStateService } from '../services/permission-state.service';
+import { isRetiredRoute } from '../retired-modules';
 
 export interface PermissionPair {
   module: string;
@@ -200,6 +201,10 @@ export class PermissionGuard implements CanActivate {
    * Verifica si el usuario tiene permisos para acceder a una ruta específica
    */
   private checkRoutePermission(url: string, route: ActivatedRouteSnapshot): boolean {
+    if (isRetiredRoute(url)) {
+      return false;
+    }
+
     // Obtener la ruta base sin parámetros
     const routePath = this.getRoutePath(url, route);
     const urlPath = url.split('?')[0];

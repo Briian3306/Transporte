@@ -7,6 +7,7 @@ import { SystemModule } from '../models/system-module.model';
 import { RolePermission } from '../models/permission-check.model';
 import { hasAdminRole } from './admin-role.util';
 import { permissionSetHas } from './permission-set.util';
+import { isRetiredModule } from '../retired-modules';
 
 @Injectable({
   providedIn: 'root'
@@ -226,8 +227,8 @@ export class GranularPermissionService {
         return;
       }
 
-      const accessibleModules = modules?.filter(module => 
-        this.hasPermission(module.name, 'read')
+      const accessibleModules = modules?.filter(module =>
+        this.hasPermission(module.name, 'read') && !isRetiredModule(module.name)
       ) || [];
       
       this.accessibleModules$.next(accessibleModules);

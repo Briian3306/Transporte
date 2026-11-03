@@ -72,33 +72,6 @@ export class DashboardComponent implements OnInit {
   private initializeDashboardModules(): void {
     this.dashboardModules = [
       {
-        id: 'checklists',
-        name: 'Checklists',
-        description: 'Gestionar checklists de vehículos y neumáticos',
-        icon: 'fas fa-clipboard-check',
-        route: '/checklist',
-        color: 'primary',
-        isAvailable: false
-      },
-      {
-        id: 'templates',
-        name: 'Plantillas',
-        description: 'Configurar plantillas de checklists',
-        icon: 'fas fa-file-alt',
-        route: '/templates',
-        color: 'success',
-        isAvailable: false
-      },
-      {
-        id: 'history',
-        name: 'Historial',
-        description: 'Ver historial de checklists realizados',
-        icon: 'fas fa-history',
-        route: '/checklist-history',
-        color: 'info',
-        isAvailable: false
-      },
-      {
         id: 'users',
         name: 'Usuarios',
         description: 'Gestionar usuarios del sistema',
@@ -141,15 +114,6 @@ export class DashboardComponent implements OnInit {
         icon: 'fas fa-truck',
         route: '/flota',
         color: 'info',
-        isAvailable: false
-      },
-      {
-        id: 'stock',
-        name: 'Gestión de Stock',
-        description: 'Administrar inventario, depósitos y movimientos',
-        icon: 'fas fa-warehouse',
-        route: '/stock/dashboard',
-        color: 'warning',
         isAvailable: false
       },
       {
