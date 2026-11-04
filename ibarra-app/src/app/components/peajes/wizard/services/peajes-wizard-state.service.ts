@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import {
   AccordionPanelStatus,
 } from '../../../shared';
@@ -288,6 +288,10 @@ function serializeDraft(drafts: ConfiguracionPlantillaDraft[]): string {
  */
 @Injectable({ providedIn: 'root' })
 export class PeajesWizardStateService {
+  private readonly invoiceAiRevision = signal(0);
+  readonly invoiceAiVersion = this.invoiceAiRevision.asReadonly();
+  cargaCompletada = false;
+  revisionCarga = 0;
   private state: PeajesWizardState = estadoInicial();
 
   snapshot(): PeajesWizardState {
@@ -303,6 +307,8 @@ export class PeajesWizardStateService {
   }
 
   setPreview(preview: ExcelCargaPreview): void {
+    this.cargaCompletada = false;
+    this.revisionCarga++;
     this.state.preview = preview;
     this.state.columnasIncluidas = [...preview.columnas];
     this.state.columnasExcluidas = [];
@@ -1583,6 +1589,7 @@ export class PeajesWizardStateService {
           status === 'idle' ? null : this.invoiceAiFingerprintMasiva(key, net) ?? this.state.invoiceAiPorDocumento[key]?.fingerprint ?? null,
       },
     };
+    this.invoiceAiRevision.update(version => version + 1);
   }
 
   invoiceExpectedNetAmountForDocumento(doc: WizardDocumentoGrupo): number | null {
@@ -1642,6 +1649,7 @@ export class PeajesWizardStateService {
       fingerprint:
         status === 'idle' ? null : this.invoiceAiFingerprint() ?? this.state.invoiceAi.fingerprint,
     };
+    this.invoiceAiRevision.update(version => version + 1);
   }
 
   /**
@@ -1686,6 +1694,7 @@ export class PeajesWizardStateService {
       error: null,
       fingerprint: null,
     };
+    this.invoiceAiRevision.update(version => version + 1);
   }
 
   private aCentavos(valor: unknown): number {
@@ -1694,6 +1703,9 @@ export class PeajesWizardStateService {
   }
 
   reiniciar(): void {
+    this.cargaCompletada = false;
+    this.revisionCarga++;
     this.state = estadoInicial();
+    this.invoiceAiRevision.update(version => version + 1);
   }
 }

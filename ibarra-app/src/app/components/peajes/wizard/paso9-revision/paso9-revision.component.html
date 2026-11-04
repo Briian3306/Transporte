@@ -252,10 +252,11 @@
     [empresas]="empresasTarifario"
     [empresaStep]="empresaTarifarioStep"
     [hasNextCompany]="hasNextTarifarioCompany"
+    [autoAdvanceValidated]="true"
     (empresaStepChange)="onEmpresaTarifarioStep($event)"
     (openChange)="refreshOpen = $event"
     (cancelled)="onRefreshCancelled()"
-    (saved)="onRefreshSaved($event)"
+    [afterSave]="afterTarifaSave"
   ></app-tarifa-refresh-dialog>
 
   <app-dialog

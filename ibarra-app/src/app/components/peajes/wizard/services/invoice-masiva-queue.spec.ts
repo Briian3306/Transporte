@@ -116,4 +116,16 @@ describe('analizarFacturasMasivaPendientes', () => {
     expect(state.invoiceAiForDocumento('123').error).toBe('rate');
     expect(state.invoiceAiForDocumento('234').status).toBe('idle');
   });
+
+  it('detiene la cola y descarta una respuesta después de reiniciar', async () => {
+    seedMasiva();
+    const response = new Subject<InvoiceAiResult>();
+    invoiceAi.analyze.and.returnValue(response);
+    const pending = analizarFacturasMasivaPendientes(state, invoiceAi);
+    state.reiniciar();
+    response.next(result); response.complete();
+    expect(await pending).toBe(0);
+    expect(invoiceAi.analyze).toHaveBeenCalledTimes(1);
+    expect(state.invoiceAiForDocumento('123').status).toBe('idle');
+  });
 });

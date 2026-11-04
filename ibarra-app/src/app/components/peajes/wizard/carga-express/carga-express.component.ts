@@ -58,6 +58,14 @@ export class PeajesCargaExpressComponent implements OnInit {
     this.state.reiniciar();
   }
 
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.pasoActual !== 1 && this.state.snapshot().preview && !this.state.cargaCompletada) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
   get mostrarValidacion(): boolean {
     return this.pasoActual === 8;
   }

@@ -2130,6 +2130,34 @@
       "evidence": [
         "2026-08-28: migración 20260828120000_peajes_duplicados_permitidos.sql. db reset --local --no-seed OK; supabase test db 220 PASS. Índice único parcial WHERE duplicado=false. RPC p_permitir_duplicados default false. Paso 8 nombres+Archivo+DUPLICADO+Subir igualmente. ng test paso8+peajes-carga (suite F18 75 SUCCESS). tsc EXIT 0. DESARROLLO kfffigvyvtzyczeiadxh: apply_migration MCP (CLI db push --linked 403); historial 20260828120000; columna+índice+RPC verificados."
       ]
+    },
+    {
+      "id": "F19-1",
+      "title": "Carga Peajes: IA diferida reutilizando Paso 7, tarifas secuenciales y protección de cierre",
+      "prd_refs": [
+        "Pedido usuario 2026-11-04 y plan aprobado"
+      ],
+      "agent_owner": "05-integrador-qa",
+      "depends_on": [
+        "F17-2",
+        "F17-3",
+        "F18-1",
+        "F14-21"
+      ],
+      "status": "in_progress",
+      "verification": [
+        "Paso 1 no consulta IA; Paso 7 simple/masiva autocompleta vacíos de confianza alta y preserva ediciones",
+        "Guardar y reanalizar tarifas antes de cambiar de empresa; errores mantienen panel; sin confirmar carga",
+        "beforeunload fuera del Paso 1 con carga pendiente; confirmación parcial mantiene aviso",
+        "Angular suites de Paso 1/7/9, Express, diálogo y cola; TypeScript app/spec; build desarrollo",
+        "pgTAP local refresh y tarifario; sin reset ni despliegue"
+      ],
+      "evidence": [
+        "2026-11-04 bulk invoice AI UI: reactive state revision updates OnPush progress/cat and per-document errors. Retry remains visible for errors during the queue, disabled until completion, retries failed/pending PDFs only. Missing PDF, unreadable PDF and invalid net have explicit explanations. Real component lifecycle exposed uninitialized date range on first render; initialized safely. Empty/ineligible queues no longer block immediate retry after PDFs are attached. Final ChromeHeadless: 52 SUCCESS / 0 FAILED (Paso 7, bulk queue, state); development build passed. Logs %TEMP%/factura-masiva-ui-green.log and factura-masiva-ui-build-final.log. No real OpenRouter calls or DB writes.",
+        "2026-11-04 automatic advance: user confirmed persisted tariffs only; new prices require Guardar. Paso 9 skips already complete companies. Dialog autoAdvanceValidated opt-in acknowledges persisted matches after load/revalidate/status/category resolution, with no new drafts/actions/conflicts and valid persisted amount IDs. Parent reanalyzes before advancing; attempts deduplicated per company/candidates. No tariff write RPC or document confirmation. Red 2 failures; initial green 121 SUCCESS; extra red covers stale status error. Final verification: dialog + Paso 9 + stepper 127 SUCCESS / 0 FAILED (%TEMP%/tarifa-auto-verified.log). TypeScript spec and development build EXIT 0 (%TEMP%/tarifa-auto-build-final.log); diff --check clean. Includes status choice after previous validation error, automatic initial load/revalidate, complete-company skipping, no repeated callbacks and protection of new drafts. Zero tariff write RPC calls during automatic advance. Two order-dependent test fixtures now create their own component. No DB changes or remote deployment.",
+        "2026-11-04 follow-up: user-reported category loss reproduced (10 drafts became 1 rendered/saved row after Revalidar). Fixed rows reconstruction from draft categories and amounts, controlled company stepper and catalog reload after successful save even with unchanged candidate IDs. All 17 historical test failures audited and updated for current matching/fixtures/review semantics, none skipped. Expanded Angular final: 217 SUCCESS / 0 FAILED. Local pgTAP: 2 files / 103 PASS, no reset. TypeScript spec and development build EXIT 0; diff --check clean. Logs: %TEMP%/peajes-categories-{final,build,db}.log. Historical 17-failure gate is now CLOSED. No authenticated manual walkthrough; in_progress retained only for that prior visual gate. No real tariff data changed, no remote deployment or commit.",
+        "2026-11-04: Angular final 167 tests: 150 SUCCESS, same 17 pre-existing dialog failures (baseline compared by test name). All new regressions pass, including bulk autocomplete and both beforeunload handlers. Core-only prior run 76 SUCCESS. Local pgTAP refresh+tarifario: 2 files/103 PASS; no reset. tsc app/spec and development build EXIT 0. Logs: %TEMP%/peajes-flow-{red,core,final,db,build}.log. Authenticated visual walk not completed: browser host unavailable and native Chrome approval timed out. Final follow-up: dialog 72 SUCCESS / same 17 failures; AI+queue 28 SUCCESS after cache/stale-error guard; build-final EXIT 0; diff --check clean. Feature remains in_progress for pre-existing general gates and visual verification; implementation complete, no remote deployment or commit."
+      ]
     }
   ]
 }

@@ -25,6 +25,8 @@
           type="button"
           class="pw__btn pw__btn--ghost pw__btn--small"
           *ngIf="(!esMasiva && invoiceAi.status === 'error') || showMasivaRetry"
+          data-testid="invoice-ai-retry"
+          [disabled]="invoiceAiLoading"
           (click)="retryInvoiceAi()"
         >
           Reintentar análisis
@@ -106,6 +108,10 @@
             </span>
           </span>
           <div appAccordionContent>
+            <p class="pw__alert pw__alert--error" role="alert"
+              *ngIf="!item.doc.omitido && invoiceAiFor(item.index).status === 'error'">
+              {{ invoiceAiFor(item.index).error }}
+            </p>
             <ng-container *ngIf="isExpanded(item.doc, item.index)">
               <div class="paso7__omitido-banner" *ngIf="item.doc.omitido">
                 <p>

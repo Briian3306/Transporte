@@ -357,7 +357,7 @@ describe('Paso1CargaComponent', () => {
     expect(component.puedeContinuar).toBeTrue();
   });
 
-  it('analyzes only after the template applies without exceptions', async () => {
+  it('defers AI to Factura after the template applies without exceptions', async () => {
     const apply = TestBed.inject(PeajesPlantillaApplyService);
     spyOn(apply, 'aplicarYEvaluar').and.callFake(async () => {
       state.setPlantillaId('template-1');
@@ -377,7 +377,8 @@ describe('Paso1CargaComponent', () => {
     component.empresaId = 'emp-1';
     component.onPlantillaChange('template-1');
     await component.continuar();
-    expect(ai.analyze).toHaveBeenCalledWith('invoice text', 560832.27);
+    expect(ai.analyze).not.toHaveBeenCalled();
+    expect(state.snapshot().invoicePdf?.text).toBe('invoice text');
   });
 
   it('does not call AI for mass import without PDF or absent PDF', async () => {

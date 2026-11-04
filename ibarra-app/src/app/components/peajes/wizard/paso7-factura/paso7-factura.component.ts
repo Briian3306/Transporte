@@ -2,6 +2,7 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  DestroyRef,
   Component,
   ElementRef,
   EventEmitter,
@@ -115,6 +116,9 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly invoiceAiApi = inject(InvoiceAiService);
   readonly state = inject(PeajesWizardStateService);
+  private analysisRunning = false;
+  private destroyed = false;
+  private readonly unregisterDestroy = inject(DestroyRef).onDestroy(() => { this.destroyed = true; });
   readonly tiposDocumento = DOCUMENTO_TIPOS;
   readonly pageSize = 50;
 
@@ -123,7 +127,7 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
   empresaIds: string[] = [];
   /** Empresa seleccionada por panel (masiva), keyed by absolute index. */
   empresaIdsPorDoc: Record<number, string[]> = {};
-  fechaRanges: Record<number, DateRangeValue> = {};
+  fechaRanges: Record<number, DateRangeValue> = { 0: { from: null, to: null } };
   expandedValues: string[] = [];
   recomendacionVisible = false;
   nombrePlantilla = '';
@@ -249,12 +253,12 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
   }
 
   get invoiceAiLoading(): boolean {
+    this.state.invoiceAiVersion();
     if (!this.esMasiva) {
       return this.invoiceAi.status === 'loading';
     }
-    return Object.values(this.state.snapshot().invoiceAiPorDocumento).some(
-      (ai) => ai.status === 'loading'
-    );
+    return this.documentos.some(doc => !doc.omitido &&
+      this.state.invoiceAiForDocumento(doc.factura).status === 'loading');
   }
 
   get showInvoiceAi(): boolean {
@@ -263,25 +267,43 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
 
   get showMasivaRetry(): boolean {
     if (!this.esMasiva) return false;
+    const loading = this.invoiceAiLoading;
     return this.documentos.some((doc) => {
       if (doc.omitido || !this.state.invoicePdfMasivaFor(doc.factura)) return false;
       const status = this.state.invoiceAiForDocumento(doc.factura).status;
-      return status === 'idle' || status === 'error';
+      return status === 'error' || (!loading && status === 'idle');
     });
   }
 
   invoiceAiStatusText(): string {
     if (this.esMasiva) {
-      if (this.invoiceAiLoading) return '';
+      const docs = this.documentos.filter(doc => !doc.omitido);
+      if (!docs.length) return 'No hay documentos incluidos para analizar.';
+      const withPdf = docs.filter(doc => this.state.invoicePdfMasivaFor(doc.factura));
+      if (!withPdf.length) return 'No hay PDF asociados a las facturas. Adjuntalos en Cargar archivo con el nombre correspondiente a FACTURA para usar la IA.';
+      const errors = withPdf.filter(doc => this.state.invoiceAiForDocumento(doc.factura).status === 'error');
+      const ready = withPdf.filter(doc => this.state.invoiceAiForDocumento(doc.factura).status === 'ready').length;
+      const errorText = errors.length
+        ? ` ${errors.length} con error. ${this.state.invoiceAiForDocumento(errors[0].factura).error ?? 'Podés reintentar el análisis.'}`
+        : '';
+      if (this.invoiceAiLoading) return `Analizando facturas… ${ready} de ${withPdf.length} listas.${errorText}`;
+      if (errors.length) return `Análisis de facturas:${errorText}`;
       if (this.showMasivaRetry) {
+        const pending = withPdf.filter(doc => this.state.invoiceAiForDocumento(doc.factura).status === 'idle');
+        if (pending.some(doc => !this.state.invoicePdfMasivaFor(doc.factura)?.text?.trim())) {
+          return 'Hay PDF sin texto legible. Volvé a cargarlos o completá esas facturas a mano.';
+        }
+        if (pending.some(doc => (this.state.invoiceExpectedNetAmountForDocumento(doc) ?? 0) <= 0)) {
+          return 'Hay PDF pendientes: falta un importe neto positivo de las pasadas procesadas para analizarlos.';
+        }
         return 'Hay facturas con PDF pendientes de sugerencias. Reintentá solo esas.';
       }
-      return '';
+      return `Análisis completo: ${ready} de ${withPdf.length} facturas con PDF listas.`;
     }
     const ai = this.invoiceAi;
     if (ai.status === 'loading') return '';
     if (ai.status === 'ready') {
-      return 'Sugerencias listas. Clic para aplicar un valor; podés seguir editando a mano.';
+      return 'Sugerencias listas. Los campos vacíos se completan con confianza alta; podés seguir editando a mano.';
     }
     if (ai.status === 'error') {
       return ai.error ?? 'No se pudieron obtener sugerencias. Podés completar el documento a mano.';
@@ -409,10 +431,44 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
     await this.runInvoiceAnalysis();
   }
 
+  private autoCompleteInvoice(index?: number): void {
+    if (this.destroyed) return;
+    const fields = {
+      invoiceNumber: 'factura', invoiceDate: 'fecha_factura', vat: 'iva',
+      perceptions: 'percepciones', subtotal: 'importe_sin_iva', total: 'importe_total',
+    } as const;
+    const form = index == null ? this.form : this.ensureDocForm(index);
+    for (const field of Object.keys(fields) as InvoiceField[]) {
+      const control = form.controls[fields[field]];
+      const value = control.value;
+      if (control.dirty || (value !== '' && value != null && value !== 0)) continue;
+      const candidates = this.invoiceCandidates(field, index);
+      if (candidates.length !== 1 || candidates[0].level !== 'alta') continue;
+      const candidate = candidates[0];
+      if (field === 'invoiceDate' ? !parseDateInputValue(String(candidate.value)) :
+          typeof candidate.value === 'number' && (!Number.isFinite(candidate.value) || candidate.value < 0)) continue;
+      this.applyInvoiceSuggestion(field, candidate, index);
+    }
+  }
+
   private async runInvoiceAnalysis(): Promise<void> {
     if (this.esMasiva) {
       this.cdr.markForCheck();
-      await analizarFacturasMasivaPendientes(this.state, this.invoiceAiApi);
+      if (this.analysisRunning) return;
+      const eligible = this.documentos.some(doc => !doc.omitido &&
+        this.state.invoicePdfMasivaFor(doc.factura)?.text &&
+        (this.state.invoiceExpectedNetAmountForDocumento(doc) ?? 0) > 0);
+      if (!eligible) return;
+      this.analysisRunning = true;
+      const revision = this.state.revisionCarga;
+      try {
+        await analizarFacturasMasivaPendientes(this.state, this.invoiceAiApi, (factura) => {
+          if (revision !== this.state.revisionCarga) return;
+          const index = this.documentos.findIndex(doc => doc.factura === factura && !doc.omitido);
+          if (index >= 0) this.autoCompleteInvoice(index);
+          this.cdr.markForCheck();
+        });
+      } finally { this.analysisRunning = false; }
       this.cdr.markForCheck();
       return;
     }
@@ -420,18 +476,26 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
     const text = snap.invoicePdf?.text;
     const net = this.state.invoiceExpectedNetAmount();
     if (!text || net == null || net <= 0) return;
+    if (this.analysisRunning || snap.invoiceAi.status === 'loading') return;
+    this.analysisRunning = true;
+    const revision = this.state.revisionCarga;
+    const fingerprint = this.state.invoiceAiFingerprint(net);
     this.state.setInvoiceAiAnalysis('loading', null, null);
     this.cdr.markForCheck();
     try {
       const result = await firstValueFrom(this.invoiceAiApi.analyze(text, net));
+      if (revision !== this.state.revisionCarga || fingerprint !== this.state.invoiceAiFingerprint()) return;
       this.state.setInvoiceAiAnalysis('ready', result, null);
+      this.autoCompleteInvoice();
     } catch (e) {
+      if (revision !== this.state.revisionCarga || fingerprint !== this.state.invoiceAiFingerprint()) return;
       const message =
         e instanceof InvoiceAiError
           ? e.message
           : 'No se pudo analizar la factura. Completá el documento a mano o reintentá.';
       this.state.setInvoiceAiAnalysis('error', null, message);
     } finally {
+      this.analysisRunning = false;
       this.cdr.markForCheck();
     }
   }
@@ -1001,9 +1065,11 @@ export class Paso7FacturaComponent implements OnInit, AfterViewInit {
     const iso = toDateInputValue(range.from);
     if (this.esMasiva) {
       this.ensureDocForm(index).patchValue({ fecha_factura: iso });
+      this.ensureDocForm(index).controls.fecha_factura.markAsDirty();
       this.ensureDocForm(index).controls.fecha_factura.markAsTouched();
     } else {
       this.form.patchValue({ fecha_factura: iso });
+      this.form.controls.fecha_factura.markAsDirty();
       this.form.controls.fecha_factura.markAsTouched();
     }
     this.cdr.markForCheck();

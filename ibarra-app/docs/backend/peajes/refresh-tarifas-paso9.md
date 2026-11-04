@@ -233,3 +233,17 @@ flowchart TD
 ---
 
 > Última actualización: 2026-10-05 (acordeón por estación, IDA+VUELTA siempre en familia direccional, teclado entre tableros)
+
+## Guardado secuencial desde importación masiva (2026-11-04)
+
+En el refresh de Paso 9, tanto el selector de empresa como Guardar cambios + Siguiente validan y guardan las decisiones del contexto activo mediante `peajes_guardar_refresco_tarifas`. El contenedor espera el reanálisis antes de navegar o cerrar. Errores de formulario/RPC/reanálisis conservan el panel y sus datos; otra solicitud de cambio o cierre queda bloqueada durante la operación. Si la empresa continúa pendiente, no avanza.
+
+Las tarifas quedan en las mismas tablas `tarifas` y `tarifa_importe` que consulta `/peajes/tarifario`; este refresh no confirma la carga ni inserta pasadas o documentos. No cambia la firma de los RPC ni las reglas de vigencia, historial, sentido, categoría e IVA. El formulario independiente de Tarifario conserva `peajes_guardar_tarifas_actuales`.
+
+### Corrección de borradores y catálogo posterior al guardado (2026-11-04)
+
+La reconstrucción frontend incluye categorías agregadas e importes de borradores, además de las identidades del catálogo. Esto evita enviar solo la primera categoría después de Revalidar precios. La recarga posterior al guardado no depende de que cambien los IDs pendientes. El stepper es controlado por Paso 9 y el editor anterior se oculta mientras carga el catálogo siguiente. No cambia el RPC ni se completan importes faltantes en base de datos: las decisiones enviadas siguen siendo las ingresadas y validadas por el operador.
+
+### Avance automático sin escritura (2026-11-04)
+
+El diálogo de Paso 9 reconoce coincidencias ya guardadas cuando todas tienen tarifa e importe persistido identificados y su precio coincide dentro de la tolerancia existente. Envía los reconocimientos SIN_CAMBIO al contenedor para reanalizar y avanzar. No llama peajes_guardar_refresco_tarifas, no habilita identidades y no confirma la carga. Cualquier borrador Nuevo, categoría agregada, propuesta de copia o conflicto mantiene la confirmación manual. Se deduplican los avances por empresa y candidatos durante la sesión del diálogo.

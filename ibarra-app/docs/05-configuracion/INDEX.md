@@ -9,6 +9,7 @@ Documentación de entornos, secrets de cliente y setup local (Angular + Supabase
 | Documento | Descripción |
 |-----------|-------------|
 | [cli-local-credenciales-y-permisos.md](./cli-local-credenciales-y-permisos.md) | `pnpm start` vs `pnpm dev`; seeds Auth/RBAC; Kong caído / `ERR_CONNECTION_REFUSED` |
+| [copia-seguridad-cli-local.md](./copia-seguridad-cli-local.md) | Volcado de datos del CLI, `db reset --local` y prueba con `pnpm dev`. No altera DESARROLLO |
 | [powerbi-supabase.md](./powerbi-supabase.md) | Power BI vía **API** (URL + anon key) y vistas `pwbi_*` |
 
 ## Relacionado
@@ -19,4 +20,4 @@ Documentación de entornos, secrets de cliente y setup local (Angular + Supabase
 
 ---
 
-> Última actualización: septiembre 2026
+> Última actualización: noviembre 2026

@@ -10,8 +10,9 @@
 >
   <section class="trd__empresas" *ngIf="empresas.length" aria-label="Tarifario por empresa">
     <app-stepper
+      [controlled]="true"
       [value]="empresaStep"
-      (valueChange)="empresaStepChange.emit($event)"
+      (valueChange)="requestCompanyChange($event)"
       ariaLabel="Tarifario por empresa"
     >
       <app-stepper-item

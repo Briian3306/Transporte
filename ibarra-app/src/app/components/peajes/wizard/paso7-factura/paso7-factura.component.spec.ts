@@ -1,18 +1,95 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Injector } from '@angular/core';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { Paso7FacturaComponent } from './paso7-factura.component';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 import { PEAJES_CATALOGO_SERVICE, PEAJES_PLANTILLAS_SERVICE, PeajesCatalogoService } from '../../models';
 import { AUSOL_FACTURA_557074 } from '../fixtures/ausol-factura-real.fixture';
 import { InvoiceAiService } from '../../services/ai/invoice/invoice-ai.service';
-import { InvoiceAiResult, InvoiceCandidate } from '../../services/ai/invoice/invoice-ai.models';
+import { InvoiceAiResult, InvoiceCandidate, InvoiceAiError } from '../../services/ai/invoice/invoice-ai.models';
 import { TARIFA_REFRESH_SERVICE } from '../../models/tarifa-refresh.contracts';
 import { PEAJES_TARIFARIO_SERVICE } from '../../models/tarifario.contracts';
 import { TarifaRefreshMockService } from '../mocks/tarifa-refresh.mock';
 import { TarifarioMockService } from '../../tarifario/mocks/tarifario.mock';
 
 describe('Paso7FacturaComponent', () => {
+  it('masiva: inicia la IA al entrar, muestra el gato, actualiza errores y reintenta solo el PDF fallido', async () => {
+    const render = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    // Desactiva solo la animación periódica para esperar la estabilidad de Angular.
+    spyOn(window, 'matchMedia').and.returnValue({ matches: true } as MediaQueryList);
+    const first = new Subject<InvoiceAiResult>();
+    const second = new Subject<InvoiceAiResult>();
+    invoiceAi.analyze.calls.reset();
+    invoiceAi.analyze.and.returnValues(first, second);
+    await setupMasiva(2, () => {
+      state.setPlantillaId('P-1');
+      state.setInvoicePdfsMasiva({
+        'f-1': { fileName: 'F-1.pdf', size: 8, lastModified: 1, text: 'pdf-f1' },
+        'f-2': { fileName: 'F-2.pdf', size: 8, lastModified: 1, text: 'pdf-f2' },
+      });
+    });
+    fixture.autoDetectChanges();
+    await render();
+    expect(invoiceAi.analyze).toHaveBeenCalledTimes(1);
+    expect(fixture.nativeElement.querySelector('app-ai-cat-loader')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Analizando facturas');
+    first.error(new InvoiceAiError('Falló el primer PDF', 'provider'));
+    await render();
+    expect(invoiceAi.analyze).toHaveBeenCalledTimes(2);
+    expect(fixture.nativeElement.textContent).toContain('Error IA');
+    expect(fixture.nativeElement.textContent).toContain('Falló el primer PDF');
+    let retry = fixture.nativeElement.querySelector('[data-testid="invoice-ai-retry"]') as HTMLButtonElement;
+    expect(retry).toBeTruthy();
+    expect(retry?.disabled).toBeTrue();
+    second.next(invoiceResultWithIva(21)); second.complete();
+    await render();
+    expect(fixture.nativeElement.querySelector('app-ai-cat-loader')).toBeNull();
+    retry = fixture.nativeElement.querySelector('[data-testid="invoice-ai-retry"]');
+    expect(retry?.disabled).toBeFalse();
+    invoiceAi.analyze.and.returnValue(of(invoiceResultWithIva(21)));
+    retry?.click(); await render();
+    expect(invoiceAi.analyze).toHaveBeenCalledTimes(3);
+    expect(invoiceAi.analyze.calls.mostRecent().args[0]).toBe('pdf-f1');
+    expect(component.invoiceAiFor(0).status).toBe('ready');
+    expect(component.invoiceAiFor(1).status).toBe('ready');
+    fixture.destroy();
+  });
+
+  it('masiva: explica por qué no analiza cuando no hay PDF asociado', async () => {
+    await setupMasiva(1);
+    expect(fixture.nativeElement.textContent).toContain('No hay PDF asociados');
+    expect(fixture.nativeElement.querySelector('app-ai-cat-loader')).toBeNull();
+  });
+
+  it('masiva: explica que falta un neto válido en lugar de omitir la IA en silencio', async () => {
+    invoiceAi.analyze.calls.reset();
+    await setupMasiva(1, () => {
+      state.setPlantillaId('P-1');
+      state.setPasadasEstandarizadas([{ FACTURA: 'F-1', IMPORTE_NETO: 0 }] as never);
+      state.setInvoicePdfsMasiva({
+        'f-1': { fileName: 'F-1.pdf', size: 8, lastModified: 1, text: 'pdf-f1' },
+      });
+    });
+    expect(invoiceAi.analyze).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('neto positivo');
+    expect(fixture.nativeElement.querySelector('app-ai-cat-loader')).toBeNull();
+  });
+  it('autocompleta IVA inicial sin sobrescribir ediciones durante el análisis', async () => {
+    state.setInvoicePdf(new File(['pdf'], 'factura.pdf'), 'texto');
+    state.setPlantillaId('P-1');
+    state.setPasadasEstandarizadas([{ IMPORTE_NETO: 100 }] as never);
+    const response = new Subject<InvoiceAiResult>();
+    invoiceAi.analyze.and.returnValue(response);
+    await component.ngOnInit();
+    component.form.controls.importe_total.setValue(999);
+    component.form.controls.importe_total.markAsDirty();
+    response.next({ ...invoiceResultWithIva(21), total: [ivaCandidate(121)] });
+    response.complete();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(component.form.controls.iva.value).toBe(21);
+    expect(component.form.controls.importe_total.value).toBe(999);
+  });
   it('includes shared toll stations and excludes other companies when opening tarifario', async () => {
     await component.ngOnInit();
     const estacionId = '67486ca3-6e88-49a8-b628-7f41e946da5a';
@@ -102,7 +179,9 @@ describe('Paso7FacturaComponent', () => {
 
     fixture = TestBed.createComponent(Paso7FacturaComponent);
     component = fixture.componentInstance;
-    await component.ngOnInit();
+    fixture.detectChanges();
+    await Promise.resolve();
+    await Promise.resolve();
     fixture.detectChanges();
   });
 
@@ -210,7 +289,8 @@ describe('Paso7FacturaComponent', () => {
     expect(component.form.controls.fecha_factura.value).toBe('2020-06-13');
   });
 
-  async function setupMasiva(docCount: number): Promise<void> {
+  async function setupMasiva(docCount: number, prepare?: () => void): Promise<void> {
+    fixture.destroy();
     state.reiniciar();
     state.setEmpresaId('EMP-001');
     state.setModoImportacion('masiva');
@@ -233,9 +313,12 @@ describe('Paso7FacturaComponent', () => {
     state.setPasadasEstandarizadas(
       docs.map((d, i) => ({ FACTURA: d.factura, IMPORTE_NETO: 100 + i * 0.01 })) as never
     );
+    prepare?.();
     fixture = TestBed.createComponent(Paso7FacturaComponent);
     component = fixture.componentInstance;
-    await component.ngOnInit();
+    fixture.detectChanges();
+    await Promise.resolve();
+    await Promise.resolve();
     fixture.detectChanges();
   }
 
@@ -361,6 +444,20 @@ describe('Paso7FacturaComponent', () => {
     expect(invoiceAi.analyze).not.toHaveBeenCalled();
   });
 
+  it('masiva: autocompleta al responder cada PDF sin cambiar otro documento', async () => {
+    await setupMasiva(2);
+    state.setPlantillaId('P-1');
+    state.setInvoicePdfsMasiva({
+      'f-1': { fileName: 'F-1.pdf', size: 8, lastModified: 1, text: 'pdf-f1' },
+    });
+    component.ensureDocForm(0).controls.iva.setValue(0);
+    await component.retryInvoiceAi();
+    expect(component.ensureDocForm(0).controls.iva.value).toBe(21);
+    expect(state.snapshot().documentos[0].iva).toBe(21);
+    expect(component.ensureDocForm(1).controls.iva.value).toBe(21);
+    expect(state.invoiceAiForDocumento('F-2').status).toBe('idle');
+  });
+
 
   it('shows the cat loader while invoice AI is loading and keeps factura editable', () => {
     state.setInvoiceAiAnalysis('loading', null, null);
@@ -387,5 +484,33 @@ describe('Paso7FacturaComponent', () => {
     state.setInvoiceAiAnalysis('ready', invoiceResultWithIva(21), null);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[data-testid="invoice-ai-loader"]')).toBeNull();
+  });
+
+  it('descarta respuestas después de reiniciar y evita pedidos duplicados', async () => {
+    await component.ngOnInit();
+    state.setInvoicePdf(new File(['pdf'], 'factura.pdf'), 'texto');
+    state.setPlantillaId('P-1');
+    state.setPasadasEstandarizadas([{ IMPORTE_NETO: 100 }] as never);
+    const response = new Subject<InvoiceAiResult>();
+    invoiceAi.analyze.and.returnValue(response);
+    invoiceAi.analyze.calls.reset();
+    const pending = component.retryInvoiceAi();
+    await component.retryInvoiceAi();
+    expect(invoiceAi.analyze).toHaveBeenCalledTimes(1);
+    state.reiniciar();
+    response.next(invoiceResultWithIva(21)); response.complete();
+    await pending;
+    expect(state.snapshot().invoiceAi.status).toBe('idle');
+  });
+  it('mantiene importes cargados y sugerencias ambiguas sin autoaplicarlas', async () => {
+    await component.ngOnInit();
+    state.setInvoicePdf(new File(['pdf'], 'factura.pdf'), 'texto');
+    state.setPlantillaId('P-1');
+    state.setPasadasEstandarizadas([{ IMPORTE_NETO: 100 }] as never);
+    component.form.controls.iva.setValue(50);
+    invoiceAi.analyze.and.returnValue(of({ ...invoiceResultWithIva(21), total: [ivaCandidate(121), ivaCandidate(122)] }));
+    await component.retryInvoiceAi();
+    expect(component.form.controls.iva.value).toBe(50);
+    expect(component.form.controls.importe_total.value).toBeNull();
   });
 });

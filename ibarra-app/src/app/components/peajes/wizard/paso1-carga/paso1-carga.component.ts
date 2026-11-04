@@ -24,10 +24,7 @@ import {
   PeajesWizardStateService,
   WizardInvoicePdf,
 } from '../services/peajes-wizard-state.service';
-import { InvoiceAiService } from '../../services/ai/invoice/invoice-ai.service';
-import { InvoiceAiError } from '../../services/ai/invoice/invoice-ai.models';
 import { InvoicePdfTextService } from '../../services/ai/invoice/invoice-pdf-text.service';
-import { analizarFacturasMasivaPendientes } from '../services/invoice-masiva-queue';
 import {
   agruparPlantillasPorFiltro,
   PlantillaFiltroGrupo,
@@ -50,7 +47,6 @@ export class Paso1CargaComponent implements OnInit {
 
   private readonly excel = inject(PeajesExcelService);
   private readonly plantillaApply = inject(PeajesPlantillaApplyService);
-  private readonly invoiceAi = inject(InvoiceAiService);
   private readonly pdfText = inject(InvoicePdfTextService);
   readonly state = inject(PeajesWizardStateService);
   plantillas: PlantillaConfiguracion[] = [];
@@ -75,7 +71,6 @@ export class Paso1CargaComponent implements OnInit {
   erroresPlantilla: string[] = [];
   cargando = false;
   aplicandoPlantilla = false;
-  analizandoFactura = false;
   dragOver = false;
 
   constructor(
@@ -494,7 +489,7 @@ export class Paso1CargaComponent implements OnInit {
         return;
       }
       if (result.excepcion === null) {
-        await this.maybeAnalyzeInvoice();
+        // Paso 7 inicia el análisis diferido sin bloquear la navegación.
         this.facturaDirecta.emit();
         return;
       }
@@ -506,44 +501,4 @@ export class Paso1CargaComponent implements OnInit {
     }
   }
 
-  private async maybeAnalyzeInvoice(): Promise<void> {
-    if (this.modoImportacion === 'masiva') {
-      this.analizandoFactura = true;
-      try {
-        await analizarFacturasMasivaPendientes(this.state, this.invoiceAi);
-      } finally {
-        this.analizandoFactura = false;
-      }
-      return;
-    }
-    const snap = this.state.snapshot();
-    const text = snap.invoicePdf?.text;
-    const net = this.state.invoiceExpectedNetAmount();
-    if (!text || net == null || net <= 0) {
-      return;
-    }
-    const fingerprint = this.state.invoiceAiFingerprint(net);
-    if (
-      fingerprint &&
-      snap.invoiceAi.fingerprint === fingerprint &&
-      (snap.invoiceAi.status === 'ready' || snap.invoiceAi.status === 'loading')
-    ) {
-      return;
-    }
-
-    this.analizandoFactura = true;
-    this.state.setInvoiceAiAnalysis('loading', null, null);
-    try {
-      const result = await firstValueFrom(this.invoiceAi.analyze(text, net));
-      this.state.setInvoiceAiAnalysis('ready', result, null);
-    } catch (e) {
-      const message =
-        e instanceof InvoiceAiError
-          ? e.message
-          : 'No se pudo analizar la factura. Completá el documento a mano o reintentá.';
-      this.state.setInvoiceAiAnalysis('error', null, message);
-    } finally {
-      this.analizandoFactura = false;
-    }
-  }
 }

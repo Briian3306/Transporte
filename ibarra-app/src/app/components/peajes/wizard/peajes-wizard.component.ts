@@ -92,6 +92,14 @@ export class PeajesWizardComponent implements OnInit {
     // Estado ya hidratado desde el servicio (RF-25).
   }
 
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.pasoActual !== 1 && this.state.snapshot().preview && !this.state.cargaCompletada) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
   get pasoActual(): WizardPasoId {
     return this.state.pasoActual;
   }

@@ -315,7 +315,7 @@ export class Paso9RevisionComponent implements OnInit {
     return '—';
   }
 
-  async analizarTarifas(): Promise<void> {
+  async analizarTarifas(preserveDialog = false): Promise<boolean> {
     this.analizando = true;
     try {
       const configuraciones = this.state.toConfiguracionesPlantilla();
@@ -354,10 +354,16 @@ export class Paso9RevisionComponent implements OnInit {
       };
       // Operators may review unresolved direction candidates even though only
       // peajes:manage can persist tariff changes.
-      this.refreshOpen = this.dialogNeeded;
+      if (!preserveDialog) this.refreshOpen = this.dialogNeeded;
       const conDatos = this.empresasTarifario.find((paso) => paso.estado !== 'vacio');
       const actual = this.empresasTarifario.find((paso) => paso.numero === this.empresaTarifarioStep);
-      if (conDatos && (!actual || actual.estado === 'vacio')) {
+      const siguientePendiente = !preserveDialog && actual?.estado !== 'pendiente'
+        ? this.empresasTarifario.find(paso => paso.estado === 'pendiente' && paso.numero > this.empresaTarifarioStep)
+          ?? this.empresasTarifario.find(paso => paso.estado === 'pendiente')
+        : null;
+      if (siguientePendiente) {
+        this.empresaTarifarioStep = siguientePendiente.numero;
+      } else if (conDatos && (!actual || actual.estado === 'vacio')) {
         this.empresaTarifarioStep = conDatos.numero;
       }
       if (this.resumenRefresco.contextIncomplete) {
@@ -365,8 +371,10 @@ export class Paso9RevisionComponent implements OnInit {
       } else if (this.error === CONTEXTO_INCOMPLETO_MSG) {
         this.error = null;
       }
+      return true;
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'No se pudo analizar las tarifas.';
+      return false;
     } finally {
       this.analizando = false;
     }
@@ -384,7 +392,10 @@ export class Paso9RevisionComponent implements OnInit {
     this.empresaTarifarioStep = step;
   }
 
-  async onRefreshSaved(saved: TarifaRefrescoGuardada[]): Promise<void> {
+  readonly afterTarifaSave = (saved: TarifaRefrescoGuardada[], target?: number): Promise<void> =>
+    this.onRefreshSaved(saved, target);
+
+  async onRefreshSaved(saved: TarifaRefrescoGuardada[], target?: number): Promise<void> {
     const byCandidate = new Map(
       this.tarifasActualizadas
         .filter((item) => item.candidate_id)
@@ -394,10 +405,14 @@ export class Paso9RevisionComponent implements OnInit {
       if (item.candidate_id) byCandidate.set(item.candidate_id, item);
     }
     this.tarifasActualizadas = [...byCandidate.values()];
-    await this.analizarTarifas();
+    if (!await this.analizarTarifas(true)) {
+      this.refreshOpen = true;
+      throw new Error(this.error ?? 'No se pudo revalidar el tarifario.');
+    }
     const pendientes = this.empresasTarifario.filter(paso => paso.estado === 'pendiente');
     const actual = pendientes.find(paso => paso.numero === this.empresaTarifarioStep);
-    const siguiente = actual ?? pendientes.find(paso => paso.numero > this.empresaTarifarioStep) ?? pendientes[0];
+    const solicitado = target == null ? undefined : this.empresasTarifario.find(paso => paso.numero === target);
+    const siguiente = actual ?? solicitado ?? pendientes.find(paso => paso.numero > this.empresaTarifarioStep) ?? pendientes[0];
     if (siguiente) this.empresaTarifarioStep = siguiente.numero;
     this.refreshOpen = !!siguiente;
   }
@@ -512,6 +527,7 @@ export class Paso9RevisionComponent implements OnInit {
           .map((e) => e.numero)
           .join(', ')}`;
       } else {
+        this.state.cargaCompletada = true;
         this.exitoAbierto = true;
       }
     } catch (e) {

@@ -271,6 +271,7 @@ Revisar el diff y commitear si corresponde (entorno de desarrollo).
 - Seed CLI login: `supabase/seed_cli_login.sql`
 - Seed RBAC: `supabase/seed_rbac.sql`
 - Guard del stack: `scripts/ensure-supabase-local.mjs` (`pnpm dev` y `pnpm seed:local`)
+- Copia de datos del CLI y `db reset --local`: [copia-seguridad-cli-local.md](./copia-seguridad-cli-local.md)
 - Módulo Peajes: [docs/modulos/peajes.md](../modulos/peajes.md)
 - SQL empresas / catálogos: consultar `supabase/migrations/` y los servicios de dominio.
 

@@ -139,11 +139,11 @@ En **masiva** el nombre del PDF (sin extensión) debe coincidir con el valor de 
 
 El dropzone y el file picker aceptan **el Excel/CSV y PDF juntos** (`multiple`). En simple: un PDF. En masiva: N PDF. Extrae texto de **todas** las páginas (`InvoicePdfTextService` + `pdf-parse`) y lo deja en memoria. Quitar el PDF invalida sugerencias. Un error de lectura es inline y no bloquea Continuar.
 
-### Disparo post-plantilla
+### Análisis diferido en Factura
 
-Tras `aplicarYEvaluar` con `ok === true` y `excepcion === null`, Paso 1 llama `maybeAnalyzeInvoice` **antes** de emitir `facturaDirecta`. Requisitos: modo simple, texto PDF y neto de referencia positivo. Si el flujo pasa por Pasos 5/6, Paso 7 relanza el análisis cuando el estado IA sigue en `idle`.
+Paso 1 aplica la plantilla y emite `facturaDirecta` sin consultar la IA. Conserva en memoria el texto y la asociación de los PDF. Paso 7 reutiliza `maybeAnalyzeDeferred` / `runInvoiceAnalysis`: analiza la factura simple y procesa en cola los PDF de documentos incluidos en masiva. El formulario permanece editable; los errores no impiden completarlo manualmente y se conserva Reintentar.
 
-No analiza filas de preview solas. Si el fingerprint no cambió y el estado ya es `ready` o `loading`, no vuelve a consultar.
+Los candidatos únicos de confianza alta completan campos vacíos sin sobrescribir controles editados ni valores existentes. Los ceros iniciales de IVA/percepciones se consideran valores por defecto si el control no fue editado. Las sugerencias ambiguas siguen siendo manuales. Cada documento masivo se completa cuando responde su análisis. No se duplican solicitudes en curso y las respuestas de una carga reiniciada o de un PDF/neto distinto se descartan.
 
 ### Neto de referencia (centavos)
 
@@ -258,3 +258,25 @@ Para una estación sin tarifario, elegí IDA, VUELTA o AMBAS. AMBAS muestra un t
 Los peajes sin empresa (`empresa_id = NULL`) están disponibles en cada empresa de la carga. Los peajes con empresa asignada se muestran únicamente para esa empresa. Documento, plantilla y algoritmo conservan su representación textual de empresa, incluido `__global__`.
 
 > Última actualización: 2026-10-06
+
+### Protección de cierre y guardado de tarifarios (2026-11-04)
+
+Wizard y Carga Express activan el aviso nativo de cierre/recarga fuera del Paso 1 cuando existe un archivo pendiente. El navegador decide el texto del diálogo. Volver al Paso 1, reiniciar o confirmar toda la carga desactiva el aviso; una confirmación parcial lo mantiene. No agrega un guard de navegación interna.
+
+Cambiar de empresa desde el selector tarifario o Guardar cambios + Siguiente valida y guarda el tarifario activo, espera el reanálisis y recién entonces cambia de panel. Si quedan pendientes o hay errores, conserva la empresa actual y muestra el error. Solo guarda tarifas; no confirma documentos ni pasadas.
+
+### Categorías nuevas y recarga del refresh (2026-11-04)
+
+Revalidar precios conserva las categorías abiertas y sus importes Nuevo al reconstruir los tableros. Guardar incluye todas las categorías completadas, aunque todavía no existan en el catálogo. El stepper tarifario espera la confirmación del contenedor; no adelanta el encabezado mientras se guarda. Durante la carga del nuevo catálogo se oculta el editor anterior. Tras guardar se recarga el catálogo aunque sigan pendientes los mismos IDs de candidatos, para mostrar los importes persistidos.
+
+### Avance automático de tarifarios ya guardados (2026-11-04)
+
+Al abrir o revalidar una empresa, o al resolver la elección de Pico/No pico, el refresh avanza automáticamente si todos sus candidatos coinciden con tarifas persistidas identificadas, sin conflictos ni borradores nuevos. Paso 9 reconoce las coincidencias en la sesión, reanaliza y abre la siguiente empresa pendiente; al completar todas, cierra el diálogo. El encabezado y el editor usan la misma selección controlada. Al iniciar el análisis se omiten las empresas que ya estaban completas.
+
+Los precios en Nuevo, categorías recién agregadas, propuestas de copia y acciones de persistencia requieren Guardar cambios. El avance automático no ejecuta el RPC de guardado de tarifas ni confirma documentos o pasadas. Un error mantiene la empresa actual y permite reintentar con Guardar cambios; el mismo resultado no dispara un bucle de avances.
+
+### Indicadores de IA en Factura masiva (2026-11-04)
+
+La cola de IA arranca al entrar en Factura cuando hay PDF asociados y neto de referencia válido. El estado por documento notifica de forma reactiva al componente OnPush: el gato, los badges y el progreso se actualizan al comenzar y terminar cada análisis, incluidos los errores. El encabezado informa cuántas facturas con PDF están listas y muestra el primer error; cada documento muestra su propio error al abrirlo.
+
+Reintentar análisis permanece visible si una factura falló mientras se analizan otras, pero queda deshabilitado hasta terminar la cola. Al reintentar solo se procesan PDFs pendientes o fallidos; los listos se conservan. Sin PDF asociado, con texto no legible o sin neto positivo de las pasadas procesadas, se explica el motivo en Factura en lugar de ocultar el estado. Un Excel/CSV por sí solo no permite leer la cabecera de la factura mediante IA.

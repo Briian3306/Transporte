@@ -86,3 +86,9 @@ pgTAP: `supabase/tests/peajes_tarifario_rpc_test.sql` (namespace `17400000-…`)
 ---
 
 > Última actualización: 2026-09-08
+
+## Guardado secuencial desde importación masiva (2026-11-04)
+
+En el refresh de Paso 9, tanto el selector de empresa como Guardar cambios + Siguiente validan y guardan las decisiones del contexto activo mediante `peajes_guardar_refresco_tarifas`. El contenedor espera el reanálisis antes de navegar o cerrar. Errores de formulario/RPC/reanálisis conservan el panel y sus datos; otra solicitud de cambio o cierre queda bloqueada durante la operación. Si la empresa continúa pendiente, no avanza.
+
+Las tarifas quedan en las mismas tablas `tarifas` y `tarifa_importe` que consulta `/peajes/tarifario`; este refresh no confirma la carga ni inserta pasadas o documentos. No cambia la firma de los RPC ni las reglas de vigencia, historial, sentido, categoría e IVA. El formulario independiente de Tarifario conserva `peajes_guardar_tarifas_actuales`.

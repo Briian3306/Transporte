@@ -99,6 +99,16 @@ function resumenTarifas(
 }
 
 describe('Paso9RevisionComponent', () => {
+  it('al analizar salta las empresas ya completas y abre la primera pendiente', async () => {
+    await component.ngOnInit();
+    spyOnProperty(component, 'empresasTarifario').and.returnValue([
+      { id: 'a', nombre: 'A', numero: 1, estado: 'completo' },
+      { id: 'b', nombre: 'B', numero: 2, estado: 'pendiente' },
+    ]);
+    component.empresaTarifarioStep = 1;
+    await component.analizarTarifas();
+    expect(component.empresaTarifarioStep).toBe(2);
+  });
   let fixture: ComponentFixture<Paso9RevisionComponent>;
   let component: Paso9RevisionComponent;
   let state: PeajesWizardStateService;
@@ -125,6 +135,7 @@ describe('Paso9RevisionComponent', () => {
         resultadoResumen({ codigo: 'CURRENT_TARIFF', peajeId: 'p-a' }),
         resultadoResumen({ codigo: 'NEW_TARIFF', peajeId: 'p-b' }),
       ]);
+      return true;
     });
     await component.onRefreshSaved([]);
     expect(remainedOpen).toBeTrue();
@@ -1101,6 +1112,30 @@ describe('Paso9RevisionComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Tarifario 1 de 2');
     expect(fixture.nativeElement.textContent).not.toContain('Tarifario 2 de 2');
+  });
+
+  it('no cambia de empresa cuando falla el reanálisis posterior al guardado', async () => {
+    component.empresaTarifarioStep = 1;
+    spyOn(component, 'analizarTarifas').and.resolveTo(false);
+    await expectAsync(component.onRefreshSaved([], 2)).toBeRejected();
+    expect(component.empresaTarifarioStep).toBe(1);
+    expect(component.refreshOpen).toBeTrue();
+  });
+  it('avanza solo después de revalidar la empresa actual', async () => {
+    const empresas = [
+      { id: 'a', nombre: 'A', numero: 1, estado: 'completo' as const },
+      { id: 'b', nombre: 'B', numero: 2, estado: 'pendiente' as const },
+    ];
+    spyOnProperty(component, 'empresasTarifario').and.returnValue(empresas);
+    spyOn(component, 'analizarTarifas').and.resolveTo(true);
+    component.empresaTarifarioStep = 1;
+    await component.onRefreshSaved([], 2);
+    expect(component.empresaTarifarioStep).toBe(2);
+    expect(component.refreshOpen).toBeTrue();
+    empresas[0] = { ...empresas[0], estado: 'pendiente' } as never;
+    component.empresaTarifarioStep = 1;
+    await component.onRefreshSaved([], 2);
+    expect(component.empresaTarifarioStep).toBe(1);
   });
 });
 

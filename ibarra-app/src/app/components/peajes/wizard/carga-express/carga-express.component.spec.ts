@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { PeajesCargaExpressComponent } from './carga-express.component';
+import { PeajesWizardComponent } from '../peajes-wizard.component';
 import {
   PEAJES_CARGA_SERVICE,
   PEAJES_CATALOGO_SERVICE,
@@ -12,6 +13,32 @@ import { PeajesCatalogoMockService } from '../mocks/peajes-catalogo.mock';
 import { PeajesWizardStateService } from '../services/peajes-wizard-state.service';
 
 describe('PeajesCargaExpressComponent', () => {
+  it('el wizard protege una carga parcial y deja cerrar después de reiniciar', () => {
+    state.setPreview({ nombreArchivo: 'test.csv', columnas: [], filasOrigen: [], filasPreview: [] } as never);
+    const event = new Event('beforeunload', { cancelable: true });
+    PeajesWizardComponent.prototype.onBeforeUnload.call({ pasoActual: 9, state } as PeajesWizardComponent, event as BeforeUnloadEvent);
+    expect(event.defaultPrevented).toBeTrue();
+    state.reiniciar();
+    const reset = new Event('beforeunload', { cancelable: true });
+    PeajesWizardComponent.prototype.onBeforeUnload.call({ pasoActual: 1, state } as PeajesWizardComponent, reset as BeforeUnloadEvent);
+    expect(reset.defaultPrevented).toBeFalse();
+  });
+  it('advierte al cerrar fuera del paso uno hasta completar toda la carga', () => {
+    state.setPreview({ nombreArchivo: 'test.csv', columnas: [], filasOrigen: [], filasPreview: [] } as never);
+    component.pasoActual = 7;
+    const event = new Event('beforeunload', { cancelable: true });
+    component.onBeforeUnload(event as BeforeUnloadEvent);
+    expect(event.defaultPrevented).toBeTrue();
+    component.pasoActual = 1;
+    const initial = new Event('beforeunload', { cancelable: true });
+    component.onBeforeUnload(initial as BeforeUnloadEvent);
+    expect(initial.defaultPrevented).toBeFalse();
+    component.pasoActual = 9;
+    state.cargaCompletada = true;
+    const complete = new Event('beforeunload', { cancelable: true });
+    component.onBeforeUnload(complete as BeforeUnloadEvent);
+    expect(complete.defaultPrevented).toBeFalse();
+  });
   let fixture: ComponentFixture<PeajesCargaExpressComponent>;
   let component: PeajesCargaExpressComponent;
   let state: PeajesWizardStateService;

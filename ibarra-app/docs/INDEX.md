@@ -14,6 +14,7 @@
 - [Modelo de datos Peajes](./06-tablas/peajes/INDEX.md)
 - [Plan F14 — Auditoría de pasadas por patrones](./plan/auditoria-pasadas-patrones/INDEX.md)
 - [Configuración CLI](./05-configuracion/INDEX.md)
+- [Copia de seguridad del CLI local](./05-configuracion/copia-seguridad-cli-local.md)
 - [Progreso](./claude-progress.md)
 - [Handoff](./session-handoff.md)
 

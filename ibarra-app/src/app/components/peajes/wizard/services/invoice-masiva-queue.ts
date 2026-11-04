@@ -10,16 +10,20 @@ import { PeajesWizardStateService, WizardDocumentoGrupo } from '../services/peaj
  */
 export async function analizarFacturasMasivaPendientes(
   state: PeajesWizardStateService,
-  invoiceAi: InvoiceAiService
+  invoiceAi: InvoiceAiService,
+  onReady?: (factura: string) => void,
 ): Promise<number> {
   const snap = state.snapshot();
   if (snap.modoImportacion !== 'masiva') {
     return 0;
   }
+  const revision = state.revisionCarga;
   const docs = snap.documentos.filter((d) => !d.omitido);
   let analyzed = 0;
   for (const doc of docs) {
+    if (revision !== state.revisionCarga) break;
     const ran = await analizarDocumentoMasiva(state, invoiceAi, doc);
+    if (ran && revision === state.revisionCarga && state.invoiceAiForDocumento(doc.factura).status === 'ready') onReady?.(doc.factura);
     if (ran) {
       analyzed += 1;
     }
@@ -32,6 +36,7 @@ async function analizarDocumentoMasiva(
   invoiceAi: InvoiceAiService,
   doc: WizardDocumentoGrupo
 ): Promise<boolean> {
+  const revision = state.revisionCarga;
   const key = normalizarClaveFacturaPdf(doc.factura);
   const pdf = state.invoicePdfMasivaFor(doc.factura);
   const net = state.invoiceExpectedNetAmountForDocumento(doc);
@@ -49,8 +54,10 @@ async function analizarDocumentoMasiva(
   state.setInvoiceAiPorDocumento(doc.factura, 'loading', null, null);
   try {
     const result = await firstValueFrom(invoiceAi.analyze(pdf.text, net));
+    if (revision !== state.revisionCarga || fingerprint !== state.invoiceAiFingerprintMasiva(key, state.invoiceExpectedNetAmountForFactura(doc.factura))) return false;
     state.setInvoiceAiPorDocumento(doc.factura, 'ready', result, null);
   } catch (e) {
+    if (revision !== state.revisionCarga || fingerprint !== state.invoiceAiFingerprintMasiva(key, state.invoiceExpectedNetAmountForFactura(doc.factura))) return false;
     const message =
       e instanceof InvoiceAiError
         ? e.message

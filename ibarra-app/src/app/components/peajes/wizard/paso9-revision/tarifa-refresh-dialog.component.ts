@@ -249,6 +249,29 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   @Input() empresas: EmpresaTarifarioPaso[] = [];
   @Input() empresaStep = 1;
   @Input() hasNextCompany = false;
+  @Input() autoAdvanceValidated = false;
+  private readonly autoAdvanceAttempts = new Set<string>();
+  /** El contenedor espera el reanálisis antes de navegar o cerrar. */
+  @Input() afterSave?: (saved: TarifaRefrescoGuardada[], target?: number) => Promise<void>;
+  private requestedCompany?: number;
+
+  async requestCompanyChange(step: number): Promise<void> {
+    if (step === this.empresaStep || this.loading || this.saving || this.revalidating) return;
+    this.requestedCompany = step;
+    try { await this.guardar(); } finally { this.requestedCompany = undefined; }
+  }
+
+  private async finishSave(rows: TarifaRefrescoGuardada[], closeWhenFinished = true): Promise<void> {
+    if (this.afterSave) {
+      await this.afterSave(rows, this.requestedCompany);
+      // También refrescar precios si el reanálisis conserva los mismos candidatos.
+      this.refreshLoadKey = '';
+    }
+    else {
+      this.saved.emit(rows);
+      if (closeWhenFinished && !this.hasNextCompany) this.openChange.emit(false);
+    }
+  }
 
   @Output() openChange = new EventEmitter<boolean>();
   @Output() empresaStepChange = new EventEmitter<number>();
@@ -294,6 +317,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     if (changes['open'] || changes['resultados'] || changes['candidatos'] || changes['empresaStep'] || changes['estacionesCatalogo']) {
       if (!this.open) {
         this.refreshLoadKey = '';
+        this.autoAdvanceAttempts.clear();
       } else {
         const key = `${this.empresaStep}|${this.unresolved.map((row) => row.id).join('\n')}|${this.candidatos.length}|${this.estacionesCatalogo.map(row => `${row.id}:${row.nombre}:${row.peaje_id}`).join('|')}`;
         if (key !== this.refreshLoadKey) {
@@ -638,6 +662,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   }
 
   close(): void {
+    if (this.saving || this.revalidating) return;
     this.openChange.emit(false);
     this.cancelled.emit();
   }
@@ -692,13 +717,15 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   }
 
   onReviewStatusChange(grupo: GrupoTarifaRefresco, event: TarifarioReviewStatusChange): void {
+    this.error = null;
     for (const candidateId of this.reviewCandidateIds(grupo, event.candidateId)) {
       this.applyReviewStatus(grupo, { candidateId, status: event.status });
     }
+    void this.advanceValidatedCompany();
   }
 
   get visibleGrupos(): GrupoTarifaRefresco[] {
-    return this.grupos.filter((grupo) => grupo.detectedStations.length > 0);
+    return this.loading ? [] : this.grupos.filter((grupo) => grupo.detectedStations.length > 0);
   }
 
   private applyReviewStatus(grupo: GrupoTarifaRefresco, event: TarifarioReviewStatusChange): void {
@@ -742,6 +769,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   }
 
   onReviewCategoryChange(grupo: GrupoTarifaRefresco, event: TarifarioReviewCategoryChange): void {
+    this.error = null;
     const ids = this.reviewCandidateIds(grupo, event.candidateId);
     for (const candidateId of ids) {
       grupo.reviewCategoryByCandidate[candidateId] = event.categoria;
@@ -753,6 +781,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
       if (cand && status) this.applyReviewStatus(grupo, { candidateId, status });
     }
     this.refreshWarnings();
+    void this.advanceValidatedCompany();
   }
 
   onBulkReviewStatus(
@@ -1005,7 +1034,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
       this.saving = true;
       try {
         const saved = await this.refresh.guardar(copyDecisions);
-        this.saved.emit(saved);
+        await this.finishSave(saved, false);
       } catch (e) {
         this.error = rpcErrorMessage(e, 'No se pudieron copiar las tarifas vigentes.');
       } finally {
@@ -1021,13 +1050,17 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     if (!decisions.length) {
       const acknowledged = this.statusChoiceAcknowledgements();
       if (acknowledged.length) {
-        this.saved.emit(acknowledged);
-        if (!this.hasNextCompany) this.openChange.emit(false);
+        this.saving = true;
+        try { await this.finishSave(acknowledged); }
+        catch (e) { this.error = rpcErrorMessage(e, 'No se pudo revalidar el tarifario.'); }
+        finally { this.saving = false; }
         return;
       }
       if (this.grupos.every((grupo) => this.candidatesFor(grupo).length === 0)) {
-        this.saved.emit([]);
-        if (!this.hasNextCompany) this.openChange.emit(false);
+        this.saving = true;
+        try { await this.finishSave([]); }
+        catch (e) { this.error = rpcErrorMessage(e, 'No se pudo revalidar el tarifario.'); }
+        finally { this.saving = false; }
       }
       return;
     }
@@ -1038,8 +1071,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
       const acknowledged = this.statusChoiceAcknowledgements().filter(
         (item) => !saved.some((row) => row.candidate_id && row.candidate_id === item.candidate_id),
       );
-      this.saved.emit([...saved, ...acknowledged]);
-      if (!this.hasNextCompany) this.openChange.emit(false);
+      await this.finishSave([...saved, ...acknowledged]);
     } catch (e) {
       this.error = rpcErrorMessage(e, 'No se pudieron guardar los cambios.');
       this.refreshWarnings();
@@ -1184,6 +1216,37 @@ export class TarifaRefreshDialogComponent implements OnChanges {
       this.refreshWarnings();
     } finally {
       this.revalidating = false;
+    }
+    await this.advanceValidatedCompany();
+  }
+
+  private async advanceValidatedCompany(): Promise<void> {
+    if (!this.autoAdvanceValidated || !this.afterSave || !this.open || this.loading ||
+        this.saving || this.revalidating || this.error || this.requiresSentidoChoice) return;
+    if (this.grupos.some(grupo => grupo.onboarding || grupo.reuseSourceIds.length ||
+        Object.values(grupo.pendingActions).length || this.candidatesFor(grupo).length ||
+        grupo.editors.some(editor => editor.tablas.some(tabla =>
+          (tabla.addedDraftCategories?.length ?? 0) > 0 ||
+          Object.values(tabla.drafts).some(draft =>
+            String(draft.no_pico ?? '').trim() !== '' || String(draft.pico ?? '').trim() !== ''))))) return;
+    const acknowledged = this.statusChoiceAcknowledgements();
+    const candidates = this.grupos.flatMap(grupo => this.rawCandidatesFor(grupo));
+    if (acknowledged.length !== this.unresolved.length || acknowledged.some(row => {
+      const candidate = candidates.find(item => item.candidateId === row.candidate_id);
+      return !row.tarifa_id || !row.tarifa_importe_id || !candidate ||
+        !this.withinPriceTolerance(candidate.amount, row.nueva);
+    })) return;
+    const key = `${this.empresaStep}|${this.unresolved.map(row => row.id).sort().join('|')}`;
+    if (this.autoAdvanceAttempts.has(key)) return;
+    this.autoAdvanceAttempts.add(key);
+    this.saving = true;
+    try {
+      // Confirma coincidencias en la sesión; no escribe precios ni documentos.
+      await this.finishSave(acknowledged);
+    } catch (e) {
+      this.error = rpcErrorMessage(e, 'No se pudo avanzar al siguiente tarifario. Reintentá con Guardar cambios.');
+    } finally {
+      this.saving = false;
     }
   }
 
@@ -1332,6 +1395,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     } finally {
       if (generation === this.loadGeneration) this.loading = false;
     }
+    if (generation === this.loadGeneration) await this.advanceValidatedCompany();
   }
 
   private applySessionMatches(grupo: GrupoTarifaRefresco): void {
@@ -1579,9 +1643,15 @@ export class TarifaRefreshDialogComponent implements OnChanges {
         }];
       }
     }
+    const addedDraftCategories = this.previousAddedDraftCategories(previous, group, sentido);
+    const previousDrafts = this.previousDrafts(previous, group, sentido);
+    const draftedCategories = Object.entries(previousDrafts)
+      .filter(([, draft]) => String(draft.no_pico ?? '').trim() !== '' || String(draft.pico ?? '').trim() !== '')
+      .map(([categoria]) => Number(categoria));
+    maxCats = Math.max(maxCats, ...addedDraftCategories, ...draftedCategories);
     const rows = buildEditorRows(firstExistentes, categoriasEditor(maxCats || 1));
 
-    const drafts: TarifarioEditorDrafts = { ...this.previousDrafts(previous, group, sentido) };
+    const drafts: TarifarioEditorDrafts = { ...previousDrafts };
     const detected: TarifarioDetectedMap = {};
     for (const row of rows) {
       drafts[row.categoria] ??= { no_pico: '', pico: '' };
@@ -1615,7 +1685,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
       sentido,
       rows,
       drafts,
-      addedDraftCategories: this.previousAddedDraftCategories(previous, group, sentido),
+      addedDraftCategories,
       detected,
       currentStations,
       reviewRows: [],

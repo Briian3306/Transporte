@@ -11,6 +11,8 @@ import { StepperItemComponent } from './stepper-item.component';
 })
 export class StepperComponent {
   @Input() value = 1;
+  /** El contenedor confirma el cambio después de validar/guardar. */
+  @Input() controlled = false;
   @Input() ariaLabel = 'Pasos';
   @Output() valueChange = new EventEmitter<number>();
 
@@ -18,7 +20,7 @@ export class StepperComponent {
 
   select(step: number, disabled = false): void {
     if (disabled || step === this.value) return;
-    this.value = step;
+    if (!this.controlled) this.value = step;
     this.valueChange.emit(step);
   }
 
