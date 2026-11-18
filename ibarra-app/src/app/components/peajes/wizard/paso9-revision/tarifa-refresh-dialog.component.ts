@@ -250,6 +250,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
   @Input() empresaStep = 1;
   @Input() hasNextCompany = false;
   @Input() autoAdvanceValidated = false;
+  @Input() renovarVigenciaCompleta = false;
   private readonly autoAdvanceAttempts = new Set<string>();
   /** El contenedor espera el reanálisis antes de navegar o cerrar. */
   @Input() afterSave?: (saved: TarifaRefrescoGuardada[], target?: number) => Promise<void>;
@@ -1224,6 +1225,7 @@ export class TarifaRefreshDialogComponent implements OnChanges {
     if (!this.autoAdvanceValidated || !this.afterSave || !this.open || this.loading ||
         this.saving || this.revalidating || this.error || this.requiresSentidoChoice) return;
     if (this.grupos.some(grupo => grupo.onboarding || grupo.reuseSourceIds.length ||
+        (this.renovarVigenciaCompleta && grupo.vigenteDesde.from != null) ||
         Object.values(grupo.pendingActions).length || this.candidatesFor(grupo).length ||
         grupo.editors.some(editor => editor.tablas.some(tabla =>
           (tabla.addedDraftCategories?.length ?? 0) > 0 ||
@@ -1644,6 +1646,9 @@ export class TarifaRefreshDialogComponent implements OnChanges {
       }
     }
     const addedDraftCategories = this.previousAddedDraftCategories(previous, group, sentido);
+    if (grupo.onboarding && !firstExistentes.length && !addedDraftCategories.length) {
+      addedDraftCategories.push(1);
+    }
     const previousDrafts = this.previousDrafts(previous, group, sentido);
     const draftedCategories = Object.entries(previousDrafts)
       .filter(([, draft]) => String(draft.no_pico ?? '').trim() !== '' || String(draft.pico ?? '').trim() !== '')
@@ -2317,6 +2322,8 @@ export class TarifaRefreshDialogComponent implements OnChanges {
         const preflight = confirmNewVigenciaPreflight({
           importe: cell.importe,
           fechaVigenciaInicio: fechaIso,
+          forcePersist: this.renovarVigenciaCompleta && fechaIso != null &&
+            (!catalogIdentity?.fechaVigenciaInicio || fechaIso > catalogIdentity.fechaVigenciaInicio),
           catalog: catalogIdentity
             ? {
                 importe: catalogIdentity.importe,
@@ -2457,6 +2464,30 @@ export class TarifaRefreshDialogComponent implements OnChanges {
         ) {
           return [];
         }
+      }
+      if (!this.renovarVigenciaCompleta || !fechaIso) continue;
+      for (const row of grupo.catalogRows) {
+        if (row.enabled === false || row.importe == null || row.importe <= 0 ||
+            (row.fechaVigenciaInicio && row.fechaVigenciaInicio >= fechaIso)) continue;
+        const inEditor = grupo.editors.some(editor => editor.stationIds.includes(row.estacion_id) &&
+          editor.tablas.some(tabla => tabla.sentido === row.sentido));
+        if (!inEditor) continue;
+        const key = identityKey(grupo.peajeId, row.estacion_id, row.sentido, row.categoria, row.status);
+        if (seenIdentities.has(key)) continue;
+        if (!push({
+          candidateId: typedCandidateId(row.estacion_id, row.sentido, row.categoria, row.status),
+          action: 'CONFIRM_NEW',
+          peajeId: grupo.peajeId,
+          estacionId: row.estacion_id,
+          categoriaProveedor: row.categoria,
+          categoriaCalculada: row.categoria,
+          status: row.status,
+          sentido: row.sentido,
+          importe: row.importe,
+          fechaVigenciaInicio: fechaIso,
+          cases: 0,
+          requiereNormalizacionIva: row.requiereNormalizacionIva ?? false,
+        })) return [];
       }
     }
     return decisions;

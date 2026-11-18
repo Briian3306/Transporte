@@ -2,7 +2,7 @@
 -- Fixture namespace 18180000-… (avoids F14-16 162/166 and F14-17 174).
 -- Empty tables; synthetic Dock Sud-like fixtures only.
 BEGIN;
-SELECT plan(81);
+SELECT plan(82);
 
 CREATE FUNCTION pg_temp.rpc_jsonb(p_fn text, p_arg jsonb)
 RETURNS jsonb
@@ -2205,6 +2205,40 @@ SELECT ok(
     WHERE row->>'tarifa_id' = '18180000-aaaa-4aa1-8aa1-0000000000d3'
   ),
   'F14-21 list hides a review-only identity while retaining active tariffs'
+);
+
+CREATE TEMP TABLE pg_temp._renewal_prices AS
+SELECT t.id, t.categoria, ti.id AS previous_id, ti.importe AS previous_price
+FROM public.tarifas t
+JOIN public.tarifa_importe ti ON ti.id = t.current_tarifa_id
+WHERE t.id IN ('18180000-aaaa-4aa1-8aa1-000000000050', '18180000-aaaa-4aa1-8aa1-000000000052');
+
+SELECT public.peajes_guardar_refresco_tarifas(jsonb_agg(jsonb_build_object(
+  'candidate_id', 'renewal-' || categoria,
+  'action', 'CONFIRM_NEW',
+  'peaje_id', '18180000-aaaa-4aa1-8aa1-000000000001',
+  'estacion_id', '18180000-aaaa-4aa1-8aa1-000000000010',
+  'sentido', 'AMBAS',
+  'categoria', categoria,
+  'status', 'NO_PICO',
+  'importe', previous_price + CASE WHEN categoria = 2 THEN 1000 ELSE 0 END,
+  'fecha_vigencia_inicio', '2090-11-18',
+  'cases', 0
+))) FROM pg_temp._renewal_prices;
+
+SELECT is(
+  (SELECT count(*)::integer
+   FROM pg_temp._renewal_prices p
+   JOIN public.tarifas t ON t.id = p.id
+   JOIN public.tarifa_importe current ON current.id = t.current_tarifa_id
+   JOIN public.tarifa_importe previous ON previous.id = p.previous_id
+   WHERE current.id <> previous.id
+     AND current.fecha_vigencia_inicio = DATE '2090-11-18'
+     AND previous.fecha_vigencia_fin = DATE '2090-11-18'
+     AND current.importe = p.previous_price + CASE WHEN p.categoria = 2 THEN 1000 ELSE 0 END
+     AND current.cases = 0),
+  2,
+  'El mismo guardado renueva la vigencia del importe editado y del importe conservado'
 );
 
 SELECT * FROM finish();

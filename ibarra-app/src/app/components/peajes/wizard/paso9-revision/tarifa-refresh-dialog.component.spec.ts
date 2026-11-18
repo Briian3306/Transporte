@@ -99,6 +99,59 @@ function catalogRow(
 }
 
 describe('TarifaRefreshDialogComponent', () => {
+  it('renueva las categorías sin edición al guardar consecutivamente dos empresas', async () => {
+    const date = '2026-11-18';
+    const results = (station: string) => [pendiente(station, { candidatePrice: 7100, sentidoAplicado: 'AMBAS' })];
+    const candidates = (station: string) => [candidato(station, { candidatePrice: 7100, sentidoSolicitado: 'AMBAS' })];
+    const rows = (station: string) => [1, 2, 3].map(category => ({
+          ...catalogRow(station, category, 'NO_PICO', 'AMBAS'),
+          fechaVigenciaInicio: '2026-09-01',
+          enabled: category !== 3,
+    }));
+    await open(results(ESTACION_HUDSON), candidates(ESTACION_HUDSON), rows(ESTACION_HUDSON));
+    fixture.componentRef.setInput('renovarVigenciaCompleta', true);
+    fixture.detectChanges();
+    const write = spyOn(TestBed.inject(TARIFA_REFRESH_SERVICE), 'guardar').and.callThrough();
+    const reanalyze = jasmine.createSpy('reanalyze').and.resolveTo();
+    component.afterSave = reanalyze;
+    for (const station of [ESTACION_HUDSON, ESTACION_GUTIERREZ]) {
+      const firstCompany = station === ESTACION_HUDSON;
+      if (!firstCompany) {
+        const catalog = rows(station);
+        (TestBed.inject(PEAJES_TARIFARIO_SERVICE).listar as jasmine.Spy).and.returnValue(
+          of({ rows: catalog, total: catalog.length, page: 1, pageSize: 500 }),
+        );
+        fixture.componentRef.setInput('empresaStep', 2);
+        fixture.componentRef.setInput('resultados', results(station));
+        fixture.componentRef.setInput('candidatos', candidates(station));
+        fixture.detectChanges();
+        await fixture.whenStable();
+      }
+      const grupo = component.grupos[0];
+      component.onDraft(grupo, grupo.editors[0].tablas[0], { categoria: 2, status: 'NO_PICO', value: '7100' });
+      component.onVigenteDesde(grupo, { from: new Date(2026, 10, 18), to: null });
+      if (firstCompany) {
+        await component.requestCompanyChange(2);
+        expect(reanalyze.calls.mostRecent().args[1]).toBe(2);
+      } else {
+        await component.guardar();
+      }
+      expect(component.error).toBeNull();
+      const decisions = write.calls.mostRecent().args[0] as TarifaRefreshDecision[];
+      expect(decisions.map(row => ({
+        categoria: row.categoriaCalculada ?? row.categoriaProveedor,
+        importe: row.importe,
+        fecha: row.fechaVigenciaInicio,
+      }))).toEqual([
+        { categoria: 2, importe: 7100, fecha: date },
+        { categoria: 1, importe: 5001, fecha: date },
+      ]);
+      expect(decisions.every(row => row.estacionId === station)).toBeTrue();
+    }
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(reanalyze).toHaveBeenCalledTimes(2);
+  });
+
   it('avanza al resolver Pico/No pico con historial guardado y limpia el error anterior', async () => {
     const matches = (['NO_PICO', 'PICO'] as const).map(status => ({
       tarifaId: `t-${status}`, tarifaImporteId: `ti-${status}`, categoria: 2, status,
@@ -188,13 +241,15 @@ describe('TarifaRefreshDialogComponent', () => {
     expect(listar).toHaveBeenCalled();
   });
   it('conserva las diez categorías nuevas al revalidar y las envía completas al guardar', async () => {
-    await open([pendiente(ESTACION_HUDSON, { candidatePrice: 100 })],
-      [candidato(ESTACION_HUDSON, { candidatePrice: 100, precioDirecto: 100 })], []);
+    await open([pendiente(ESTACION_HUDSON, { candidatePrice: 200 })],
+      [candidato(ESTACION_HUDSON, { candidatePrice: 200, precioDirecto: 200 })], []);
     const grupo = component.grupos[0];
     component.onGrupoSentidoChange(grupo, 'AMBAS');
     const tabla = grupo.editors[0].tablas[0];
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('tr:not(.tf__review-row) .tf__cat-cell').length).toBe(1);
     for (let categoria = 1; categoria <= 10; categoria++) {
-      await component.addCategoria(grupo, tabla);
+      if (categoria > 1) await component.addCategoria(grupo, tabla);
       component.onDraft(grupo, tabla, { categoria, status: 'NO_PICO', value: String(categoria * 100) });
     }
     component.onVigenteDesde(grupo, { from: new Date(2026, 10, 1), to: null });
@@ -208,9 +263,12 @@ describe('TarifaRefreshDialogComponent', () => {
     await component.guardar();
     expect(component.error).toBeNull();
     expect(save).toHaveBeenCalled();
-    const categories = (save.calls.mostRecent().args[0] as TarifaRefreshDecision[])
-      .filter(row => row.action === 'CONFIRM_NEW').map(row => row.categoriaCalculada ?? row.categoriaProveedor);
+    const confirmed = (save.calls.mostRecent().args[0] as TarifaRefreshDecision[])
+      .filter(row => row.action === 'CONFIRM_NEW');
+    const categories = confirmed.map(row => row.categoriaCalculada ?? row.categoriaProveedor);
     expect([...new Set(categories)].sort((a, b) => a! - b!)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(confirmed.find(row => (row.categoriaCalculada ?? row.categoriaProveedor) === 1))
+      .toEqual(jasmine.objectContaining({ importe: 100, cases: 0 }));
   });
   it('el selector de empresa solicita guardar en vez de cambiar directamente', async () => {
     await open([], [], []);

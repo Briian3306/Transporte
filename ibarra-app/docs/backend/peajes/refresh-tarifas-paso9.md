@@ -84,7 +84,7 @@ Por candidato, primero se buscan hits de precio en la tarifa actual entre catego
 
 Abrir el diálogo y **Revalidar** consultan historial por peaje + estación + importe + categoría efectiva (`peajes_buscar_historial_importes`), sin filtro de fecha. Ambas acciones resuelven una identidad histórica única dentro de esa categoría y dejan precios sin match o ambiguos para revisión.
 
-Antes de `CONFIRM_NEW`, el diálogo omite el cambio si el importe ya es el vigente (1%) y bloquea con mensaje por estación/categoría/status si la fecha nueva es anterior o igual al vigente con otro importe.
+Antes de `CONFIRM_NEW`, el diálogo omite el cambio si el importe ya es el vigente (1%), salvo cuando se renueva la vigencia en masiva con una fecha posterior. Si el importe es distinto y la fecha nueva es anterior o igual al inicio vigente, muestra un error por estación, categoría y status.
 
 ### Vigencia e historial
 
@@ -235,6 +235,10 @@ flowchart TD
 > Última actualización: 2026-10-05 (acordeón por estación, IDA+VUELTA siempre en familia direccional, teclado entre tableros)
 
 ## Guardado secuencial desde importación masiva (2026-11-04)
+
+Al configurar un tarifario desde cero, el tablero abre la categoría 1 al elegir el sentido. El operador puede ingresar su importe aunque todas las pasadas importadas sean de otras categorías. Si esa identidad no tiene pasadas asociadas, el guardado envía `CONFIRM_NEW` con `cases: 0`.
+
+En importación masiva, **Vigente desde** aplica a las identidades habilitadas de los tableros de la empresa activa. Las celdas **Nuevo** vacías que ya tienen importe vigente conservan ese importe al renovar. Solo se crea una vigencia para esas celdas si la fecha elegida es posterior al inicio vigente. Las decisiones explícitas de revisión conservan prioridad.
 
 En el refresh de Paso 9, tanto el selector de empresa como Guardar cambios + Siguiente validan y guardan las decisiones del contexto activo mediante `peajes_guardar_refresco_tarifas`. El contenedor espera el reanálisis antes de navegar o cerrar. Errores de formulario/RPC/reanálisis conservan el panel y sus datos; otra solicitud de cambio o cierre queda bloqueada durante la operación. Si la empresa continúa pendiente, no avanza.
 

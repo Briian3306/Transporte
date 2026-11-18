@@ -265,6 +265,10 @@ Wizard y Carga Express activan el aviso nativo de cierre/recarga fuera del Paso 
 
 Cambiar de empresa desde el selector tarifario o Guardar cambios + Siguiente valida y guarda el tarifario activo, espera el reanálisis y recién entonces cambia de panel. Si quedan pendientes o hay errores, conserva la empresa actual y muestra el error. Solo guarda tarifas; no confirma documentos ni pasadas.
 
+Al configurar un tarifario desde cero, la categoría 1 queda disponible en cuanto se elige el sentido. Se puede guardar su importe aunque el archivo no tenga pasadas de esa categoría.
+
+En masiva, al elegir una fecha de **Vigente desde** posterior a la vigente, **Guardar cambios + Siguiente** también renueva las tarifas habilitadas que tienen un importe actual y dejaron **Nuevo** vacío. Cada empresa se guarda con la fecha elegida en su panel.
+
 ### Categorías nuevas y recarga del refresh (2026-11-04)
 
 Revalidar precios conserva las categorías abiertas y sus importes Nuevo al reconstruir los tableros. Guardar incluye todas las categorías completadas, aunque todavía no existan en el catálogo. El stepper tarifario espera la confirmación del contenedor; no adelanta el encabezado mientras se guarda. Durante la carga del nuevo catálogo se oculta el editor anterior. Tras guardar se recarga el catálogo aunque sigan pendientes los mismos IDs de candidatos, para mostrar los importes persistidos.

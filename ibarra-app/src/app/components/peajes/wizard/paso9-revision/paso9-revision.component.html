@@ -253,6 +253,7 @@
     [empresaStep]="empresaTarifarioStep"
     [hasNextCompany]="hasNextTarifarioCompany"
     [autoAdvanceValidated]="true"
+    [renovarVigenciaCompleta]="esMasiva"
     (empresaStepChange)="onEmpresaTarifarioStep($event)"
     (openChange)="refreshOpen = $event"
     (cancelled)="onRefreshCancelled()"
